@@ -49,7 +49,7 @@ def format_estimate_uncertainty(
     unc_prec: int = 1,
 ) -> tuple[str, str]:
     """
-    Truncate raw estimate and uncertainty values to the appropriate uncertainty.
+    Round raw estimate and uncertainty values to the appropriate precision.
 
     The premise here is that, if you're reporting your uncertainty to a certain number of significant figures, your estimate should be reported to the same precision.
 
@@ -57,7 +57,7 @@ def format_estimate_uncertainty(
     Say you want to report your uncertainty to 2 significant figures.
     So your rounded uncertainty is 0.012.
     You should report your estimate to the same precision, so your rounded estimate should be 12.346.
-    On the other hand, if you wanted to report your uncertain to the first significant figure (0.01), then you should report your estimate as 12.35.
+    On the other hand, if you wanted to report your uncertainty to the first significant figure (0.01), then you should report your estimate as 12.35.
 
     You need to report these to the same precision (not the same number of significant figures) because the two numbers need to be added together.
     If you report both to 2 significant figures, you'd have 12.0 +/- 0.0012, and your actual estimate falls way outside your error bars!
@@ -65,7 +65,7 @@ def format_estimate_uncertainty(
 
     We implement this by thinking of the decimal representation as "columns" centered on the decimal point.
     We get the column index of the first non-zero number in the decimal representation of the uncertainty, and use the fact that ``np.round`` rounds to the number of decimal places you give it to report the estimate.
-    The uncertainty is presented to the desired number of significant figures.
+    The uncertainty is rounded to the desired number of significant figures.
 
     Parameters
     ----------
