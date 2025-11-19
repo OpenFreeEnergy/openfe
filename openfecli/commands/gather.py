@@ -80,6 +80,40 @@ def format_estimate_uncertainty(
     return est_str, unc_str
 
 
+def format_df_with_precision(
+    df: pd.DataFrame, est_col_name: str, unc_col_name: str, precision: int = 1
+) -> pd.DataFrame:
+    """
+    Formats the columns `est_col_name` and `unc_col_name` as strings reported to the given precision.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        _description_
+    est_col_name : str
+        _description_
+    unc_col_name : str
+        _description_
+    precision : int, optional
+        _description_, by default 1
+
+    Returns
+    -------
+    pd.DataFrame
+        _description_
+    """
+    df_out = df.copy()  # we don't want to modify the original df
+    df_out[["DG (kcal/mol)", "uncertainty (kcal/mol)"]] = df_out.apply(
+        lambda row: format_estimate_uncertainty(
+            est=row[est_col_name], unc=row[unc_col_name], unc_prec=precision
+        ),
+        axis=1,
+        result_type="expand",
+    )
+
+    return df_out
+
+
 def is_results_json(fpath: os.PathLike | str) -> bool:
     """Sanity check that file is a result json before we try to deserialize"""
     return "estimate" in open(fpath, "r").read(20)
