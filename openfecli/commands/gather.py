@@ -254,7 +254,7 @@ def _generate_bad_legs_error_message(bad_legs: list[tuple[set[str], tuple[str]]]
     return msg
 
 
-def _get_ddgs(legs: dict, allow_partial=False) -> list[tuple]:
+def _get_ddgs(legs: dict, allow_partial=False) -> pd.DataFrame:
     import numpy as np
 
     from openfe.protocols.openmm_rfe.equil_rfe_methods import (
@@ -263,7 +263,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> list[tuple]:
 
     # TODO: if there's a failed edge but other valid results in a leg, ddgs will be computed
     # only fails if there are no valid results
-    DDGs = []
+    data = []
     bad_legs = []
     for ligpair, vals in sorted(legs.items()):
         leg_types = set(vals)
@@ -299,9 +299,9 @@ def _get_ddgs(legs: dict, allow_partial=False) -> list[tuple]:
 
         if not do_rbfe and not do_rhfe:
             bad_legs.append((*ligpair, leg_types))
-            DDGs.append((*ligpair, None, None, None, None))
+            data.append((*ligpair, None, None, None, None))
         else:
-            DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
+            data.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
     if bad_legs:
         err_msg = _generate_bad_legs_error_message(bad_legs)
@@ -316,7 +316,11 @@ def _get_ddgs(legs: dict, allow_partial=False) -> list[tuple]:
             )
             click.secho(err_msg, err=True, fg="red")
             sys.exit(1)
-    return DDGs
+    df_ddg = pd.DataFrame(
+        data,
+        columns=["ligand_i", "ligand_j", "DDG_bind", "bind_unc", "DDG_hyd", "hyd_unc"],
+    )
+    return df_ddg
 
 
 def _generate_ddg(legs: dict, allow_partial: bool) -> pd.DataFrame:
@@ -332,14 +336,15 @@ def _generate_ddg(legs: dict, allow_partial: bool) -> pd.DataFrame:
     """
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     data = []
-    for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
-        if DDGbind is not None:
+    for _, row in DDGs.iterrows():
+        ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc = row.to_list()
+        if not pd.isna(DDGbind):
             DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
             data.append((ligA, ligB, DDGbind, bind_unc))
-        if DDGhyd is not None:
+        if not pd.isna(DDGhyd):
             DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
             data.append((ligA, ligB, DDGhyd, hyd_unc))
-        elif DDGbind is None and DDGhyd is None:
+        elif pd.isna(DDGbind) and pd.isna(DDGhyd):
             data.append((ligA, ligB, FAIL_STR, FAIL_STR))
     df = pd.DataFrame(
         data,
@@ -419,12 +424,13 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
     g = nx.DiGraph()
     nm_to_idx = {}
     DDGbind_count = 0
-    for ligA, ligB, DDGbind, bind_unc, _, _ in DDGs:
+    for _, row in DDGs.iterrows():
+        ligA, ligB, DDGbind, bind_unc, _, _ = row.to_list()
         for lig in (ligA, ligB):
             if lig not in expected_ligs:
                 expected_ligs.append(lig)
 
-        if DDGbind is None or DDGbind == FAIL_STR:
+        if pd.isna(DDGbind) or DDGbind == FAIL_STR:
             continue
         DDGbind_count += 1
 
