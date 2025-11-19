@@ -50,7 +50,7 @@ def format_estimate_uncertainty(
 ) -> tuple[str, str]:
     """Truncate raw estimate and uncertainty values to the appropriate uncertainty.
 
-    The premise here is that, if you're reporting your uncertain to a
+    The premise here is that, if you're reporting your uncertainty to a
     certain number of significant figures, your estimate should be reported
     to the same precision.
 
