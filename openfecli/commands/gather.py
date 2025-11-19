@@ -8,6 +8,7 @@ from typing import List, Literal
 
 import click
 import pandas as pd
+from openff.units import unit
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -263,6 +264,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> list[tuple]:
 
     # TODO: if there's a failed edge but other valid results in a leg, ddgs will be computed
     # only fails if there are no valid results
+
     DDGs = []
     bad_legs = []
     for ligpair, vals in sorted(legs.items()):
@@ -407,11 +409,40 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
     """
     import networkx as nx
     import numpy as np
+    from cinnabar import FEMap, Measurement
     from cinnabar.stats import mle
 
     _check_legs_have_sufficient_repeats(legs)
 
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
+
+    # TODO: do this in one pass, but for now construct separately for debugging purposes
+    measurements = []
+    for ligA, ligB, DDGbind, bind_unc, _, _ in DDGs:
+        try:
+            m = Measurement(
+                labelA=ligA,
+                labelB=ligB,
+                DG=DDGbind * unit.kilocalorie_per_mole,
+                uncertainty=bind_unc * unit.kilocalorie_per_mole,
+                computational=True,
+            )
+            measurements.append(m)
+        except TypeError:
+            pass
+
+    femap = FEMap()
+
+    for m in measurements:
+        femap.add_measurement(m)
+
+    try:
+        femap.generate_absolute_values()
+    except ValueError:
+        pass
+
+    df_femap = femap.get_absolute_dataframe()
+
     MLEs = []
     expected_ligs = []
 
