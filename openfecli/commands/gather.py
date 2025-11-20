@@ -135,16 +135,15 @@ def _get_names(result: dict) -> tuple[str, str]:
     return ligand_A.name, ligand_B.name
 
 
-def _get_type(res: dict) -> Literal["vacuum", "solvent", "complex"]:
+def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     """Determine the simulation type based on the component names."""
-    # TODO: use component *types* instead here
-    list_of_pur = list(res["protocol_result"]["data"].values())[0]
-    pur = list_of_pur[0]
-    components = pur["inputs"]["stateA"]["components"]
 
-    if "solvent" not in components:
+    protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+    chem_sys_A = gufe.tokenization.GufeTokenizable.from_dict(protocol_data["inputs"]["stateA"])
+
+    if not chem_sys_A.contains(gufe.SolventComponent):
         return "vacuum"
-    elif "protein" in components:
+    elif chem_sys_A.contains(gufe.ProteinComponent):
         return "complex"
     else:
         return "solvent"
@@ -173,7 +172,6 @@ def _get_result_id(
         A result object
     result_fn : os.PathLike | str
         The path to deserialized results, only used if unable to extract from results dict.
-        TODO: only take in ``result_fn`` for backwards compatibility, remove this in 2.0
 
     Returns
     -------
@@ -185,7 +183,7 @@ def _get_result_id(
     try:
         simtype = _get_type(result)
     except KeyError:
-        simtype = _legacy_get_type(result_fn)
+        simtype = _legacy_get_type(result_fn)  # TODO: remove this and result_fn in 2.0
 
     return (ligA, ligB), simtype
 
