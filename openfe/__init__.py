@@ -21,7 +21,7 @@ LogControl.silence_message(
 )
 
 LogControl.append_logger(
-        suffix="\n \n[OPENFE]: The simulation is still using the compute platform specified in the settings \n See this URL for more information: \n\n",
+    suffix="\n \n[OPENFE]: The simulation is still using the compute platform specified in the settings \n See this URL for more information: \n\n",
     logger_names="jax._src.xla_bridge",
 )
 
