@@ -5,9 +5,10 @@ import pytest
 from openfe.utils.logging_control import (
     AppendMsgFilter,
     BaseLogFilter,
-    LogControl,
     MsgIncludesStringFilter,
 )
+
+from openfe.utils import logging_control
 
 
 @pytest.fixture
@@ -227,14 +228,14 @@ class TestAppendMsgFilter:
         assert filter_obj.filter(record) is True
 
 
-class TestLogControl:
-    """Tests for LogControl class."""
+class Testlogging_control:
+    """Tests for logging_control module."""
 
     def test_silence_message_single_string_single_logger(self, logger):
         """Test silencing a single message from a single logger."""
         test_logger, handler = logger
 
-        LogControl.silence_message(msg="block this", logger_names="test_logger")
+        logging_control.silence_message(msg="block this", logger_names="test_logger")
 
         test_logger.info("block this message")
         test_logger.info("allow this message")
@@ -246,7 +247,7 @@ class TestLogControl:
         """Test silencing multiple messages from a single logger."""
         test_logger, handler = logger
 
-        LogControl.silence_message(msg=["warning1", "warning2"], logger_names="test_logger")
+        logging_control.silence_message(msg=["warning1", "warning2"], logger_names="test_logger")
 
         test_logger.info("This has warning1")
         test_logger.info("This has warning2")
@@ -264,7 +265,7 @@ class TestLogControl:
         logger1.filters = []
         logger2.filters = []
 
-        LogControl.silence_message(msg="block this", logger_names=["test_logger1", "test_logger2"])
+        logging_control.silence_message(msg="block this", logger_names=["test_logger1", "test_logger2"])
 
         assert len(logger1.filters) == 1
         assert len(logger2.filters) == 1
@@ -281,7 +282,7 @@ class TestLogControl:
         logger1.filters = []
         logger2.filters = []
 
-        LogControl.silence_message(
+        logging_control.silence_message(
             msg=["warning1", "warning2"], logger_names=["test_logger1", "test_logger2"]
         )
 
@@ -297,7 +298,7 @@ class TestLogControl:
         """Test completely silencing a single logger."""
         test_logger, handler = logger
 
-        LogControl.silence_logger(logger_names="test_logger")
+        logging_control.silence_logger(logger_names="test_logger")
 
         test_logger.debug("debug message")
         test_logger.info("info message")
@@ -315,7 +316,7 @@ class TestLogControl:
         original_level1 = logger1.level
         original_level2 = logger2.level
 
-        LogControl.silence_logger(logger_names=["test_logger1", "test_logger2"])
+        logging_control.silence_logger(logger_names=["test_logger1", "test_logger2"])
 
         assert logger1.level == logging.CRITICAL
         assert logger2.level == logging.CRITICAL
@@ -328,7 +329,7 @@ class TestLogControl:
         """Test silencing logger with custom level."""
         test_logger, handler = logger
 
-        LogControl.silence_logger(logger_names="test_logger", level=logging.ERROR)
+        logging_control.silence_logger(logger_names="test_logger", level=logging.ERROR)
 
         test_logger.debug("debug message")
         test_logger.info("info message")
@@ -343,7 +344,7 @@ class TestLogControl:
         """Test appending a single suffix to a single logger."""
         test_logger, handler = logger
 
-        LogControl.append_logger(suffix=" [DEPRECATED]", logger_names="test_logger")
+        logging_control.append_logger(suffix=" [DEPRECATED]", logger_names="test_logger")
 
         test_logger.info("Original message")
 
@@ -354,7 +355,7 @@ class TestLogControl:
         """Test appending multiple suffixes."""
         test_logger, handler = logger
 
-        LogControl.append_logger(
+        logging_control.append_logger(
             suffix=[" [DEPRECATED]", " - see docs"], logger_names="test_logger"
         )
 
@@ -371,7 +372,7 @@ class TestLogControl:
         logger1.filters = []
         logger2.filters = []
 
-        LogControl.append_logger(suffix=" [INFO]", logger_names=["test_logger1", "test_logger2"])
+        logging_control.append_logger(suffix=" [INFO]", logger_names=["test_logger1", "test_logger2"])
 
         assert len(logger1.filters) == 1
         assert len(logger2.filters) == 1
@@ -384,7 +385,7 @@ class TestLogControl:
         """Test the PyMBAR use case."""
         test_logger, handler = logger
 
-        LogControl.silence_message(
+        logging_control.silence_message(
             msg="****** PyMBAR will use 64-bit JAX! *******", logger_names="test_logger"
         )
 
@@ -398,8 +399,8 @@ class TestLogControl:
         """Test combining silence and append on the same logger."""
         test_logger, handler = logger
 
-        LogControl.silence_message(msg="block", logger_names="test_logger")
-        LogControl.append_logger(suffix=" [INFO]", logger_names="test_logger")
+        logging_control.silence_message(msg="block", logger_names="test_logger")
+        logging_control.append_logger(suffix=" [INFO]", logger_names="test_logger")
 
         test_logger.info("block this")
         test_logger.info("allow this")
@@ -455,7 +456,7 @@ class TestEdgeCases:
         """Test behavior with empty string."""
         test_logger, handler = logger
 
-        LogControl.silence_message(msg="", logger_names="test_logger")
+        logging_control.silence_message(msg="", logger_names="test_logger")
 
         test_logger.info("message")
 
@@ -466,7 +467,7 @@ class TestEdgeCases:
         """Test behavior with empty list."""
         test_logger, handler = logger
 
-        LogControl.silence_message(msg=[], logger_names="test_logger")
+        logging_control.silence_message(msg=[], logger_names="test_logger")
 
         test_logger.info("message")
 
@@ -477,7 +478,7 @@ class TestEdgeCases:
         """Test that special characters are handled correctly."""
         test_logger, handler = logger
 
-        LogControl.silence_message(msg="[WARNING] *special* $chars$", logger_names="test_logger")
+        logging_control.silence_message(msg="[WARNING] *special* $chars$", logger_names="test_logger")
 
         test_logger.info("[WARNING] *special* $chars$ in message")
         test_logger.info("normal message")
@@ -489,8 +490,8 @@ class TestEdgeCases:
         """Test that unicode characters work correctly."""
         test_logger, handler = logger
 
-        LogControl.silence_message(msg="🚫 blocked", logger_names="test_logger")
-        LogControl.append_logger(suffix=" ✅", logger_names="test_logger")
+        logging_control.silence_message(msg="🚫 blocked", logger_names="test_logger")
+        logging_control.append_logger(suffix=" ✅", logger_names="test_logger")
 
         test_logger.info("🚫 blocked message")
         test_logger.info("allowed message")
@@ -503,7 +504,7 @@ class TestEdgeCases:
         test_logger, handler = logger
 
         long_msg = "x" * 10000
-        LogControl.silence_message(msg="needle", logger_names="test_logger")
+        logging_control.silence_message(msg="needle", logger_names="test_logger")
 
         test_logger.info(long_msg + "needle" + long_msg)
         test_logger.info("short message")

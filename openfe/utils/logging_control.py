@@ -100,76 +100,72 @@ class AppendMsgFilter(BaseLogFilter):
         return True
 
 
-class LogControl:
-    """Easy-to-use logging control for third-party packages."""
+def silence_message(msg: str | list[str], logger_names: str | list[str]) -> None:
+    """Silence specific log messages from one or more loggers.
 
-    @staticmethod
-    def silence_message(msg: str | list[str], logger_names: str | list[str]) -> None:
-        """Silence specific log messages from one or more loggers.
+    Parameters
+    ----------
+    msg : str or list of str
+        String(s) to match in log messages (substring match)
+    logger_names : str or list of str
+        Logger name(s) to apply the filter to
 
-        Parameters
-        ----------
-        msg : str or list of str
-            String(s) to match in log messages (substring match)
-        logger_names : str or list of str
-            Logger name(s) to apply the filter to
+    Examples
+    --------
+    >>> silence_message(
+    ...     msg="****** PyMBAR will use 64-bit JAX! *******",
+    ...     logger_names=["pymbar.timeseries", "pymbar.mbar_solvers"]
+    ... )
+    """
+    if isinstance(logger_names, str):
+        logger_names = [logger_names]
 
-        Examples
-        --------
-        >>> LogControl.silence_message(
-        ...     msg="****** PyMBAR will use 64-bit JAX! *******",
-        ...     logger_names=["pymbar.timeseries", "pymbar.mbar_solvers"]
-        ... )
-        """
-        if isinstance(logger_names, str):
-            logger_names = [logger_names]
+    filter_obj = MsgIncludesStringFilter(msg)
+    for name in logger_names:
+        logging.getLogger(name).addFilter(filter_obj)
 
-        filter_obj = MsgIncludesStringFilter(msg)
-        for name in logger_names:
-            logging.getLogger(name).addFilter(filter_obj)
 
-    @staticmethod
-    def silence_logger(logger_names: str | list[str], level: int = logging.CRITICAL) -> None:
-        """Completely silence one or more loggers.
+def silence_logger(logger_names: str | list[str], level: int = logging.CRITICAL) -> None:
+    """Completely silence one or more loggers.
 
-        Parameters
-        ----------
-        logger_names : str or list of str
-            Logger name(s) to silence
-        level : int
-            Set logger level (default: CRITICAL to silence everything)
+    Parameters
+    ----------
+    logger_names : str or list of str
+        Logger name(s) to silence
+    level : int
+        Set logger level (default: CRITICAL to silence everything)
 
-        Examples
-        --------
-        >>> LogControl.silence_logger(logger_names=["urllib3", "requests"])
-        """
-        if isinstance(logger_names, str):
-            logger_names = [logger_names]
+    Examples
+    --------
+    >>> silence_logger(logger_names=["urllib3", "requests"])
+    """
+    if isinstance(logger_names, str):
+        logger_names = [logger_names]
 
-        for name in logger_names:
-            logging.getLogger(name).setLevel(level)
+    for name in logger_names:
+        logging.getLogger(name).setLevel(level)
 
-    @staticmethod
-    def append_logger(suffix: str | list[str], logger_names: str | list[str]) -> None:
-        """Append text to logger messages.
 
-        Parameters
-        ----------
-        suffix : str or list of str
-            Suffix text to append to log messages
-        logger_names : str or list of str
-            Logger name(s) to modify
+def append_logger(suffix: str | list[str], logger_names: str | list[str]) -> None:
+    """Append text to logger messages.
 
-        Examples
-        --------
-        >>> LogControl.append_logger(
-        ...     suffix=" [DEPRECATED]",
-        ...     logger_names="myapp"
-        ... )
-        """
-        if isinstance(logger_names, str):
-            logger_names = [logger_names]
+    Parameters
+    ----------
+    suffix : str or list of str
+        Suffix text to append to log messages
+    logger_names : str or list of str
+        Logger name(s) to modify
 
-        filter_obj = AppendMsgFilter(suffix)
-        for name in logger_names:
-            logging.getLogger(name).addFilter(filter_obj)
+    Examples
+    --------
+    >>> append_logger(
+    ...     suffix=" [DEPRECATED]",
+    ...     logger_names="myapp"
+    ... )
+    """
+    if isinstance(logger_names, str):
+        logger_names = [logger_names]
+
+    filter_obj = AppendMsgFilter(suffix)
+    for name in logger_names:
+        logging.getLogger(name).addFilter(filter_obj)
