@@ -298,13 +298,13 @@ class TestResultLoading:
             assert captured.err == ""
 
     def test_skip_missing_unit_result(self, capsys, sim_result):
-        del sim_result["unit_results"]
+        sim_result["unit_results"] = {}
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == (None, None)
-            assert "Missing ligand names and/or simulation type. Skipping" in captured.err
+            assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
+            assert "No 'unit_results' found" in captured.err
 
     def test_skip_missing_estimate(self, capsys, sim_result):
         sim_result["estimate"] = None

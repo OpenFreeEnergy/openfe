@@ -218,6 +218,9 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
     if result["uncertainty"] is None:
         click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
+    if result["unit_results"] == {}:
+        click.secho(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
+        return result_id, None
     if all("exception" in u for u in result["unit_results"].values()):
         click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
