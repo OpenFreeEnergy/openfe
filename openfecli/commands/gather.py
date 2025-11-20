@@ -7,6 +7,7 @@ import sys
 from typing import List, Literal
 
 import click
+import gufe
 import pandas as pd
 
 from openfecli import OFECommandPlugin
@@ -121,19 +122,17 @@ def _get_names(result: dict) -> tuple[str, str]:
     tuple[str, str]
         Ligand names corresponding to the results.
     """
-    try:
-        nm = list(result["unit_results"].values())[0]["name"]
 
-    except KeyError:
-        raise ValueError("Failed to guess names")
+    # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
+    protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+    ligand_A = gufe.SmallMoleculeComponent.from_dict(
+        protocol_data["inputs"]["stateA"]["components"]["ligand"]
+    )
+    ligand_B = gufe.SmallMoleculeComponent.from_dict(
+        protocol_data["inputs"]["stateB"]["components"]["ligand"]
+    )
 
-    # TODO: make this more robust by pulling names from inputs.state[A/B].name
-
-    toks = nm.split()
-    if toks[2] == "repeat":
-        return toks[0], toks[1]
-    else:
-        return toks[0], toks[2]
+    return ligand_A.name, ligand_B.name
 
 
 def _get_type(res: dict) -> Literal["vacuum", "solvent", "complex"]:
