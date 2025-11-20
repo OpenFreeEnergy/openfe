@@ -81,7 +81,7 @@ def format_estimate_uncertainty(
 
 
 def format_df_with_precision(
-    df: pd.DataFrame, est_col_name: str, unc_col_name: str, precision: int = 1
+    df: pd.DataFrame, est_col_name: str, unc_col_name: str, unc_prec: int = 1
 ) -> pd.DataFrame:
     """
     Formats the columns `est_col_name` and `unc_col_name` as strings reported to the given precision.
@@ -103,24 +103,19 @@ def format_df_with_precision(
         _description_
     """
 
-    def format_results_entries(est, unc, unc_prec):
-        if isinstance(est, float) and isinstance(unc, float):
-            return format_estimate_uncertainty(est=est, unc=unc, unc_prec=unc_prec)
-        else:
-            return est, unc
-
-    df_out = df.copy()  # we don't want to modify the original df
-
-    # only_floats =  df_out[est_col_name].apply(lambda x: isinstance(x,float))
-
-    df_out[[est_col_name, unc_col_name]] = df_out.apply(
-        lambda row: format_results_entries(
-            est=row[est_col_name], unc=row[unc_col_name], unc_prec=precision
-        ),
+    float_mask = df[est_col_name].apply(lambda x: isinstance(x, float))
+    df_floats_formatted = df[float_mask].apply(
+        lambda row: format_estimate_uncertainty(row[est_col_name], row[unc_col_name], unc_prec),
         axis=1,
         result_type="expand",
     )
-    return df_out
+    df[[est_col_name, unc_col_name]] = df[[est_col_name, unc_col_name]].astype(str)
+    if df_floats_formatted.empty:
+        pass
+    else:
+        df.loc[float_mask, [est_col_name, unc_col_name]] = df_floats_formatted.values
+
+    return df
 
 
 def is_results_json(fpath: os.PathLike | str) -> bool:
