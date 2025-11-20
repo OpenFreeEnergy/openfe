@@ -102,14 +102,18 @@ def format_df_with_precision(
     pd.DataFrame
         _description_
     """
-
+    # we only want to round/format the floats (not any error strings getting passed through)
     float_mask = df[est_col_name].apply(lambda x: isinstance(x, float))
     df_floats_formatted = df[float_mask].apply(
         lambda row: format_estimate_uncertainty(row[est_col_name], row[unc_col_name], unc_prec),
         axis=1,
         result_type="expand",
     )
+
+    # explicitly cast to string to make pandas happy
     df[[est_col_name, unc_col_name]] = df[[est_col_name, unc_col_name]].astype(str)
+
+    # if there are no floats, assigning an empty array will break things
     if df_floats_formatted.empty:
         pass
     else:
