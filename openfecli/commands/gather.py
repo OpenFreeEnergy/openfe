@@ -305,7 +305,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> pd.DataFrame:
 
     # TODO: if there's a failed edge but other valid results in a leg, ddgs will be computed
     # only fails if there are no valid results
-    data = []
+    DDGs = []
     bad_legs = []
     for ligpair, vals in sorted(legs.items()):
         leg_types = set(vals)
@@ -341,9 +341,9 @@ def _get_ddgs(legs: dict, allow_partial=False) -> pd.DataFrame:
 
         if not do_rbfe and not do_rhfe:
             bad_legs.append((*ligpair, leg_types))
-            data.append((*ligpair, None, None, None, None))
+            DDGs.append((*ligpair, None, None, None, None))
         else:
-            data.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
+            DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
     if bad_legs:
         err_msg = _generate_bad_legs_error_message(bad_legs)
@@ -359,7 +359,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> pd.DataFrame:
             click.secho(err_msg, err=True, fg="red")
             sys.exit(1)
     df_ddg = pd.DataFrame(
-        data,
+        DDGs,
         columns=["ligand_i", "ligand_j", "DDG_bind", "bind_unc", "DDG_hyd", "hyd_unc"],
     )
     return df_ddg
