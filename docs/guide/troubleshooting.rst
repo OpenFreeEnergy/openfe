@@ -71,5 +71,5 @@ If the necessary libraries for GPU acceleration are not installed and JAX detect
 
    WARNING:2025-06-10 09:01:40,857:jax._src.xla_bridge:966: An NVIDIA GPU may be present on this machine, but a CUDA-enabled jaxlib is not installed. Falling back to cpu.
 
-This warning does not mean that the molecular dynamics simulation will fall back to using the CPU.
+This warning does not mean that the *molecular dynamics* simulation will fall back to using the CPU.
 The simulation will still use the computing platform specified in the settings.
