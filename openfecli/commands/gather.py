@@ -102,15 +102,24 @@ def format_df_with_precision(
     pd.DataFrame
         _description_
     """
+
+    def format_results_entries(est, unc, unc_prec):
+        if isinstance(est, float) and isinstance(unc, float):
+            return format_estimate_uncertainty(est=est, unc=unc, unc_prec=unc_prec)
+        else:
+            return est, unc
+
     df_out = df.copy()  # we don't want to modify the original df
-    df_out[["DG (kcal/mol)", "uncertainty (kcal/mol)"]] = df_out.apply(
-        lambda row: format_estimate_uncertainty(
+
+    # only_floats =  df_out[est_col_name].apply(lambda x: isinstance(x,float))
+
+    df_out[[est_col_name, unc_col_name]] = df_out.apply(
+        lambda row: format_results_entries(
             est=row[est_col_name], unc=row[unc_col_name], unc_prec=precision
         ),
         axis=1,
         result_type="expand",
     )
-
     return df_out
 
 
@@ -373,10 +382,8 @@ def _generate_ddg(legs: dict, allow_partial: bool) -> pd.DataFrame:
     for _, row in DDGs.iterrows():
         ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc = row.to_list()
         if not pd.isna(DDGbind):
-            DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
             data.append((ligA, ligB, DDGbind, bind_unc))
         if not pd.isna(DDGhyd):
-            DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
             data.append((ligA, ligB, DDGhyd, hyd_unc))
         elif pd.isna(DDGbind) and pd.isna(DDGhyd):
             data.append((ligA, ligB, FAIL_STR, FAIL_STR))
@@ -384,7 +391,8 @@ def _generate_ddg(legs: dict, allow_partial: bool) -> pd.DataFrame:
         data,
         columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"],
     )
-    return df
+    df_out = format_df_with_precision(df, "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)")
+    return df_out
 
 
 def _generate_raw(legs: dict, allow_partial=True) -> pd.DataFrame:
@@ -406,7 +414,7 @@ def _generate_raw(legs: dict, allow_partial=True) -> pd.DataFrame:
                     if m is None:
                         m, u = FAIL_STR, FAIL_STR
                     else:
-                        m, u = format_estimate_uncertainty(m.m, u.m)
+                        m, u = (m.m, u.m)
                     data.append((simtype, ligpair[0], ligpair[1], m, u))
 
     df = pd.DataFrame(
@@ -419,7 +427,9 @@ def _generate_raw(legs: dict, allow_partial=True) -> pd.DataFrame:
             "MBAR uncertainty (kcal/mol)",
         ],
     )
-    return df
+    df_out = format_df_with_precision(df, "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)")
+
+    return df_out
 
 
 def _check_legs_have_sufficient_repeats(legs):
@@ -516,7 +526,6 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
 
     data = []
     for ligA, DG, unc_DG in MLEs:
-        DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         data.append({"ligand": ligA, "DG(MLE) (kcal/mol)": DG, "uncertainty (kcal/mol)": unc_DG})
         expected_ligs.remove(ligA)
 
@@ -524,7 +533,9 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
         data.append({"ligand": ligA, "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})  # fmt: skip
 
     df = pd.DataFrame(data)
-    return df
+    df_out = format_df_with_precision(df, "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)")
+
+    return df_out
 
 
 def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
