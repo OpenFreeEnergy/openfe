@@ -2,13 +2,12 @@ import logging
 
 import pytest
 
+from openfe.utils import logging_control
 from openfe.utils.logging_control import (
     AppendMsgFilter,
     BaseLogFilter,
     MsgIncludesStringFilter,
 )
-
-from openfe.utils import logging_control
 
 
 @pytest.fixture
@@ -265,7 +264,9 @@ class Testlogging_control:
         logger1.filters = []
         logger2.filters = []
 
-        logging_control.silence_message(msg="block this", logger_names=["test_logger1", "test_logger2"])
+        logging_control.silence_message(
+            msg="block this", logger_names=["test_logger1", "test_logger2"]
+        )
 
         assert len(logger1.filters) == 1
         assert len(logger2.filters) == 1
@@ -372,7 +373,9 @@ class Testlogging_control:
         logger1.filters = []
         logger2.filters = []
 
-        logging_control.append_logger(suffix=" [INFO]", logger_names=["test_logger1", "test_logger2"])
+        logging_control.append_logger(
+            suffix=" [INFO]", logger_names=["test_logger1", "test_logger2"]
+        )
 
         assert len(logger1.filters) == 1
         assert len(logger2.filters) == 1
@@ -478,7 +481,9 @@ class TestEdgeCases:
         """Test that special characters are handled correctly."""
         test_logger, handler = logger
 
-        logging_control.silence_message(msg="[WARNING] *special* $chars$", logger_names="test_logger")
+        logging_control.silence_message(
+            msg="[WARNING] *special* $chars$", logger_names="test_logger"
+        )
 
         test_logger.info("[WARNING] *special* $chars$ in message")
         test_logger.info("normal message")
