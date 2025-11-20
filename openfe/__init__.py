@@ -21,15 +21,10 @@ LogControl.silence_message(
 )
 
 LogControl.append_logger(
-    suffix="\n \n[OPENFE]: See this url for more information about the warning above\n",
+        suffix="\n \n[OPENFE]: The simulation is still using the compute platform specified in the settings \n See this URL for more information: \n\n",
     logger_names="jax._src.xla_bridge",
 )
 
-# These two lines are just to test the append_logger and will be removed before
-# the PR is merged
-from jax._src.xla_bridge import backends
-
-backends()
 
 from importlib.metadata import version
 
