@@ -533,7 +533,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
         data.append({"ligand": ligA, "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})  # fmt: skip
 
     df = pd.DataFrame(data)
-    df_out = format_df_with_precision(df, "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)")
+    df_out = format_df_with_precision(df, "DG(MLE) (kcal/mol)", "uncertainty (kcal/mol)")
 
     return df_out
 
