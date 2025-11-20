@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 
 
-class BaseLogFilter(ABC):
+class _BaseLogFilter(ABC):
     """Base class for log filters that handle string or list of strings.
 
     Parameters
@@ -33,7 +33,7 @@ class BaseLogFilter(ABC):
         ...
 
 
-class MsgIncludesStringFilter(BaseLogFilter):
+class _MsgIncludesStringFilter(_BaseLogFilter):
     """Logging filter to silence specific log messages.
 
     See https://docs.python.org/3/library/logging.html#filter-objects
@@ -64,7 +64,7 @@ class MsgIncludesStringFilter(BaseLogFilter):
         return True
 
 
-class AppendMsgFilter(BaseLogFilter):
+class _AppendMsgFilter(_BaseLogFilter):
     """Logging filter to append a message to a specific log message.
 
     See https://docs.python.org/3/library/logging.html#filter-objects
@@ -100,7 +100,7 @@ class AppendMsgFilter(BaseLogFilter):
         return True
 
 
-def silence_message(msg: str | list[str], logger_names: str | list[str]) -> None:
+def _silence_message(msg: str | list[str], logger_names: str | list[str]) -> None:
     """Silence specific log messages from one or more loggers.
 
     Parameters
@@ -112,7 +112,7 @@ def silence_message(msg: str | list[str], logger_names: str | list[str]) -> None
 
     Examples
     --------
-    >>> silence_message(
+    >>> _silence_message(
     ...     msg="****** PyMBAR will use 64-bit JAX! *******",
     ...     logger_names=["pymbar.timeseries", "pymbar.mbar_solvers"]
     ... )
@@ -120,12 +120,12 @@ def silence_message(msg: str | list[str], logger_names: str | list[str]) -> None
     if isinstance(logger_names, str):
         logger_names = [logger_names]
 
-    filter_obj = MsgIncludesStringFilter(msg)
+    filter_obj = _MsgIncludesStringFilter(msg)
     for name in logger_names:
         logging.getLogger(name).addFilter(filter_obj)
 
 
-def silence_logger(logger_names: str | list[str], level: int = logging.CRITICAL) -> None:
+def _silence_logger(logger_names: str | list[str], level: int = logging.CRITICAL) -> None:
     """Completely silence one or more loggers.
 
     Parameters
@@ -137,7 +137,7 @@ def silence_logger(logger_names: str | list[str], level: int = logging.CRITICAL)
 
     Examples
     --------
-    >>> silence_logger(logger_names=["urllib3", "requests"])
+    >>> _silence_logger(logger_names=["urllib3", "requests"])
     """
     if isinstance(logger_names, str):
         logger_names = [logger_names]
@@ -146,7 +146,7 @@ def silence_logger(logger_names: str | list[str], level: int = logging.CRITICAL)
         logging.getLogger(name).setLevel(level)
 
 
-def append_logger(suffix: str | list[str], logger_names: str | list[str]) -> None:
+def _append_logger(suffix: str | list[str], logger_names: str | list[str]) -> None:
     """Append text to logger messages.
 
     Parameters
@@ -158,7 +158,7 @@ def append_logger(suffix: str | list[str], logger_names: str | list[str]) -> Non
 
     Examples
     --------
-    >>> append_logger(
+    >>> _append_logger(
     ...     suffix=" [DEPRECATED]",
     ...     logger_names="myapp"
     ... )
@@ -166,6 +166,6 @@ def append_logger(suffix: str | list[str], logger_names: str | list[str]) -> Non
     if isinstance(logger_names, str):
         logger_names = [logger_names]
 
-    filter_obj = AppendMsgFilter(suffix)
+    filter_obj = _AppendMsgFilter(suffix)
     for name in logger_names:
         logging.getLogger(name).addFilter(filter_obj)

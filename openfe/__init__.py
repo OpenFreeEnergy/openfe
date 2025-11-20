@@ -2,7 +2,7 @@
 # log control since some modules have warnings on import
 from openfe.utils import logging_control
 
-logging_control.silence_message(
+logging_control._silence_message(
     msg=[
         "****** PyMBAR will use 64-bit JAX! *******",
     ],
@@ -11,7 +11,7 @@ logging_control.silence_message(
     ],
 )
 
-logging_control.silence_message(
+logging_control._silence_message(
     msg=[
         "Warning on use of the timeseries module:",
     ],
@@ -20,7 +20,7 @@ logging_control.silence_message(
     ],
 )
 
-logging_control.append_logger(
+logging_control._append_logger(
     suffix="\n \n[OPENFE]: The simulation is still using the compute platform specified in the settings \n See this URL for more information: https://docs.openfree.energy/en/latest/guide/troubleshooting.html#jax-warnings \n\n",
     logger_names="jax._src.xla_bridge",
 )

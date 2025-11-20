@@ -4,9 +4,9 @@ import pytest
 
 from openfe.utils import logging_control
 from openfe.utils.logging_control import (
-    AppendMsgFilter,
-    BaseLogFilter,
-    MsgIncludesStringFilter,
+    _AppendMsgFilter,
+    _BaseLogFilter,
+    _MsgIncludesStringFilter,
 )
 
 
@@ -36,12 +36,12 @@ def logger():
     test_logger.filters = []
 
 
-class TestMsgIncludesStringFilter:
-    """Tests for MsgIncludesStringFilter."""
+class Test_MsgIncludesStringFilter:
+    """Tests for _MsgIncludesStringFilter."""
 
     def test_single_string_blocks_matching_message(self):
         """Test that a single string blocks messages containing it."""
-        filter_obj = MsgIncludesStringFilter("block this")
+        filter_obj = _MsgIncludesStringFilter("block this")
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -55,7 +55,7 @@ class TestMsgIncludesStringFilter:
 
     def test_single_string_allows_non_matching_message(self):
         """Test that messages not containing the string are allowed."""
-        filter_obj = MsgIncludesStringFilter("block this")
+        filter_obj = _MsgIncludesStringFilter("block this")
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -69,7 +69,7 @@ class TestMsgIncludesStringFilter:
 
     def test_list_of_strings_blocks_any_match(self):
         """Test that any string in the list blocks the message."""
-        filter_obj = MsgIncludesStringFilter(["warning1", "warning2", "warning3"])
+        filter_obj = _MsgIncludesStringFilter(["warning1", "warning2", "warning3"])
 
         record1 = logging.LogRecord(
             name="test",
@@ -95,7 +95,7 @@ class TestMsgIncludesStringFilter:
 
     def test_list_allows_non_matching_messages(self):
         """Test that messages not matching any string are allowed."""
-        filter_obj = MsgIncludesStringFilter(["warning1", "warning2"])
+        filter_obj = _MsgIncludesStringFilter(["warning1", "warning2"])
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -109,7 +109,7 @@ class TestMsgIncludesStringFilter:
 
     def test_substring_matching(self):
         """Test that substring matching works correctly."""
-        filter_obj = MsgIncludesStringFilter("JAX")
+        filter_obj = _MsgIncludesStringFilter("JAX")
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -123,7 +123,7 @@ class TestMsgIncludesStringFilter:
 
     def test_case_sensitive_matching(self):
         """Test that matching is case-sensitive."""
-        filter_obj = MsgIncludesStringFilter("Error")
+        filter_obj = _MsgIncludesStringFilter("Error")
 
         record1 = logging.LogRecord(
             name="test",
@@ -148,12 +148,12 @@ class TestMsgIncludesStringFilter:
         assert filter_obj.filter(record2) is True
 
 
-class TestAppendMsgFilter:
-    """Tests for AppendMsgFilter."""
+class Test_AppendMsgFilter:
+    """Tests for _AppendMsgFilter."""
 
     def test_single_suffix_appends(self):
         """Test that a single suffix is appended to the message."""
-        filter_obj = AppendMsgFilter(" [DEPRECATED]")
+        filter_obj = _AppendMsgFilter(" [DEPRECATED]")
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -169,7 +169,7 @@ class TestAppendMsgFilter:
 
     def test_multiple_suffixes_append_in_order(self):
         """Test that multiple suffixes are appended in order."""
-        filter_obj = AppendMsgFilter([" [DEPRECATED]", " - see docs"])
+        filter_obj = _AppendMsgFilter([" [DEPRECATED]", " - see docs"])
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -184,7 +184,7 @@ class TestAppendMsgFilter:
 
     def test_idempotent_single_suffix(self):
         """Test that applying the same suffix twice is idempotent."""
-        filter_obj = AppendMsgFilter(" [DEPRECATED]")
+        filter_obj = _AppendMsgFilter(" [DEPRECATED]")
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -199,7 +199,7 @@ class TestAppendMsgFilter:
 
     def test_idempotent_multiple_suffixes(self):
         """Test idempotency with multiple suffixes."""
-        filter_obj = AppendMsgFilter([" [DEPRECATED] - see docs", " [DEPRECATED] - see docs"])
+        filter_obj = _AppendMsgFilter([" [DEPRECATED] - see docs", " [DEPRECATED] - see docs"])
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -214,7 +214,7 @@ class TestAppendMsgFilter:
 
     def test_always_returns_true(self):
         """Test that the filter always returns True to allow logging."""
-        filter_obj = AppendMsgFilter(" [INFO]")
+        filter_obj = _AppendMsgFilter(" [INFO]")
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
@@ -230,11 +230,11 @@ class TestAppendMsgFilter:
 class Testlogging_control:
     """Tests for logging_control module."""
 
-    def test_silence_message_single_string_single_logger(self, logger):
+    def test__silence_message_single_string_single_logger(self, logger):
         """Test silencing a single message from a single logger."""
         test_logger, handler = logger
 
-        logging_control.silence_message(msg="block this", logger_names="test_logger")
+        logging_control._silence_message(msg="block this", logger_names="test_logger")
 
         test_logger.info("block this message")
         test_logger.info("allow this message")
@@ -242,11 +242,11 @@ class Testlogging_control:
         assert len(handler.records) == 1
         assert handler.records[0].msg == "allow this message"
 
-    def test_silence_message_multiple_strings_single_logger(self, logger):
+    def test__silence_message_multiple_strings_single_logger(self, logger):
         """Test silencing multiple messages from a single logger."""
         test_logger, handler = logger
 
-        logging_control.silence_message(msg=["warning1", "warning2"], logger_names="test_logger")
+        logging_control._silence_message(msg=["warning1", "warning2"], logger_names="test_logger")
 
         test_logger.info("This has warning1")
         test_logger.info("This has warning2")
@@ -255,7 +255,7 @@ class Testlogging_control:
         assert len(handler.records) == 1
         assert handler.records[0].msg == "This is fine"
 
-    def test_silence_message_single_string_multiple_loggers(self):
+    def test__silence_message_single_string_multiple_loggers(self):
         """Test silencing a message from multiple loggers."""
         logger1 = logging.getLogger("test_logger1")
         logger2 = logging.getLogger("test_logger2")
@@ -264,7 +264,7 @@ class Testlogging_control:
         logger1.filters = []
         logger2.filters = []
 
-        logging_control.silence_message(
+        logging_control._silence_message(
             msg="block this", logger_names=["test_logger1", "test_logger2"]
         )
 
@@ -275,7 +275,7 @@ class Testlogging_control:
         logger1.filters = []
         logger2.filters = []
 
-    def test_silence_message_multiple_strings_multiple_loggers(self):
+    def test__silence_message_multiple_strings_multiple_loggers(self):
         """Test silencing multiple messages from multiple loggers."""
         logger1 = logging.getLogger("test_logger1")
         logger2 = logging.getLogger("test_logger2")
@@ -283,7 +283,7 @@ class Testlogging_control:
         logger1.filters = []
         logger2.filters = []
 
-        logging_control.silence_message(
+        logging_control._silence_message(
             msg=["warning1", "warning2"], logger_names=["test_logger1", "test_logger2"]
         )
 
@@ -295,11 +295,11 @@ class Testlogging_control:
         logger1.filters = []
         logger2.filters = []
 
-    def test_silence_logger_single(self, logger):
+    def test__silence_logger_single(self, logger):
         """Test completely silencing a single logger."""
         test_logger, handler = logger
 
-        logging_control.silence_logger(logger_names="test_logger")
+        logging_control._silence_logger(logger_names="test_logger")
 
         test_logger.debug("debug message")
         test_logger.info("info message")
@@ -309,7 +309,7 @@ class Testlogging_control:
         # All messages should be blocked
         assert len(handler.records) == 0
 
-    def test_silence_logger_multiple(self):
+    def test__silence_logger_multiple(self):
         """Test silencing multiple loggers."""
         logger1 = logging.getLogger("test_logger1")
         logger2 = logging.getLogger("test_logger2")
@@ -317,7 +317,7 @@ class Testlogging_control:
         original_level1 = logger1.level
         original_level2 = logger2.level
 
-        logging_control.silence_logger(logger_names=["test_logger1", "test_logger2"])
+        logging_control._silence_logger(logger_names=["test_logger1", "test_logger2"])
 
         assert logger1.level == logging.CRITICAL
         assert logger2.level == logging.CRITICAL
@@ -326,11 +326,11 @@ class Testlogging_control:
         logger1.setLevel(original_level1)
         logger2.setLevel(original_level2)
 
-    def test_silence_logger_custom_level(self, logger):
+    def test__silence_logger_custom_level(self, logger):
         """Test silencing logger with custom level."""
         test_logger, handler = logger
 
-        logging_control.silence_logger(logger_names="test_logger", level=logging.ERROR)
+        logging_control._silence_logger(logger_names="test_logger", level=logging.ERROR)
 
         test_logger.debug("debug message")
         test_logger.info("info message")
@@ -341,22 +341,22 @@ class Testlogging_control:
         assert len(handler.records) == 1
         assert handler.records[0].msg == "error message"
 
-    def test_append_logger_single_suffix_single_logger(self, logger):
+    def test__append_logger_single_suffix_single_logger(self, logger):
         """Test appending a single suffix to a single logger."""
         test_logger, handler = logger
 
-        logging_control.append_logger(suffix=" [DEPRECATED]", logger_names="test_logger")
+        logging_control._append_logger(suffix=" [DEPRECATED]", logger_names="test_logger")
 
         test_logger.info("Original message")
 
         assert len(handler.records) == 1
         assert handler.records[0].msg == "Original message [DEPRECATED]"
 
-    def test_append_logger_multiple_suffixes(self, logger):
+    def test__append_logger_multiple_suffixes(self, logger):
         """Test appending multiple suffixes."""
         test_logger, handler = logger
 
-        logging_control.append_logger(
+        logging_control._append_logger(
             suffix=[" [DEPRECATED]", " - see docs"], logger_names="test_logger"
         )
 
@@ -365,7 +365,7 @@ class Testlogging_control:
         assert len(handler.records) == 1
         assert handler.records[0].msg == "Original message [DEPRECATED] - see docs"
 
-    def test_append_logger_multiple_loggers(self):
+    def test__append_logger_multiple_loggers(self):
         """Test appending to multiple loggers."""
         logger1 = logging.getLogger("test_logger1")
         logger2 = logging.getLogger("test_logger2")
@@ -373,7 +373,7 @@ class Testlogging_control:
         logger1.filters = []
         logger2.filters = []
 
-        logging_control.append_logger(
+        logging_control._append_logger(
             suffix=" [INFO]", logger_names=["test_logger1", "test_logger2"]
         )
 
@@ -388,7 +388,7 @@ class Testlogging_control:
         """Test the PyMBAR use case."""
         test_logger, handler = logger
 
-        logging_control.silence_message(
+        logging_control._silence_message(
             msg="****** PyMBAR will use 64-bit JAX! *******", logger_names="test_logger"
         )
 
@@ -402,8 +402,8 @@ class Testlogging_control:
         """Test combining silence and append on the same logger."""
         test_logger, handler = logger
 
-        logging_control.silence_message(msg="block", logger_names="test_logger")
-        logging_control.append_logger(suffix=" [INFO]", logger_names="test_logger")
+        logging_control._silence_message(msg="block", logger_names="test_logger")
+        logging_control._append_logger(suffix=" [INFO]", logger_names="test_logger")
 
         test_logger.info("block this")
         test_logger.info("allow this")
@@ -413,17 +413,17 @@ class Testlogging_control:
 
 
 class TestBaseLogFilter:
-    """Tests for BaseLogFilter base class."""
+    """Tests for _BaseLogFilter base class."""
 
     def test_cannot_instantiate_abstract_class(self):
-        """Test that BaseLogFilter cannot be instantiated directly."""
+        """Test that _BaseLogFilter cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            BaseLogFilter("test")
+            _BaseLogFilter("test")
 
     def test_subclass_must_implement_filter(self):
         """Test that subclasses must implement the filter method."""
 
-        class IncompleteFilter(BaseLogFilter):
+        class IncompleteFilter(_BaseLogFilter):
             pass
 
         with pytest.raises(TypeError):
@@ -432,7 +432,7 @@ class TestBaseLogFilter:
     def test_subclass_with_filter_works(self):
         """Test that a proper subclass can be instantiated."""
 
-        class CompleteFilter(BaseLogFilter):
+        class CompleteFilter(_BaseLogFilter):
             def filter(self, record):
                 return True
 
@@ -441,13 +441,13 @@ class TestBaseLogFilter:
 
     def test_string_conversion_to_list(self):
         """Test that single strings are converted to lists."""
-        filter_obj = MsgIncludesStringFilter("single")
+        filter_obj = _MsgIncludesStringFilter("single")
         assert isinstance(filter_obj.strings, list)
         assert filter_obj.strings == ["single"]
 
     def test_list_stays_as_list(self):
         """Test that lists remain as lists."""
-        filter_obj = MsgIncludesStringFilter(["one", "two", "three"])
+        filter_obj = _MsgIncludesStringFilter(["one", "two", "three"])
         assert isinstance(filter_obj.strings, list)
         assert filter_obj.strings == ["one", "two", "three"]
 
@@ -459,7 +459,7 @@ class TestEdgeCases:
         """Test behavior with empty string."""
         test_logger, handler = logger
 
-        logging_control.silence_message(msg="", logger_names="test_logger")
+        logging_control._silence_message(msg="", logger_names="test_logger")
 
         test_logger.info("message")
 
@@ -470,7 +470,7 @@ class TestEdgeCases:
         """Test behavior with empty list."""
         test_logger, handler = logger
 
-        logging_control.silence_message(msg=[], logger_names="test_logger")
+        logging_control._silence_message(msg=[], logger_names="test_logger")
 
         test_logger.info("message")
 
@@ -481,7 +481,7 @@ class TestEdgeCases:
         """Test that special characters are handled correctly."""
         test_logger, handler = logger
 
-        logging_control.silence_message(
+        logging_control._silence_message(
             msg="[WARNING] *special* $chars$", logger_names="test_logger"
         )
 
@@ -495,8 +495,8 @@ class TestEdgeCases:
         """Test that unicode characters work correctly."""
         test_logger, handler = logger
 
-        logging_control.silence_message(msg="🚫 blocked", logger_names="test_logger")
-        logging_control.append_logger(suffix=" ✅", logger_names="test_logger")
+        logging_control._silence_message(msg="🚫 blocked", logger_names="test_logger")
+        logging_control._append_logger(suffix=" ✅", logger_names="test_logger")
 
         test_logger.info("🚫 blocked message")
         test_logger.info("allowed message")
@@ -509,7 +509,7 @@ class TestEdgeCases:
         test_logger, handler = logger
 
         long_msg = "x" * 10000
-        logging_control.silence_message(msg="needle", logger_names="test_logger")
+        logging_control._silence_message(msg="needle", logger_names="test_logger")
 
         test_logger.info(long_msg + "needle" + long_msg)
         test_logger.info("short message")

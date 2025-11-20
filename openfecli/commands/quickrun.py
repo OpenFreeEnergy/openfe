@@ -68,7 +68,7 @@ def quickrun(transformation, work_dir, output):
     configure_logger("openfe", handler=stdout_handler)
 
     # silence the openmmtools.multistate API warning
-    logging_control.silence_message(
+    logging_control._silence_message(
         msg=[
             "The openmmtools.multistate API is experimental and may change in future releases",
         ],
