@@ -289,12 +289,12 @@ def gather_abfe(
     report: Literal["dg", "raw"],
     tsv: bool,
 ):
-    ddgs = extract_results_dict(results)
+    sim_results = extract_results_dict(results)
 
     if report == "raw":
-        df = generate_dg_raw(ddgs)
+        df = generate_dg_raw(sim_results)
     elif report == "dg":
-        df = generate_dg(ddgs)
+        df = generate_dg(sim_results)
 
     # write output
     is_output_file = isinstance(output, click.utils.LazyFile)
