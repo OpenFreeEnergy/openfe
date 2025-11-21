@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from typing import Callable
+
 import pytest
 
 import openfe
@@ -690,7 +691,7 @@ def test_network_from_external(file_fixture, loader, request, benzene_modificati
     network_file = request.getfixturevalue(file_fixture)
 
     network = loader(
-        ligands=[l for l in benzene_modifications.values()],
+        ligands=[lig for lig in benzene_modifications.values()],
         mapper=openfe.LomapAtomMapper(),
         network_file=network_file,
     )
@@ -720,7 +721,7 @@ def test_network_from_external(file_fixture, loader, request, benzene_modificati
 )
 def test_network_from_external_unknown_edge(file_fixture, loader, request, benzene_modifications):
     network_file = request.getfixturevalue(file_fixture)
-    ligands = [l for l in benzene_modifications.values() if l.name != "phenol"]
+    ligands = [lig for lig in benzene_modifications.values() if lig.name != "phenol"]
 
     with pytest.raises(KeyError, match="Invalid name"):
         _ = loader(
@@ -749,7 +750,7 @@ def test_bad_orion_network(benzene_modifications, tmpdir):
 
         with pytest.raises(KeyError, match="line does not match"):
             _ = openfe.setup.ligand_network_planning.load_orion_network(
-                ligands=[l for l in benzene_modifications.values()],
+                ligands=[lig for lig in benzene_modifications.values()],
                 mapper=openfe.LomapAtomMapper(),
                 network_file="bad_orion_net.dat",
             )
@@ -772,7 +773,7 @@ def test_bad_edges_network(benzene_modifications, tmpdir):
 
         with pytest.raises(KeyError, match="line does not match"):
             _ = openfe.setup.ligand_network_planning.load_fepplus_network(
-                ligands=[l for l in benzene_modifications.values()],
+                ligands=[lig for lig in benzene_modifications.values()],
                 mapper=openfe.LomapAtomMapper(),
                 network_file="bad_edges.edges",
             )

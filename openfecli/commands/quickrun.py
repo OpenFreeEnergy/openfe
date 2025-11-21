@@ -1,12 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
 import json
 import pathlib
 
+import click
+
 from openfecli import OFECommandPlugin
-from openfecli.utils import write, print_duration, configure_logger
+from openfecli.utils import configure_logger, print_duration, write
 
 
 def _format_exception(exception) -> str:
@@ -47,13 +48,15 @@ def quickrun(transformation, work_dir, output):
     For example, when running the OpenMM HREX Protocol a directory will be created
     for each repeat of the sampling process (by default 3).
     """
+    import logging
     import os
     import sys
-    from gufe.transformations.transformation import Transformation
+
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
-    from openfe.utils.logging_filter import MsgIncludesStringFilter
-    import logging
+    from gufe.transformations.transformation import Transformation
+
+    from openfe.utils import logging_control
 
     # avoid problems with output not showing if queueing system kills a job
     sys.stdout.reconfigure(line_buffering=True)
@@ -65,15 +68,16 @@ def quickrun(transformation, work_dir, output):
     configure_logger("openfe", handler=stdout_handler)
 
     # silence the openmmtools.multistate API warning
-    stfu = MsgIncludesStringFilter(
-        "The openmmtools.multistate API is experimental and may change in future releases"
+    logging_control._silence_message(
+        msg=[
+            "The openmmtools.multistate API is experimental and may change in future releases",
+        ],
+        logger_names=[
+            "openmmtools.multistate.multistatereporter",
+            "openmmtools.multistate.multistateanalyzer",
+            "openmmtools.multistate.multistatesampler",
+        ],
     )
-    omm_multistate = "openmmtools.multistate"
-    modules = ["multistatereporter", "multistateanalyzer", "multistatesampler"]
-    for module in modules:
-        ms_log = logging.getLogger(omm_multistate + "." + module)
-        ms_log.addFilter(stfu)
-
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
 

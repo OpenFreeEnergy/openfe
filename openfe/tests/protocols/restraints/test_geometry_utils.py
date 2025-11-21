@@ -2,14 +2,17 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import itertools
-from importlib import resources
 import os
 import pathlib
+from importlib import resources
 
 import MDAnalysis as mda
 import numpy as np
 import pooch
 import pytest
+from openff.units import unit
+from rdkit import Chem
+
 from openfe.protocols.restraint_utils.geometry.utils import (
     CentroidDistanceSort,
     FindHostAtoms,
@@ -28,8 +31,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     protein_chain_selection,
     stable_secondary_structure_selection,
 )
-from openff.units import unit
-from rdkit import Chem
 
 from ...conftest import HAS_INTERNET
 
@@ -57,14 +58,6 @@ zenodo_restraint_data = pooch.create(
     },
     retry_if_failed=5,
 )
-pdb_data = pooch.create(
-    path=POOCH_CACHE,
-    base_url="https://files.rcsb.org/download/",
-    registry={
-        "6CZJ.pdb": "sha256:94ab621b420bd10016c54c5c09a16b935313203eb71dfbf56b5e50b2d1940622"
-    },
-    retry_if_failed=5,
-)
 
 
 @pytest.fixture
@@ -82,9 +75,9 @@ def t4_lysozyme_trajectory_universe():
 
 @pytest.fixture
 def beta_barrel_universe():
-    pdb_data.fetch("6CZJ.pdb")
-    file_path = pathlib.Path(pooch.os_cache("openfe") / "6CZJ.pdb")
-    return mda.Universe(file_path)
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        beta_barrel_universe = mda.Universe(str(d / "6CZJ.pdb.gz"))
+    return beta_barrel_universe
 
 
 def test_mda_selection_none_error(eg5_pdb_universe):

@@ -4,20 +4,19 @@
 Reusable utility methods to analyze results from multistate calculations.
 """
 
-from pathlib import Path
 import warnings
+from pathlib import Path
+from typing import Optional, Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from openmmtools import multistate
-from openff.units import unit, Quantity
+from openff.units import Quantity, unit
 from openff.units.openmm import from_openmm
-from pymbar import MBAR
-from pymbar.utils import ParameterError
-from openfe.analysis import plotting
-from typing import Optional, Union
-from openfe.due import due, Doi
+from openmmtools import multistate
 
+from openfe.analysis import plotting
+from openfe.due import Doi, due
 
 due.cite(
     Doi("10.5281/zenodo.596622"),
@@ -235,8 +234,10 @@ class MultistateEquilFEAnalysis:
         * Allow folks to pass in extra options for bootstrapping etc..
         * Add standard test against analyzer.get_free_energy()
         """
+        # pymbar has some side effects when imported so we only import it right when we
+        # need it
+        from pymbar import MBAR
 
-        # pymbar 4
         mbar = MBAR(
             u_ln,
             N_l,
@@ -311,6 +312,10 @@ class MultistateEquilFEAnalysis:
           issues with the solver when using low amounts of data points. All
           uncertainties are MBAR analytical errors.
         """
+        # pymbar has some side effects from being imported, so we only want to import
+        # it right when we need it
+        from pymbar.utils import ParameterError
+
         try:
             u_ln = self.analyzer._unbiased_decorrelated_u_ln
             N_l = self.analyzer._unbiased_decorrelated_N_l

@@ -1,14 +1,16 @@
-from click import ClickException
-import pytest
-from click.testing import CliRunner
+import logging
 
+import numpy as np
+import pytest
+from click import ClickException
+from click.testing import CliRunner
 from gufe import SmallMoleculeComponent
-from openfecli.commands.generate_partial_charges import charge_molecules
 from openff.toolkit import Molecule
 from openff.units import unit
-import logging
-import numpy as np
 from openff.utilities.testing import skip_if_missing
+
+from openfecli.commands.generate_partial_charges import charge_molecules
+
 
 @pytest.fixture
 def yaml_nagl_settings():
@@ -19,6 +21,7 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
+
 @pytest.fixture
 def methane() -> Molecule:
     # ensure consistent atom ordering
@@ -26,20 +29,22 @@ def methane() -> Molecule:
     methane.generate_conformers(n_conformers=1)
     return methane
 
+
 @pytest.fixture
 def methane_with_charges(methane) -> Molecule:
     methane._partial_charges = [-1.0, 0.25, 0.25, 0.25, 0.25] * unit.elementary_charge
     return methane
+
 
 def test_missing_output(methane, tmpdir):
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
 
-    cli_result = runner.invoke(charge_molecules,["-M", mol_path,])
-    assert cli_result.exit_code==2
+    cli_result = runner.invoke(charge_molecules, ["-M", mol_path])
+    assert cli_result.exit_code == 2
     assert "Missing option '-o'" in cli_result.output
-    
+
 
 def test_write_charges_to_input(methane, tmpdir):
     runner = CliRunner()
@@ -50,17 +55,11 @@ def test_write_charges_to_input(methane, tmpdir):
         # check an error is raised if we try to overwrite the input
         with pytest.raises(FileExistsError, match="The output file "):
             _ = runner.invoke(
-                charge_molecules,
-                [
-                    "-M",
-                    mol_path,
-                    "-o",
-                    mol_path
-                ], catch_exceptions=False
+                charge_molecules, ["-M", mol_path, "-o", mol_path], catch_exceptions=False
             )
 
-def test_charge_molecules_default(methane, tmpdir, caplog):
 
+def test_charge_molecules_default(methane, tmpdir, caplog):
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
@@ -68,15 +67,7 @@ def test_charge_molecules_default(methane, tmpdir, caplog):
     caplog.set_level(logging.INFO)
     with runner.isolated_filesystem():
         # make sure the charges are picked up
-        result = runner.invoke(
-                charge_molecules,
-                [
-                    "-M",
-                    mol_path,
-                    "-o",
-                    output_file
-                ]
-            )
+        result = runner.invoke(charge_molecules, ["-M", mol_path, "-o", output_file])
 
         assert result.exit_code == 0
         assert "Partial charges are present for" in caplog.text
@@ -87,32 +78,30 @@ def test_charge_molecules_default(methane, tmpdir, caplog):
         assert off_methane.partial_charges is not None
         assert len(off_methane.partial_charges) == 5
 
-@pytest.mark.parametrize("overwrite, expected_charges", [
-    pytest.param(False, [-1.0, 0.25, 0.25, 0.25, 0.25], id="Don't overwrite"),
-    pytest.param(True, [-0.1084, 0.0271, 0.0271, 0.0271, 0.0271], id="Overwrite")
-])
-def test_charge_molecules_overwrite(overwrite, tmpdir, caplog, methane_with_charges, expected_charges):
+
+@pytest.mark.parametrize(
+    "overwrite, expected_charges",
+    [
+        pytest.param(False, [-1.0, 0.25, 0.25, 0.25, 0.25], id="Don't overwrite"),
+        pytest.param(True, [-0.1084, 0.0271, 0.0271, 0.0271, 0.0271], id="Overwrite"),
+    ],
+)
+def test_charge_molecules_overwrite(
+    overwrite, tmpdir, caplog, methane_with_charges, expected_charges
+):
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
     methane_with_charges.to_file(str(mol_path), "sdf")
     output_file = str(tmpdir / "charged_methane.sdf")
 
-    args = [
-        "-M",
-        mol_path,
-        "-o",
-        output_file
-    ]
+    args = ["-M", mol_path, "-o", output_file]
     if overwrite:
         args.append("--overwrite-charges")
 
     with runner.isolated_filesystem():
         # make sure the charges are picked up
         caplog.set_level(logging.INFO)
-        result = runner.invoke(
-                charge_molecules,
-                args,
-            )
+        result = runner.invoke(charge_molecules, args)
         assert result.exit_code == 0
 
         assert "Partial charges are present for" in caplog.text
@@ -126,10 +115,13 @@ def test_charge_molecules_overwrite(overwrite, tmpdir, caplog, methane_with_char
         assert np.allclose(off_methane.partial_charges.m, expected_charges)
 
 
-@pytest.mark.parametrize("ncores", [
-    pytest.param(1, id="1"),
-    pytest.param(2, id="2")
-])
+@pytest.mark.parametrize(
+    "ncores",
+    [
+        pytest.param(1, id="1"),
+        pytest.param(2, id="2"),
+    ],
+)
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
 def test_charge_settings(methane, tmpdir, caplog, yaml_nagl_settings, ncores):
@@ -147,18 +139,8 @@ def test_charge_settings(methane, tmpdir, caplog, yaml_nagl_settings, ncores):
         caplog.set_level(logging.INFO)
         # make sure the charges are picked up
         result = runner.invoke(
-                charge_molecules,
-                [
-                    "-M",
-                    mol_path,
-                    "-o",
-                    output_file,
-                    "-s",
-                    settings_path,
-                    "-n",
-                    ncores
-                ]
-            )
+            charge_molecules, ["-M", mol_path, "-o", output_file, "-s", settings_path, "-n", ncores]
+        )
 
         assert result.exit_code == 0
 

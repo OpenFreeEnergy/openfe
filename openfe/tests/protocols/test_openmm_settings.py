@@ -1,8 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import pytest
 import numpy as np
+import pytest
 from openff.units import unit
 
 from openfe.protocols.openmm_rfe import equil_rfe_settings

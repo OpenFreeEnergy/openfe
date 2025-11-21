@@ -2,20 +2,21 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 
-import click
 from typing import List
 
-from openfecli.utils import write, print_duration
+import click
+
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR,
     MAPPER,
-    OUTPUT_DIR,
-    YAML_OPTIONS,
-    NCORES,
-    OVERWRITE,
+    MOL_DIR,
     N_PROTOCOL_REPEATS,
+    NCORES,
+    OUTPUT_DIR,
+    OVERWRITE,
+    YAML_OPTIONS,
 )
+from openfecli.utils import print_duration, write
 
 
 def plan_rhfe_network_main(
@@ -59,13 +60,11 @@ def plan_rhfe_network_main(
         Alchemical network with protocol for executing simulations, and the
         associated ligand network
     """
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
-        RHFEAlchemicalNetworkPlanner,
-    )
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RelativeHybridTopologyProtocol,
+        RHFEAlchemicalNetworkPlanner,
     )
-    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     protocol_settings = RelativeHybridTopologyProtocol.default_settings()
     protocol_settings.protocol_repeats = n_protocol_repeats

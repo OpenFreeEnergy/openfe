@@ -1,13 +1,13 @@
-import os
 import importlib
+import os
+
 import pytest
+from openff.utilities.testing import skip_if_missing
 
 import openfe
 
 
-pytest.importorskip("duecredit")
-
-
+@skip_if_missing("duecredit")
 @pytest.mark.skipif(
     (os.environ.get("DUECREDIT_ENABLE", "no").lower() in ("no", "0", "false")),
     reason="duecredit is disabled",
