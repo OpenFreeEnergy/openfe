@@ -16,7 +16,7 @@ Checklist
 * [ ] Added a ``news`` entry, or the changes are not user-facing.
 * [ ] Ran pre-commit by making a comment with `pre-commit.ci autofix` before requesting review.
 
-Manual Tests: these are slow so don't need to be run every commit, only before merging. 
+Manual Tests: these are slow so don't need to be run every commit, only before merging and when relevant changes are made (generally at reviewer-discretion). 
 * [ ] [GPU integration tests](https://github.com/OpenFreeEnergy/openfe/actions/workflows/gpu-integration-tests.yaml)
 * [ ] [example notebook testing](https://github.com/OpenFreeEnergy/openfe/actions/workflows/test-example-notebooks.yaml)
 * [ ] [packaging tests](https://github.com/OpenFreeEnergy/openfe/actions/workflows/test-feedstock-pkg-build.yaml): run this for any large feature PRs or PRs that add test data.
