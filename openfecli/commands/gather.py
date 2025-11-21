@@ -111,15 +111,15 @@ def format_df_with_precision(
     >>> df
             ligand_i    ligand_j DDG(i->j) (kcal/mol) uncertainty (kcal/mol)
         0  lig_ejm_31  lig_ejm_42                Error                  Error
-        1  lig_ejm_31  lig_ejm_46                -0.89                   0.06
-        2  lig_ejm_31  lig_ejm_47                  0.0                    0.1
-        3  lig_ejm_31  lig_ejm_48                 0.61                   0.09
-        4  lig_ejm_31  lig_ejm_50                 1.00                   0.04
-        5  lig_ejm_42  lig_ejm_43                  1.4                    0.2
-        6  lig_ejm_46  lig_jmc_23                 0.29                   0.09
-        7  lig_ejm_46  lig_jmc_27                 -0.1                    0.1
+        1  lig_ejm_31  lig_ejm_46            -0.891077               0.064825
+        2  lig_ejm_31  lig_ejm_47             0.023341               0.145625
+        3  lig_ejm_31  lig_ejm_48             0.614103               0.088704
+        4  lig_ejm_31  lig_ejm_50             0.999904               0.044457
+        5  lig_ejm_42  lig_ejm_43             1.354348               0.156009
+        6  lig_ejm_46  lig_jmc_23             0.294761               0.086632
+        7  lig_ejm_46  lig_jmc_27            -0.101737               0.100997
         8  lig_ejm_46  lig_jmc_28                Error                  Error
-    >>> df_formatted = format_df_with_precision(df, "DG(i->j) (kcal/mol)", "uncertainty (kcal/mol)")
+    >>> df_out = format_df_with_precision(df, "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)")
     >>> df_formatted
             ligand_i    ligand_j DDG(i->j) (kcal/mol) uncertainty (kcal/mol)
         0  lig_ejm_31  lig_ejm_42                Error                  Error
@@ -133,9 +133,15 @@ def format_df_with_precision(
         8  lig_ejm_46  lig_jmc_28                Error                  Error
 
     """
-    # we only want to round/format the floats (not any error strings getting passed through)
-    float_mask = df[est_col_name].apply(lambda x: isinstance(x, float))
-    df_floats_formatted = df[float_mask].apply(
+
+    # find all entries in both columns that contain strings:
+    df_is_string = df[[est_col_name, unc_col_name]].applymap(lambda x: isinstance(x, str))
+
+    # if either the estimate or uncertainty entries are strings, dont format
+    no_strings_mask = ~(df_is_string[est_col_name] | df_is_string[unc_col_name])
+
+    # skip rows that contain striangs and only round and format numerical vals
+    df_floats_formatted = df[no_strings_mask].apply(
         lambda row: format_estimate_uncertainty(row[est_col_name], row[unc_col_name], unc_prec),
         axis=1,
         result_type="expand",
@@ -148,7 +154,7 @@ def format_df_with_precision(
     if df_floats_formatted.empty:
         pass
     else:
-        df.loc[float_mask, [est_col_name, unc_col_name]] = df_floats_formatted.values
+        df.loc[no_strings_mask, [est_col_name, unc_col_name]] = df_floats_formatted.values
 
     return df
 
