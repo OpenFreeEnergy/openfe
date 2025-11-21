@@ -136,7 +136,7 @@ def _get_names(result: dict) -> tuple[str, str]:
 
 
 def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
-    """Determine the simulation type based on the component names."""
+    """Determine the simulation type based on the component types."""
 
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
     chem_sys_A = gufe.tokenization.GufeTokenizable.from_dict(protocol_data["inputs"]["stateA"])
