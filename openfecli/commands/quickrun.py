@@ -56,7 +56,7 @@ def quickrun(transformation, work_dir, output):
     from gufe.tokenization import JSON_HANDLER
     from gufe.transformations.transformation import Transformation
 
-    from openfe.utils.logging_filter import MsgIncludesStringFilter
+    from openfe.utils import logging_control
 
     # avoid problems with output not showing if queueing system kills a job
     sys.stdout.reconfigure(line_buffering=True)
@@ -68,15 +68,16 @@ def quickrun(transformation, work_dir, output):
     configure_logger("openfe", handler=stdout_handler)
 
     # silence the openmmtools.multistate API warning
-    stfu = MsgIncludesStringFilter(
-        "The openmmtools.multistate API is experimental and may change in future releases"
+    logging_control._silence_message(
+        msg=[
+            "The openmmtools.multistate API is experimental and may change in future releases",
+        ],
+        logger_names=[
+            "openmmtools.multistate.multistatereporter",
+            "openmmtools.multistate.multistateanalyzer",
+            "openmmtools.multistate.multistatesampler",
+        ],
     )
-    omm_multistate = "openmmtools.multistate"
-    modules = ["multistatereporter", "multistateanalyzer", "multistatesampler"]
-    for module in modules:
-        ms_log = logging.getLogger(omm_multistate + "." + module)
-        ms_log.addFilter(stfu)
-
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
 
