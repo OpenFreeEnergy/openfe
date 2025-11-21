@@ -2,9 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
 
-import openfe
 import pytest
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+
+import openfe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingComplexUnit,
     AbsoluteBindingProtocol,

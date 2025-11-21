@@ -11,13 +11,14 @@ behavior how the graph is visualized or what happens on interactive events.
 from __future__ import annotations
 
 import itertools
+from typing import Any, Optional, Union, cast
+
 import networkx as nx
 from matplotlib import pyplot as plt
-from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 
-from typing import Optional, Any, Union, cast
-from openfe.utils.custom_typing import MPL_MouseEvent, MPL_FigureCanvasBase, MPL_Axes, TypeAlias
+from openfe.utils.custom_typing import MPL_Axes, MPL_FigureCanvasBase, MPL_MouseEvent, TypeAlias
 
 ClickLocation: TypeAlias = tuple[tuple[float, float], tuple[Any, Any]]
 

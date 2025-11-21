@@ -3,6 +3,8 @@
 import MDAnalysis as mda
 import numpy as np
 import pytest
+from openff.units import unit
+
 from openfe.protocols.restraint_utils.geometry.boresch.guest import (
     _bonded_angles_from_pool,
     _get_guest_atom_pool,
@@ -13,7 +15,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     get_aromatic_rings,
     get_heavy_atom_idxs,
 )
-from openff.units import unit
 
 
 @pytest.mark.parametrize(

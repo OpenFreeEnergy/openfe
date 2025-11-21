@@ -30,46 +30,46 @@ Acknowledgements
 
 from __future__ import annotations
 
-import pathlib
+import itertools
 import logging
+import pathlib
+import uuid
 import warnings
 from collections import defaultdict
+from typing import Any, Iterable, Optional, Union
+
 import gufe
-from gufe.components import Component
-import itertools
 import numpy as np
 import numpy.typing as npt
-from openff.units import unit, Quantity
-from openmmtools import multistate
-from typing import Optional, Union
-from typing import Any, Iterable
-import uuid
-
 from gufe import (
-    settings,
     ChemicalSystem,
-    SmallMoleculeComponent,
     ProteinComponent,
+    SmallMoleculeComponent,
     SolventComponent,
+    settings,
 )
+from gufe.components import Component
+from openff.units import Quantity, unit
+from openmmtools import multistate
+
+from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings,
-    OpenMMSolvationSettings,
     AlchemicalSettings,
-    LambdaSettings,
-    MDSimulationSettings,
-    MDOutputSettings,
-    MultiStateSimulationSettings,
-    OpenMMEngineSettings,
     IntegratorSettings,
+    LambdaSettings,
+    MDOutputSettings,
+    MDSimulationSettings,
     MultiStateOutputSettings,
+    MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
     SettingsBaseModel,
 )
-from ..openmm_utils import system_validation, settings_validation
-from .base import BaseAbsoluteUnit
-from openfe.due import due, Doi
 
+from ..openmm_utils import settings_validation, system_validation
+from .base import BaseAbsoluteUnit
 
 due.cite(
     Doi("10.5281/zenodo.596504"),
@@ -619,7 +619,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         lambda_components = [lambda_vdw, lambda_elec, lambda_restraints]
         it = iter(lambda_components)
         the_len = len(next(it))
-        if not all(len(l) == the_len for l in it):
+        if not all(len(lambda_comp) == the_len for lambda_comp in it):
             errmsg = (
                 "Components elec, vdw, and restraints must have equal amount"
                 f" of lambda windows. Got {len(lambda_elec)} elec lambda"

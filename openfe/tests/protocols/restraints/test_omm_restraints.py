@@ -8,6 +8,9 @@ import openmm
 import pooch
 import pytest
 from gufe import SmallMoleculeComponent
+from openff.units import unit
+from openmmtools.states import ThermodynamicState
+
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     BoreschRestraintGeometry,
@@ -24,8 +27,6 @@ from openfe.protocols.restraint_utils.settings import (
     DistanceRestraintSettings,
     FlatBottomRestraintSettings,
 )
-from openff.units import unit
-from openmmtools.states import ThermodynamicState
 
 from ...conftest import HAS_INTERNET
 

@@ -1,9 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pathlib
+
 import pytest
-from openff.units import unit
 from gufe.protocols import execute_DAG
+from openff.units import unit
+
 from openfe.protocols import openmm_md
 
 

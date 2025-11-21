@@ -4,6 +4,7 @@
 import numpy as np
 import openmm
 import pytest
+
 from openfe.protocols.restraint_utils.openmm.omm_forces import (
     add_force_in_separate_group,
     get_boresch_energy_function,

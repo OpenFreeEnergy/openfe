@@ -1,23 +1,24 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import pathlib
+
+import mdtraj as md
+import numpy as np
+import openmm
 import pytest
-from openff.units import unit
 from gufe.protocols import execute_DAG
+from numpy.testing import assert_allclose
+from openff.units import unit
+from openff.units.openmm import from_openmm
+
 import openfe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
-    SepTopSolventSetupUnit,
     SepTopProtocol,
+    SepTopSolventSetupUnit,
 )
-import numpy as np
-from numpy.testing import assert_allclose
-from openff.units.openmm import from_openmm
-from openfe.protocols.openmm_septop.utils import deserialize, SepTopParameterState
-
-import openmm
-import pathlib
-import mdtraj as md
+from openfe.protocols.openmm_septop.utils import SepTopParameterState, deserialize
 
 
 @pytest.fixture()

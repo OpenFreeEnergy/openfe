@@ -1,11 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
+from gufe import SmallMoleculeComponent
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 import openfe
-from gufe import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LomapAtomMapper
 
 from .conftest import mol_from_smiles

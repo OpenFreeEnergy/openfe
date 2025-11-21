@@ -1,17 +1,18 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import click
 import glob
 import itertools
 import pathlib
 
-from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
+import click
+from plugcli.params import NOT_PARSED, MultiStrategyGetter, Option
 
 
 # MOVE TO GUFE ####################################################
 def _smcs_from_sdf(sdf):
-    from openfe import SmallMoleculeComponent
     from rdkit import Chem
+
+    from openfe import SmallMoleculeComponent
 
     supp = Chem.SDMolSupplier(str(sdf), removeHs=False)
     mols = [SmallMoleculeComponent(mol) for mol in supp]
@@ -19,8 +20,9 @@ def _smcs_from_sdf(sdf):
 
 
 def _smcs_from_mol2(mol2):
-    from openfe import SmallMoleculeComponent
     from rdkit import Chem
+
+    from openfe import SmallMoleculeComponent
 
     rdmol = Chem.MolFromMol2File(str(mol2), removeHs=False)
     return [SmallMoleculeComponent.from_rdkit(rdmol)]

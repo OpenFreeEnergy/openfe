@@ -1,11 +1,11 @@
+import contextlib
+import logging
 import os
+from unittest.mock import patch
+
 import pytest
 
-from unittest.mock import patch
-import logging
-import contextlib
-
-from openfecli.utils import import_thing, _should_configure_logger, configure_logger
+from openfecli.utils import _should_configure_logger, configure_logger, import_thing
 
 
 # looks like this can't be done as a fixture; related to

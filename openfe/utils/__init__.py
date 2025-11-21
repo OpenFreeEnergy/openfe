@@ -1,7 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from . import custom_typing
+from . import (
+    custom_typing,
+    logging_control,
+)
 from .optional_imports import requires_package
 from .remove_oechem import without_oechem_backend
 from .system_probe import log_system_probe

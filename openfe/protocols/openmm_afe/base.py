@@ -18,67 +18,63 @@ TODO
 from __future__ import annotations
 
 import abc
-import os
-import logging
 import copy
+import logging
+import os
+import pathlib
+from typing import Any, Optional
 
 import gufe
-from gufe.components import Component
+import mdtraj as mdt
 import numpy as np
 import numpy.typing as npt
 import openmm
-from openff.units import unit, Quantity
-from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
+import openmmtools
+from gufe import ChemicalSystem, ProteinComponent, SmallMoleculeComponent, SolventComponent
+from gufe.components import Component
 from openff.toolkit.topology import Molecule as OFFMolecule
-from openmmtools import multistate
-from openmmtools.states import (
-    SamplerState,
-    ThermodynamicState,
-    GlobalParameterState,
-    create_thermodynamic_state_protocol,
-)
-from openmmtools.alchemy import (
-    AlchemicalRegion,
-    AbsoluteAlchemicalFactory,
-    AlchemicalState,
-)
-from typing import Optional
+from openff.units import Quantity, unit
+from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SystemGenerator
-import pathlib
-from typing import Any
-import openmmtools
-import mdtraj as mdt
+from openmmtools import multistate
+from openmmtools.alchemy import (
+    AbsoluteAlchemicalFactory,
+    AlchemicalRegion,
+    AlchemicalState,
+)
+from openmmtools.states import (
+    GlobalParameterState,
+    SamplerState,
+    ThermodynamicState,
+    create_thermodynamic_state_protocol,
+)
 
-from gufe import ChemicalSystem, SmallMoleculeComponent, ProteinComponent, SolventComponent
-from openfe.protocols.openmm_utils.omm_settings import (
-    SettingsBaseModel,
-)
-from openfe.protocols.openmm_utils.omm_settings import (
-    BasePartialChargeSettings,
-)
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     BaseSolvationSettings,
-    MultiStateSimulationSettings,
-    OpenMMEngineSettings,
     IntegratorSettings,
     MultiStateOutputSettings,
-    ThermoSettings,
+    MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
     OpenMMSystemGeneratorFFSettings,
+    ThermoSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from openfe.protocols.openmm_utils import (
+    charge_generation,
+    multistate_analysis,
+    omm_compute,
     settings_validation,
     system_creation,
-    multistate_analysis,
-    charge_generation,
-    omm_compute,
+)
+from openfe.protocols.openmm_utils.omm_settings import (
+    BasePartialChargeSettings,
+    SettingsBaseModel,
 )
 from openfe.protocols.restraint_utils import geometry
-from openfe.utils import without_oechem_backend, log_system_probe
-
+from openfe.utils import log_system_probe, without_oechem_backend
 
 logger = logging.getLogger(__name__)
 

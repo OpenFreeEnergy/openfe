@@ -1,7 +1,7 @@
-import os
 import importlib
-import pytest
+import os
 
+import pytest
 from openff.utilities.testing import skip_if_missing
 
 import openfe

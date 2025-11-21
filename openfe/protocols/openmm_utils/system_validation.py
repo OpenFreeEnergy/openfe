@@ -6,14 +6,15 @@ Protocols.
 """
 
 from typing import Optional, Tuple
-from openff.toolkit import Molecule as OFFMol
+
 from gufe import (
-    Component,
     ChemicalSystem,
-    SolventComponent,
+    Component,
     ProteinComponent,
     SmallMoleculeComponent,
+    SolventComponent,
 )
+from openff.toolkit import Molecule as OFFMol
 
 
 def get_alchemical_components(

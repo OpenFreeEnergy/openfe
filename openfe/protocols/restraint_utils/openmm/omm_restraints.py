@@ -18,7 +18,19 @@ TODO
 import abc
 
 import numpy as np
+import openmm
 from gufe.settings.models import SettingsBaseModel
+from openff.units import Quantity, unit
+from openff.units.openmm import from_openmm, to_openmm
+from openmm import unit as omm_unit
+from openmmtools.forces import (
+    FlatBottomRestraintBondForce,
+    FlatBottomRestraintForce,
+    HarmonicRestraintBondForce,
+    HarmonicRestraintForce,
+)
+from openmmtools.states import GlobalParameterState, ThermodynamicState
+
 from openfe.protocols.restraint_utils.geometry import (
     BaseRestraintGeometry,
     BoreschRestraintGeometry,
@@ -31,18 +43,6 @@ from openfe.protocols.restraint_utils.settings import (
     DistanceRestraintSettings,
     FlatBottomRestraintSettings,
 )
-from openff.units import Quantity, unit
-from openff.units.openmm import from_openmm, to_openmm
-from openmmtools.forces import (
-    FlatBottomRestraintBondForce,
-    FlatBottomRestraintForce,
-    HarmonicRestraintBondForce,
-    HarmonicRestraintForce,
-)
-from openmmtools.states import GlobalParameterState, ThermodynamicState
-
-import openmm
-from openmm import unit as omm_unit
 
 from .omm_forces import (
     add_force_in_separate_group,

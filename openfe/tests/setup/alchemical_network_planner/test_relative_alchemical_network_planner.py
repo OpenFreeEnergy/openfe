@@ -1,14 +1,15 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
+from gufe import AlchemicalNetwork, SolventComponent
 
-from gufe import SolventComponent, AlchemicalNetwork
-from openfe.setup.alchemical_network_planner import (
-    RHFEAlchemicalNetworkPlanner,
-    RBFEAlchemicalNetworkPlanner,
-)
-from .edge_types import r_complex_edge, r_solvent_edge, r_vacuum_edge
 import openfe
+from openfe.setup.alchemical_network_planner import (
+    RBFEAlchemicalNetworkPlanner,
+    RHFEAlchemicalNetworkPlanner,
+)
+
+from .edge_types import r_complex_edge, r_solvent_edge, r_vacuum_edge
 
 
 def test_rhfe_alchemical_network_planner_init():

@@ -8,29 +8,33 @@ as :mod:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 
-from pydantic import ConfigDict, field_validator
-from typing import Annotated, Optional, Literal, TypeAlias
+from typing import Annotated, Literal, Optional, TypeAlias
 
 from gufe.settings import (
-    Settings as Settings,
-    SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings as OpenMMSystemGeneratorFFSettings,
+)
+from gufe.settings import (
+    Settings as Settings,
+)
+from gufe.settings import (
+    SettingsBaseModel,
+)
+from gufe.settings import (
     ThermoSettings as ThermoSettings,
 )
-
 from gufe.settings.typing import (
-    NanometerQuantity,
-    NanometerArrayQuantity,
-    PicosecondQuantity,
-    KCalPerMolQuantity,
     BoxQuantity,
-    NanosecondQuantity,
     GufeQuantity,
+    KCalPerMolQuantity,
+    NanometerArrayQuantity,
+    NanometerQuantity,
+    NanosecondQuantity,
+    PicosecondQuantity,
     specify_quantity_units,
 )
-
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 from openff.units import unit
+from pydantic import ConfigDict, field_validator
 
 FemtosecondQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("femtosecond")]
 InversePicosecondQuantity: TypeAlias = Annotated[
@@ -326,7 +330,7 @@ class OpenMMEngineSettings(SettingsBaseModel):
     choose fastest available platform.
     Allowed platforms are; ``cuda``, ``opencl``, ``cpu``.
     Default ``cuda``.
-    
+
     """
     gpu_device_index: Optional[list[int]] = None
     """

@@ -7,8 +7,8 @@ Run MD simulation using OpenMM and OpenMMTools.
 
 from .plain_md_methods import (
     PlainMDProtocol,
-    PlainMDProtocolSettings,
     PlainMDProtocolResult,
+    PlainMDProtocolSettings,
     PlainMDProtocolUnit,
 )
 

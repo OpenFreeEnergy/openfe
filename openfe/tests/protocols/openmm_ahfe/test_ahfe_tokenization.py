@@ -1,11 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import json
+
+import gufe
+import pytest
+from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+
 import openfe
 from openfe.protocols import openmm_afe
-import gufe
-from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
-import pytest
 
 
 @pytest.fixture

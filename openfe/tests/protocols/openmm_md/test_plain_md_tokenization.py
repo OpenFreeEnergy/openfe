@@ -1,9 +1,11 @@
 # This ccode is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import json
-import pytest
+
 import gufe
+import pytest
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+
 from openfe.protocols import openmm_md
 
 

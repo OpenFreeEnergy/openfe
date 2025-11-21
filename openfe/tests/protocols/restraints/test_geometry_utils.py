@@ -2,14 +2,17 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import itertools
-from importlib import resources
 import os
 import pathlib
+from importlib import resources
 
 import MDAnalysis as mda
 import numpy as np
 import pooch
 import pytest
+from openff.units import unit
+from rdkit import Chem
+
 from openfe.protocols.restraint_utils.geometry.utils import (
     CentroidDistanceSort,
     FindHostAtoms,
@@ -28,8 +31,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     protein_chain_selection,
     stable_secondary_structure_selection,
 )
-from openff.units import unit
-from rdkit import Chem
 
 from ...conftest import HAS_INTERNET
 

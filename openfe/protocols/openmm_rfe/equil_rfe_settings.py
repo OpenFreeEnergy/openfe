@@ -10,23 +10,24 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 from __future__ import annotations
 
 from typing import Literal
-from openff.units import unit
 
-from gufe.settings.typing import NanometerQuantity
 from gufe.settings import (
+    OpenMMSystemGeneratorFFSettings,
     Settings,
     SettingsBaseModel,
-    OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
+from gufe.settings.typing import NanometerQuantity
+from openff.units import unit
 from pydantic import ConfigDict, field_validator
+
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
+    MultiStateOutputSettings,
     MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
-    MultiStateOutputSettings,
-    OpenFFPartialChargeSettings,
 )
 
 

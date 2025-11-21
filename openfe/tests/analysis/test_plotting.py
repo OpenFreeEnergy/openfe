@@ -1,12 +1,12 @@
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
-from openfe.analysis.plotting import (
-    plot_lambda_transition_matrix,
-    plot_2D_rmsd,
-)
 
+from openfe.analysis.plotting import (
+    plot_2D_rmsd,
+    plot_lambda_transition_matrix,
+)
 
 MBAR_HIGH_FLOAT_PREC = np.array([
     [4.04963280e-01, 2.64851626e-01, 1.55960834e-01,

@@ -1,6 +1,8 @@
-import click
-from openfecli import OFECommandPlugin
 import os
+
+import click
+
+from openfecli import OFECommandPlugin
 
 
 @click.command("view-ligand-network", short_help="Visualize a ligand network from a .graphml file.")
@@ -15,9 +17,10 @@ def view_ligand_network(ligand_network: os.PathLike):
     e.g. ``openfe view-ligand-network network_setup/ligand_network.graphml``
 
     """
-    from openfe.utils.atommapping_network_plotting import plot_atommapping_network
-    from openfe.setup import LigandNetwork
     import matplotlib
+
+    from openfe.setup import LigandNetwork
+    from openfe.utils.atommapping_network_plotting import plot_atommapping_network
 
     matplotlib.use("TkAgg")
     with open(ligand_network) as f:
