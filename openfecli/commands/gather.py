@@ -87,6 +87,7 @@ def format_df_with_precision(
     Returns a new DataFrame with the columns `est_col_name` and `unc_col_name` formatted as strings reported to `unc_prec` precision.
 
     The uncertainty column will be rounded to `unc_prec` precision, then the estimate column will be reported to the same precision.
+    Any entries that are not floats (such as strings indicating errors), will not be modified.
 
     Parameters
     ----------
@@ -107,8 +108,29 @@ def format_df_with_precision(
 
     Example
     -------
-
-
+    >>> df
+            ligand_i    ligand_j DDG(i->j) (kcal/mol) uncertainty (kcal/mol)
+        0  lig_ejm_31  lig_ejm_42                Error                  Error
+        1  lig_ejm_31  lig_ejm_46                -0.89                   0.06
+        2  lig_ejm_31  lig_ejm_47                  0.0                    0.1
+        3  lig_ejm_31  lig_ejm_48                 0.61                   0.09
+        4  lig_ejm_31  lig_ejm_50                 1.00                   0.04
+        5  lig_ejm_42  lig_ejm_43                  1.4                    0.2
+        6  lig_ejm_46  lig_jmc_23                 0.29                   0.09
+        7  lig_ejm_46  lig_jmc_27                 -0.1                    0.1
+        8  lig_ejm_46  lig_jmc_28                Error                  Error
+    >>> df_formatted = format_df_with_precision(df, "DG(i->j) (kcal/mol)", "uncertainty (kcal/mol)")
+    >>> df_formatted
+            ligand_i    ligand_j DDG(i->j) (kcal/mol) uncertainty (kcal/mol)
+        0  lig_ejm_31  lig_ejm_42                Error                  Error
+        1  lig_ejm_31  lig_ejm_46                -0.89                   0.06
+        2  lig_ejm_31  lig_ejm_47                  0.0                    0.1
+        3  lig_ejm_31  lig_ejm_48                 0.61                   0.09
+        4  lig_ejm_31  lig_ejm_50                 1.00                   0.04
+        5  lig_ejm_42  lig_ejm_43                  1.4                    0.2
+        6  lig_ejm_46  lig_jmc_23                 0.29                   0.09
+        7  lig_ejm_46  lig_jmc_27                 -0.1                    0.1
+        8  lig_ejm_46  lig_jmc_28                Error                  Error
 
     """
     # we only want to round/format the floats (not any error strings getting passed through)
