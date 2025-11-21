@@ -106,7 +106,7 @@ def _get_legs_from_result_jsons(
     Returns
     -------
     legs: dict[str, dict[str, list]]
-        Data extracted from the given result JSONs, organized by the leg's ligand names and simulation type.
+        Data extracted from the given result JSONs, organized by the leg's ligand name and simulation type.
     """
     from collections import defaultdict
 
@@ -167,12 +167,12 @@ def extract_results_dict(
     results_files: list[os.PathLike | str],
 ) -> dict[str, dict[str, list]]:
     """
-    Get a dictionary of abfe results from a list of directories.
+    Get a dictionary of ABFE results from a list of directories.
 
     Parameters
     ----------
     results_files : list[ps.PathLike | str]
-        A list of directors with abfe result files to process.
+        A list of directors with ABFE result files to process.
 
     Returns
     -------
@@ -286,7 +286,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
 def gather_abfe(
     results: List[os.PathLike | str],
     output: os.PathLike | str,
-    report: Literal["dg", "ddg", "raw"],
+    report: Literal["dg", "raw"],
     tsv: bool,
 ):
     ddgs = extract_results_dict(results)
