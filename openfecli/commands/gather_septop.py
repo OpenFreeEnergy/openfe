@@ -309,8 +309,8 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     default="dg",
     show_default=True,
     help=(
-        "What data to report. 'dg' gives maximum-likelihood estimate of "
-        "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
+        "What data to report. 'dg' gives the maximum-likelihood estimate derived "
+        "absolute deltaG value,  'ddg' gives delta-delta-G, and 'raw' gives "
         "the raw result of the deltaG for a leg."
     ),
 )
