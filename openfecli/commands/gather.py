@@ -84,23 +84,32 @@ def format_df_with_precision(
     df: pd.DataFrame, est_col_name: str, unc_col_name: str, unc_prec: int = 1
 ) -> pd.DataFrame:
     """
-    Formats the columns `est_col_name` and `unc_col_name` as strings reported to the given precision.
+    Returns a new DataFrame with the columns `est_col_name` and `unc_col_name` formatted as strings reported to `unc_prec` precision.
+
+    The uncertainty column will be rounded to `unc_prec` precision, then the estimate column will be reported to the same precision.
 
     Parameters
     ----------
     df : pd.DataFrame
-        _description_
+        DataFrame to format
     est_col_name : str
-        _description_
+        Name of the column containing estimates to format.
     unc_col_name : str
-        _description_
-    precision : int, optional
-        _description_, by default 1
+        Name of the column containing uncertainties to format.
+
+    unc_prec : int, optional
+        Precision to round the uncertainty column to, by default 1.
 
     Returns
     -------
     pd.DataFrame
-        _description_
+        DataFrame with formatted uncertainty and estimate columns.
+
+    Example
+    -------
+
+
+
     """
     # we only want to round/format the floats (not any error strings getting passed through)
     float_mask = df[est_col_name].apply(lambda x: isinstance(x, float))
