@@ -1,19 +1,30 @@
-# silence pymbar logging warnings
-import logging
+# We need to do this first so that we can set up our
+# log control since some modules have warnings on import
+from openfe.utils import logging_control
 
+logging_control._silence_message(
+    msg=[
+        "****** PyMBAR will use 64-bit JAX! *******",
+    ],
+    logger_names=[
+        "pymbar.mbar_solvers",
+    ],
+)
 
-def _mute_timeseries(record):
-    return "Warning on use of the timeseries module:" not in record.msg
+logging_control._silence_message(
+    msg=[
+        "Warning on use of the timeseries module:",
+    ],
+    logger_names=[
+        "pymbar.timeseries",
+    ],
+)
 
+logging_control._append_logger(
+    suffix="\n \n[OPENFE]: The simulation is still using the compute platform specified in the settings \n See this URL for more information: https://docs.openfree.energy/en/latest/guide/troubleshooting.html#jax-warnings \n\n",
+    logger_names="jax._src.xla_bridge",
+)
 
-def _mute_jax(record):
-    return "****** PyMBAR will use 64-bit JAX! *******" not in record.msg
-
-
-_mbar_log = logging.getLogger("pymbar.timeseries")
-_mbar_log.addFilter(_mute_timeseries)
-_mbar_log = logging.getLogger("pymbar.mbar_solvers")
-_mbar_log.addFilter(_mute_jax)
 
 from importlib.metadata import version
 
