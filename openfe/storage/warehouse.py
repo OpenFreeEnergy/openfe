@@ -162,14 +162,12 @@ class WarehouseBaseClass:
         # Try and get the key for the given store
         target: ExternalStorage = self.stores[store_name]
         # Get all of the sub-objects
-        for o in get_all_gufe_objs(obj):
-            key = o.key
-            # Check if the key exists at all in any store
-            if not self._key_exists(key):
-                data = json.dumps(
-                    o.to_keyed_dict(), cls=JSON_HANDLER.encoder, sort_keys=True
-                ).encode("utf-8")
-                target.store_bytes(key, data)
+        chain = obj.to_keyed_chain()
+        for item in chain:
+            gufe_key = item[0]
+            keyed_dict = item[1]
+            data = json.dumps(keyed_dict, cls=JSON_HANDLER.encoder, sort_keys=True).encode("utf-8")
+            target.store_bytes(gufe_key, data)
 
     def _key_exists(self, key: GufeKey) -> bool:
         """Check if a key exists in any of the stores.
@@ -224,8 +222,6 @@ class WarehouseBaseClass:
             # don't duplicate objects in memory depends on the fact that
             # `key_decode_dependencies` gets keyencoded objects from a cache
             # (they are cached on creation).
-            # store = self._get_store_from_tokenizable(tokenizable=gufe_tokenizable)
-            # key = gufe_tokenizable.key
             store = self._get_store_for_key(key=key)
 
             with store.load_stream(key) as f:
@@ -242,20 +238,20 @@ class WarehouseBaseClass:
             # key_encoded = {d[":gufe-key:"] for d in found}
 
             for key in key_encoded:
-                # we're actually only doing this for the side effect of
-                # generating the objects and adding them to the registry
+                # obj = GufeTokenizable.from_dict(dct)
                 recursive_build_object_cache(key)
+                # obj = GufeTokenizable.from_json(content=keyencoded_json)
 
             if len(key_encoded) == 0:
                 # fast path for objects that don't contain other gufe
                 # objects (these tend to be larger dicts; avoid walking
                 # them)
-                obj = from_dict(dct)
-            else:
+                obj = GufeTokenizable.from_dict(dct)
                 # objects that contain other gufe objects need be walked to
                 # replace everything
+            else:
                 obj = key_decode_dependencies(dct, registry)
-
+            #
             registry[obj.key] = obj
             return obj
 
