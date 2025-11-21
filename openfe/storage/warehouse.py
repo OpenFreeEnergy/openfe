@@ -3,171 +3,228 @@
 import abc
 import json
 import re
-from typing import Any
+from typing import TypedDict
 
-
+from gufe.storage.externalresource import ExternalStorage, FileStorage
 from gufe.tokenization import (
+    JSON_HANDLER,
+    GufeKey,
+    GufeTokenizable,
+    from_dict,
     get_all_gufe_objs,
     key_decode_dependencies,
-    from_dict,
-    JSON_HANDLER,
 )
-from gufe.storage.externalresource import ExternalStorage
-
 
 GUFEKEY_JSON_REGEX = re.compile('":gufe-key:": "(?P<token>[A-Za-z0-9_]+-[0-9a-f]+)"')
 
 
-class _DataContainer(abc.ABC):
-    """
-    Abstract class, represents all data under some level of the heirarchy.
+class WarehouseStores(TypedDict):
+    """Typed dictionary for accessing warehouse storage locations.
+
+    Parameters
+    ----------
+    setup : ExternalStorage
+        Storage location for setup-related objects and configurations.
+
+    Notes
+    -----
+    Additional stores for results and tasks may be added in future versions.
     """
 
-    def __init__(self, parent, path_component):
-        self.parent = parent
-        self._path_component = self._to_path_component(path_component)
-        self._cache = {}
+    setup: ExternalStorage
+    # We will add a result and task store here in the future.
+
+
+class WarehouseBaseClass:
+    """Base class for warehouse storage management.
+
+    Provides functionality to store, load, and manage GufeTokenizable objects
+    across different storage backends.
+
+    Parameters
+    ----------
+    stores : WarehouseStores
+        Typed dictionary containing the storage locations for different
+        types of objects.
+
+    Attributes
+    ----------
+    stores : WarehouseStores
+        The storage locations managed by this warehouse instance.
+    """
+
+    def __init__(self, stores: WarehouseStores):
+        self.stores = stores
 
     def __eq__(self, other):
-        return isinstance(other, self.__class__) and self.path == other.path
-
-    @staticmethod
-    def _to_path_component(item: Any) -> str:
-        """Convert input (object or string) to path string"""
-        if isinstance(item, str):
-            return item
-
-        # TODO: instead of str(hash(...)), this should return the digest
-        # that is being introduced in another PR; Python hash is not stable
-        # across sessions
-        return str(hash(item))
-
-    def __getitem__(self, item):
-        # code for the case this is a file
-        if item in self.external_storage:
-            return self.external_storage.load_stream(item)
-
-        # code for the case this is a "directory"
-        hash_item = self._to_path_component(item)
-
-        if hash_item not in self._cache:
-            self._cache[hash_item] = self._load_next_level(item)
-
-        return self._cache[hash_item]
-
-    def __truediv__(self, item):
-        return self[item]
-
-    @abc.abstractmethod
-    def _load_next_level(self, item):
-        raise NotImplementedError()
-
-    def __iter__(self):
-        for loc in self.external_storage:
-            if loc.startswith(self.path):
-                yield loc
-
-    def load_stream(self, location):
-        return self.external_storage.load_stream(location)
-
-    def load_bytes(self, location):
-        with self.load_stream(location) as f:
-            byte_data = f.read()
-
-        return byte_data
-
-    @property
-    def path(self):
-        return self.parent.path + "/" + self._path_component
-
-    @property
-    def external_storage(self) -> ExternalStorage:
-        return self.parent.external_storage
+        return isinstance(other, self.__class__) and self.stores == other.stores
 
     def __repr__(self):
         # probably should include repr of external store, too
-        return f"{self.__class__.__name__}({self.path})"
+        return f"{self.__class__.__name__}({self.stores})"
 
-
-class WarehouseBaseClass(_DataContainer):
-    def __init__(self, external_storage: ExternalStorage):
-        self._external_storage = external_storage
-        super().__init__(parent=self, path_component=None)
-
-    def delete(self, location: str):
-        self._external_storage.delete(location)
-
-    @staticmethod
-    def _gufe_key_to_storage_key(prefix: str, key: str):
-        """Create the storage key from the gufe key.
+    def delete(self, store_name: str, location: str):
+        """Delete an object from a specific store.
 
         Parameters
         ----------
-        prefix : str
-            the prefix defining which section of storage should be used for
-            this (e.g., ``setup``, ...)
-        key : str
-            the GufeKey for a GufeTokenizable (technically, is likely to be
-            passed as a :class:`.GufeKey`, which is a subclass of ``str``)
+        store_name : str
+            Name of the store to delete from.
+        location : str
+            Location/path of the object to delete.
 
         Returns
         -------
-        str :
-            storage key (string identifier used by storage to locate this
-            object)
+        bool
+            True if deletion was successful, False otherwise.
         """
-        pref = prefix.split("/")  # remove this if we switch to tuples
-        cls, token = key.split("-")
-        tup = tuple(list(pref) + [cls, f"{token}.json"])
-        # right now we're using strings, but we've talked about switching
-        # that to tuples
-        return "/".join(tup)
+        store: ExternalStorage = self.stores[store_name]
+        return store.delete(location)
 
-    def _store_gufe_tokenizable(self, prefix, obj):
-        """generic function for deduplicating/storing a GufeTokenizable"""
-        for o in get_all_gufe_objs(obj):
-            key = self._gufe_key_to_storage_key(prefix, o.key)
+    def store_setup_tokenizable(self, obj: GufeTokenizable):
+        """Store a GufeTokenizable object in the setup store.
 
-            # we trust that if we get the same key, it's the same object, so
-            # we only store on keys that we don't already know
-            if key not in self.external_storage:
-                data = json.dumps(
-                    o.to_keyed_dict(), cls=JSON_HANDLER.encoder, sort_keys=True
-                ).encode("utf-8")
-                self.external_storage.store_bytes(key, data)
-
-    def store_transformation(self, transformation):
-        """Store a :class:`.Transformation`.
-
-        Parmeters
-        ---------
-        transformation: :class:`.Transformation`
-            the transformation to store
+        Parameters
+        ----------
+        obj : GufeTokenizable
+            The object to store.
         """
-        self._store_gufe_tokenizable("setup", transformation)
+        self._store_gufe_tokenizable("setup", obj)
 
-    def store_network(self, network):
-        """Store a :class:`.AlchemicalNetwork`.
+    def load_setup_tokenizable(self, obj: GufeKey):
+        """Load a GufeTokenizable object from the setup store.
 
-        Parmeters
-        ---------
-        network: :class:`.AlchemicalNetwork`
-            the network to store
+        Parameters
+        ----------
+        obj : GufeKey
+            The key of the object to load.
+
+        Returns
+        -------
+        GufeTokenizable
+            The loaded object.
         """
-        self._store_gufe_tokenizable("setup", network)
+        return self._load_gufe_tokenizable(gufe_key=obj)
 
-    def _load_gufe_tokenizable(self, prefix, gufe_key):
-        """generic function to load deduplicated object from a key"""
+    def exists(self, key: GufeKey):
+        """Check if an object with the given key exists in any store.
+
+        Parameters
+        ----------
+        key : GufeKey
+            The key to check for existence.
+
+        Returns
+        -------
+        bool
+            True if the object exists, False otherwise.
+        """
+        return self._key_exists(key)
+
+    def _get_store_for_key(self, key: GufeKey) -> ExternalStorage:
+        """Function to find the store in which a gufe key is stored in.
+
+        Parameters
+        ----------
+        key : GufeKey
+            The key to locate.
+
+        Returns
+        -------
+        ExternalStorage
+            The store containing the key.
+
+        Raises
+        ------
+        ValueError
+            If the key is not found in any store.
+        """
+        for name in self.stores:
+            if key in self.stores[name]:
+                return self.stores[name]
+        raise ValueError(f"GufeKey {key} is not stored")
+
+    def _store_gufe_tokenizable(self, store_name: str, obj: GufeTokenizable):
+        """Store a GufeTokenizable object with deduplication.
+
+        Parameters
+        ----------
+        store_name : str
+            Name of the store to store the object in.
+        obj : GufeTokenizable
+            The object to store.
+
+        Notes
+        -----
+        This function performs deduplication by checking if the object
+        already exists in any store before storing.
+        """
+        # Try and get the key for the given store
+        target: ExternalStorage = self.stores[store_name]
+        # Get all of the sub-objects
+        chain = obj.to_keyed_chain()
+        for item in chain:
+            gufe_key = item[0]
+            keyed_dict = item[1]
+            data = json.dumps(keyed_dict, cls=JSON_HANDLER.encoder, sort_keys=True).encode("utf-8")
+            target.store_bytes(gufe_key, data)
+
+    def _key_exists(self, key: GufeKey) -> bool:
+        """Check if a key exists in any of the stores.
+
+        Parameters
+        ----------
+        key : GufeKey
+            The key to check for existence.
+
+        Returns
+        -------
+        bool
+            True if the key exists in any store, False otherwise.
+        """
+        return any(key in store for store in self.stores.values())
+
+    # TODO: Fix this to be a little more concise
+    def _load_gufe_tokenizable(self, gufe_key: GufeKey):
+        """Load a deduplicated object from a GufeKey.
+
+        Parameters
+        ----------
+        gufe_key : GufeKey
+            The key of the object to load.
+
+        Returns
+        -------
+        GufeTokenizable
+            The loaded object with all dependencies resolved.
+
+        Notes
+        -----
+        Uses depth-first search to rebuild object hierarchy and ensure
+        proper deduplication in memory.
+        """
         registry = {}
 
-        def recursive_build_object_cache(gufe_key):
-            """DFS to rebuild object heirarchy"""
+        def recursive_build_object_cache(key: GufeKey):
+            """DFS to rebuild object hierarchy.
+
+            Parameters
+            ----------
+            key : GufeKey
+                The key of the object to build.
+
+            Returns
+            -------
+            GufeTokenizable
+                The reconstructed object.
+            """
             # This implementation is a bit fragile, because ensuring that we
             # don't duplicate objects in memory depends on the fact that
             # `key_decode_dependencies` gets keyencoded objects from a cache
             # (they are cached on creation).
-            storage_key = self._gufe_key_to_storage_key(prefix, gufe_key)
-            with self.load_stream(storage_key) as f:
+            store = self._get_store_for_key(key=key)
+
+            with store.load_stream(key) as f:
                 keyencoded_json = f.read().decode("utf-8")
 
             dct = json.loads(keyencoded_json, cls=JSON_HANDLER.decoder)
@@ -181,103 +238,73 @@ class WarehouseBaseClass(_DataContainer):
             # key_encoded = {d[":gufe-key:"] for d in found}
 
             for key in key_encoded:
-                # we're actually only doing this for the side effect of
-                # generating the objects and adding them to the registry
+                # obj = GufeTokenizable.from_dict(dct)
                 recursive_build_object_cache(key)
+                # obj = GufeTokenizable.from_json(content=keyencoded_json)
 
             if len(key_encoded) == 0:
                 # fast path for objects that don't contain other gufe
                 # objects (these tend to be larger dicts; avoid walking
                 # them)
-                obj = from_dict(dct)
-            else:
+                obj = GufeTokenizable.from_dict(dct)
                 # objects that contain other gufe objects need be walked to
                 # replace everything
+            else:
                 obj = key_decode_dependencies(dct, registry)
-
+            #
             registry[obj.key] = obj
             return obj
 
         return recursive_build_object_cache(gufe_key)
 
-    def load_transformation(self, key: str):
-        """Load a :class:`.Transformation` from its GufeKey
+    def _load_stream(self, store_name: str):
+        """Load a stream from the specified store.
 
         Parameters
         ----------
-        key: str
-            the gufe key for this object
+        store_name : str
+            Name of the store to load from.
 
         Returns
         -------
-        :class:`.Transformation`
-            the desired transformation
+        stream
+            Stream object for reading data.
         """
-        return self._load_gufe_tokenizable("setup", key)
+        return self.stores[store_name].load_stream()
 
-    def load_network(self, key: str):
-        """Load a :class:`.AlchemicalNetwork` from its GufeKey
-
-        Parameters
-        ----------
-        key: str
-            the gufe key for this object
+    @property
+    def setup_store(self):
+        """Get the setup store.
 
         Returns
         -------
-        :class:`.AlchemicalNetwork`
-            the desired network
+        ExternalStorage
+            The setup storage location.
         """
-        return self._load_gufe_tokenizable("setup", key)
-
-    def _load_next_level(self, item):
-        return TransformationResult(self, item)
-
-    # override these two inherited properies since this is always the end of
-    # the recursive chain
-    @property
-    def path(self):
-        return "transformations"
-
-    @property
-    def external_storage(self):
-        return self._external_storage
+        return self.stores["setup"]
 
 
-class TransformationResult(_DataContainer):
-    def __init__(self, parent, transformation):
-        super().__init__(parent, transformation)
-        self.transformation = transformation
+class FileSystemWarehouse(WarehouseBaseClass):
+    """Warehouse implementation using local filesystem storage.
 
-    def _load_next_level(self, item):
-        return CloneResult(self, item)
+    Provides a file-based storage backend for GufeTokenizable objects
+    organized in a directory structure.
 
+    Parameters
+    ----------
+    root_dir : str, optional
+        Root directory for the warehouse storage, by default "warehouse".
 
-class CloneResult(_DataContainer):
-    def __init__(self, parent, clone):
-        super().__init__(parent, clone)
-        self.clone = clone
+    Notes
+    -----
+    Creates a "setup" subdirectory within the root directory for storing
+    setup-related objects. Future versions may include additional stores
+    for results and other data types.
+    """
 
-    @staticmethod
-    def _to_path_component(item):
-        return str(item)
-
-    def _load_next_level(self, item):
-        return ExtensionResult(self, item)
-
-
-class ExtensionResult(_DataContainer):
-    def __init__(self, parent, item):
-        super().__init__(parent, str(item))
-        self.extension = item
-
-    @staticmethod
-    def _to_path_component(item):
-        return str(item)
-
-    def __getitem__(self, filename):
-        # different here -- we don't cache the actual file objects
-        return self._load_next_level(filename)
-
-    def _load_next_level(self, item):
-        return self.external_storage.load_stream(self.path + "/" + item)
+    def __init__(self, root_dir: str = "warehouse"):
+        setup_store = FileStorage(f"{root_dir}/setup")
+        # When we add a result store it will look like this
+        # result_store = FileStorage(f"{root_dir}/results")
+        stores = WarehouseStores(setup=setup_store)
+        super().__init__(stores)
