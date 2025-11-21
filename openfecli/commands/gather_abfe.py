@@ -100,7 +100,7 @@ def _get_legs_from_result_jsons(
     ----------
     result_fns : list[pathlib.Path]
         List of filepaths containing results formatted as JSON.
-    report : Literal["dg", "ddg", "raw"]
+    report : Literal["dg", "raw"]
         Type of report to generate.
 
     Returns
@@ -110,39 +110,28 @@ def _get_legs_from_result_jsons(
     """
     from collections import defaultdict
 
-    ddgs = defaultdict(lambda: defaultdict(list))
+    dgs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
-        names, result = _load_valid_result_json(result_fn)
-        if names is None:  # this means it couldn't find names and/or simtype
+        name, result = _load_valid_result_json(result_fn)
+        if name is None:  # this means it couldn't find name and/or simtype
             continue
 
-        ddgs[names]["overall"].append([result["estimate"], result["uncertainty"]])
-        proto_key = [
-            k
-            for k in result["unit_results"].keys()
-            if k.startswith("ProtocolUnitResult")
-        ]  # fmt: skip
+        dgs[name]["overall"].append([result["estimate"], result["uncertainty"]])
+        proto_key = [k for k in result["unit_results"].keys() if k.startswith("ProtocolUnitResult")]
         for p in proto_key:
             if "unit_estimate" in result["unit_results"][p]["outputs"]:
                 simtype = result["unit_results"][p]["outputs"]["simtype"]
                 dg = result["unit_results"][p]["outputs"]["unit_estimate"]
                 dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
 
-                ddgs[names][simtype].append([dg, dg_error])
-            elif "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
-                corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
-                corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
-                ddgs[names]["standard_state_correction_A"].append(
-                    [corr_A, 0 * unit.kilocalorie_per_mole]
-                )
-                ddgs[names]["standard_state_correction_B"].append(
-                    [corr_B, 0 * unit.kilocalorie_per_mole]
-                )
+                dgs[name][simtype].append([dg, dg_error])
+            if "standard_state_correction" in result["unit_results"][p]["outputs"]:
+                corr = result["unit_results"][p]["outputs"]["standard_state_correction"]
+                dgs[name]["standard_state_correction"].append([corr, 0 * unit.kilocalorie_per_mole])
             else:
                 continue
-
-    return ddgs
+    return dgs
 
 
 def _error_std(r):

@@ -5,3 +5,6 @@
 3,solvent,1,10.57,0.66000000000000003
 4,solvent,1,10.48,0.65000000000000002
 5,solvent,1,10.41,0.66000000000000003
+6,standard_state_correction,1,-8.9000000000000004,0
+7,standard_state_correction,1,-9.0999999999999996,0
+8,standard_state_correction,1,-9,0
