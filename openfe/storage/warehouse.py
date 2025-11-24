@@ -119,7 +119,7 @@ class WarehouseBaseClass:
         bool
             True if the object exists, False otherwise.
         """
-        return self._key_exists(key)
+        return any(key in store for store in self.stores.values())
 
     def _get_store_for_key(self, key: GufeKey) -> ExternalStorage:
         """Function to find the store in which a gufe key is stored in.
@@ -168,21 +168,6 @@ class WarehouseBaseClass:
             keyed_dict = item[1]
             data = json.dumps(keyed_dict, cls=JSON_HANDLER.encoder, sort_keys=True).encode("utf-8")
             target.store_bytes(gufe_key, data)
-
-    def _key_exists(self, key: GufeKey) -> bool:
-        """Check if a key exists in any of the stores.
-
-        Parameters
-        ----------
-        key : GufeKey
-            The key to check for existence.
-
-        Returns
-        -------
-        bool
-            True if the key exists in any store, False otherwise.
-        """
-        return any(key in store for store in self.stores.values())
 
     # TODO: Fix this to be a little more concise
     def _load_gufe_tokenizable(self, gufe_key: GufeKey) -> GufeTokenizable:
