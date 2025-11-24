@@ -241,21 +241,6 @@ class WarehouseBaseClass:
 
         return recursive_build_object_cache(gufe_key)
 
-    def _load_stream(self, store_name: str):
-        """Load a stream from the specified store.
-
-        Parameters
-        ----------
-        store_name : Literal["setup"]
-            Name of the store to load from.
-
-        Returns
-        -------
-        stream
-            Stream object for reading data.
-        """
-        return self.stores[store_name].load_stream()
-
     @property
     def setup_store(self):
         """Get the setup store.
