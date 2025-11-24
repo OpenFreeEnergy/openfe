@@ -262,7 +262,7 @@ class WarehouseBaseClass:
 
         Parameters
         ----------
-        store_name : str
+        store_name : Literal["setup"]
             Name of the store to load from.
 
         Returns
