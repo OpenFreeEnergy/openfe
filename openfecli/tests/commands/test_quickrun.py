@@ -1,12 +1,13 @@
-import pytest
-import click
-from importlib import resources
-import pathlib
 import json
+import pathlib
+from importlib import resources
+
+import click
+import pytest
 from click.testing import CliRunner
+from gufe.tokenization import JSON_HANDLER
 
 from openfecli.commands.quickrun import quickrun
-from gufe.tokenization import JSON_HANDLER
 
 
 @pytest.fixture

@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from openfe.utils import without_oechem_backend
 from openff.toolkit import GLOBAL_TOOLKIT_REGISTRY, OpenEyeToolkitWrapper
+
+from openfe.utils import without_oechem_backend
 
 
 def test_remove_oechem():

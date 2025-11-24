@@ -1,21 +1,21 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
+from gufe import LigandAtomMapping, ProtocolDAGResult
 from openff.units import unit as offunit
-from gufe import ProtocolDAGResult, LigandAtomMapping
+
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
+    AbsoluteSolvationProtocol,
     AbsoluteSolvationSolventUnit,
     AbsoluteSolvationVacuumUnit,
-    AbsoluteSolvationProtocol,
 )
-
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
     HAS_OPENEYE,
-    HAS_ESPALOMA_CHARGE,
 )
 
 

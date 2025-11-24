@@ -51,8 +51,10 @@ Generating Partial Charges
     rbfe_python_tutorial
     rbfe_cli_tutorial
     abfe_tutorial
+    abfe_analysis_tutorial
     ahfe_tutorial
     septop_tutorial
+    septop_analysis_tutorial
     md_tutorial
     plotting_with_cinnabar
     charge_molecules_cli_tutorial

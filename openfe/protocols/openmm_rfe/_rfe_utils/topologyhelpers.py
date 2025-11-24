@@ -7,21 +7,21 @@
 # turn off formatting since this is mostly vendored code
 # fmt: off
 
-from copy import deepcopy
 import itertools
 import logging
-from typing import Union, Optional
 import warnings
+from copy import deepcopy
+from typing import Optional, Union
 
 import mdtraj as mdt
-from mdtraj.core.residue_names import _SOLVENT_TYPES
 import numpy as np
 import numpy.typing as npt
-from openmm import app, System, NonbondedForce
+from mdtraj.core.residue_names import _SOLVENT_TYPES
+from openff.units import Quantity, unit
+from openmm import NonbondedForce, System, app
 from openmm import unit as omm_unit
-from openff.units import unit, Quantity
-from openfe import SolventComponent
 
+from openfe import SolventComponent
 
 logger = logging.getLogger(__name__)
 
