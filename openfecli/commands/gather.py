@@ -7,6 +7,7 @@ import sys
 from typing import List, Literal
 
 import click
+import gufe
 import pandas as pd
 
 from openfecli import OFECommandPlugin
@@ -217,31 +218,28 @@ def _get_names(result: dict) -> tuple[str, str]:
     tuple[str, str]
         Ligand names corresponding to the results.
     """
-    try:
-        nm = list(result["unit_results"].values())[0]["name"]
 
-    except KeyError:
-        raise ValueError("Failed to guess names")
+    # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
+    protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+    ligand_A = gufe.SmallMoleculeComponent.from_dict(
+        protocol_data["inputs"]["stateA"]["components"]["ligand"]
+    )
+    ligand_B = gufe.SmallMoleculeComponent.from_dict(
+        protocol_data["inputs"]["stateB"]["components"]["ligand"]
+    )
 
-    # TODO: make this more robust by pulling names from inputs.state[A/B].name
-
-    toks = nm.split()
-    if toks[2] == "repeat":
-        return toks[0], toks[1]
-    else:
-        return toks[0], toks[2]
+    return ligand_A.name, ligand_B.name
 
 
-def _get_type(res: dict) -> Literal["vacuum", "solvent", "complex"]:
-    """Determine the simulation type based on the component names."""
-    # TODO: use component *types* instead here
-    list_of_pur = list(res["protocol_result"]["data"].values())[0]
-    pur = list_of_pur[0]
-    components = pur["inputs"]["stateA"]["components"]
+def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
+    """Determine the simulation type based on the component types."""
 
-    if "solvent" not in components:
+    protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+    chem_sys_A = gufe.ChemicalSystem.from_dict(protocol_data["inputs"]["stateA"])
+
+    if not chem_sys_A.contains(gufe.SolventComponent):
         return "vacuum"
-    elif "protein" in components:
+    elif chem_sys_A.contains(gufe.ProteinComponent):
         return "complex"
     else:
         return "solvent"
@@ -270,7 +268,6 @@ def _get_result_id(
         A result object
     result_fn : os.PathLike | str
         The path to deserialized results, only used if unable to extract from results dict.
-        TODO: only take in ``result_fn`` for backwards compatibility, remove this in 2.0
 
     Returns
     -------
@@ -282,7 +279,7 @@ def _get_result_id(
     try:
         simtype = _get_type(result)
     except KeyError:
-        simtype = _legacy_get_type(result_fn)
+        simtype = _legacy_get_type(result_fn)  # TODO: remove this and result_fn in 2.0
 
     return (ligA, ligB), simtype
 
@@ -316,6 +313,9 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
         return result_id, None
     if result["uncertainty"] is None:
         click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
+        return result_id, None
+    if result["unit_results"] == {}:
+        click.secho(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
     if all("exception" in u for u in result["unit_results"].values()):
         click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
