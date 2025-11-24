@@ -61,7 +61,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3.9", None),
     "numpy": ("https://numpy.org/doc/stable", None),
     "scikit.learn": ("https://scikit-learn.org/stable", None),
-    "openmm": ("http://docs.openmm.org/latest/api-python/", None),
+    "openmm": ("https://docs.openmm.org/latest/api-python/", None),
     "rdkit": ("https://www.rdkit.org/docs", None),
     "openeye": ("https://docs.eyesopen.com/toolkits/python/", None),
     "mdtraj": ("https://www.mdtraj.org/1.9.5/", None),
