@@ -68,7 +68,7 @@ class WarehouseBaseClass:
 
         Parameters
         ----------
-        store_name : str
+        store_name : Literal["setup"]
             Name of the store to delete from.
         location : str
             Location/path of the object to delete.
