@@ -164,10 +164,13 @@ class WarehouseBaseClass:
         # Get all of the sub-objects
         chain = obj.to_keyed_chain()
         for item in chain:
-            gufe_key = item[0]
+            gufe_key = GufeKey(item[0])
             keyed_dict = item[1]
-            data = json.dumps(keyed_dict, cls=JSON_HANDLER.encoder, sort_keys=True).encode("utf-8")
-            target.store_bytes(gufe_key, data)
+            if not self.exists(gufe_key):
+                data = json.dumps(keyed_dict, cls=JSON_HANDLER.encoder, sort_keys=True).encode(
+                    "utf-8"
+                )
+                target.store_bytes(gufe_key, data)
 
     def _load_gufe_tokenizable(self, gufe_key: GufeKey) -> GufeTokenizable:
         """Load a deduplicated object from a GufeKey.
