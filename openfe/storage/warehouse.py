@@ -185,7 +185,7 @@ class WarehouseBaseClass:
         return any(key in store for store in self.stores.values())
 
     # TODO: Fix this to be a little more concise
-    def _load_gufe_tokenizable(self, gufe_key: GufeKey):
+    def _load_gufe_tokenizable(self, gufe_key: GufeKey) -> GufeTokenizable:
         """Load a deduplicated object from a GufeKey.
 
         Parameters
