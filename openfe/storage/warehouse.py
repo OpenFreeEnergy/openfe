@@ -91,7 +91,7 @@ class WarehouseBaseClass:
         """
         self._store_gufe_tokenizable("setup", obj)
 
-    def load_setup_tokenizable(self, obj: GufeKey):
+    def load_setup_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
         """Load a GufeTokenizable object from the setup store.
 
         Parameters
