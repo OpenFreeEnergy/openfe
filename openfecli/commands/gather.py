@@ -7,6 +7,7 @@ import sys
 from typing import List, Literal
 
 import click
+import gufe
 import pandas as pd
 
 from openfecli import OFECommandPlugin
@@ -48,7 +49,24 @@ def format_estimate_uncertainty(
     unc: float,
     unc_prec: int = 1,
 ) -> tuple[str, str]:
-    """Truncate raw estimate and uncertainty values to the appropriate uncertainty.
+    """
+    Round raw estimate and uncertainty values to the appropriate precision.
+
+    The premise here is that, if you're reporting your uncertainty to a certain number of significant figures, your estimate should be reported to the same precision.
+
+    As an example, assume your raw estimate is 12.34567 and your raw uncertainty is 0.0123.
+    Say you want to report your uncertainty to 2 significant figures.
+    So your rounded uncertainty is 0.012.
+    You should report your estimate to the same precision, so your rounded estimate should be 12.346.
+    On the other hand, if you wanted to report your uncertainty to the first significant figure (0.01), then you should report your estimate as 12.35.
+
+    You need to report these to the same precision (not the same number of significant figures) because the two numbers need to be added together.
+    If you report both to 2 significant figures, you'd have 12.0 +/- 0.0012, and your actual estimate falls way outside your error bars!
+    It has to be the uncertainty that determines the precision of the estimate, because if you said you had 3 significant figures in the estimate and used that to set the precision of the uncertainty, you'd have 12.3 +/- 0.0 -- no error at all!
+
+    We implement this by thinking of the decimal representation as "columns" centered on the decimal point.
+    We get the column index of the first non-zero number in the decimal representation of the uncertainty, and use the fact that ``np.round`` rounds to the number of decimal places you give it to report the estimate.
+    The uncertainty is rounded to the desired number of significant figures.
 
     Parameters
     ----------
@@ -200,31 +218,28 @@ def _get_names(result: dict) -> tuple[str, str]:
     tuple[str, str]
         Ligand names corresponding to the results.
     """
-    try:
-        nm = list(result["unit_results"].values())[0]["name"]
 
-    except KeyError:
-        raise ValueError("Failed to guess names")
+    # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
+    protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+    ligand_A = gufe.SmallMoleculeComponent.from_dict(
+        protocol_data["inputs"]["stateA"]["components"]["ligand"]
+    )
+    ligand_B = gufe.SmallMoleculeComponent.from_dict(
+        protocol_data["inputs"]["stateB"]["components"]["ligand"]
+    )
 
-    # TODO: make this more robust by pulling names from inputs.state[A/B].name
-
-    toks = nm.split()
-    if toks[2] == "repeat":
-        return toks[0], toks[1]
-    else:
-        return toks[0], toks[2]
+    return ligand_A.name, ligand_B.name
 
 
-def _get_type(res: dict) -> Literal["vacuum", "solvent", "complex"]:
-    """Determine the simulation type based on the component names."""
-    # TODO: use component *types* instead here
-    list_of_pur = list(res["protocol_result"]["data"].values())[0]
-    pur = list_of_pur[0]
-    components = pur["inputs"]["stateA"]["components"]
+def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
+    """Determine the simulation type based on the component types."""
 
-    if "solvent" not in components:
+    protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+    chem_sys_A = gufe.ChemicalSystem.from_dict(protocol_data["inputs"]["stateA"])
+
+    if not chem_sys_A.contains(gufe.SolventComponent):
         return "vacuum"
-    elif "protein" in components:
+    elif chem_sys_A.contains(gufe.ProteinComponent):
         return "complex"
     else:
         return "solvent"
@@ -253,7 +268,6 @@ def _get_result_id(
         A result object
     result_fn : os.PathLike | str
         The path to deserialized results, only used if unable to extract from results dict.
-        TODO: only take in ``result_fn`` for backwards compatibility, remove this in 2.0
 
     Returns
     -------
@@ -265,7 +279,7 @@ def _get_result_id(
     try:
         simtype = _get_type(result)
     except KeyError:
-        simtype = _legacy_get_type(result_fn)
+        simtype = _legacy_get_type(result_fn)  # TODO: remove this and result_fn in 2.0
 
     return (ligA, ligB), simtype
 
@@ -299,6 +313,9 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
         return result_id, None
     if result["uncertainty"] is None:
         click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
+        return result_id, None
+    if result["unit_results"] == {}:
+        click.secho(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
     if all("exception" in u for u in result["unit_results"].values()):
         click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
