@@ -92,8 +92,8 @@ Other OpenFE Ecosystem Projects:
 Below are other software projects the Open Free Energy team maintains, many of which are used by **openfe** itself.
 
 * `konnektor <https://github.com/OpenFreeEnergy/konnektor/>`_: free energy network planning, modification, and analysis
-* `kartograf <https://github.com/OpenFreeEnergy/kartograf/>_`: atom mappings focusing on 3D geometries
-* `Lomap <https://github.com/OpenFreeEnergy/Lomap/>_`: planning perturbation networks for free energy calculations
+* `kartograf <https://github.com/OpenFreeEnergy/kartograf/>`_: atom mappings focusing on 3D geometries
+* `Lomap <https://github.com/OpenFreeEnergy/Lomap/>`_: planning perturbation networks for free energy calculations
 * `cinnabar <https://github.com/OpenFreeEnergy/cinnabar/>`_ (formerly arsenic): plotting free energy calculation results
 * `gufe <https://gufe.openfree.energy/en/latest/>`_ : data structures and models underlying the OpenFE ecosystem
 
