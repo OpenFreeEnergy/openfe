@@ -144,7 +144,7 @@ class WarehouseBaseClass:
                 return self.stores[name]
         raise ValueError(f"GufeKey {key} is not stored")
 
-    def _store_gufe_tokenizable(self, store_name: str, obj: GufeTokenizable):
+    def _store_gufe_tokenizable(self, store_name: Literal["setup"], obj: GufeTokenizable):
         """Store a GufeTokenizable object with deduplication.
 
         Parameters
