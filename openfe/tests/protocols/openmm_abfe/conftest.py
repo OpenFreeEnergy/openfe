@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gufe
 import pytest
+
 from openfe.protocols import openmm_afe
 
 

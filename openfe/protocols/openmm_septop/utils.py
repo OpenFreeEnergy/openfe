@@ -1,5 +1,6 @@
 import os
 import pathlib
+
 from openmmtools import states
 from openmmtools.states import GlobalParameterState
 

@@ -117,6 +117,19 @@ jobs:
           # if we add more to this, consider changing to for + env vars
           python -Ic "import openfe; print(openfe.__version__)"
 
+      - name: Cache Pooch data
+        uses: actions/cache@v4
+        with:
+          path: |
+            # linux cache location
+            ~/.cache/openfe
+            # osx cache location
+            ~/Library/Caches/openfe
+          # When files are added or changed in a pooch registry
+          # bump this key to create a new cache, for example if 
+          # the key is pooch-${{ matrix.os }}-1 change it to pooch-${{ matrix.os }}-2
+          key: pooch-${{ matrix.os }}-1
+
       - name: "Run tests"
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job

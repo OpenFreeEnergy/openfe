@@ -6,16 +6,17 @@
 # turn off formatting since this is mostly vendored code
 # fmt: off
 
-import logging
-import openmm
-from openmm import unit, app
-import numpy as np
 import copy
 import itertools
+import logging
+
+import mdtraj as mdt
+import numpy as np
+import openmm
+from openmm import app, unit
+
 # OpenMM constant for Coulomb interactions (implicitly in md_unit_system units)
 from openmmtools.constants import ONE_4PI_EPS0
-import mdtraj as mdt
-
 
 logger = logging.getLogger(__name__)
 
@@ -553,7 +554,7 @@ class HybridTopologyFactory:
         """
         Helper method to copy a ThreeParticleAverageSite virtual site
         from two mapped Systems.
-        
+
         Parameters
         ----------
         atm_map : dict[int, int]
@@ -562,7 +563,7 @@ class HybridTopologyFactory:
           A list of environment atoms for the target System. This
           checks that no alchemical atoms are being tied to.
         vs : openmm.ThreeParticleAverageSite
-        
+
         Returns
         -------
         openmm.ThreeParticleAverageSite
@@ -580,7 +581,7 @@ class HybridTopologyFactory:
             particles[0], particles[1], particles[2],
             weights[0], weights[1], weights[2],
         )
-                    
+
     def _handle_virtual_sites(self):
         """
         Ensure that all virtual sites in old and new system are copied over to
@@ -2037,7 +2038,7 @@ class HybridTopologyFactory:
 
                     exception_index = self._hybrid_system_forces['standard_nonbonded_force'].addException(
                                           index1_hybrid, index2_hybrid,
-                                          chargeProd_old, sigma_old, 
+                                          chargeProd_old, sigma_old,
                                           epsilon_old)
 
                     self._hybrid_system_forces['standard_nonbonded_force'].addExceptionParameterOffset(
@@ -2070,12 +2071,12 @@ class HybridTopologyFactory:
 
         if self._softcore_LJ_v2:
             old_new_nonbonded_exceptions += "U_sterics = select(step(r - r_LJ), 4*epsilon*x*(x-1.0), U_sterics_quad);"
-            old_new_nonbonded_exceptions += f"U_sterics_quad = Force*(((r - r_LJ)^2)/2 - (r - r_LJ)) + U_sterics_cut;"
-            old_new_nonbonded_exceptions += f"U_sterics_cut = 4*epsilon*((sigma/r_LJ)^6)*(((sigma/r_LJ)^6) - 1.0);"
-            old_new_nonbonded_exceptions += f"Force = -4*epsilon*((-12*sigma^12)/(r_LJ^13) + (6*sigma^6)/(r_LJ^7));"
-            old_new_nonbonded_exceptions += f"x = (sigma/r)^6;"
-            old_new_nonbonded_exceptions += f"r_LJ = softcore_alpha*((26/7)*(sigma^6)*lambda_sterics_deprecated)^(1/6);"
-            old_new_nonbonded_exceptions += f"lambda_sterics_deprecated = new_interaction*(1.0 - lambda_sterics_insert) + old_interaction*lambda_sterics_delete;"
+            old_new_nonbonded_exceptions += "U_sterics_quad = Force*(((r - r_LJ)^2)/2 - (r - r_LJ)) + U_sterics_cut;"
+            old_new_nonbonded_exceptions += "U_sterics_cut = 4*epsilon*((sigma/r_LJ)^6)*(((sigma/r_LJ)^6) - 1.0);"
+            old_new_nonbonded_exceptions += "Force = -4*epsilon*((-12*sigma^12)/(r_LJ^13) + (6*sigma^6)/(r_LJ^7));"
+            old_new_nonbonded_exceptions += "x = (sigma/r)^6;"
+            old_new_nonbonded_exceptions += "r_LJ = softcore_alpha*((26/7)*(sigma^6)*lambda_sterics_deprecated)^(1/6);"
+            old_new_nonbonded_exceptions += "lambda_sterics_deprecated = new_interaction*(1.0 - lambda_sterics_insert) + old_interaction*lambda_sterics_delete;"
         else:
             old_new_nonbonded_exceptions += "U_sterics = 4*epsilon*x*(x-1.0); x = (sigma/reff_sterics)^6;"
             old_new_nonbonded_exceptions += "reff_sterics = sigma*((softcore_alpha*lambda_alpha + (r/sigma)^6))^(1/6);"
@@ -2273,7 +2274,7 @@ class HybridTopologyFactory:
             # find mapped atoms
             new_system_atom_set = {atom.index for atom in new_system_res.atoms}
 
-            # Now, we find the subset of atoms that are mapped. These must be 
+            # Now, we find the subset of atoms that are mapped. These must be
             # in the "core" category, since they are mapped and part of a
             # changing residue
             mapped_new_atom_indices = core_atoms_new_indices.intersection(
@@ -2520,7 +2521,7 @@ class HybridTopologyFactory:
     def hybrid_topology(self):
         """
         An MDTraj hybrid topology for the purpose of writing out trajectories.
-        
+
         Note that we do not expect this to be able to be parameterized by the
         openmm forcefield class.
 

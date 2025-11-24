@@ -1,26 +1,27 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import collections
+import copy
 from importlib import resources
 
 import gufe
 import numpy as np
+import openmm
 import pytest
+from openmm import Platform
+from openmm import unit as ommunit
 from openmmtools.alchemy import (
+    AbsoluteAlchemicalFactory,
     AlchemicalRegion,
     AlchemicalState,
-    AbsoluteAlchemicalFactory,
 )
-import openmm
-from openmm import Platform
-from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
+
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingComplexUnit,
 )
-from openmm import unit as ommunit
 from openfe.protocols.openmm_septop.utils import deserialize
-import collections
-import copy
+from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 
 
 class AlchemStateRest(AlchemicalState):

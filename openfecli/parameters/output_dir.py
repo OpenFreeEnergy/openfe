@@ -1,7 +1,8 @@
 import os
-import click
 import pathlib
-from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
+
+import click
+from plugcli.params import NOT_PARSED, MultiStrategyGetter, Option
 
 
 def get_dir(user_input, context):

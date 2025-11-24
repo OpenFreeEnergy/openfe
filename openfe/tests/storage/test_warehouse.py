@@ -1,12 +1,12 @@
 import os
 import tempfile
 from pathlib import Path
-
-import pytest
 from unittest import mock
 
+import pytest
 from gufe.storage.externalresource import MemoryStorage
 from gufe.tokenization import GufeTokenizable
+
 from openfe.storage.warehouse import (
     FileSystemWarehouse,
     WarehouseBaseClass,

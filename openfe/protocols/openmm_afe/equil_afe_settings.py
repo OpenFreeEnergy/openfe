@@ -16,30 +16,29 @@ TODO
 
 """
 
+import numpy as np
 from gufe.settings import (
-    SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
+    SettingsBaseModel,
     ThermoSettings,
 )
+from pydantic import field_validator
+
 from openfe.protocols.openmm_utils.omm_settings import (
-    MultiStateSimulationSettings,
     BaseSolvationSettings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
     IntegratorSettings,
-    OpenFFPartialChargeSettings,
-    MultiStateOutputSettings,
-    MDSimulationSettings,
     MDOutputSettings,
+    MDSimulationSettings,
+    MultiStateOutputSettings,
+    MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
 )
 from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
     BoreschRestraintSettings,
 )
-
-import numpy as np
-
-from pydantic import field_validator
 
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -73,7 +72,7 @@ class LambdaSettings(SettingsBaseModel):
     ]
     # fmt: on
     """
-    List of floats of lambda values for the electrostatics. 
+    List of floats of lambda values for the electrostatics.
     Zero means fully interacting (state A),
     and one means annihilated (state B).
     Length of this list needs to match length of lambda_vdw and
@@ -188,9 +187,9 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
 
     protocol_repeats: int
     """
-    The number of completely independent repeats of the entire sampling 
-    process. The mean of the repeats defines the final estimate of FE 
-    difference, while the variance between repeats is used as the uncertainty.  
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of FE
+    difference, while the variance between repeats is used as the uncertainty.
     """
 
     @field_validator("protocol_repeats")
@@ -217,7 +216,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     lambda_settings: LambdaSettings
     """
-    Settings for controlling the lambda schedule for the different components 
+    Settings for controlling the lambda schedule for the different components
     (vdw, elec, restraints).
     """
 

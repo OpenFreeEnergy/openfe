@@ -1,18 +1,17 @@
 from unittest import mock
 
-import pytest
 import click
+import pytest
 from click.testing import CliRunner
 
 from openfe.setup import LigandAtomMapping, LomapAtomMapper
-
-from openfecli.parameters import MOL
 from openfecli.commands.atommapping import (
     atommapping,
-    generate_mapping,
     atommapping_print_dict_main,
     atommapping_visualize_main,
+    generate_mapping,
 )
+from openfecli.parameters import MOL
 
 
 @pytest.fixture

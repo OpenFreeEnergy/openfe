@@ -7,41 +7,42 @@ from unittest import mock
 import gufe
 import mdtraj as mdt
 import numpy as np
-import openfe
 import pytest
 from numpy.testing import assert_allclose
-from openmmtools.alchemy import (
-    AlchemicalRegion,
-    AlchemicalState,
-    AbsoluteAlchemicalFactory,
-)
-from openmmtools.tests.test_alchemy import (
-    compare_system_energies,
-    check_noninteracting_energy_components,
-    check_interacting_energy_components,
-)
-from openfe import ChemicalSystem, SolventComponent, SmallMoleculeComponent
-from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
-from openfe.protocols import openmm_afe
-from openfe.protocols.openmm_afe import (
-    AbsoluteBindingComplexUnit,
-    AbsoluteBindingProtocol,
-    AbsoluteBindingSolventUnit,
-)
 from openff.units import unit as offunit
 from openff.units.openmm import from_openmm, to_openmm
-from openmm import unit as ommunit
 from openmm import (
     CustomBondForce,
-    CustomNonbondedForce,
     CustomCompoundBondForce,
+    CustomNonbondedForce,
     HarmonicAngleForce,
     HarmonicBondForce,
     MonteCarloBarostat,
     NonbondedForce,
     PeriodicTorsionForce,
 )
+from openmm import unit as ommunit
+from openmmtools.alchemy import (
+    AbsoluteAlchemicalFactory,
+    AlchemicalRegion,
+    AlchemicalState,
+)
 from openmmtools.multistate.multistatesampler import MultiStateSampler
+from openmmtools.tests.test_alchemy import (
+    check_interacting_energy_components,
+    check_noninteracting_energy_components,
+    compare_system_energies,
+)
+
+import openfe
+from openfe import ChemicalSystem, SmallMoleculeComponent, SolventComponent
+from openfe.protocols import openmm_afe
+from openfe.protocols.openmm_afe import (
+    AbsoluteBindingComplexUnit,
+    AbsoluteBindingProtocol,
+    AbsoluteBindingSolventUnit,
+)
+from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 
 
 @pytest.fixture()

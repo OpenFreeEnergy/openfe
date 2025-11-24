@@ -5,17 +5,16 @@ Run SepTop free energy calculations using OpenMM and OpenMMTools.
 
 """
 
-from .equil_septop_settings import (
-    SepTopSettings,
-)
-
 from .equil_septop_method import (
+    SepTopComplexRunUnit,
+    SepTopComplexSetupUnit,
     SepTopProtocol,
     SepTopProtocolResult,
-    SepTopComplexSetupUnit,
-    SepTopComplexRunUnit,
-    SepTopSolventSetupUnit,
     SepTopSolventRunUnit,
+    SepTopSolventSetupUnit,
+)
+from .equil_septop_settings import (
+    SepTopSettings,
 )
 
 __all__ = [
