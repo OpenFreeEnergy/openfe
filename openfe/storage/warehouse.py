@@ -169,7 +169,6 @@ class WarehouseBaseClass:
             data = json.dumps(keyed_dict, cls=JSON_HANDLER.encoder, sort_keys=True).encode("utf-8")
             target.store_bytes(gufe_key, data)
 
-    # TODO: Fix this to be a little more concise
     def _load_gufe_tokenizable(self, gufe_key: GufeKey) -> GufeTokenizable:
         """Load a deduplicated object from a GufeKey.
 
