@@ -5,7 +5,6 @@ from typing import List, Literal
 import click
 import numpy as np
 import pandas as pd
-from cinnabar import FEMap, Measurement
 from openff.units import unit
 
 from openfecli import OFECommandPlugin
