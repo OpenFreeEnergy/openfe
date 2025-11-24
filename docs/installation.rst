@@ -19,7 +19,7 @@ Installation with ``micromamba`` (recommended)
 OpenFE recommends the `mamba` (and the more lightweight `micromamba`) package manager for most users, as it is orders of magnitude faster than the default `conda` package manager.
 `mamba` is a drop-in replacement for `conda`, and
 
-Once you have one of `micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_, `mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_, or `conda <https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html>`_ installed, you can install ``openfe`` with:
+once you have one of `micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_, `mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_, or `conda <https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html>`_ installed, you can install ``openfe`` with:
 
 .. parsed-literal::
 
