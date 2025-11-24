@@ -3,7 +3,7 @@
 import abc
 import json
 import re
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 from gufe.storage.externalresource import ExternalStorage, FileStorage
 from gufe.tokenization import (
