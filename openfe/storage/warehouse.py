@@ -205,7 +205,7 @@ class WarehouseBaseClass:
         """
         registry = {}
 
-        def recursive_build_object_cache(key: GufeKey):
+        def recursive_build_object_cache(key: GufeKey) -> GufeTokenizable:
             """DFS to rebuild object hierarchy.
 
             Parameters
