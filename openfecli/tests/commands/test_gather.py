@@ -459,6 +459,7 @@ def abfe_result_dir() -> pathlib.Path:
     return result_dir
 
 
+@pytest.fixture
 def septop_result_dir() -> pathlib.Path:
     ZENODO_SEPTOP_DATA.fetch("septop_results.zip", processor=pooch.Unzip())
     result_dir = pathlib.Path(POOCH_CACHE) / "septop_results.zip.unzip/septop_results/"
