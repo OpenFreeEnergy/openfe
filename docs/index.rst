@@ -100,4 +100,4 @@ Below are other software projects the Open Free Energy team maintains, many of w
 Community-Developed Projects:
 -----------------------------
 
-* `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution, developed by [Datryllic](https://github.com/datryllic).
+* `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution, developed by `Datryllic <https://datryllic.com/>`_.
