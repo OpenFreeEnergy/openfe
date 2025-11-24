@@ -73,13 +73,13 @@ class WarehouseBaseClass:
         location : str
             Location/path of the object to delete.
 
-        Returns
+        Raises
         -------
-        bool
-            True if deletion was successful, False otherwise.
+        MissingExternalResourceError
+            Thrown if the object you are trying to delete, can't delete from the store
         """
         store: ExternalStorage = self.stores[store_name]
-        return store.delete(location)
+        store.delete(location)
 
     def store_setup_tokenizable(self, obj: GufeTokenizable):
         """Store a GufeTokenizable object in the setup store.
