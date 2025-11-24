@@ -106,7 +106,7 @@ class WarehouseBaseClass:
         """
         return self._load_gufe_tokenizable(gufe_key=obj)
 
-    def exists(self, key: GufeKey):
+    def exists(self, key: GufeKey) -> bool:
         """Check if an object with the given key exists in any store.
 
         Parameters
