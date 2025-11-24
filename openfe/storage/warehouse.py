@@ -63,7 +63,7 @@ class WarehouseBaseClass:
         # probably should include repr of external store, too
         return f"{self.__class__.__name__}({self.stores})"
 
-    def delete(self, store_name: str, location: str):
+    def delete(self, store_name: Literal["setup"], location: str):
         """Delete an object from a specific store.
 
         Parameters
