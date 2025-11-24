@@ -5,7 +5,7 @@
 
 import os
 
-os.environ.setdefault('PYMBAR_DISABLE_JAX', 'TRUE')
+os.environ.setdefault("PYMBAR_DISABLE_JAX", "TRUE")
 
 # We need to do this first so that we can set up our
 # log control since some modules have warnings on import
