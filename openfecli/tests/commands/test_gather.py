@@ -70,88 +70,61 @@ def test_get_column(val, col):
 
 
 class TestResultLoading:
-    @pytest.fixture
-    def sim_result(self):
-        result = {
-            "estimate": {},
-            "uncertainty": {},
-            "protocol_result": {
-                "data": {
-                    "22940961": [
-                        {
-                            "name": "lig_ejm_31 to lig_ejm_42 repeat 0 generation 0",
-                            "inputs": {"stateA": {"components": {"ligand": None, "solvent": None}}},
-                        }
-                    ]
-                }
-            },
-            "unit_results": {
-                "ProtocolUnitResult-e85": {
-                    "name": "lig_ejm_31 to lig_ejm_42 repeat 0 generation 0"
-                },
-                "ProtocolUnitFailure-4c9": {
-                    "name": "lig_ejm_31 to lig_ejm_42 repeat 0 generation 0",
-                    "exception": ["Simulation_NanError"],
-                },
-            },
-        }
-        yield result
-
-    def test_minimal_valid_results(self, capsys, sim_result):
-        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+    def test_minimal_valid_results(self, capsys, min_result_json):
+        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), sim_result)
+            assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), min_result_json)
             assert captured.err == ""
 
-    def test_skip_missing_unit_result(self, capsys, sim_result):
-        del sim_result["unit_results"]
+    def test_skip_missing_unit_result(self, capsys, min_result_json):
+        min_result_json["unit_results"] = {}
 
-        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == (None, None)
-            assert "Missing ligand names and/or simulation type. Skipping" in captured.err
+            assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
+            assert "No 'unit_results' found" in captured.err
 
-    def test_skip_missing_estimate(self, capsys, sim_result):
-        sim_result["estimate"] = None
+    def test_skip_missing_estimate(self, capsys, min_result_json):
+        min_result_json["estimate"] = None
 
-        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
             assert "No 'estimate' found" in captured.err
 
-    def test_skip_missing_uncertainty(self, capsys, sim_result):
-        sim_result["uncertainty"] = None
+    def test_skip_missing_uncertainty(self, capsys, min_result_json):
+        min_result_json["uncertainty"] = None
 
-        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
             assert "No 'uncertainty' found" in captured.err
 
-    def test_skip_all_failed_runs(self, capsys, sim_result):
-        del sim_result["unit_results"]["ProtocolUnitResult-e85"]
-        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+    def test_skip_all_failed_runs(self, capsys, min_result_json):
+        del min_result_json["unit_results"]["ProtocolUnitResult-e85"]
+        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
             assert "Exception found in all" in captured.err
 
-    def test_missing_pr_data(self, capsys, sim_result):
-        sim_result["protocol_result"]["data"] = {}
-        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+    def test_missing_pr_data(self, capsys, min_result_json):
+        min_result_json["protocol_result"]["data"] = {}
+        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == (None, None)
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
 
-    def test_get_legs_from_result_jsons(self, capsys, sim_result):
+    def test_get_legs_from_result_jsons(self, capsys, min_result_json):
         """Test that exceptions are handled correctly at the _get_legs_from_results_json level."""
-        sim_result["protocol_result"]["data"] = {}
+        min_result_json["protocol_result"]["data"] = {}
 
-        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
             result = _get_legs_from_result_jsons(result_fns=[""], report="dg")
             captured = capsys.readouterr()
             assert result == {}
