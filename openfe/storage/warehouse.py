@@ -149,7 +149,7 @@ class WarehouseBaseClass:
 
         Parameters
         ----------
-        store_name : str
+        store_name : Literal["setup"]
             Name of the store to store the object in.
         obj : GufeTokenizable
             The object to store.
