@@ -11,7 +11,7 @@ from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 from openfecli.commands.gather import (
     _collect_result_jsons,
-    format_estimate_uncertainty,
+    format_df_with_precision,
     load_json,
     rich_print_to_stdout,
 )
@@ -195,7 +195,7 @@ def generate_dg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     for lig, results in sorted(results_dict.items()):
         dg = np.mean([v[0].m for v in results["overall"]])
         error = error_func(results)
-        m, u = format_estimate_uncertainty(dg, error, unc_prec=2)
+        m, u = (dg, error)
         data.append((lig, m, u))
 
     df = pd.DataFrame(
@@ -206,7 +206,8 @@ def generate_dg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
             "uncertainty (kcal/mol)",
         ],
     )
-    return df
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2)
+    return df_out
 
 
 def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
@@ -228,7 +229,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         for simtype, repeats in sorted(results.items()):
             if simtype != "overall":
                 for repeat in repeats:
-                    m, u = format_estimate_uncertainty(repeat[0].m, repeat[1].m, unc_prec=2)
+                    m, u = (repeat[0].m, repeat[1].m)
                     data.append((simtype, lig, m, u))
 
     df = pd.DataFrame(
@@ -240,7 +241,8 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
             "uncertainty (kcal/mol)",
         ],
     )
-    return df
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2)
+    return df_out
 
 
 @click.command("gather-abfe")
