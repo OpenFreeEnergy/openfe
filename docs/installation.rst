@@ -74,7 +74,7 @@ Create a conda environment from the lock file and activate it::
 
 To make sure everything is working, run the tests ::
 
-  $ pytest --pyargs openfe openfecli
+  $ openfe test
 
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
