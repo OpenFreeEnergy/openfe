@@ -1,5 +1,6 @@
 import os
 import pathlib
+import sys
 from typing import List, Literal
 
 import click
@@ -161,31 +162,9 @@ def _error_mbar(r):
     return np.sqrt(np.mean(complex_errors) ** 2 + np.mean(solvent_errors) ** 2)
 
 
-def extract_results_dict(
-    results_files: list[os.PathLike | str],
-) -> dict[str, dict[str, list]]:
-    """
-    Get a dictionary of SepTop results from a list of directories.
-
-    Parameters
-    ----------
-    results_files : list[ps.PathLike | str]
-        A list of directors with SepTop result files to process.
-
-    Returns
-    -------
-    sim_results : dict[str, dict[str, list]]
-        Simulation results, organized by the leg's ligand names and simulation type.
-    """
-    # find and filter result jsons
-    result_fns = _collect_result_jsons(results_files)
-    # pair legs of simulations together into dict of dicts
-    sim_results = _get_legs_from_result_jsons(result_fns)
-
-    return sim_results
-
-
-def _get_ddgs(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
+def _get_ddgs(
+    results_dict: dict[str, dict[str, list]], allow_partial: bool = False
+) -> pd.DataFrame:
     """Compute and write out DDG values for the given results.
 
     Parameters
@@ -228,7 +207,9 @@ def generate_ddg(results_dict) -> pd.DataFrame:
     return df_out
 
 
-def generate_dg_mle(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
+def _generate_dg_mle(
+    results_dict: dict[str, dict[str, list]], allow_partial: bool = False
+) -> pd.DataFrame:
     """Compute and write out MLE-derived DG values for the given results.
 
     Parameters
@@ -270,7 +251,9 @@ def generate_dg_mle(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     return df_out
 
 
-def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
+def _generate_raw(
+    results_dict: dict[str, dict[str, list]], allow_partial: bool = True
+) -> pd.DataFrame:
     """
     Get all the transformation cycle legs found and their DG values.
 
@@ -338,20 +321,39 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         "By default, the output table will be formatted for human-readability."
     ),
 )
+@click.option(
+    "--allow-partial",
+    is_flag=True,
+    default=False,
+    help=(
+        "Do not raise errors if results are missing parts for some edges. "
+        "(Skip those edges and issue warning instead.)"
+    ),
+)
 def gather_septop(
     results: List[os.PathLike | str],
     output: os.PathLike | str,
     report: Literal["dg", "ddg", "raw"],
     tsv: bool,
+    allow_partial: bool,
 ):
-    ddgs = extract_results_dict(results)
+    # find and filter result jsons
+    result_fns = _collect_result_jsons(results)
 
-    if report == "raw":
-        df = generate_dg_raw(ddgs)
-    elif report == "ddg":
-        df = generate_ddg(ddgs)
-    elif report == "dg":
-        df = generate_dg_mle(ddgs)
+    # pair legs of simulations together into dict of dicts
+    legs = _get_legs_from_result_jsons(result_fns)
+
+    if legs == {}:
+        click.secho("No results JSON files found.", err=True)
+        sys.exit(1)
+
+    # compute report
+    report_func = {
+        "dg": _generate_dg_mle,
+        "ddg": _generate_ddg,
+        "raw": _generate_raw,
+    }[report.lower()]
+    df = report_func(legs, allow_partial)
 
     # write output
     is_output_file = isinstance(output, click.utils.LazyFile)
