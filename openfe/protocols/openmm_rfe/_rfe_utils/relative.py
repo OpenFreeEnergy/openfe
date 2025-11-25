@@ -277,6 +277,8 @@ class HybridTopologyFactory:
             return cmap_old, cmap_new, 0, 0, 0, 0
 
         logger.info("CMAPTorsionForce found checking compatibility")
+        # add an assert to check the types to make mypy happy
+        assert cmap_old is not None and cmap_new is not None
         # some quick checks on compatibility like the number of maps and total number of terms
         old_num_maps = cmap_old.getNumMaps()
         new_num_maps = cmap_new.getNumMaps()

@@ -14,7 +14,6 @@ import pandas as pd
 import pytest
 from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
 from openff.toolkit import ForceField
-from openff.units import unit
 from openff.units import unit as offunit
 from openmm import unit
 from rdkit import Chem
