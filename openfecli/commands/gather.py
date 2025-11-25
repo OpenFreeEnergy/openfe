@@ -238,12 +238,12 @@ def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
     chem_sys_A = gufe.ChemicalSystem.from_dict(protocol_data["inputs"]["stateA"])
 
-    if not chem_sys_A.contains(gufe.SolventComponent):
-        return "vacuum"
-    elif chem_sys_A.contains(gufe.ProteinComponent) or chem_sys_A.contains(gufe.ProteinMembraneComponent):
+    if chem_sys_A.contains(gufe.ProteinMembraneComponent):
         return "complex"
-    elif has_protein or not has_solvent:
+    elif not chem_sys_A.contains(gufe.SolventComponent):
         return "vacuum"
+    elif chem_sys_A.contains(gufe.ProteinComponent):
+        return "complex"
     else:
         return "solvent"
 
