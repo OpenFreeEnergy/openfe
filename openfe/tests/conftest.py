@@ -9,21 +9,21 @@ from importlib import resources
 import gufe
 import mdtraj
 import numpy as np
+import openmm
 import pandas as pd
 import pytest
-from gufe import AtomMapper, LigandAtomMapping, SmallMoleculeComponent, ProteinComponent
+from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
+from openff.toolkit import ForceField
 from openff.units import unit
+from openff.units import unit as offunit
+from openmm import unit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 import openfe
-from openfe.protocols.openmm_septop.utils import deserialize
-import openmm
-from openmm import unit
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
-from openff.toolkit import ForceField
-from openff.units import unit as offunit
+from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.tests.helpers import make_htf
 
 
@@ -387,6 +387,7 @@ def chlorobenzene():
     with resources.files("openfe.tests.data.htf") as f:
         return SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "chlorobenzene.sdf")
 
+
 @pytest.fixture(scope="module")
 def fluorobenzene():
     """Load fluorobenzene with partial charges from sdf file."""
@@ -401,15 +402,29 @@ def chlorobenzene_to_fluorobenzene_mapping(chlorobenzene, fluorobenzene):
         componentB=fluorobenzene,
         componentA_to_componentB={
             # perfect one-to-one mapping
-            0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11
-        }
+            0: 0,
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+            10: 10,
+            11: 11,
+        },
     )
+
 
 @pytest.fixture(scope="module")
 def t4_lysozyme_solvated():
     """Load the T4 lysozyme L99A structure and solvent from the pdb file."""
     with resources.files("openfe.tests.data.htf") as f:
-        return ProteinComponent.from_pdb_file((f / "t4_lysozyme_data" / "t4_lysozyme_solvated.pdb").as_posix())
+        return ProteinComponent.from_pdb_file(
+            (f / "t4_lysozyme_data" / "t4_lysozyme_solvated.pdb").as_posix()
+        )
 
 def apply_box_vectors_and_fix_nb_force(hybrid_topology_factory: HybridTopologyFactory, force_field: ForceField):
     """
@@ -420,19 +435,24 @@ def apply_box_vectors_and_fix_nb_force(hybrid_topology_factory: HybridTopologyFa
     box_vectors = [
         openmm.vec3.Vec3(x=6.90789161545809, y=0.0, z=0.0) * unit.nanometer,
         openmm.vec3.Vec3(x=0.0, y=6.90789161545809, z=0.0) * unit.nanometer,
-        openmm.vec3.Vec3(x=3.453945807729045, y=3.453945807729045, z=4.88461700499211) * unit.nanometer,
+        openmm.vec3.Vec3(x=3.453945807729045, y=3.453945807729045, z=4.88461700499211)
+        * unit.nanometer,
     ]
     hybrid_system.setDefaultPeriodicBoxVectors(*box_vectors)
     for force in hybrid_system.getForces():
         if isinstance(force, openmm.NonbondedForce):
             force.setNonbondedMethod(openmm.NonbondedForce.PME)
             force.setCutoffDistance(
-                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer) * unit.nanometer)
+                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer)
+                * unit.nanometer
+            )
             force.setUseDispersionCorrection(False)
             force.setUseSwitchingFunction(False)
         elif isinstance(force, openmm.CustomNonbondedForce):
             force.setCutoffDistance(
-                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer) * unit.nanometer)
+                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer)
+                * unit.nanometer
+            )
             force.setNonbondedMethod(force.CutoffPeriodic)
             force.setUseLongRangeCorrection(False)
             force.setUseSwitchingFunction(False)
@@ -444,9 +464,14 @@ def apply_box_vectors_and_fix_nb_force(hybrid_topology_factory: HybridTopologyFa
             if isinstance(force, openmm.NonbondedForce):
                 force.setNonbondedMethod(openmm.NonbondedForce.PME)
                 force.setCutoffDistance(
-                    force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer) * unit.nanometer)
+                    force_field.get_parameter_handler("Electrostatics").cutoff.m_as(
+                        offunit.nanometer
+                    )
+                    * unit.nanometer
+                )
                 force.setUseDispersionCorrection(False)
                 force.setUseSwitchingFunction(False)
+
 
 @pytest.fixture(scope="module")
 def htf_cmap_chlorobenzene_to_fluorobenzene(chlorobenzene_to_fluorobenzene_mapping, t4_lysozyme_solvated):
