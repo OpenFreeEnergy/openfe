@@ -380,6 +380,7 @@ try:
 except ModuleNotFoundError:
     HAS_ESPALOMA = False
 
+
 @pytest.fixture(scope="module")
 def chlorobenzene():
     """Load chlorobenzene with partial charges from sdf file."""
@@ -392,6 +393,7 @@ def fluorobenzene():
     """Load fluorobenzene with partial charges from sdf file."""
     with resources.files("openfe.tests.data.htf") as f:
         return SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "fluorobenzene.sdf")
+
 
 @pytest.fixture(scope="module")
 def chlorobenzene_to_fluorobenzene_mapping(chlorobenzene, fluorobenzene):
@@ -425,7 +427,10 @@ def t4_lysozyme_solvated():
             (f / "t4_lysozyme_data" / "t4_lysozyme_solvated.pdb").as_posix()
         )
 
-def apply_box_vectors_and_fix_nb_force(hybrid_topology_factory: HybridTopologyFactory, force_field: ForceField):
+
+def apply_box_vectors_and_fix_nb_force(
+    hybrid_topology_factory: HybridTopologyFactory, force_field: ForceField
+):
     """
     Edit the systems in the hybrid topology factory to have the correct box vectors and nonbonded force settings for the T4 lysozyme system.
     """
@@ -473,7 +478,9 @@ def apply_box_vectors_and_fix_nb_force(hybrid_topology_factory: HybridTopologyFa
 
 
 @pytest.fixture(scope="module")
-def htf_cmap_chlorobenzene_to_fluorobenzene(chlorobenzene_to_fluorobenzene_mapping, t4_lysozyme_solvated):
+def htf_cmap_chlorobenzene_to_fluorobenzene(
+    chlorobenzene_to_fluorobenzene_mapping, t4_lysozyme_solvated
+):
     """Generate the htf for chlorobenzene to fluorobenzene with a CMAP term."""
     settings = RelativeHybridTopologyProtocol.default_settings()
     # make sure we interpolate the 1-4 exceptions involving dummy atoms if present
@@ -489,7 +496,11 @@ def htf_cmap_chlorobenzene_to_fluorobenzene(chlorobenzene_to_fluorobenzene_mappi
         "amber/tip3p_HFE_multivalent.xml",  # for divalent ions
         "amber/phosaa19SB.xml",  # Handles THE TPO
     ]
-    htf = make_htf(mapping=chlorobenzene_to_fluorobenzene_mapping, protein=t4_lysozyme_solvated, settings=settings)
+    htf = make_htf(
+        mapping=chlorobenzene_to_fluorobenzene_mapping,
+        protein=t4_lysozyme_solvated,
+        settings=settings,
+    )
     # apply box vectors and fix nonbonded force settings so we can use PME
     apply_box_vectors_and_fix_nb_force(hybrid_topology_factory=htf, force_field=ff)
     hybrid_system = htf.hybrid_system
@@ -504,5 +515,5 @@ def htf_cmap_chlorobenzene_to_fluorobenzene(chlorobenzene_to_fluorobenzene_mappi
         "fluorobenzene": chlorobenzene_to_fluorobenzene_mapping.componentB,
         "electrostatic_scale": ff.get_parameter_handler("Electrostatics").scale14,
         "vdW_scale": ff.get_parameter_handler("vdW").scale14,
-        "force_field": ff
+        "force_field": ff,
     }
