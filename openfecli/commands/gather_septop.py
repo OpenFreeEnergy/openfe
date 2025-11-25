@@ -266,7 +266,8 @@ def generate_dg_mle(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     df = df.iloc[:, :3]
     df.rename({"label": "ligand"}, axis="columns", inplace=True)
 
-    return df
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2)
+    return df_out
 
 
 def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
