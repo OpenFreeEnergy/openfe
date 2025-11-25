@@ -199,7 +199,7 @@ def _get_ddgs(
     return df
 
 
-def generate_ddg(results_dict) -> pd.DataFrame:
+def _generate_ddg(results_dict, allow_partial: bool = False) -> pd.DataFrame:
     df_ddgs = _get_ddgs(results_dict)
     df_out = format_df_with_precision(
         df_ddgs, "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2
