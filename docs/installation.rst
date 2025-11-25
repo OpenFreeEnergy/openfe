@@ -11,76 +11,78 @@ We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as fa
 Note that following SPEC0 means that Python 3.10 support is no longer actively maintained as of ``openfe 1.6.0``.
 Additionally, if you want to use NAGL to assign partial charges, you must use ``python >= 3.11``.
 
-When you install ``openfe`` through any of the methods described below, you will install both the core library and the command line interface (CLI).
+When you install **openfe** through any of the methods described below, you will install both the core library and the command line interface (CLI).
 
 Installation with ``micromamba`` (recommended)
 ----------------------------------------------
 
-OpenFE recommends the `mamba` (and the more lightweight `micromamba`) package manager for most users, as it is orders of magnitude faster than the default `conda` package manager.
-`mamba` is a drop-in replacement for `conda`, and
+OpenFE recommends ``mamba`` (and the more lightweight ``micromamba``) as a package manager for most users.
+``mamba`` is drop-in replacement for ``conda`` and is orders of magnitude faster than the default ``conda`` package manager.
+In the instructions below, we will use the ``micromamba`` command, but you can use ``conda`` or ``mamba`` in the same way.
 
-once you have one of `micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_, `mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_, or `conda <https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html>`_ installed, you can install ``openfe`` with:
+Once you have one of `micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_, `mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_, or `conda <https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html>`_ installed, you can continue to the **openfe** installation instructions below.
 
-.. parsed-literal::
-
-  micromamba create -c conda-forge -n openfe_env openfe=\ |version|
-  micromamba activate openfe_env
-
-Note that you must run the latter line in each shell session where you want to use ``openfe``. 
 
 Reproducible builds with a ``conda-lock`` file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
 
-We recommend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
+We recommend building from **openfe**'s ``conda-lock`` file in most cases, since it allows for building packages in a reproducible way on multiple platforms.
 
-A `conda-lock`_ file is a cross-platform way of specifying a conda environment to build packages in a reproducible way.
 Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
 
-
-.. note::
-
-   You will likely need to install ``conda-lock``.
-   We strongly recommend installing ``conda-lock`` in a new virtual environment.
-   This will reduce the chance of dependency conflicts ::
-
-       $ # Install conda lock into a virtual environment
-       $ conda create -n conda-lock -c conda-lock
-       $ # Activate the environment to use the conda-lock command
-       $ conda activate conda-lock
-
-See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more information on ``conda-lock``.
-
-The latest version of the `conda-lock` file we provide can be downloaded with ::
+The ``conda-lock`` files for the latest version of **openfe** can be downloaded with ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/openfe-conda-lock.yml
 
-If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
+If a particular version is required, the URL will look like this (using the ``openfe 1.6.1`` release as an example) ::
 
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/openfe-1.0.1-conda-lock.yml
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.6.1/openfe-1.6.1-conda-lock.yml
 
-Create a conda environment from the lock file and activate it::
+``micromamba`` supports ``conda-lock`` files and can be used directly to create a virtual environment ::
 
-  $ conda-lock install -n openfe openfe-conda-lock.yml
-  $ conda activate openfe
+    $ micromamba create -n openfe --file openfe-conda-lock.yml
+    $ micromamba activate openfe
+
 
 .. note::
 
-   micromamba also supports ``conda-lock`` files and can be used to create a virtual environment ::
+   If you are having trouble building from the conda-lock file, you may need to build directly with ``conda-lock``.
+   We recommend installing ``conda-lock`` in a new virtual environment.
+   This will reduce the chance of dependency conflicts ::
 
-       $ micromamba create -n openfe --file openfe-conda-lock.yml
+       $ # Install conda lock into a virtual environment
+       $ micromamba create -n conda-lock conda-lock
+       $ # Activate the environment to use the conda-lock command
+       $ micromamba activate conda-lock
+       $ conda-lock install -n openfe openfe-conda-lock.yml
        $ micromamba activate openfe
 
 To make sure everything is working, run the tests ::
 
   $ openfe test
 
-The test suite contains several hundred individual tests. This will take a
-few minutes, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail).
 
-With that, you should be ready to use ``openfe``!
+The test suite contains several hundred individual tests.
+This will take a few minutes, and all tests should complete with status either passed, skipped, or xfailed (expected fail).
+
+Note that you must run ``micromamba activate openfe`` in each shell session where you want to use **openfe**. 
+
+With that, you should be ready to use **openfe**!
+
+Standard Installation with ``micromamba``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There may be some instances where you don't want to use a lock-file, e.g. you may want to specify a dependency that differs from the lock file.
+
+In these cases, you can simply install **openfe** from conda-forge:
+
+.. parsed-literal::
+
+  micromamba create -c conda-forge -n openfe openfe=\ |version|
+  micromamba activate openfe
+
 
 Single file installer
 ---------------------
@@ -103,7 +105,7 @@ And the MacOS (arm64) installer ::
 
 MacOS x86_64 is no longer supported.
 
-The single file installer contains all of the dependencies required for ``openfe`` and does not require internet access to use.
+The single file installer contains all of the dependencies required for **openfe** and does not require internet access to use.
 
 Both ``conda`` and ``mamba`` are also available in the environment created by the single file installer and can be used to install additional packages.
 The installer can be installed in batch mode or interactively  ::
@@ -295,7 +297,7 @@ The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
 
-With that, you should be ready to use ``openfe``!
+With that, you should be ready to use **openfe**!
 
 .. _installation:containers:
 
@@ -303,7 +305,7 @@ Containerized  Distributions
 ----------------------------
 
 We provide an official docker and Apptainer (formerly Singularity) image.
-The docker image is tagged with the version of ``openfe`` on the image and can be pulled with ::
+The docker image is tagged with the version of **openfe** on the image and can be pulled with ::
 
   $ docker pull ghcr.io/openfreeenergy/openfe:latest
 
@@ -345,7 +347,7 @@ This can be done with the following command ::
 The ``--nv`` flag is required for the Apptainer image to access the GPU on the host.
 Your output may produce different values for the forces, but should list the CUDA platform if everything is working properly.
 
-You can access the ``openfe`` CLI from the Singularity image with ::
+You can access the **openfe** CLI from the Singularity image with ::
 
   $ singularity run --nv openfe_latest-apptainer.sif openfe --help
 
@@ -357,7 +359,7 @@ The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
 
-With that, you should be ready to use ``openfe``!
+With that, you should be ready to use **openfe**!
 
 .. note::
 
@@ -369,7 +371,7 @@ HPC Environments
 
 When using High Performance Computing resources, jobs are typically submitted to a queue from a "login node" and then run at a later time, often on different hardware and in a different software environment.
 This can complicate installation as getting something working on the login node does not guarantee it will work in the job.
-We recommend using `Apptainer (formerly Singularity) <https://apptainer.org/>`_ when running ``openfe`` workflows in HPC environments.
+We recommend using `Apptainer (formerly Singularity) <https://apptainer.org/>`_ when running **openfe** workflows in HPC environments.
 This images provide a software environment that is isolated from the host which can make workflow execution easier to setup and more reproducible.
 See our guide on :ref:`containers <installation:containers>` for how to get started using Apptainer/Singularity.
 
@@ -380,8 +382,8 @@ See our guide on :ref:`containers <installation:containers>` for how to get star
 
 .. _virtual packages: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-virtual.html#managing-virtual-packages
 
-We recommend using a :ref:`container <installation:containers>` to install ``openfe`` in HPC environments.
-Nonetheless, ``openfe`` can be installed via Conda Forge on these environments also.
+We recommend using a :ref:`container <installation:containers>` to install **openfe** in HPC environments.
+Nonetheless, **openfe** can be installed via Conda Forge on these environments also.
 Conda Forge distributes its own CUDA binaries for interfacing with the GPU, rather than use the host drivers.
 ``conda``, ``mamba`` and ``micromamba`` all use `virtual packages`_ to detect and specify which version of CUDA should be installed.
 This is a common point of difference in hardware between the login and job nodes in an HPC environment.
@@ -484,24 +486,24 @@ For example ::
 in this output of ``nvidia-smi`` we can see in the upper right of the output ``CUDA Version: 11.7`` which means the installed driver will support a ``cudatoolkit`` version up to ``11.7``
 
 So on the login node, we can run ``CONDA_OVERRIDE_CUDA=11.7 mamba info`` and see that the "correct" virtual CUDA is listed.
-For example, to install a version of ``openfe`` which is compatible with ``cudatoolkit 11.7``, run:
+For example, to install a version of **openfe** which is compatible with ``cudatoolkit 11.7``, run:
 
 .. parsed-literal::
 
-  $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe_env openfe=\ |version|
+  $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe openfe=\ |version|
 
 Developer install
 -----------------
 
-If you're going to be developing for ``openfe``, you will want an
+If you're going to be developing for **openfe**, you will want an
 installation where your changes to the code are immediately reflected in the
 functionality. This is called a "developer" or "editable" installation.
 
-Getting a developer installation for ``openfe`` first installing the
+Getting a developer installation for **openfe** first installing the
 requirements, and then creating the editable installation. We recommend
 doing that with ``mamba`` using the following procedure:
 
-First, clone the ``openfe`` repository, and switch into its root directory::
+First, clone the **openfe** repository, and switch into its root directory::
 
   $ git clone https://github.com/OpenFreeEnergy/openfe.git
   $ cd openfe
@@ -511,9 +513,9 @@ specification in that directory::
 
   $ mamba create -f environment.yml
 
-Then activate the ``openfe`` environment with::
+Then activate the **openfe** environment with::
 
-  $ mamba activate openfe_env
+  $ mamba activate openfe
 
 Finally, create the editable installation::
 
