@@ -16,8 +16,10 @@ When you install **openfe** through any of the methods described below, you will
 Installation with ``micromamba`` (recommended)
 ----------------------------------------------
 
-OpenFE recommends ``mamba`` (and the more lightweight ``micromamba``) as a package manager for most users.
-``mamba`` is drop-in replacement for ``conda`` and is orders of magnitude faster than the default ``conda`` package manager.
+OpenFE recommends ``micromamba`` as a package manager for most users, as it is a lightweight version of ``mamba``, which is a must faster drop-in replacement for ``conda`` .
+
+If you prefer to use ``mamba`` or ``conda`` instead of ``micromamba`` because of its additional functionality, we suggest following our `Miniforge Installation Guide`_.
+
 In the instructions below, we will use the ``micromamba`` command, but you can use ``conda`` or ``mamba`` in the same way.
 
 Once you have one of `micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_, `mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_, or `conda <https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html>`_ installed, you can continue to the **openfe** installation instructions below.
@@ -67,7 +69,7 @@ To make sure everything is working, run the tests ::
 The test suite contains several hundred individual tests.
 This will take a few minutes, and all tests should complete with status either passed, skipped, or xfailed (expected fail).
 
-Note that you must run ``micromamba activate openfe`` in each shell session where you want to use **openfe**. 
+Note that you must run ``micromamba activate openfe`` in each shell session where you want to use **openfe**.
 
 With that, you should be ready to use **openfe**!
 
@@ -364,7 +366,7 @@ With that, you should be ready to use **openfe**!
 .. note::
 
    If building a custom docker image, you may need to need to add ``--ulimit nofile=262144:262144`` to the ``docker build`` command.
-   See this `issue <https://github.com/OpenFreeEnergy/openfe/issues/1269>`_ for details. 
+   See this `issue <https://github.com/OpenFreeEnergy/openfe/issues/1269>`_ for details.
 
 HPC Environments
 ----------------
@@ -582,3 +584,83 @@ While OpenMM supports OpenCL, we do not regularly test that platform (the CUDA p
 For production use, we recommend the ``linux-64`` platform with NVIDIA GPUs for optimal performance.
 When using an OpenMM based protocol on NVIDIA GPUs, we recommend driver version ``525.60.13`` or greater.
 The minimum driver version required when installing from conda-forge is ``450.36.06``, but newer versions of OpenMM may not support that driver version as CUDA 11 will be removed the build matrix.
+
+
+Miniforge Installation Guide
+----------------------------
+
+.. _Miniforge: https://github.com/conda-forge/miniforge?tab=readme-ov-file#miniforge
+
+`Miniforge`_  provides minimal installers for either ``conda`` or ``mamba``, and enables easy installation of other software that ``openfe`` needs, such as OpenMM and AmberTools.
+We recommend using ``miniforge`` to install ``mamaba`` because it is faster than ``conda`` and comes preconfigured to use ``conda-forge``.
+
+To install and configure ``miniforge``, you need to know your operating system, your machine architecture (output of ``uname -m``), and your shell (in most cases, can be determined from ``echo $SHELL``).
+Select your operating system and architecture from the tool below, and run the commands it suggests.
+
+.. raw:: html
+
+    <select id="miniforge-os" onchange="javascript: setArchitectureOptions(this.options[this.selectedIndex].value)">
+        <option value="Linux">Linux</option>
+        <option value="MacOSX">macOS</option>
+    </select>
+    <select id="miniforge-architecture" onchange="updateInstructions()">
+    </select>
+    <select id="miniforge-shell" onchange="updateInstructions()">
+        <option value="bash">bash</option>
+        <option value="zsh">zsh</option>
+        <option value="tcsh">tcsh</option>
+        <option value="fish">fish</option>
+        <option value="xonsh">xonsh</option>
+    </select>
+    <br />
+    <pre><span id="miniforge-curl-install"></span></pre>
+    <script>
+      function setArchitectureOptions(os) {
+          let options = {
+              "MacOSX": [
+                  ["x86_64", ""],
+                  ["arm64", " (Apple Silicon)"]
+              ],
+              "Linux": [
+                  ["x86_64", " (amd64)"],
+                  ["aarch64", " (arm64)"],
+                  ["ppc64le", " (POWER8/9)"]
+              ]
+          };
+          choices = options[os];
+          let htmlString = ""
+          for (const [val, extra] of choices) {
+              htmlString += `<option value="${val}">${val}${extra}</option>`;
+          }
+          let arch = document.getElementById("miniforge-architecture");
+          arch.innerHTML = htmlString
+          updateInstructions()
+      }
+
+      function updateInstructions() {
+          let cmd = document.getElementById("miniforge-curl-install");
+          let osElem = document.getElementById("miniforge-os");
+          let archElem = document.getElementById("miniforge-architecture");
+          let shellElem = document.getElementById("miniforge-shell");
+          let os = osElem[osElem.selectedIndex].value;
+          let arch = archElem[archElem.selectedIndex].value;
+          let shell = shellElem[shellElem.selectedIndex].value;
+          let filename = "Miniforge3-" + os + "-" + arch + ".sh"
+          let cmdArr = [
+              (
+                  "curl -OL https://github.com/conda-forge/miniforge/"
+                  + "releases/latest/download/" + filename
+              ),
+              "sh " + filename + " -b",
+              "~/miniforge3/bin/mamba init " + shell,
+              "rm -f " + filename,
+          ]
+          cmd.innerHTML = cmdArr.join("\n")
+      }
+
+      setArchitectureOptions("Linux");  // default
+    </script>
+
+You should then close your current session and open a fresh login to ensure
+that everything is properly registered.
+You can now proceed to use ``mamba`` commands as instructed above.
