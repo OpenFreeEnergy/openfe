@@ -143,14 +143,11 @@ def validate_protein(state: ChemicalSystem):
         raise ValueError(errmsg)
 
     protein_membrane = [
-        comp for comp in state.values() if
-        isinstance(comp, ProteinMembraneComponent)
+        comp for comp in state.values() if isinstance(comp, ProteinMembraneComponent)
     ]
 
     if len(protein_membrane) == 1 and not protein_membrane[0]._periodic_box_vectors:
-        errmsg = (
-            "No periodic box vector is supplied with the ProteinMembraneComponent"
-        )
+        errmsg = "No periodic box vector is supplied with the ProteinMembraneComponent"
         raise ValueError(errmsg)
 
 
