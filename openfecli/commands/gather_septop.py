@@ -186,7 +186,7 @@ def extract_results_dict(
     return sim_results
 
 
-def generate_ddg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
+def _get_ddgs(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     """Compute and write out DDG values for the given results.
 
     Parameters
@@ -206,7 +206,7 @@ def generate_ddg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     for ligpair, results in sorted(results_dict.items()):
         ddg = np.mean([v[0].m for v in results["overall"]])
         error = error_func(results)
-        m, u = format_estimate_uncertainty(ddg, error, unc_prec=2)
+        m, u = (ddg, error)
         data.append((ligpair[0], ligpair[1], m, u))
 
     df = pd.DataFrame(
@@ -219,8 +219,13 @@ def generate_ddg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         ],
     )
 
+    return df
+
+
+def generate_ddg(results_dict) -> pd.DataFrame:
+    df_ddgs = _get_ddgs(results_dict)
     df_out = format_df_with_precision(
-        df, "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2
+        df_ddgs, "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2
     )
     return df_out
 
@@ -239,7 +244,7 @@ def generate_dg_mle(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         A pandas DataFrame with the dG results for each ligand pair.
     """
 
-    DDGs = generate_ddg(results_dict)
+    DDGs = _get_ddgs(results_dict)
     fe_results = []
     for inx, row in DDGs.iterrows():
         ligA, ligB, DDGbind, bind_unc = row.tolist()
