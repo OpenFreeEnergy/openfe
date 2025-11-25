@@ -518,7 +518,7 @@ directory.
 Testing Your Installation
 -------------------------
 
-After installing **openfe**, make sure everything is working as expected by running the test suite with:
+After installing **openfe**, make sure everything is working as expected by running the test suite with ::
 
   $ openfe test
 
