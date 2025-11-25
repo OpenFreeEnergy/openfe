@@ -206,8 +206,7 @@ def _get_ddgs(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     for ligpair, results in sorted(results_dict.items()):
         ddg = np.mean([v[0].m for v in results["overall"]])
         error = error_func(results)
-        m, u = (ddg, error)
-        data.append((ligpair[0], ligpair[1], m, u))
+        data.append((ligpair[0], ligpair[1], ddg, error))
 
     df = pd.DataFrame(
         data,
