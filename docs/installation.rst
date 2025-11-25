@@ -25,6 +25,11 @@ In the instructions below, we will use the ``micromamba`` command, but you can u
 Once you have one of `micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_, `mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_, or `conda <https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html>`_ installed, you can continue to the **openfe** installation instructions below.
 
 
+  .. note::
+
+    After installing, you must run ``micromamba activate openfe`` in each shell session where you want to use **openfe**!
+
+
 Reproducible builds with a ``conda-lock`` file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -61,15 +66,7 @@ If a particular version is required, the URL will look like this (using the ``op
        $ conda-lock install -n openfe openfe-conda-lock.yml
        $ micromamba activate openfe
 
-To make sure everything is working, run the tests ::
-
-  $ openfe test
-
-
-The test suite contains several hundred individual tests.
-This will take a few minutes, and all tests should complete with status either passed, skipped, or xfailed (expected fail).
-
-Note that you must run ``micromamba activate openfe`` in each shell session where you want to use **openfe**.
+To make sure everything is working, `run the tests <testing>`_.
 
 With that, you should be ready to use **openfe**!
 
@@ -289,15 +286,7 @@ Now the CLI tool should work as well ::
      test              Run the OpenFE test suite
 
 
-
-
-To make sure everything is working, run the tests ::
-
-  $ pytest --pyargs openfe openfecli
-
-The test suite contains several hundred individual tests. This will take a
-few minutes, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail).
+To make sure everything is working, `run the tests <testing>`_. ::
 
 With that, you should be ready to use **openfe**!
 
@@ -355,11 +344,9 @@ You can access the **openfe** CLI from the Singularity image with ::
 
 To make sure everything is working, run the tests ::
 
-  $ singularity run --nv openfe_latest-apptainer.sif pytest --pyargs openfe openfecli
+  $ singularity run --nv openfe_latest-apptainer.sif openfe test
 
-The test suite contains several hundred individual tests. This will take a
-few minutes, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail).
+You can also run the long tests with ``openfe test --long``, as explained in `Testing Your Installation`_.
 
 With that, you should be ready to use **openfe**!
 
@@ -525,6 +512,30 @@ Finally, create the editable installation::
 
 Note the ``.`` at the end of that command, which indicates the current
 directory.
+
+
+.. testing:
+
+Testing Your Installation
+-------------------------
+
+  $ openfe test
+
+
+The test suite contains several hundred individual tests.
+This will take a few minutes, and all tests should complete with status either passed, skipped, or xfailed (expected fail).
+
+The very first time you run this, the initial check that you can import ``openfe`` will take a while, because some code is compiled the first time it is encountered.
+That compilation only happens once per installation.
+
+A more expansive test suite can be run using ::
+
+  openfe test --long
+
+This test suite contains several hundred individual tests.
+This may take up to an hour, and all tests should complete with status either passed, skipped, or xfailed (expected fail).
+This "long" test suite should be run as a job on the compute hardware intended to run openfe jobs, as it will test GPU specific features.
+
 
 Troubleshooting Your Installation
 ---------------------------------
