@@ -15,6 +15,7 @@ from openfecli.commands.gather import (
     format_estimate_uncertainty,
     gather,
 )
+from openfecli.commands.gather_abfe import gather_abfe
 from openfecli.commands.gather_septop import gather_septop
 
 from ..conftest import HAS_INTERNET
@@ -438,6 +439,11 @@ class TestRBFEGatherFailedEdges:
         assert "--allow-partial" not in result.output
 
 
+ZENODO_ABFE_DATA = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.17348229",
+    registry={"abfe_results.zip": "md5:547f896e867cce61979d75b7e082f6ba"},
+)
 ZENODO_SEPTOP_DATA = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.17435569",
@@ -447,11 +453,33 @@ ZENODO_SEPTOP_DATA = pooch.create(
 
 
 @pytest.fixture
+def abfe_result_dir() -> pathlib.Path:
+    ZENODO_ABFE_DATA.fetch("abfe_results.zip", processor=pooch.Unzip())
+    result_dir = pathlib.Path(POOCH_CACHE) / "abfe_results.zip.unzip/abfe_results/"
+    return result_dir
+
+
+@pytest.fixture
 def septop_result_dir() -> pathlib.Path:
     ZENODO_SEPTOP_DATA.fetch("septop_results.zip", processor=pooch.Unzip())
     result_dir = pathlib.Path(POOCH_CACHE) / "septop_results.zip.unzip/septop_results/"
 
     return result_dir
+
+
+class TestGatherABFE:
+    @pytest.mark.parametrize("report", ["raw", "dg"])
+    def test_abfe_full_results(self, abfe_result_dir, report, tmp_path, dataframe_regression):
+        results = [str(abfe_result_dir / f"results_{i}") for i in range(3)]
+        outfile = tmp_path / "out.tsv"
+        args = ["--report", report, "-o", outfile]
+        runner = CliRunner()
+        cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
+
+        assert_click_success(cli_result)
+        # TODO: this is an inefficient way to test - when refactoring, we test pull the dfs directly
+        result_df = pd.read_table(outfile)
+        dataframe_regression.check(result_df, default_tolerance=dict(atol=1e-5, rtol=1e-12))
 
 
 class TestGatherSepTop:
