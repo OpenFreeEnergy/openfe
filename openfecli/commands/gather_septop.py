@@ -13,7 +13,6 @@ from openfecli.clicktypes import HyphenAwareChoice
 from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
-    format_estimate_uncertainty,
     load_json,
     rich_print_to_stdout,
 )
