@@ -469,17 +469,14 @@ def septop_result_dir() -> pathlib.Path:
 
 class TestGatherABFE:
     @pytest.mark.parametrize("report", ["raw", "dg"])
-    def test_abfe_full_results(self, abfe_result_dir, report, tmp_path, dataframe_regression):
+    def test_abfe_full_results(self, abfe_result_dir, report, file_regression):
         results = [str(abfe_result_dir / f"results_{i}") for i in range(3)]
-        outfile = tmp_path / "out.tsv"
-        args = ["--report", report, "-o", outfile]
+        args = ["--report", report]
         runner = CliRunner()
         cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
 
         assert_click_success(cli_result)
-        # TODO: this is an inefficient way to test - when refactoring, we test pull the dfs directly
-        result_df = pd.read_table(outfile)
-        dataframe_regression.check(result_df, default_tolerance=dict(atol=1e-5, rtol=1e-12))
+        file_regression.check(cli_result.stdout, extension=".tsv")
 
 
 class TestGatherSepTop:
