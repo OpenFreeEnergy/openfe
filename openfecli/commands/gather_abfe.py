@@ -195,8 +195,7 @@ def generate_dg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     for lig, results in sorted(results_dict.items()):
         dg = np.mean([v[0].m for v in results["overall"]])
         error = error_func(results)
-        m, u = (dg, error)
-        data.append((lig, m, u))
+        data.append((lig, dg, error))
 
     df = pd.DataFrame(
         data,
@@ -229,8 +228,8 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         for simtype, repeats in sorted(results.items()):
             if simtype != "overall":
                 for repeat in repeats:
-                    m, u = (repeat[0].m, repeat[1].m)
-                    data.append((simtype, lig, m, u))
+                    measurement, uncertainty = (repeat[0].m, repeat[1].m)
+                    data.append((simtype, lig, measurement, uncertainty))
 
     df = pd.DataFrame(
         data,
