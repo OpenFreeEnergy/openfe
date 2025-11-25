@@ -142,6 +142,17 @@ def validate_protein(state: ChemicalSystem):
         errmsg = "Multiple ProteinComponent found, only one is supported"
         raise ValueError(errmsg)
 
+    protein_membrane = [
+        comp for comp in state.values() if
+        isinstance(comp, ProteinMembraneComponent)
+    ]
+
+    if len(protein_membrane) == 1 and not protein_membrane[0]._periodic_box_vectors:
+        errmsg = (
+            "No periodic box vector is supplied with the ProteinMembraneComponent"
+        )
+        raise ValueError(errmsg)
+
 
 ParseCompRet = Tuple[
     Optional[SolventComponent],
