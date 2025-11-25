@@ -65,7 +65,7 @@ If a particular version is required, the URL will look like this (using the ``op
        $ conda-lock install -n openfe openfe-conda-lock.yml
        $ micromamba activate openfe
 
-To make sure everything is working, `run the tests <_testing>`_.
+To make sure everything is working, :ref:`run the tests <testing>`.
 
 With that, you should be ready to use **openfe**!
 
@@ -285,7 +285,7 @@ Now the CLI tool should work as well ::
      test              Run the OpenFE test suite
 
 
-To make sure everything is working, `run the tests <_testing>`_.
+To make sure everything is working, :ref:`run the tests <testing>`.
 
 With that, you should be ready to use **openfe**!
 
@@ -530,7 +530,7 @@ That compilation only happens once per installation, and so subsequent calls to 
 
 A more expansive test suite can be run using ::
 
-  openfe test --long
+  $ openfe test --long
 
 This test suite contains several hundred individual tests.
 This may take up to an hour, and all tests should complete with status either passed, skipped, or xfailed (expected fail).
