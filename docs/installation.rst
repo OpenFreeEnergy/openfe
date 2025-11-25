@@ -1,7 +1,7 @@
 Installation
 ============
 
-**openfe** is currently only compatible with POSIX systems (macOS and UNIX/Linux).
+**openfe** is currently only compatible with POSIX systems (macOS and UNIX/Linux). See `Supported Hardware`_ for more details.
 
 We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as far as minimum supported dependencies, with the following caveats:
 
