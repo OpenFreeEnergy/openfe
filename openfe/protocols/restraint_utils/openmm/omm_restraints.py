@@ -14,10 +14,23 @@ TODO
 * Add relevant duecredit entries.
 * Add Periodic Torsion Boresch class
 """
+
 import abc
 
 import numpy as np
+import openmm
 from gufe.settings.models import SettingsBaseModel
+from openff.units import Quantity, unit
+from openff.units.openmm import from_openmm, to_openmm
+from openmm import unit as omm_unit
+from openmmtools.forces import (
+    FlatBottomRestraintBondForce,
+    FlatBottomRestraintForce,
+    HarmonicRestraintBondForce,
+    HarmonicRestraintForce,
+)
+from openmmtools.states import GlobalParameterState, ThermodynamicState
+
 from openfe.protocols.restraint_utils.geometry import (
     BaseRestraintGeometry,
     BoreschRestraintGeometry,
@@ -30,18 +43,6 @@ from openfe.protocols.restraint_utils.settings import (
     DistanceRestraintSettings,
     FlatBottomRestraintSettings,
 )
-from openff.units import Quantity, unit
-from openff.units.openmm import from_openmm, to_openmm
-from openmmtools.forces import (
-    FlatBottomRestraintBondForce,
-    FlatBottomRestraintForce,
-    HarmonicRestraintBondForce,
-    HarmonicRestraintForce,
-)
-from openmmtools.states import GlobalParameterState, ThermodynamicState
-
-import openmm
-from openmm import unit as omm_unit
 
 from .omm_forces import (
     add_force_in_separate_group,
@@ -81,9 +82,7 @@ class RestraintParameterState(GlobalParameterState):
     @lambda_restraints.validator  # type: ignore
     def lambda_restraints(self, instance, new_value):
         if new_value is not None and not (0.0 <= new_value <= 1.0):
-            errmsg = (
-                "lambda_restraints must be between 0.0 and 1.0 " f"and got {new_value}"
-            )
+            errmsg = f"lambda_restraints must be between 0.0 and 1.0 and got {new_value}"
             raise ValueError(errmsg)
         # Not crashing out on None to match upstream behaviour
         return new_value
@@ -273,9 +272,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         # Note: this is a throw-away force, so we hard code the
         # controlling parameter name
         force = self._get_force(geometry, "lambda_restraints")
-        corr = force.compute_standard_state_correction(
-            thermodynamic_state, max_volume="system"
-        )
+        corr = force.compute_standard_state_correction(thermodynamic_state, max_volume="system")
         dg = corr * thermodynamic_state.kT
         return from_openmm(dg).to("kilojoule_per_mole")
 
@@ -370,9 +367,7 @@ class FlatBottomBondRestraint(SingleBondMixin, BaseRadiallySymmetricRestraintFor
         spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(
             omm_unit.md_unit_system
         )
-        well_radius = to_openmm(geometry.well_radius).value_in_unit_system(
-            omm_unit.md_unit_system
-        )
+        well_radius = to_openmm(geometry.well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
@@ -468,9 +463,7 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
         )
         # the geometry will take precedence over the settings
         well_radius = self.settings.well_radius or geometry.well_radius
-        well_radius = to_openmm(well_radius).value_in_unit_system(
-            omm_unit.md_unit_system
-        )
+        well_radius = to_openmm(well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
@@ -617,9 +610,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
             "phi_C0": geometry.phi_C0,
         }
         for key, val in parameter_dict.items():
-            param_values.append(
-                to_openmm(val).value_in_unit_system(omm_unit.md_unit_system)
-            )
+            param_values.append(to_openmm(val).value_in_unit_system(omm_unit.md_unit_system))
             force.addPerBondParameter(key)
 
         force.addGlobalParameter(controlling_parameter_name, 1.0)
@@ -632,6 +623,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
             geometry.guest_atoms[2],
         ]
         force.addBond(atoms, param_values)
+        force.setName("Boresch-like")
         return force
 
     def get_standard_state_correction(

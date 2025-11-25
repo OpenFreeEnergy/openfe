@@ -7,21 +7,25 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-from typing import Literal, Optional
+
+from typing import Annotated, Literal, Optional, TypeAlias
 
 import MDAnalysis as mda
-from gufe.vendor.openff.models.types import FloatQuantity
+from gufe.settings.typing import GufeQuantity, NanometerQuantity, specify_quantity_units
 from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
-from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
 from openff.units import Quantity, unit
 from rdkit import Chem
 
+from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
+
 from .guest import find_guest_atom_candidates
 from .host import (
-    find_host_anchor_multi,
     find_host_anchor_bonded,
+    find_host_anchor_multi,
     find_host_atom_candidates,
 )
+
+RadiansQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("radians")]
 
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
@@ -39,28 +43,28 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     the X index of ``guest_atoms``.
     """
 
-    r_aA0: FloatQuantity["nanometer"]
+    r_aA0: NanometerQuantity
     """
     The equilibrium distance between H0 and G0.
     """
-    theta_A0: FloatQuantity["radians"]
+    theta_A0: RadiansQuantity
     """
     The equilibrium angle value between H1, H0, and G0.
     """
-    theta_B0: FloatQuantity["radians"]
+    theta_B0: RadiansQuantity
     """
     The equilibrium angle value between H0, G0, and G1.
     """
-    phi_A0: FloatQuantity["radians"]
+    phi_A0: RadiansQuantity
     """
     The equilibrium dihedral value between H2, H1, H0, and G0.
     """
-    phi_B0: FloatQuantity["radians"]
+    phi_B0: RadiansQuantity
 
     """
     The equilibrium dihedral value between H1, H0, G0, and G1.
     """
-    phi_C0: FloatQuantity["radians"]
+    phi_C0: RadiansQuantity
 
     """
     The equilibrium dihedral value between H0, G0, G1, and G2.
@@ -137,14 +141,12 @@ def find_boresch_restraint(
     guest_restraint_atoms_idxs: Optional[list[int]] = None,
     host_restraint_atoms_idxs: Optional[list[int]] = None,
     host_selection: str = "all",
-    anchor_finding_strategy: Literal['multi-residue', 'bonded'] = 'multi-residue',
+    anchor_finding_strategy: Literal["multi-residue", "bonded"] = "multi-residue",
     dssp_filter: bool = False,
     rmsf_cutoff: Quantity = 0.1 * unit.nanometer,
     host_min_distance: Quantity = 1 * unit.nanometer,
     host_max_distance: Quantity = 3 * unit.nanometer,
-    angle_force_constant: Quantity = (
-        83.68 * unit.kilojoule_per_mole / unit.radians**2
-    ),
+    angle_force_constant: Quantity = (83.68 * unit.kilojoule_per_mole / unit.radians**2),
     temperature: Quantity = 298.15 * unit.kelvin,
 ) -> BoreschRestraintGeometry:
     """
@@ -267,7 +269,7 @@ def find_boresch_restraint(
             max_search_distance=host_max_distance,
         )
 
-        if anchor_finding_strategy == 'multi-residue':
+        if anchor_finding_strategy == "multi-residue":
             host_anchor = find_host_anchor_multi(
                 guest_atoms=universe.atoms[list(guest_anchor)],
                 host_atom_pool=universe.atoms[list(host_pool)],
@@ -277,7 +279,7 @@ def find_boresch_restraint(
                 angle_force_constant=angle_force_constant,
                 temperature=temperature,
             )
-        elif anchor_finding_strategy == 'bonded':
+        elif anchor_finding_strategy == "bonded":
             host_anchor = find_host_anchor_bonded(
                 guest_atoms=universe.atoms[list(guest_anchor)],
                 host_atom_pool=universe.atoms[list(host_pool)],
@@ -287,9 +289,7 @@ def find_boresch_restraint(
             )
         else:
             # We're doing something we shouldn't be
-            errmsg = (
-                f"Unknown anchor finding strategy: {anchor_finding_strategy}"
-            )
+            errmsg = f"Unknown anchor finding strategy: {anchor_finding_strategy}"
             raise NotImplementedError(errmsg)
 
         # continue if it's empty, otherwise stop

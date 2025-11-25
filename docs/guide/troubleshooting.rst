@@ -58,3 +58,18 @@ Save this configuration file as ``debug_logging.conf`` and then run ``openfe qui
 Note that the ``--log debug_logging.conf`` argument goes between ``openfe`` and ``quickrun`` on the command line.
 
 This will cause every package to log at the debug level, which may be quite verbose and noisy but should aid in identify what is going on right before the exception is thrown.
+
+JAX warnings
+------------
+
+We use ``pymbar`` to analyze the free energy of the system.
+``pymbar`` uses JAX to accelerate computation.
+The JAX library can utilize a GPU to further accelerate computation.
+If the necessary libraries for GPU acceleration are not installed and JAX detects a GPU, JAX will print a warning like this:
+
+.. code-block:: bash
+
+   WARNING:2025-06-10 09:01:40,857:jax._src.xla_bridge:966: An NVIDIA GPU may be present on this machine, but a CUDA-enabled jaxlib is not installed. Falling back to cpu.
+
+This warning does not mean that the *molecular dynamics* simulation will fall back to using the CPU.
+The simulation will still use the computing platform specified in the settings.

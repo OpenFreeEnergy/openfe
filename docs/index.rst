@@ -2,20 +2,12 @@
 
 .. module:: openfe
 
-====================================
-Welcome to the OpenFE documentation!
-====================================
+=====================================
+Welcome to OpenFE's documentation!
+=====================================
 
 The **OpenFE** toolkit provides a free and open-source framework for alchemical free energy calculations.
-Using this toolkit you can plan, execute and analyse free energy calculations using a variety of methods.
-
-The Documentation serves as a rapid initiation, offering a brief overview of the software,
-including an introduction to the OpenFE Showcase and installation instructions.
-For a more in-depth understanding,
-the Tutorials illustrate the application of the package,
-while the User Guide describe the theoretical framework and structure of the package.
-The Cookbook supplies snippets of code for various minor tasks,
-and lastly, the API Reference provides a direct technical explanation of our code.
+Using this toolkit you can plan, execute, and analyze free energy calculations using a variety of methods.
 
 **Useful Links**:
 `OpenFE Website <https://openfree.energy/>`__ |
@@ -23,73 +15,64 @@ and lastly, the API Reference provides a direct technical explanation of our cod
 `Source Repository <https://github.com/OpenFreeEnergy/openfe/>`__ |
 `Issues & Ideas <https://github.com/OpenFreeEnergy/openfe/issues/>`__
 
-.. grid:: 1 2 3 4
+.. grid:: 1 2 2 4
     :gutter: 3
 
-    .. grid-item-card:: Try it out
-        :img-top: _static/Rocket.svg
-        :text-align: center
-        :link: http://try.openfree.energy
-        :link-type: url
-
-        New to *OpenFE*?  Start here and try it from your browser
-
-    .. grid-item-card:: Installing OpenFE
-        :img-top: _static/Download.svg
+    .. grid-item-card:: :fas:`download` Install openfe
         :text-align: center
         :link: installation
         :link-type: doc
 
-        Check out our installation guide to get it working on your machine!
+        Follow our installation guide to get **openfe** running on your machine!
 
-    .. grid-item-card:: Available Protocols
-        :img-top: _static/CLI.svg
+    .. grid-item-card:: :fas:`laptop-code` CLI
         :text-align: center
-        :link: guide/protocols/index
+        :link: reference/cli/index
         :link-type: doc
 
-        Documentation on available methods included in the openfe package
+        Documentation for **openfe**\'s simple command line interface.
 
-    .. grid-item-card:: Changelog
-        :img-top: _static/Showcase.svg
-        :text-align: center
-        :link: CHANGELOG
-        :link-type: doc
-
-        Any notable changes in the package for each released version
-
-    .. grid-item-card:: Tutorials
-        :img-top: _static/Tutorial.svg
+    .. grid-item-card:: :fas:`person-chalkboard` Tutorials
         :text-align: center
         :link: tutorials/index
         :link-type: doc
 
-        Worked through examples of how to use the OpenFE toolkit
+        Step-by-step examples showing how to use the OpenFE toolkit.
 
-    .. grid-item-card:: User Guide
-        :img-top: _static/UserGuide.svg
+    .. grid-item-card:: :fas:`book-open-reader` User Guide
         :text-align: center
         :link: guide/index
         :link-type: doc
 
-        Explanations of the underlying concepts behind the OpenFE toolkit
+        Explanations of key concept underlying the OpenFE toolkit.
 
-    .. grid-item-card:: Cookbook
-        :img-top: _static/Cookbook.svg
+    .. grid-item-card:: :fas:`table-list` Cookbooks
         :text-align: center
         :link: cookbook/index
         :link-type: doc
 
-        How-to guides for toolkit components
+        How-to guides for common tasks.
 
-    .. grid-item-card:: API Reference
-        :img-top: _static/API.svg
+    .. grid-item-card:: :fas:`code` Python API
         :text-align: center
-        :link: reference/index
+        :link: reference/api/index
         :link-type: doc
 
-        Technical details on the toolkit's core methods and classes
+        Comprehensive details of the **openfe** Python API.
 
+    .. grid-item-card:: :fas:`gears` Protocols
+        :text-align: center
+        :link: guide/protocols/index
+        :link-type: doc
+
+        Details of the specific Free Energy Protocols included in **openfe**.
+
+    .. grid-item-card:: :fas:`clock-rotate-left` Changelog 
+        :text-align: center
+        :link: CHANGELOG
+        :link-type: doc
+
+        A history of **openfe** releases.
 
 .. toctree::
    :maxdepth: 2
@@ -102,9 +85,19 @@ and lastly, the API Reference provides a direct technical explanation of our cod
    reference/index
    CHANGELOG
 
-Indices and tables
-------------------
+Other OpenFE Ecosystem Projects:
+--------------------------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+**openfe** is Open Free Energy's user-facing software for performing alchemical free energy calculations.
+Below are other software projects the Open Free Energy team maintains, many of which are used by **openfe** itself.
+
+* `konnektor <https://github.com/OpenFreeEnergy/konnektor/>`_: free energy network planning, modification, and analysis
+* `kartograf <https://github.com/OpenFreeEnergy/kartograf/>`_: atom mappings focusing on 3D geometries
+* `Lomap <https://github.com/OpenFreeEnergy/Lomap/>`_: planning perturbation networks for free energy calculations
+* `cinnabar <https://github.com/OpenFreeEnergy/cinnabar/>`_ (formerly arsenic): plotting free energy calculation results
+* `gufe <https://gufe.openfree.energy/en/latest/>`_ : data structures and models underlying the OpenFE ecosystem
+
+Community-Developed Projects:
+-----------------------------
+
+* `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution, developed by `Datryllic <https://datryllic.com/>`_.

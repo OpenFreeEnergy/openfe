@@ -1,23 +1,28 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
-import urllib
-import shutil
-from plugcli.cli import CLI, CONTEXT_SETTINGS
-from openfecli.fetching import FetchablePlugin
-from openfecli import OFECommandPlugin
-
 # MOVE SINGLEMODULEPLUGINLOADER UPSTREAM TO PLUGCLI
 import importlib
+import shutil
+import urllib
+
+import click
+from plugcli.cli import CLI, CONTEXT_SETTINGS
 from plugcli.plugin_management import CLIPluginLoader
+
+from openfecli import OFECommandPlugin
+from openfecli.fetching import FetchablePlugin
+
+
 class SingleModulePluginLoader(CLIPluginLoader):
-    """Load plugins from a specific module
-    """
+    """Load plugins from a specific module"""
+
     def __init__(self, module_name, plugin_class):
-        super().__init__(plugin_type="single_module",
-                         search_path=module_name,
-                         plugin_class=plugin_class)
+        super().__init__(
+            plugin_type="single_module",
+            search_path=module_name,
+            plugin_class=plugin_class,
+        )
 
     def _find_candidates(self):
         return [importlib.import_module(self.search_path)]
@@ -33,27 +38,24 @@ class FetchCLI(CLI):
     This provides the command sections used in help and defines where
     plugins should be kept.
     """
+
     COMMAND_SECTIONS = ["Tutorials"]
 
     def get_loaders(self):
-        return [
-            SingleModulePluginLoader('openfecli.fetchables',
-                                     FetchablePlugin)
-        ]
+        return [SingleModulePluginLoader("openfecli.fetchables", FetchablePlugin)]
 
     def get_installed_plugins(self):
         loader = self.get_loaders()[0]
         return list(loader())
 
-@click.command(
-    cls=FetchCLI,
-    short_help="Fetch tutorial or other resource."
-)
+
+@click.command(cls=FetchCLI, short_help="Fetch tutorial or other resource.")
 def fetch():
     """
     Fetch the given resource. Some resources require internet; others are
     built-in.
     """
+
 
 PLUGIN = OFECommandPlugin(
     command=fetch,

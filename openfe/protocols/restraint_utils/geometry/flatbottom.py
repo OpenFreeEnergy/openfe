@@ -7,11 +7,12 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
+
 from typing import Optional
 
 import MDAnalysis as mda
 import numpy as np
-from gufe.vendor.openff.models.types import FloatQuantity
+from gufe.settings.typing import NanometerQuantity
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds
 from openff.units import Quantity, unit
@@ -26,7 +27,7 @@ class FlatBottomDistanceGeometry(DistanceRestraintGeometry):
     of atoms.
     """
 
-    well_radius: FloatQuantity["nanometer"]
+    well_radius: NanometerQuantity
 
 
 class COMDistanceAnalysis(AnalysisBase):

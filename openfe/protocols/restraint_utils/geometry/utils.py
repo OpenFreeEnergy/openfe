@@ -7,6 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
+
 import warnings
 from itertools import combinations, groupby
 from typing import Optional, Union
@@ -15,7 +16,8 @@ import MDAnalysis as mda
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
-from gufe.vendor.openff.models.types import ArrayQuantity
+
+# from gufe.vendor.openff.models.types import ArrayQuantity  TODO: write a custom quantity to replace this in pydantic v2
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.dssp import DSSP
 from MDAnalysis.analysis.rms import RMSF
@@ -61,9 +63,7 @@ def _get_mda_selection(
     """
     if atom_list is None:
         if selection is None:
-            raise ValueError(
-                "one of either the atom lists or selections must be defined"
-            )
+            raise ValueError("one of either the atom lists or selections must be defined")
 
         ag = universe.select_atoms(selection)
     else:
@@ -241,9 +241,7 @@ def is_collinear(
             v1 = minimize_vectors(v1, box=dimensions)
             v2 = minimize_vectors(v2, box=dimensions)
 
-        normalized_inner_product = np.dot(v1, v2) / np.sqrt(
-            np.dot(v1, v1) * np.dot(v2, v2)
-        )
+        normalized_inner_product = np.dot(v1, v2) / np.sqrt(np.dot(v1, v1) * np.dot(v2, v2))
         result = result or (np.abs(normalized_inner_product) > threshold)
     return result
 
@@ -518,7 +516,8 @@ class FindHostAtoms(AnalysisBase):
         self.results.host_idxs = np.array(list(self.results.host_idxs))
 
 
-def get_local_rmsf(atomgroup: mda.AtomGroup) -> ArrayQuantity:
+# TODO: needs custom type https://github.com/OpenFreeEnergy/openfe/issues/1569
+def get_local_rmsf(atomgroup: mda.AtomGroup):  # -> ArrayQuantity:
     """
     Get the RMSF of an AtomGroup when aligned upon itself.
 
@@ -544,7 +543,6 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> ArrayQuantity:
 
     nojump = NoJump()
     align = Aligner(ag)
-
     copy_u.trajectory.add_transformations(nojump, align)
 
     rmsf = RMSF(ag)
@@ -570,11 +568,7 @@ def _atomgroup_has_bonds(atomgroup: Union[mda.AtomGroup, mda.Universe]) -> bool:
         return False
 
     # Assume that any residue with more than one atom should have a bond
-    if not all(
-        len(r.atoms.bonds) > 0
-        for r in atomgroup.residues
-        if len(r.atoms) > 1
-    ):
+    if not all(len(r.atoms.bonds) > 0 for r in atomgroup.residues if len(r.atoms) > 1):
         return False
 
     return True

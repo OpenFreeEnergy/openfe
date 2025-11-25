@@ -4,6 +4,83 @@ Changelog
 
 .. current developments
 
+v1.7.0
+====================
+
+This release brings several long awaited features to OpenFE, including the SepTop and ABFE Protocols, as well as the adoption of more computationally efficient settings in the CLI and across the Python API.
+
+The v1.7.0 release also comes with some API changes and breaks, including:
+  * "CUDA" is now the default platform in the settings, you will need to change this if you run on a non-NVIDIA-powered platform.
+  * The default solvation cutoff is now 1.5 nm, to avoid issues with small boxes when dealing with ligands in solvent. When calculating complexes using the MD or HybridTopology Protocols with the API, you will need to reduce this value to ~ 1 nm to avoid excessively large water boxes.
+  * The API has fully migrated to Pydantic V2 and the ``GufeQuantity`` scheme. This only affects Protocol developers. If needed, please see the `gufe typing documentation <https://gufe.openfree.energy/en/latest/generated/gufe.settings.typing.html>`_ for more details.
+
+Note that if you want to use NAGL to assign partial charges, you must use ``python >= 3.11``.
+Python 3.10 support is no longer maintained according to `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`_ guidelines.
+The openfe lock file and docker and apptainer images use Python 3.12, and so charge assignment with NAGL will work without intervention.
+
+**Added:**
+
+* Addition of an Absolute Binding Free Energy Protocol (`PR #1045 <https://github.com/OpenFreeEnergy/openfe/pull/1045>`_).
+* Added `a cookbook for using jq to inspect JSON files <https://docs.openfree.energy/en/v1.7.0/cookbook/jq_inspection.html>`_.
+* The AbsoluteSolvationProtocol now properly implements the ``validate`` method,
+  allowing users to verify inputs by calling the method directly (`PR #1572 <https://github.com/OpenFreeEnergy/openfe/pull/1572>`_).
+* Added a new RBFE protocol based on Separated Topologies (`PR #1057 <https://github.com/OpenFreeEnergy/openfe/pull/1057>`_).
+
+**Changed:**
+
+* The default atom mapper used in the CLI has been changed from ``LomapAtomMapper`` to ``KartografAtomMapper`` in line with the recommended defaults from the industry benchmarking paper. Users who whish to continue to use ``LomapAtomMapper`` can do so via the YAML configuration file. See the `documentation <https://docs.openfree.energy/en/latest/tutorials/rbfe_cli_tutorial.html#customize-your-campaign-setup>`_ for details (`PR #1530 <https://github.com/OpenFreeEnergy/openfe/pull/1530>`_).
+* An improved error message is now shown when a mapping involving a changing constraint length cannot be fixed (`PR #1529 <https://github.com/OpenFreeEnergy/openfe/pull/1529>`_).
+* The default platform for OpenMM-based Protocols is now CUDA and will fail by default on a non-Nvidia GPU enabled system (`PR #1576 <https://github.com/OpenFreeEnergy/openfe/pull/1576>`_).
+* Remove unnecessary limit on residues ids (``resids``) when getting mappings from topology in ``topology_helpers.py`` utility module (`PR #1539 <https://github.com/OpenFreeEnergy/openfe/pull/1539>`_).
+* The relative hybrid topology protocol no longer runs the FIRE minimizer when ``dry=True`` (`PR #1468 <https://github.com/OpenFreeEnergy/openfe/pull/1468>`_).
+* Units must be explicitly assigned when defining ``Settings`` parameters, and values will be converted to match the default units for a given field. For example, use ``1.0 * units.bar`` or ``"1 bar"`` for pressure, and ``300 * unit.kelvin`` or ``"300 kelvin"`` for temperature.
+* For protocol developers: ``FloatQuantity`` is no longer supported. Instead, use ``GufeQuantity`` and ``specify_quantity_units()`` to make a ``TypeAlias``. See the `gufe typing documentation <https://gufe.openfree.energy/en/latest/generated/gufe.settings.typing.html>`_ for more details.
+* The default ``time_per_iteration`` setting of the ``MultiStateSimulationSettings`` class has been increased from 1.0 ps to 2.5 ps as part of the fast settings update (`PR #1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
+* The default ``box_shape`` setting of the ``OpenMMSolvationSettings`` class has been changed from ``cubic`` to ``dodecahedron`` to improve simulation efficiency as part of the fast settings update (`PR #1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
+* The default ``solvent_padding`` settings of the ``OpenMMSolvationSettings`` class has been increased from 1.2 nm to 1.5 nm to be compatible with the new ``box_shape`` default as part of the fast settings update (`PR #1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
+* The default ``nonbonded_cutoff`` setting of the ``OpenMMSystemGeneratorFFSettings`` class has been decreased to 0.9 nm from 1.0 nm, in line with current force fields best practices and our newly validated fast settings (`PR #1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
+* When calling the CLI ``openfe plan_rbfe_network``, the ``RelativeHybridTopologyProtocol`` settings now reflects the above "fast" settings updates. This includes;
+
+  * Dodecahedron box solvation
+  * Solvation cutoff of 1.5 nm in solvent-only legs, and 1.0 nm in complex legs
+  * A replica exchange rate of 2.5 ps
+  * A 0.9 nm nonbonded cutoff
+
+**Deprecated:**
+
+* Deprecated ``openfe.utils.visualization_3D.view_mapping_3d()``. Use the method ``LigandAtomMapping.view_3d()`` instead (`PR #1592 <https://github.com/OpenFreeEnergy/openfe/pull/1592>`_).
+* Deprecated ``openfe.utils.ligand_utils.get_alchemical_charge_difference()``, which is replaced by ``LigandAtomMapping.get_alchemical_charge_difference()`` in ``gufe`` (`PR #1479 <https://github.com/OpenFreeEnergy/openfe/pull/1479>`_).
+
+**Fixed:**
+
+* Charged molecules are now explicitly disallowed in the
+  AbsoluteSolvationProtocol(`PR #1572 <https://github.com/OpenFreeEnergy/openfe/pull/1572>`_).
+
+
+
+v1.6.1
+====================
+This release includes minor fixes and updates to tests.
+
+**Added:**
+
+* Added a cookbook for using ``jq`` to inspect JSON files.
+
+**Changed:**
+
+* Remove unnecessary limit on residues ids (``resids``) when getting mappings from topology in ``topology_helpers.py`` utility module.
+* The relative hybrid topology protocol no longer runs the FIRE minimizer when ``dry=True``.
+
+**Fixed:**
+
+* Updated tests to expect to find NAGL, now that it is supported.
+
+
+
 v1.6.0
 ====================
 This release adds support for OpenMM 8.3.0 and Python 3.13.
@@ -18,7 +95,7 @@ This release adds support for OpenMM 8.3.0 and Python 3.13.
 
 v1.5.0
 ====================
-This release includes support for openmm 8.2 and numpy v2. Checkpoint interval default frequency has changed, resulting in much smaller file sizes. There are also a few minor changes as a result of migrating to use **konnektor** as the backend for many network generators. 
+This release includes support for openmm 8.2 and numpy v2. Checkpoint interval default frequency has changed, resulting in much smaller file sizes. There are also a few minor changes as a result of migrating to use **konnektor** as the backend for many network generators.
 
 
 **Added:**
@@ -51,7 +128,7 @@ This release includes support for openmm 8.2 and numpy v2. Checkpoint interval d
 v1.4.0
 ====================
 
-This release includes significant quality of life improvements for the CLI's ``openfe gather`` command. 
+This release includes significant quality of life improvements for the CLI's ``openfe gather`` command.
 
 **Added:**
 

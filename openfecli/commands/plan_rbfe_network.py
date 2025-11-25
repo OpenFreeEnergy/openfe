@@ -2,11 +2,20 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
-from openfecli.utils import write, print_duration
+
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS
+    COFACTORS,
+    MOL_DIR,
+    N_PROTOCOL_REPEATS,
+    NCORES,
+    OUTPUT_DIR,
+    OVERWRITE,
+    PROTEIN,
+    YAML_OPTIONS,
 )
+from openfecli.utils import print_duration, write
+
 
 def plan_rbfe_network_main(
     mapper,
@@ -19,7 +28,7 @@ def plan_rbfe_network_main(
     n_protocol_repeats,
     partial_charge_settings,
     processors,
-    overwrite_charges
+    overwrite_charges,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -57,11 +66,11 @@ def plan_rbfe_network_main(
         associated ligand network
     """
 
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
+        RelativeHybridTopologyProtocol,
     )
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
-    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     protocol_settings = RelativeHybridTopologyProtocol.default_settings()
     protocol_settings.protocol_repeats = n_protocol_repeats
@@ -76,7 +85,7 @@ def plan_rbfe_network_main(
         toolkit_backend=partial_charge_settings.off_toolkit_backend,
         generate_n_conformers=partial_charge_settings.number_of_conformers,
         nagl_model=partial_charge_settings.nagl_model,
-        processors=processors
+        processors=processors,
     )
 
     if cofactors:
@@ -89,17 +98,19 @@ def plan_rbfe_network_main(
             toolkit_backend=partial_charge_settings.off_toolkit_backend,
             generate_n_conformers=partial_charge_settings.number_of_conformers,
             nagl_model=partial_charge_settings.nagl_model,
-            processors=processors
+            processors=processors,
         )
 
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
-        protocol=protocol
+        protocol=protocol,
     )
     alchemical_network = network_planner(
-        ligands=charged_small_molecules, solvent=solvent, protein=protein,
+        ligands=charged_small_molecules,
+        solvent=solvent,
+        protein=protein,
         cofactors=cofactors,
     )
     return alchemical_network, network_planner._ligand_network
@@ -108,45 +119,27 @@ def plan_rbfe_network_main(
 @click.command(
     "plan-rbfe-network",
     short_help=(
-        "Plan a relative binding free energy network, saved as JSON files "
-        "for the quickrun command."
-    )
+        "Plan a relative binding free energy network, saved as JSON files for the quickrun command."
+    ),
 )
-@MOL_DIR.parameter(
-    required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
-)
-@PROTEIN.parameter(
-    multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
-)
-@COFACTORS.parameter(
-    multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"]
-)
-@YAML_OPTIONS.parameter(
-    multiple=False, required=False, default=None,
-    help=YAML_OPTIONS.kwargs["help"],
-)
-@OUTPUT_DIR.parameter(
-    help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
-    default="alchemicalNetwork",
-)
-@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
-@NCORES.parameter(
-    help=NCORES.kwargs["help"],
-    default=1,
-)
-@OVERWRITE.parameter(
-    help=OVERWRITE.kwargs["help"],
-    default=OVERWRITE.kwargs["default"],
-    is_flag=True
-)
+@MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
+@PROTEIN.parameter(multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"])
+@COFACTORS.parameter(multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"])
+@YAML_OPTIONS.parameter(multiple=False, required=False, default=None, help=YAML_OPTIONS.kwargs["help"])  # fmt: skip
+@OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.", default="alchemicalNetwork")  # fmt: skip
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])  # fmt: skip
+@NCORES.parameter(help=NCORES.kwargs["help"], default=1)
+@OVERWRITE.parameter(help=OVERWRITE.kwargs["help"], default=OVERWRITE.kwargs["default"], is_flag=True)  # fmt: skip
 @print_duration
 def plan_rbfe_network(
-        molecules: list[str], protein: str, cofactors: tuple[str],
-        yaml_settings: str,
-        output_dir: str,
-        n_protocol_repeats: int,
-        n_cores: int,
-        overwrite_charges: bool
+    molecules: list[str],
+    protein: str,
+    cofactors: tuple[str],
+    yaml_settings: str,
+    output_dir: str,
+    n_protocol_repeats: int,
+    n_cores: int,
+    overwrite_charges: bool,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for use by
@@ -167,8 +160,9 @@ def plan_rbfe_network(
 
     By default, this tool makes the following choices:
 
-    * Atom mappings performed by LOMAP, with settings max3d=1.0, threed=True, shift=False and
-      element_change=True
+    * Atom mappings performed by KartografAtomMapper, with settings atom_max_distance=0.95, atom_map_hydrogens=True,
+      map_hydrogens_on_hydrogens_only=True,  map_exact_ring_matches_only=True, allow_partial_fused_rings=True, and
+      allow_bond_breaks=False.
     * Minimal spanning network as the network planner, with LOMAP default
       score as the weight function
     * Water as solvent, with NaCl counter ions at 0.15 M concentration.
@@ -192,10 +186,7 @@ def plan_rbfe_network(
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
-    write(
-        "\t\tSmall Molecules: "
-        + " ".join([str(sm) for sm in small_molecules])
-    )
+    write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
 
     protein = PROTEIN.get(protein)
     write("\t\tProtein: " + str(protein))
@@ -229,7 +220,7 @@ def plan_rbfe_network(
     if overwrite_charges:
         write("\tOverwriting partial charges")
     write("")
-    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  # fmt: skip
 
     # DO
     write("Planning RBFE-Campaign:")
@@ -244,7 +235,7 @@ def plan_rbfe_network(
         n_protocol_repeats=n_protocol_repeats,
         partial_charge_settings=partial_charge,
         processors=n_cores,
-        overwrite_charges=overwrite_charges
+        overwrite_charges=overwrite_charges,
     )
     write("\tDone")
     write("")

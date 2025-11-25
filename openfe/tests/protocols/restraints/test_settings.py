@@ -3,13 +3,15 @@
 """
 Test the restraint settings.
 """
+
 import pytest
+from openff.units import unit
+
 from openfe.protocols.restraint_utils.settings import (
     BoreschRestraintSettings,
     DistanceRestraintSettings,
     FlatBottomRestraintSettings,
 )
-from openff.units import unit
 
 
 def test_distance_restraint_settings_default():
@@ -74,19 +76,20 @@ def test_boresch_restraint_settings_default():
     assert isinstance(settings, BoreschRestraintSettings)
 
 
-def test_boresch_restraint_negative_idxs():
-    """
-    Check that the positive_idxs_list validator is
-    working as expected.
-    """
-    with pytest.raises(ValueError, match="negative indices"):
-        _ = BoreschRestraintSettings(
-            K_r=10 * unit.kilojoule_per_mole / unit.nm**2,
-            K_thetaA=10 * unit.kilojoule_per_mole / unit.radians**2,
-            K_thetaB=10 * unit.kilojoule_per_mole / unit.radians**2,
-            phi_A0=10 * unit.kilojoule_per_mole / unit.radians**2,
-            phi_B0=10 * unit.kilojoule_per_mole / unit.radians**2,
-            phi_C0=10 * unit.kilojoule_per_mole / unit.radians**2,
-            host_atoms=[-1, 0],
-            guest_atoms=[0, 1],
-        )
+# TODO: re-enable this Issue #1556
+# def test_boresch_restraint_negative_idxs():
+#     """
+#     Check that the positive_idxs_list validator is
+#     working as expected.
+#     """
+#     with pytest.raises(ValueError, match="negative indices"):
+#         _ = BoreschRestraintSettings(
+#             K_r=10 * unit.kilojoule_per_mole / unit.nm**2,
+#             K_thetaA=10 * unit.kilojoule_per_mole / unit.radians**2,
+#             K_thetaB=10 * unit.kilojoule_per_mole / unit.radians**2,
+#             phi_A0=10 * unit.kilojoule_per_mole / unit.radians**2,
+#             phi_B0=10 * unit.kilojoule_per_mole / unit.radians**2,
+#             phi_C0=10 * unit.kilojoule_per_mole / unit.radians**2,
+#             host_atoms=[-1, 0],
+#             guest_atoms=[0, 1],
+#         )

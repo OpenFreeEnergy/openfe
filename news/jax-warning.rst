@@ -1,10 +1,11 @@
 **Added:**
 
-* <news item>
+* Emit a clarifying log message when a user gets a warning from JAX (#1585).
+  Fixes #1499.
 
 **Changed:**
 
-* The relative hybrid topology protocol no longer runs the FIRE minimizer when ``dry=True``. 
+* <news item>
 
 **Deprecated:**
 

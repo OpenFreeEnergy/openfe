@@ -1,3 +1,5 @@
+.. _userguide_relative_hybrid_topology_protocol:
+
 Relative Hybrid Topology Protocol
 =================================
 
@@ -72,6 +74,12 @@ Each :class:`.ProtocolUnit` carries out the following steps:
 2. Create an alchemical system (hybrid topology).
 3. Minimize the alchemical system.
 4. Equilibrate and production simulate the alchemical system using the chosen multistate sampling method (under NPT conditions if solvent is present).
+
+.. note::
+   **Equilibration method:**
+   The current implementation uses a simple equilibration protocol **without any positional restraints** or **temperature annealing**.
+   The system is equilibrated directly under the target thermodynamic conditions, therefore the input structures should be stable under these conditions.
+
 5. Analyze results for the transformation (for a single leg in the thermodynamic cycle).
 
 Note: three different types of multistate sampling (i.e. replica swapping between lambda states) methods can be chosen; HREX, SAMS, and independent (no lambda swaps attempted). By default the HREX approach is selected, this can be altered using ``simulation_settings.sampler_method`` (default: ``repex``).

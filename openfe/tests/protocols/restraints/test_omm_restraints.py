@@ -8,6 +8,9 @@ import openmm
 import pooch
 import pytest
 from gufe import SmallMoleculeComponent
+from openff.units import unit
+from openmmtools.states import ThermodynamicState
+
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     BoreschRestraintGeometry,
@@ -24,8 +27,6 @@ from openfe.protocols.restraint_utils.settings import (
     DistanceRestraintSettings,
     FlatBottomRestraintSettings,
 )
-from openff.units import unit
-from openmmtools.states import ThermodynamicState
 
 from ...conftest import HAS_INTERNET
 
@@ -78,9 +79,7 @@ def test_single_bond_mixin(restraint, geometry_settings):
 
 
 def test_verify_inputs():
-    with pytest.raises(
-        ValueError, match="Incorrect settings type DistanceRestraintSettings"
-    ):
+    with pytest.raises(ValueError, match="Incorrect settings type DistanceRestraintSettings"):
         _ = FlatBottomBondRestraint(
             restraint_settings=DistanceRestraintSettings(
                 spring_constant=20 * unit.kilojoule_per_mole / unit.nanometer**2
@@ -89,9 +88,7 @@ def test_verify_inputs():
 
 
 def test_verify_geometry():
-    with pytest.raises(
-        ValueError, match="Incorrect geometry class type DistanceRestraintGeometry"
-    ):
+    with pytest.raises(ValueError, match="Incorrect geometry class type DistanceRestraintGeometry"):
         restraint = FlatBottomBondRestraint(
             restraint_settings=FlatBottomRestraintSettings(
                 spring_constant=20 * unit.kilojoule_per_mole / unit.nanometer**2
@@ -114,27 +111,19 @@ zenodo_restraint_data = pooch.create(
 
 @pytest.fixture
 def tyk2_protein_ligand_system():
-    zenodo_restraint_data.fetch(
-        "industry_benchmark_systems.zip", processor=pooch.Unzip()
-    )
+    zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
-        pooch.os_cache("openfe")
-        / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
+        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
     )
-    with open(
-        str(cache_dir / "jacs_set" / "tyk2" / "protein_ligand_system.xml")
-    ) as xml:
+    with open(str(cache_dir / "jacs_set" / "tyk2" / "protein_ligand_system.xml")) as xml:
         return openmm.XmlSerializer.deserialize(xml.read())
 
 
 @pytest.fixture
 def tyk2_rdkit_ligand():
-    zenodo_restraint_data.fetch(
-        "industry_benchmark_systems.zip", processor=pooch.Unzip()
-    )
+    zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
-        pooch.os_cache("openfe")
-        / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
+        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
     )
     ligand = SmallMoleculeComponent.from_sdf_file(
         str(cache_dir / "jacs_set" / "tyk2" / "test_ligand.sdf")
@@ -200,8 +189,7 @@ def test_flatbottom_add_force(tyk2_protein_ligand_system):
     # some other random global parameter is included in this force
     assert restraint_force.getGlobalParameterName(1) == "lambda_restraints"
     assert (
-        restraint_force.getEnergyFunction()
-        == "lambda_restraints * (step(r-r0) * (K/2)*(r-r0)^2)"
+        restraint_force.getEnergyFunction() == "lambda_restraints * (step(r-r0) * (K/2)*(r-r0)^2)"
     )
     assert restraint_force.getNumBonds() == 1
     # some other random global parameter is included in this force otherwise there should be 1
@@ -238,10 +226,7 @@ def test_centriod_harmonic_add_force(tyk2_protein_ligand_system):
     forces = {force.__class__.__name__: force for force in system.getForces()}
     restraint_force = forces["CustomCentroidBondForce"]
     assert restraint_force.getGlobalParameterName(1) == "lambda_restraints"
-    assert (
-        restraint_force.getEnergyFunction()
-        == "lambda_restraints * ((K/2)*distance(g1,g2)^2)"
-    )
+    assert restraint_force.getEnergyFunction() == "lambda_restraints * ((K/2)*distance(g1,g2)^2)"
     assert restraint_force.getNumBonds() == 1
     # some other random global parameter is included in this force otherwise there should be 1
     assert restraint_force.getNumGlobalParameters() == 2
@@ -303,16 +288,15 @@ def test_centroid_flat_bottom_add_force(tyk2_protein_ligand_system):
     reason="Internet seems to be unavailable and test data is not cached locally.",
 )
 def test_add_boresch_force(tyk2_protein_ligand_system, tyk2_rdkit_ligand):
-
     restraint = BoreschRestraint(restraint_settings=BoreschRestraintSettings())
     # create the geometry from the saved values in the sdf file
     geometry = BoreschRestraintGeometry(
-        r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0"),
-        theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0"),
-        theta_B0=tyk2_rdkit_ligand.GetDoubleProp("theta_B0"),
-        phi_A0=tyk2_rdkit_ligand.GetDoubleProp("phi_A0"),
-        phi_B0=tyk2_rdkit_ligand.GetDoubleProp("phi_B0"),
-        phi_C0=tyk2_rdkit_ligand.GetDoubleProp("phi_C0"),
+        r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0") * unit.nanometer,
+        theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0") * unit.radians,
+        theta_B0=tyk2_rdkit_ligand.GetDoubleProp("theta_B0") * unit.radians,
+        phi_A0=tyk2_rdkit_ligand.GetDoubleProp("phi_A0") * unit.radians,
+        phi_B0=tyk2_rdkit_ligand.GetDoubleProp("phi_B0") * unit.radians,
+        phi_C0=tyk2_rdkit_ligand.GetDoubleProp("phi_C0") * unit.radians,
         host_atoms=[tyk2_rdkit_ligand.GetIntProp(f"Host{i}") for i in range(3)],
         guest_atoms=[tyk2_rdkit_ligand.GetIntProp(f"Guest{i}") for i in range(3)],
     )
@@ -351,12 +335,12 @@ def test_get_boresch_state_correction(tyk2_protein_ligand_system, tyk2_rdkit_lig
     restraint = BoreschRestraint(restraint_settings=BoreschRestraintSettings())
     # create the geometry from the saved values in the sdf file
     geometry = BoreschRestraintGeometry(
-        r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0"),
-        theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0"),
-        theta_B0=tyk2_rdkit_ligand.GetDoubleProp("theta_B0"),
-        phi_A0=tyk2_rdkit_ligand.GetDoubleProp("phi_A0"),
-        phi_B0=tyk2_rdkit_ligand.GetDoubleProp("phi_B0"),
-        phi_C0=tyk2_rdkit_ligand.GetDoubleProp("phi_C0"),
+        r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0") * unit.nanometer,
+        theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0") * unit.radians,
+        theta_B0=tyk2_rdkit_ligand.GetDoubleProp("theta_B0") * unit.radians,
+        phi_A0=tyk2_rdkit_ligand.GetDoubleProp("phi_A0") * unit.radians,
+        phi_B0=tyk2_rdkit_ligand.GetDoubleProp("phi_B0") * unit.radians,
+        phi_C0=tyk2_rdkit_ligand.GetDoubleProp("phi_C0") * unit.radians,
         host_atoms=[tyk2_rdkit_ligand.GetIntProp(f"Host{i}") for i in range(3)],
         guest_atoms=[tyk2_rdkit_ligand.GetIntProp(f"Guest{i}") for i in range(3)],
     )
@@ -365,6 +349,4 @@ def test_get_boresch_state_correction(tyk2_protein_ligand_system, tyk2_rdkit_lig
     correction = restraint.get_standard_state_correction(
         thermodynamic_state=state, geometry=geometry
     )
-    assert (
-        pytest.approx(correction.to(unit.kilocalorie_per_mole).m) == -9.28421610202858
-    )
+    assert pytest.approx(correction.to(unit.kilocalorie_per_mole).m) == -9.28421610202858

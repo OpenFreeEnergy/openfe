@@ -498,9 +498,7 @@ def _probe_system(paths: Optional[Iterable[pathlib.Path]] = None) -> dict:
     }
 
 
-def log_system_probe(
-    level=logging.DEBUG, paths: Optional[Iterable[os.PathLike]] = None
-):
+def log_system_probe(level=logging.DEBUG, paths: Optional[Iterable[os.PathLike]] = None):
     """Print the system information via configurable logging.
 
     This creates a logger tree under "{__name__}.log", allowing one to turn
@@ -515,7 +513,7 @@ def log_system_probe(
     gpu = logging.getLogger(basename + ".gpu")
     hostname = logging.getLogger(basename + ".hostname")
     loggers = [base, gpu, hostname]
-    if any(l.isEnabledFor(level) for l in loggers):
+    if any(logger.isEnabledFor(level) for logger in loggers):
         sysinfo = _probe_system(pl_paths)["system information"]
         base.log(level, "SYSTEM CONFIG DETAILS:")
         hostname.log(level, f"hostname: '{sysinfo['hostname']}'")
@@ -523,13 +521,12 @@ def log_system_probe(
             for uuid, gpu_card in gpuinfo.items():
                 gpu.log(
                     level,
-                    f"GPU: {uuid=} {gpu_card['name']} "
-                    f"mode={gpu_card['compute_mode']}",
+                    f"GPU: {uuid=} {gpu_card['name']} mode={gpu_card['compute_mode']}",
                 )
             # gpu.log(level, f"CUDA driver: {...}")
             # gpu.log(level, f"CUDA toolkit: {...}")
         else:  # -no-cov-
-            gpu.log(level, f"CUDA-based GPU not found")
+            gpu.log(level, "CUDA-based GPU not found")
 
         psutilinfo = sysinfo["psutil information"]
         memused = psutilinfo["virtual_memory"]["used"]
@@ -538,8 +535,7 @@ def log_system_probe(
         for diskdev, disk in sysinfo["disk usage information"].items():
             base.log(
                 level,
-                f"{diskdev}: {disk['percent_used']} full "
-                f"({disk['available']} free)",
+                f"{diskdev}: {disk['percent_used']} full ({disk['available']} free)",
             )
 
 
