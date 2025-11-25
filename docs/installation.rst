@@ -24,10 +24,9 @@ In the instructions below, we will use the ``micromamba`` command, but you can u
 
 Once you have one of `micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_, `mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_, or `conda <https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html>`_ installed, you can continue to the **openfe** installation instructions below.
 
+.. note::
 
-  .. note::
-
-    After installing, you must run ``micromamba activate openfe`` in each shell session where you want to use **openfe**!
+  After installing, you must run ``micromamba activate openfe`` in each shell session where you want to use **openfe**!
 
 
 Reproducible builds with a ``conda-lock`` file
@@ -66,7 +65,7 @@ If a particular version is required, the URL will look like this (using the ``op
        $ conda-lock install -n openfe openfe-conda-lock.yml
        $ micromamba activate openfe
 
-To make sure everything is working, `run the tests <testing>`_.
+To make sure everything is working, `run the tests <_testing>`_.
 
 With that, you should be ready to use **openfe**!
 
@@ -286,7 +285,7 @@ Now the CLI tool should work as well ::
      test              Run the OpenFE test suite
 
 
-To make sure everything is working, `run the tests <testing>`_. ::
+To make sure everything is working, `run the tests <_testing>`_.
 
 With that, you should be ready to use **openfe**!
 
@@ -514,19 +513,20 @@ Note the ``.`` at the end of that command, which indicates the current
 directory.
 
 
-.. testing:
+.. _testing:
 
 Testing Your Installation
 -------------------------
 
-  $ openfe test
+After installing **openfe**, make sure everything is working as expected by running the test suite with:
 
+  $ openfe test
 
 The test suite contains several hundred individual tests.
 This will take a few minutes, and all tests should complete with status either passed, skipped, or xfailed (expected fail).
 
 The very first time you run this, the initial check that you can import ``openfe`` will take a while, because some code is compiled the first time it is encountered.
-That compilation only happens once per installation.
+That compilation only happens once per installation, and so subsequent calls to ``openfe`` will be faster.
 
 A more expansive test suite can be run using ::
 
