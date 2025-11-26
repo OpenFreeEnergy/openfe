@@ -15,7 +15,7 @@ import pytest
 from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
 from openff.toolkit import ForceField
 from openff.units import unit as offunit
-from openmm import unit
+from openmm import unit as ommunit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
@@ -349,19 +349,19 @@ def am1bcc_ref_charges():
         "ambertools":[
             0.146957, -0.918943, 0.025557, 0.025557,
             0.025557, 0.347657, 0.347657
-        ] * unit.elementary_charge,
+        ] * offunit.elementary_charge,
         "openeye": [
             0.14713, -0.92016, 0.02595, 0.02595,
             0.02595, 0.34759, 0.34759
-        ] * unit.elementary_charge,
+        ] * offunit.elementary_charge,
         "nagl": [
             0.170413, -0.930417, 0.021593, 0.021593,
             0.021593, 0.347612, 0.347612
-        ] * unit.elementary_charge,
+        ] * offunit.elementary_charge,
         "espaloma": [
             0.017702, -0.966793, 0.063076, 0.063076,
             0.063076, 0.379931, 0.379931
-        ] * unit.elementary_charge,
+        ] * offunit.elementary_charge,
     }  # fmt: skip
     return ref_chgs
 
@@ -437,25 +437,22 @@ def apply_box_vectors_and_fix_nb_force(
     hybrid_system = hybrid_topology_factory.hybrid_system
     # as we use a pre-solvated system, we need to correct the nonbonded methods and cutoffs and set the box vectors
     box_vectors = [
-        openmm.vec3.Vec3(x=6.90789161545809, y=0.0, z=0.0) * unit.nanometer,
-        openmm.vec3.Vec3(x=0.0, y=6.90789161545809, z=0.0) * unit.nanometer,
-        openmm.vec3.Vec3(x=3.453945807729045, y=3.453945807729045, z=4.88461700499211)
-        * unit.nanometer,
+        openmm.vec3.Vec3(x=6.90789161545809, y=0.0, z=0.0) * ommunit.nanometer,
+        openmm.vec3.Vec3(x=0.0, y=6.90789161545809, z=0.0) * ommunit.nanometer,
+        openmm.vec3.Vec3(x=3.453945807729045, y=3.453945807729045, z=4.88461700499211) * ommunit.nanometer,
     ]
     hybrid_system.setDefaultPeriodicBoxVectors(*box_vectors)
     for force in hybrid_system.getForces():
         if isinstance(force, openmm.NonbondedForce):
             force.setNonbondedMethod(openmm.NonbondedForce.PME)
             force.setCutoffDistance(
-                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer)
-                * unit.nanometer
+                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer) * ommunit.nanometer
             )
             force.setUseDispersionCorrection(False)
             force.setUseSwitchingFunction(False)
         elif isinstance(force, openmm.CustomNonbondedForce):
             force.setCutoffDistance(
-                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer)
-                * unit.nanometer
+                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer) * ommunit.nanometer
             )
             force.setNonbondedMethod(force.CutoffPeriodic)
             force.setUseLongRangeCorrection(False)
@@ -470,8 +467,7 @@ def apply_box_vectors_and_fix_nb_force(
                 force.setCutoffDistance(
                     force_field.get_parameter_handler("Electrostatics").cutoff.m_as(
                         offunit.nanometer
-                    )
-                    * unit.nanometer
+                    ) * ommunit.nanometer
                 )
                 force.setUseDispersionCorrection(False)
                 force.setUseSwitchingFunction(False)
