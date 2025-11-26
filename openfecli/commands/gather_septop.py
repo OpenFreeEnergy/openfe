@@ -3,6 +3,7 @@ import pathlib
 from typing import List, Literal
 
 import click
+import gufe
 import numpy as np
 import pandas as pd
 from cinnabar import FEMap, Measurement
@@ -131,16 +132,15 @@ def _get_names(result: dict) -> tuple[str, str]:
     tuple[str, str]
         Ligand names corresponding to the results.
     """
-    # TODO: use gather's _get_names once it is improves (uses input.stateA/B.name)
-    try:
-        nm = list(result["unit_results"].values())[0]["name"]
 
-    except KeyError:
-        raise ValueError("Failed to guess names")
+    # TODO: is it faster to only load the ligands, or is loading the entire pur cheap?
+    solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
+    pur_solvent = gufe.ProtocolUnitResult.from_dict(solvent_data)
 
-    toks = nm.split(",")
-    toks = toks[1].split()
-    return toks[1], toks[3]
+    name_A = pur_solvent.inputs["alchemical_components"]["stateA"][0].name
+    name_B = pur_solvent.inputs["alchemical_components"]["stateB"][0].name
+
+    return name_A, name_B
 
 
 def _error_std(r):

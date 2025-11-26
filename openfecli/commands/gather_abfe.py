@@ -3,6 +3,7 @@ import pathlib
 from typing import List, Literal
 
 import click
+import gufe
 import numpy as np
 import pandas as pd
 from openff.units import unit
@@ -30,17 +31,12 @@ def _get_name(result: dict) -> str:
     str
         Ligand name corresponding to the results.
     """
-    try:
-        nm = list(result["unit_results"].values())[0]["name"]
 
-    except KeyError:
-        raise ValueError("Failed to guess name")
+    # TODO: is it faster to only load the ligands, or is loading the entire pur cheap?
+    solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
+    pur_solvent = gufe.ProtocolUnitResult.from_dict(solvent_data)
+    name = pur_solvent.inputs["alchemical_components"]["stateA"][0].name
 
-    toks = nm.split("Binding, ")
-    if "solvent" in toks[1]:
-        name = toks[1].split(" solvent")[0]
-    if "complex" in toks[1]:
-        name = toks[1].split(" complex")[0]
     return name
 
 
