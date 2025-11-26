@@ -162,30 +162,6 @@ def _error_mbar(r):
     return np.sqrt(np.mean(complex_errors) ** 2 + np.mean(solvent_errors) ** 2)
 
 
-def extract_results_dict(
-    results_files: list[os.PathLike | str],
-) -> dict[str, dict[str, list]]:
-    """
-    Get a dictionary of SepTop results from a list of directories.
-
-    Parameters
-    ----------
-    results_files : list[ps.PathLike | str]
-        A list of directors with SepTop result files to process.
-
-    Returns
-    -------
-    sim_results : dict[str, dict[str, list]]
-        Simulation results, organized by the leg's ligand names and simulation type.
-    """
-    # find and filter result jsons
-    result_fns = _collect_result_jsons(results_files)
-    # pair legs of simulations together into dict of dicts
-    sim_results = _get_legs_from_result_jsons(result_fns)
-
-    return sim_results
-
-
 def _get_ddgs(
     results_dict: dict[str, dict[str, list]], allow_partial: bool = False
 ) -> pd.DataFrame:
@@ -194,7 +170,7 @@ def _get_ddgs(
     Parameters
     ----------
     results_dict : dict[str, dict[str, list]]
-        Dictionary of results created by ``extract_results_dict``.
+        Dictionary of results created by ``_get_legs_from_result_jsons``.
 
     Returns
     -------
@@ -239,7 +215,7 @@ def _generate_dg_mle(
     Parameters
     ----------
     results_dict : dict[str, dict[str, list]]
-        Dictionary of results created by ``extract_results_dict``.
+        Dictionary of results created by ``_get_legs_from_result_jsons``.
 
     Returns
     -------
@@ -284,7 +260,7 @@ def _generate_raw(
     Parameters
     ----------
     results_dict : dict[str, dict[str, list]]
-        Dictionary of results created by ``extract_results_dict``.
+        Dictionary of results created by ``_get_legs_from_result_jsons``.
 
     Returns
     -------

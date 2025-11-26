@@ -154,7 +154,7 @@ def _generate_dg(results_dict: dict[str, dict[str, list]], allow_partial: bool) 
     Parameters
     ----------
     results_dict : dict[str, dict[str, list]]
-        Dictionary of results created by ``extract_results_dict``.
+        Dictionary of results created by ``_get_legs_from_result_jsons``.
 
     Returns
     -------
@@ -189,7 +189,7 @@ def _generate_dg_raw(results_dict: dict[str, dict[str, list]], allow_partial: bo
     Parameters
     ----------
     results_dict : dict[str, dict[str, list]]
-        Dictionary of results created by ``extract_results_dict``.
+        Dictionary of results created by ``_get_legs_from_result_jsons``.
 
     Returns
     -------
