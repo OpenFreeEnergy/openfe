@@ -4,6 +4,7 @@ import sys
 from typing import List, Literal
 
 import click
+import gufe
 import numpy as np
 import pandas as pd
 from cinnabar import FEMap, Measurement
@@ -132,16 +133,15 @@ def _get_names(result: dict) -> tuple[str, str]:
     tuple[str, str]
         Ligand names corresponding to the results.
     """
-    # TODO: use gather's _get_names once it is improves (uses input.stateA/B.name)
-    try:
-        nm = list(result["unit_results"].values())[0]["name"]
 
-    except KeyError:
-        raise ValueError("Failed to guess names")
+    # TODO: is it faster to only load the ligands, or is loading the entire pur cheap?
+    solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
+    pur_solvent = gufe.ProtocolUnitResult.from_dict(solvent_data)
 
-    toks = nm.split(",")
-    toks = toks[1].split()
-    return toks[1], toks[3]
+    name_A = pur_solvent.inputs["alchemical_components"]["stateA"][0].name
+    name_B = pur_solvent.inputs["alchemical_components"]["stateB"][0].name
+
+    return name_A, name_B
 
 
 def _error_std(r):
@@ -160,6 +160,30 @@ def _error_mbar(r):
     complex_errors = [x[1].m for x in r["complex"]]
     solvent_errors = [x[1].m for x in r["solvent"]]
     return np.sqrt(np.mean(complex_errors) ** 2 + np.mean(solvent_errors) ** 2)
+
+
+def extract_results_dict(
+    results_files: list[os.PathLike | str],
+) -> dict[str, dict[str, list]]:
+    """
+    Get a dictionary of SepTop results from a list of directories.
+
+    Parameters
+    ----------
+    results_files : list[ps.PathLike | str]
+        A list of directors with SepTop result files to process.
+
+    Returns
+    -------
+    sim_results : dict[str, dict[str, list]]
+        Simulation results, organized by the leg's ligand names and simulation type.
+    """
+    # find and filter result jsons
+    result_fns = _collect_result_jsons(results_files)
+    # pair legs of simulations together into dict of dicts
+    sim_results = _get_legs_from_result_jsons(result_fns)
+
+    return sim_results
 
 
 def _get_ddgs(
