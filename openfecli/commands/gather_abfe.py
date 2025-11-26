@@ -1,6 +1,7 @@
 import os
 import pathlib
 import sys
+import warnings
 from typing import List, Literal
 
 import click
@@ -261,6 +262,9 @@ def gather_abfe(
     tsv: bool,
     allow_partial: bool,
 ):
+    msg = "Gathering of ABFE results with `openfe gather-abfe` is an experimental feature and is subject to change in a future release of openfe."
+    click.secho(msg, err=True, fg="blue")  # fmt: skip
+
     # find and filter result jsons
     result_fns = _collect_result_jsons(results)
 
