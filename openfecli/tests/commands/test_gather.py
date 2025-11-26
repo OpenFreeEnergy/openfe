@@ -473,7 +473,8 @@ class TestGatherABFE:
         results = [str(abfe_result_dir / f"results_{i}") for i in range(3)]
         args = ["--report", report]
         runner = CliRunner()
-        cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
+        with pytest.warns(UserWarning, match="ABFE"):
+            cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.stdout, extension=".tsv")
@@ -485,7 +486,8 @@ class TestGatherSepTop:
         results = [str(septop_result_dir / f"results_{i}") for i in range(3)]
         args = ["--report", report]
         runner = CliRunner()
-        cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
+        with pytest.warns(UserWarning, match="SepTop"):
+            cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.stdout, extension=".tsv")
