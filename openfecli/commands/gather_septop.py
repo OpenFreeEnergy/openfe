@@ -133,7 +133,6 @@ def _get_names(result: dict) -> tuple[str, str]:
         Ligand names corresponding to the results.
     """
 
-    # TODO: do we always want to treat "solvent" as the source of truth? should we verify that "complex" has the same name?
     # TODO: is it faster to only load the ligands, or is loading the entire pur cheap?
     solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
     pur_solvent = gufe.ProtocolUnitResult.from_dict(solvent_data)
