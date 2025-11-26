@@ -221,6 +221,9 @@ def _get_names(result: dict) -> tuple[str, str]:
 
     # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+
+    # TODO: some of the test data cannot be loaded into a protocol unit result,
+    # so we must load on the SMC-level for now
     ligand_A = gufe.SmallMoleculeComponent.from_dict(
         protocol_data["inputs"]["stateA"]["components"]["ligand"]
     )
