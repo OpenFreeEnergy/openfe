@@ -14,7 +14,6 @@ from openfecli.clicktypes import HyphenAwareChoice
 from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
-    format_estimate_uncertainty,
     load_json,
     rich_print_to_stdout,
 )
@@ -217,6 +216,7 @@ def _get_ddgs(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
             "uncertainty (kcal/mol)",
         ],
     )
+
     return df
 
 
@@ -266,7 +266,8 @@ def generate_dg_mle(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     df = df.iloc[:, :3]
     df.rename({"label": "ligand"}, axis="columns", inplace=True)
 
-    return df
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2)
+    return df_out
 
 
 def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
@@ -288,7 +289,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         for simtype, repeats in sorted(results.items()):
             if simtype != "overall":
                 for repeat in repeats:
-                    m, u = format_estimate_uncertainty(repeat[0].m, repeat[1].m, unc_prec=2)
+                    m, u = (repeat[0].m, repeat[1].m)
                     data.append((simtype, ligpair[0], ligpair[1], m, u))
 
     df = pd.DataFrame(
@@ -301,7 +302,11 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
             "uncertainty (kcal/mol)",
         ],
     )
-    return df
+    df_out = format_df_with_precision(
+        df, "DG(i->j) (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2
+    )
+
+    return df_out
 
 
 @click.command("gather-septop")
