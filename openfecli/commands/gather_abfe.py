@@ -1,5 +1,6 @@
 import os
 import pathlib
+import sys
 from typing import List, Literal
 
 import click
@@ -147,37 +148,13 @@ def _error_mbar(r):
     return np.sqrt(np.mean(complex_errors) ** 2 + np.mean(solvent_errors) ** 2)
 
 
-def extract_results_dict(
-    results_files: list[os.PathLike | str],
-) -> dict[str, dict[str, list]]:
-    """
-    Get a dictionary of ABFE results from a list of directories.
-
-    Parameters
-    ----------
-    results_files : list[ps.PathLike | str]
-        A list of directors with ABFE result files to process.
-
-    Returns
-    -------
-    sim_results : dict[str, dict[str, list]]
-        Simulation results, organized by the leg's ligand names and simulation type.
-    """
-    # find and filter result jsons
-    result_fns = _collect_result_jsons(results_files)
-    # pair legs of simulations together into dict of dicts
-    sim_results = _get_legs_from_result_jsons(result_fns)
-
-    return sim_results
-
-
-def generate_dg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
+def _generate_dg(results_dict: dict[str, dict[str, list]], allow_partial: bool) -> pd.DataFrame:
     """Compute and write out DG values for the given results.
 
     Parameters
     ----------
     results_dict : dict[str, dict[str, list]]
-        Dictionary of results created by ``extract_results_dict``.
+        Dictionary of results created by ``_get_legs_from_result_jsons``.
 
     Returns
     -------
@@ -205,14 +182,14 @@ def generate_dg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     return df_out
 
 
-def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
+def _generate_dg_raw(results_dict: dict[str, dict[str, list]], allow_partial: bool) -> pd.DataFrame:
     """
     Get all the transformation cycle legs found and their DG values.
 
     Parameters
     ----------
     results_dict : dict[str, dict[str, list]]
-        Dictionary of results created by ``extract_results_dict``.
+        Dictionary of results created by ``_get_legs_from_result_jsons``.
 
     Returns
     -------
@@ -268,18 +245,38 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         "By default, the output table will be formatted for human-readability."
     ),
 )
+@click.option(
+    "--allow-partial",
+    is_flag=True,
+    default=False,
+    help=(
+        "Do not raise errors if results are missing parts for some edges. "
+        "(Skip those edges and issue warning instead.)"
+    ),
+)
 def gather_abfe(
     results: List[os.PathLike | str],
     output: os.PathLike | str,
     report: Literal["dg", "raw"],
     tsv: bool,
+    allow_partial: bool,
 ):
-    sim_results = extract_results_dict(results)
+    # find and filter result jsons
+    result_fns = _collect_result_jsons(results)
 
-    if report == "raw":
-        df = generate_dg_raw(sim_results)
-    elif report == "dg":
-        df = generate_dg(sim_results)
+    # pair legs of simulations together into dict of dicts
+    legs = _get_legs_from_result_jsons(result_fns)
+
+    if legs == {}:
+        click.secho("No results JSON files found.", err=True)
+        sys.exit(1)
+
+    # compute report
+    report_func = {
+        "dg": _generate_dg,
+        "raw": _generate_dg_raw,
+    }[report.lower()]
+    df = report_func(legs, allow_partial)
 
     # write output
     is_output_file = isinstance(output, click.utils.LazyFile)
