@@ -52,6 +52,7 @@ import openmm.unit as omm_units
 from gufe import (
     ChemicalSystem,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     settings,
@@ -226,6 +227,9 @@ class SepTopComplexMixin:
         # Also get alchemical smc from state B
         small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         small_mols = small_mols | small_mols_B
+
+        if isinstance(prot_comp, ProteinMembraneComponent):
+            solv_comp = None
 
         return alchem_comps, solv_comp, prot_comp, small_mols
 
@@ -1151,22 +1155,22 @@ class SepTopProtocol(gufe.Protocol):
           If there is no SolventComponent and no ProteinComponent
           in either stateA or stateB.
         """
-        # check that there is a protein component
-        if not any(isinstance(comp, ProteinComponent) for comp in stateA.values()):
-            errmsg = "No ProteinComponent found in stateA"
+        # Check that there is a ProteinComponent or ProteinMembraneComponent
+        components = (ProteinComponent, ProteinMembraneComponent)
+        if not (
+            any(stateA.contains(c) for c in components)
+            and any(stateB.contains(c) for c in components)
+        ):
+            errmsg = "No ProteinComponent or ProteinMembraneComponent found"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, ProteinComponent) for comp in stateB.values()):
-            errmsg = "No ProteinComponent found in stateB"
-            raise ValueError(errmsg)
-
-        # check that there is a solvent component
-        if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
-            errmsg = "No SolventComponent found in stateA"
-            raise ValueError(errmsg)
-
-        if not any(isinstance(comp, SolventComponent) for comp in stateB.values()):
-            errmsg = "No SolventComponent found in stateB"
+        # Check that there is a SolventComponent or ProteinMembraneComponent
+        components = (SolventComponent, ProteinMembraneComponent)
+        if not (
+            any(stateA.contains(c) for c in components)
+            and any(stateB.contains(c) for c in components)
+        ):
+            errmsg = "No SolventComponent or ProteinMembraneComponent found"
             raise ValueError(errmsg)
 
     @staticmethod
@@ -1327,7 +1331,7 @@ class SepTopProtocol(gufe.Protocol):
 
         # Check nonbonded and solvent compatibility
         nonbonded_method = self.settings.forcefield_settings.nonbonded_method
-        # Use the more complete system validation solvent checks
+        # Validate solvent component
         system_validation.validate_solvent(stateA, nonbonded_method)
 
         # Validate solvation settings
@@ -2001,6 +2005,15 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             self.logger,
         )
 
+        omm_topology_AB.setPeriodicBoxVectors(box_AB)
+        print(omm_topology_AB.getPeriodicBoxVectors())
+
+        # ToDo: also apply REST
+        system_outfile = self.shared_basepath / "system.xml.bz2"
+
+        # Serialize system, state and integrator
+        serialize(system, system_outfile)
+
         topology_file = self.shared_basepath / "topology.pdb"
         openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_AB,
@@ -2008,21 +2021,31 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             open(topology_file, "w"),
         )
 
-        # ToDo: also apply REST
+        if not dry:
+            return {
+                "system": system_outfile,
+                "topology": topology_file,
+                "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
+                "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
+                "restraint_geometry_A": restraint_geom_A.dict(),
+                "restraint_geometry_B": restraint_geom_B.dict(),
+            }
 
-        system_outfile = self.shared_basepath / "system.xml.bz2"
-
-        # Serialize system, state and integrator
-        serialize(system, system_outfile)
-
-        return {
-            "system": system_outfile,
-            "topology": topology_file,
-            "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
-            "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
-            "restraint_geometry_A": restraint_geom_A.dict(),
-            "restraint_geometry_B": restraint_geom_B.dict(),
-        }
+        else:
+            return {
+                # Add in various objects we can used to test the system
+                "debug": {
+                    "system": system_outfile,
+                    "topology": topology_file,
+                    "system_A": omm_system_A,
+                    "system_B": omm_system_B,
+                    "system_AB": omm_system_AB,
+                    "restrained_system": system,
+                    "alchem_system": alchemical_system,
+                    "alchem_factory": alchemical_factory,
+                    "positions": equil_positions_AB,
+                }
+            }
 
     def _execute(
         self,
@@ -2284,11 +2307,25 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # Serialize system, state and integrator
         serialize(system, system_outfile)
 
-        return {
-            "system": system_outfile,
-            "topology": topology_file,
-            "standard_state_correction": corr.to("kilocalorie_per_mole"),
-        }
+        if not dry:
+            return {
+                "system": system_outfile,
+                "topology": topology_file,
+                "standard_state_correction": corr.to("kilocalorie_per_mole"),
+            }
+        else:
+            return {
+                # Add in various objects we can used to test the system
+                "debug": {
+                    "system": system_outfile,
+                    "topology": topology_file,
+                    "system_AB": omm_system_AB,
+                    "restrained_system": system,
+                    "alchem_system": alchemical_system,
+                    "alchem_factory": alchemical_factory,
+                    "positions": positions_AB,
+                }
+            }
 
     def _execute(
         self,
@@ -2367,7 +2404,7 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
 
 class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
     """
-    Protocol Unit for the complex phase of an relative SepTop free energy
+    Protocol Unit for the complex phase of a relative SepTop free energy
     """
 
     def _get_lambda_schedule(

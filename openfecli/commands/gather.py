@@ -10,6 +10,7 @@ import click
 import gufe
 import pandas as pd
 
+from openfe import ProteinMembraneComponent
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
@@ -237,7 +238,9 @@ def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
     chem_sys_A = gufe.ChemicalSystem.from_dict(protocol_data["inputs"]["stateA"])
 
-    if not chem_sys_A.contains(gufe.SolventComponent):
+    if chem_sys_A.contains(gufe.ProteinMembraneComponent):
+        return "complex"
+    elif not chem_sys_A.contains(gufe.SolventComponent):
         return "vacuum"
     elif chem_sys_A.contains(gufe.ProteinComponent):
         return "complex"
