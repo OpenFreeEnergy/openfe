@@ -385,15 +385,15 @@ except ModuleNotFoundError:
 @pytest.fixture(scope="module")
 def chlorobenzene():
     """Load chlorobenzene with partial charges from sdf file."""
-    with resources.files("openfe.tests.data.htf") as f:
-        return SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "chlorobenzene.sdf")
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        yield SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "chlorobenzene.sdf")
 
 
 @pytest.fixture(scope="module")
 def fluorobenzene():
     """Load fluorobenzene with partial charges from sdf file."""
-    with resources.files("openfe.tests.data.htf") as f:
-        return SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "fluorobenzene.sdf")
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        yield SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "fluorobenzene.sdf")
 
 
 @pytest.fixture(scope="module")
@@ -423,9 +423,9 @@ def chlorobenzene_to_fluorobenzene_mapping(chlorobenzene, fluorobenzene):
 @pytest.fixture(scope="module")
 def t4_lysozyme_solvated():
     """Load the T4 lysozyme L99A structure and solvent from the pdb file."""
-    with resources.files("openfe.tests.data.htf") as f:
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
         with gzip.open(f / "t4_lysozyme_data" / "t4_lysozyme_solvated.pdb.gz", "rb") as gzf:
-            return ProteinComponent.from_pdb_file(gzf)
+            yield ProteinComponent.from_pdb_file(gzf)
 
 
 def apply_box_vectors_and_fix_nb_force(
