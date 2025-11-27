@@ -307,7 +307,7 @@ class HybridTopologyFactory:
         cmap_new = self._new_system_forces.get("CMAPTorsionForce", None)
 
         if cmap_new == cmap_old is None:
-            logger.info("No CMAPTorsionForce found skipping adding force.")
+            logger.info("No CMAPTorsionForce found. Skipping adding force.")
             return
 
         # verify compatibility and extract numbers of maps and torsions
