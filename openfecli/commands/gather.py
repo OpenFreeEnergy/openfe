@@ -154,7 +154,7 @@ def format_df_with_precision(
     """
 
     # find all entries in both columns that contain strings:
-    df_is_string = df[[est_col_name, unc_col_name]].applymap(lambda x: isinstance(x, str))
+    df_is_string = df[[est_col_name, unc_col_name]].map(lambda x: isinstance(x, str))
 
     # if either the estimate or uncertainty entries are strings, dont format
     no_strings_mask = ~(df_is_string[est_col_name] | df_is_string[unc_col_name])
