@@ -25,7 +25,7 @@ def test_cmap_system_no_dummy_pme_energy(htf_cmap_chlorobenzene_to_fluorobenzene
     integrator = openmm.LangevinIntegrator(
         300 * unit.kelvin, 1.0 / unit.picosecond, 0.002 * unit.picoseconds
     )
-    platform = openmm.Platform.getPlatformByName("CPU")
+    platform = openmm.Platform.getPlatformByName("Reference")
     default_lambda = _rfe_utils.lambdaprotocol.LambdaProtocol()
 
     hybrid_simulation = app.Simulation(
@@ -64,26 +64,25 @@ def test_cmap_system_no_dummy_pme_energy(htf_cmap_chlorobenzene_to_fluorobenzene
         assert 0.0 != pytest.approx(hybrid_energy)
 
 
-def test_verify_cmap_no_cmap():
-    """Test that no error is raised if a CMAPTorsionForce is not present in either end state."""
-    (cmap_old, cmap_new, old_num_maps, new_num_maps, old_num_torsions, new_num_torsions) = (
-        HybridTopologyFactory._verify_cmap_compatibility(None, None)
-    )
-    assert cmap_old is None
-    assert cmap_new is None
-    assert old_num_maps == 0
-    assert new_num_maps == 0
-    assert old_num_torsions == 0
-    assert new_num_torsions == 0
-
-
-def test_verify_cmap_missing_cmap_error():
+def test_cmap_missing_cmap_error():
     """Test that an error is raised if a CMAPTorsionForce is only present in one of the end states."""
     with pytest.raises(
         RuntimeError,
         match="Inconsistent CMAPTorsionForce between end states expected to be present in both",
     ):
-        _ = HybridTopologyFactory._verify_cmap_compatibility(None, openmm.CMAPTorsionForce())
+        old_system, old_topology, old_positions = _make_system_with_cmap([4])
+        new_system, new_topology, new_positions = _make_system_with_cmap([])
+        _ = HybridTopologyFactory(
+            old_system=old_system,
+            old_topology=old_topology,
+            old_positions=old_positions,
+            new_system=new_system,
+            new_topology=new_topology,
+            new_positions=new_positions,
+            # map all atoms so that one of the cmap atoms is in the alchemical core region
+            old_to_new_atom_map={0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7},
+            old_to_new_core_atom_map={4: 4},  # atom 4 is part of the cmap torsion
+        )
 
 
 def test_verify_cmap_incompatible_maps_error():

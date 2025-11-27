@@ -76,8 +76,6 @@ def make_htf(
     stateA_positions = to_openmm(from_openmm(stateA_modeller.getPositions()))
 
     # e. create the stateA System
-    # Block out oechem backend in system_generator calls to avoid
-    # any issues with smiles roundtripping between rdkit and oechem
     stateA_system = system_generator.create_system(
         stateA_modeller.topology,
         molecules=[m for _, m in chain(off_small_mols["stateA"], off_small_mols["both"])],
@@ -93,7 +91,6 @@ def make_htf(
     )
 
     # b. get a list of small molecules for stateB
-    # Block out oechem backend in system_generator calls to avoid
     stateB_system = system_generator.create_system(
         stateB_topology,
         molecules=[m for _, m in chain(off_small_mols["stateB"], off_small_mols["both"])],
@@ -141,13 +138,26 @@ def _make_system_with_cmap(
     map_sizes: list[int],
     mapped_torsions: list[tuple[int, int, int, int, int, int, int, int, int]] | None = None,
     num_atoms: int = 8,
-):
+) -> tuple[openmm.System, openmm.app.Topology, openmm.unit.Quantity]:
     """
     Build an OpenMM System with a CMAP term based on the provided mapping data.
-    :param map_sizes: Mapping data:
-    :param mapped_torsions:
-    :param num_atoms:
-    :return:
+
+    Parameters
+    ----------
+    map_sizes : list[int]
+        A list of integers specifying the sizes of the CMAP grids to be added.
+    mapped_torsions : list[tuple[int, int, int, int, int, int, int, int, int]], optional
+        A list of tuples specifying the atom indices for each mapped torsion.
+        Each tuple should contain 9 integers: the first is the map index,
+        followed by the 8 atom indices defining the two dihedrals.
+        If None, a default torsion will be added using the first 8 atoms.
+    num_atoms : int, optional
+        The total number of atoms in the system must be >= 8. Default is 8 the minimum required for a single CMAP.
+
+    Returns
+    -------
+    tuple[openmm.System, openmm.app.Topology, openmm.unit.Quantity]
+        A tuple containing the OpenMM System, Topology, and Positions.
     """
     assert num_atoms >= 8, "num_atoms must be at least 8 to accommodate mapped torsions"
     system = openmm.System()
@@ -163,22 +173,24 @@ def _make_system_with_cmap(
     for _ in range(num_atoms):
         system.addParticle(12.0)  # Add carbon-like particles
 
-    # create a CMAP force
-    cmap_force = openmm.CMAPTorsionForce()
+    # create a CMAP force if we have map sizes to add
+    if map_sizes:
+        cmap_force = openmm.CMAPTorsionForce()
 
-    for map_size in map_sizes:
-        # Create a grid for the CMAP
-        grid = [0.0] * (map_size * map_size)
-        cmap_force.addMap(map_size, grid)
+        for map_size in map_sizes:
+            # Create a grid for the CMAP
+            grid = [0.0] * (map_size * map_size)
+            cmap_force.addMap(map_size, grid)
 
-    if mapped_torsions is None:
-        # add a single cmap term for all atoms using the first map
-        mapped_torsions = [(0, 0, 1, 2, 3, 4, 5, 6, 7)]
+        if mapped_torsions is None:
+            # add a single cmap term for all atoms using the first map
+            mapped_torsions = [(0, 0, 1, 2, 3, 4, 5, 6, 7)]
 
-    for torsion in mapped_torsions:
-        cmap_force.addTorsion(torsion[0], *torsion[1:])
+        for torsion in mapped_torsions:
+            cmap_force.addTorsion(torsion[0], *torsion[1:])
 
-    system.addForce(cmap_force)
+        system.addForce(cmap_force)
+
     # build a basic topology for the number of atoms bonding each atom to the next
     topology = openmm.app.Topology()
     chain = topology.addChain()

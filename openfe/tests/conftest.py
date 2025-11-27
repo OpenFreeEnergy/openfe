@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import gzip
 import os
 import pathlib
 import urllib.error
@@ -423,9 +424,8 @@ def chlorobenzene_to_fluorobenzene_mapping(chlorobenzene, fluorobenzene):
 def t4_lysozyme_solvated():
     """Load the T4 lysozyme L99A structure and solvent from the pdb file."""
     with resources.files("openfe.tests.data.htf") as f:
-        return ProteinComponent.from_pdb_file(
-            (f / "t4_lysozyme_data" / "t4_lysozyme_solvated.pdb").as_posix()
-        )
+        with gzip.open(f / "t4_lysozyme_data" / "t4_lysozyme_solvated.pdb.gz", "rb") as gzf:
+            return ProteinComponent.from_pdb_file(gzf)
 
 
 def apply_box_vectors_and_fix_nb_force(
