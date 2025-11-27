@@ -439,20 +439,23 @@ def apply_box_vectors_and_fix_nb_force(
     box_vectors = [
         openmm.vec3.Vec3(x=6.90789161545809, y=0.0, z=0.0) * ommunit.nanometer,
         openmm.vec3.Vec3(x=0.0, y=6.90789161545809, z=0.0) * ommunit.nanometer,
-        openmm.vec3.Vec3(x=3.453945807729045, y=3.453945807729045, z=4.88461700499211) * ommunit.nanometer,
+        openmm.vec3.Vec3(x=3.453945807729045, y=3.453945807729045, z=4.88461700499211)
+        * ommunit.nanometer,
     ]
     hybrid_system.setDefaultPeriodicBoxVectors(*box_vectors)
     for force in hybrid_system.getForces():
         if isinstance(force, openmm.NonbondedForce):
             force.setNonbondedMethod(openmm.NonbondedForce.PME)
             force.setCutoffDistance(
-                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer) * ommunit.nanometer
+                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer)
+                * ommunit.nanometer
             )
             force.setUseDispersionCorrection(False)
             force.setUseSwitchingFunction(False)
         elif isinstance(force, openmm.CustomNonbondedForce):
             force.setCutoffDistance(
-                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer) * ommunit.nanometer
+                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer)
+                * ommunit.nanometer
             )
             force.setNonbondedMethod(force.CutoffPeriodic)
             force.setUseLongRangeCorrection(False)
@@ -467,7 +470,8 @@ def apply_box_vectors_and_fix_nb_force(
                 force.setCutoffDistance(
                     force_field.get_parameter_handler("Electrostatics").cutoff.m_as(
                         offunit.nanometer
-                    ) * ommunit.nanometer
+                    )
+                    * ommunit.nanometer
                 )
                 force.setUseDispersionCorrection(False)
                 force.setUseSwitchingFunction(False)
