@@ -189,9 +189,9 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
         stateB=benzene_vacuum_system,
         mapping=None,
     )
-    unit = list(dag.protocol_units)[0]
+    dag_unit = list(dag.protocol_units)[0]
     with tmpdir.as_cwd():
-        system = unit.run(dry=True)["debug"]["system"]
+        system = dag_unit.run(dry=True)["debug"]["system"]
 
 
 @pytest.mark.skipif(not HAS_ESPALOMA, reason="espaloma is not available")
@@ -215,9 +215,9 @@ def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_setting
         stateB=benzene_system,
         mapping=None,
     )
-    unit = list(dag.protocol_units)[0]
+    dag_unit = list(dag.protocol_units)[0]
     with tmpdir.as_cwd():
-        system = unit.run(dry=True)["debug"]["system"]
+        system = dag_unit.run(dry=True)["debug"]["system"]
         assert system.getNumParticles() == 12
         # check the charges assigned
         nb_force = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
@@ -300,10 +300,10 @@ def test_dry_many_molecules_solvent(benzene_many_solv_system, tmpdir):
         stateB=benzene_many_solv_system,
         mapping=None,
     )
-    unit = list(dag.protocol_units)[0]
+    dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        system = unit.run(dry=True)["debug"]["system"]
+        system = dag_unit.run(dry=True)["debug"]["system"]
 
 
 BENZ = """\
