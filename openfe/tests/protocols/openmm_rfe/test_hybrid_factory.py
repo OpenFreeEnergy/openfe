@@ -6,7 +6,7 @@ from openmm import app, unit
 
 from openfe.protocols.openmm_rfe import _rfe_utils
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
-from openfe.tests.helpers import _make_system_with_cmap
+from openfe.tests.protocols.openmm_rfe.helpers import _make_system_with_cmap
 
 
 def test_cmap_system_no_dummy_pme_energy(htf_cmap_chlorobenzene_to_fluorobenzene):
