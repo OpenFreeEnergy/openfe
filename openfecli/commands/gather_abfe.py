@@ -37,7 +37,7 @@ def _get_name(result: dict) -> str:
     solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
     name = solvent_data["inputs"]["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
 
-    return name
+    return str(name)
 
 
 def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
