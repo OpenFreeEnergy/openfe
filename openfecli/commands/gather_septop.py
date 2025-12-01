@@ -338,8 +338,8 @@ def gather_septop(
     tsv: bool,
     allow_partial: bool,
 ):
-    msg = "Gathering of SepTop results with `openfe gather-septop` is an experimental feature and is subject to change in a future release of openfe."
-    click.secho(msg, err=True, fg="blue")  # fmt: skip
+    msg = "WARNING! Gathering of SepTop results with `openfe gather-septop` is an experimental feature and is subject to change in a future release of openfe."
+    click.secho(msg, err=True, fg="orange")  # fmt: skip
     # find and filter result jsons
     result_fns = _collect_result_jsons(results)
 
