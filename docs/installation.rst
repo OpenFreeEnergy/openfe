@@ -1,7 +1,8 @@
 Installation
 ============
 
-**openfe** is currently only compatible with POSIX systems (macOS and UNIX/Linux). See `Supported Hardware`_ for more details.
+**openfe** is currently only compatible with POSIX systems (macOS and UNIX/Linux). 
+See `Supported Hardware`_ for more details.
 
 We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as far as minimum supported dependencies, with the following caveats:
 
@@ -672,6 +673,5 @@ Select your operating system and architecture from the tool below, and run the c
       setArchitectureOptions("Linux");  // default
     </script>
 
-You should then close your current session and open a fresh login to ensure
-that everything is properly registered.
+You should then close your current session and open a fresh login to ensure that everything is properly registered.
 You can now proceed to use ``mamba`` commands as instructed above.
