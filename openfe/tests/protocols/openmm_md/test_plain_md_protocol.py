@@ -8,6 +8,7 @@ from unittest import mock
 
 import gufe
 import pytest
+from gufe import ChemicalSystem, SmallMoleculeComponent
 from numpy.testing import assert_allclose
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
@@ -194,22 +195,38 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
 
 
 @pytest.mark.skipif(not HAS_ESPALOMA, reason="espaloma is not available")
-def test_dry_run_espaloma_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
+def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_settings, tmpdir):
     vac_settings.forcefield_settings.small_molecule_forcefield = "espaloma-0.3.2"
 
     protocol = PlainMDProtocol(
         settings=vac_settings,
     )
 
+    # add some dummy charges to the benzene molecule
+    benzene = benzene_modifications["benzene"]
+    benzene_openff = benzene.to_openff()
+    # assign some fake charges
+    expected_charges = [-0.5, -0.5 -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5]
+    benzene_openff.partial_charges = expected_charges * unit.elementary_charge
+    benzene_system = ChemicalSystem({"ligand": SmallMoleculeComponent.from_openff(benzene_openff)})
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
-        stateA=benzene_vacuum_system,
-        stateB=benzene_vacuum_system,
+        stateA=benzene_system,
+        stateB=benzene_system,
         mapping=None,
     )
     unit = list(dag.protocol_units)[0]
     with tmpdir.as_cwd():
         system = unit.run(dry=True)["debug"]["system"]
+        assert system.getNumParticles() == 12
+        # check the charges assigned
+        nb_force = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
+        charges = []
+        for i in range(nb_force.getNumParticles()):
+            c, _, _ = nb_force.getParticleParameters(i)
+            charges.append(c.value_in_unit(omm_unit.elementary_charge))
+        assert_allclose(charges, expected_charges, rtol=1e-6)
+
 
 
 @pytest.mark.parametrize(
