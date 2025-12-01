@@ -206,7 +206,7 @@ def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_setting
     benzene = benzene_modifications["benzene"]
     benzene_openff = benzene.to_openff()
     # assign some fake charges
-    expected_charges = [-0.5, -0.5 -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5]
+    expected_charges = [-0.5, -0.5 - 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
     benzene_openff.partial_charges = expected_charges * unit.elementary_charge
     benzene_system = ChemicalSystem({"ligand": SmallMoleculeComponent.from_openff(benzene_openff)})
     # create DAG from protocol and take first (and only) work unit from within
@@ -226,7 +226,6 @@ def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_setting
             c, _, _ = nb_force.getParticleParameters(i)
             charges.append(c.value_in_unit(omm_unit.elementary_charge))
         assert_allclose(charges, expected_charges, rtol=1e-6)
-
 
 
 @pytest.mark.parametrize(
