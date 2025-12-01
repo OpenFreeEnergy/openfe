@@ -493,24 +493,3 @@ class TestGatherSepTop:
         assert "WARNING! Gathering of SepTop results" in cli_result.stderr
 
         file_regression.check(cli_result.stdout, extension=".tsv")
-
-    # @pytest.mark.parametrize("report", ["dg", "ddg", "raw"])
-    # def test_septop_missing_edge(self, septop_result_dir, report, file_regression):
-    #     results = [str(septop_result_dir / f"results_{i}_remove_edge") for i in range(3)]
-    #     args = ["--report", report]
-    #     runner = CliRunner()
-    #     cli_result = runner.invoke(gather, results + args + ["--tsv"])
-    #     file_regression.check(cli_result.stdout, extension=".tsv")
-
-    #     assert_click_success(cli_result)
-    #     file_regression.check(cli_result.stdout, extension=".tsv")
-
-    # @pytest.mark.parametrize("report", ["ddg", "raw"])
-    # def test_septop_failed_edge(self, septop_result_dir, report, file_regression):
-    #     results = [str(septop_result_dir / f"results_{i}_failed_edge") for i in range(3)]
-    #     args = ["--report", report]
-    #     runner = CliRunner()
-    #     cli_result = runner.invoke(gather, results + args + ["--tsv"])
-
-    #     assert_click_success(cli_result)
-    #     file_regression.check(cli_result.stdout, extension=".tsv")
