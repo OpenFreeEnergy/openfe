@@ -476,6 +476,8 @@ class TestGatherABFE:
         cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
 
         assert_click_success(cli_result)
+        assert "WARNING! Gathering of ABFE results" in cli_result.stderr
+
         file_regression.check(cli_result.stdout, extension=".tsv")
 
 
@@ -488,6 +490,8 @@ class TestGatherSepTop:
         cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
 
         assert_click_success(cli_result)
+        assert "WARNING! Gathering of SepTop results" in cli_result.stderr
+
         file_regression.check(cli_result.stdout, extension=".tsv")
 
     # @pytest.mark.parametrize("report", ["dg", "ddg", "raw"])
