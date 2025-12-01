@@ -728,12 +728,40 @@ def test_dry_run_charge_backends(
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
-def test_dry_run_user_charges(benzene_modifications, vac_settings, tmpdir):
+@pytest.mark.parametrize(
+    "method, backend",
+    [
+        ("am1bcc", "ambertools"),
+        pytest.param(
+            "am1bcc",
+            "openeye",
+            marks=pytest.mark.skipif(not HAS_OPENEYE, reason="needs oechem"),
+        ),
+        pytest.param(
+            "nagl",
+            "rdkit",
+            marks=pytest.mark.skipif(
+                not HAS_NAGL or sys.platform.startswith("darwin"),
+                reason="needs NAGL and/or on macos",
+            ),
+        ),
+        pytest.param(
+            "espaloma",
+            "rdkit",
+            marks=pytest.mark.skipif(not HAS_ESPALOMA_CHARGE, reason="needs espaloma charge"),
+        ),
+    ],
+)
+def test_dry_run_user_charges(benzene_modifications, vac_settings, tmpdir, method, backend):
     """
     Create a hybrid system with a set of fictitious user supplied charges
     and ensure that they are properly passed through to the constructed
     hybrid topology.
     """
+    # modify the charge generation settings these should be ignored
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+    vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=vac_settings,
     )
