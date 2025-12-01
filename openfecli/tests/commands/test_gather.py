@@ -480,11 +480,35 @@ class TestGatherABFE:
 
         file_regression.check(cli_result.stdout, extension=".tsv")
 
+    @pytest.mark.parametrize("report", ["raw", "dg"])
+    def test_abfe_single_repeat(self, abfe_result_dir, report, file_regression):
+        results = [str(abfe_result_dir / "results_0")]
+        args = ["--report", report]
+        runner = CliRunner()
+        cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
+
+        assert_click_success(cli_result)
+        assert "WARNING! Gathering of ABFE results" in cli_result.stderr
+
+        file_regression.check(cli_result.stdout, extension=".tsv")
+
 
 class TestGatherSepTop:
     @pytest.mark.parametrize("report", ["raw", "ddg", "dg"])
     def test_septop_full_results(self, septop_result_dir, report, file_regression):
         results = [str(septop_result_dir / f"results_{i}") for i in range(3)]
+        args = ["--report", report]
+        runner = CliRunner()
+        cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
+
+        assert_click_success(cli_result)
+        assert "WARNING! Gathering of SepTop results" in cli_result.stderr
+
+        file_regression.check(cli_result.stdout, extension=".tsv")
+
+    @pytest.mark.parametrize("report", ["raw", "ddg", "dg"])
+    def test_septop_single_repeat(self, septop_result_dir, report, file_regression):
+        results = [str(septop_result_dir / "results_0")]
         args = ["--report", report]
         runner = CliRunner()
         cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
