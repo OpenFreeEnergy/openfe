@@ -135,14 +135,12 @@ def _get_names(result: dict) -> tuple[str, str]:
         Ligand names corresponding to the results.
     """
 
-    # TODO: is it faster to only load the ligands, or is loading the entire pur cheap?
     solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
-    pur_solvent = gufe.ProtocolUnitResult.from_dict(solvent_data)
 
-    name_A = pur_solvent.inputs["alchemical_components"]["stateA"][0].name
-    name_B = pur_solvent.inputs["alchemical_components"]["stateB"][0].name
-
-    return name_A, name_B
+    name_A = solvent_data["inputs"]["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
+    name_B = solvent_data["inputs"]["alchemical_components"]["stateB"][0]["molprops"]["ofe-name"]
+    # breakpoint()
+    return str(name_A), str(name_B)
 
 
 def _error_std(r):
