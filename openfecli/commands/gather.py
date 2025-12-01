@@ -222,27 +222,22 @@ def _get_names(result: dict) -> tuple[str, str]:
     # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
 
-    # TODO: some of the test data cannot be loaded into a protocol unit result,
-    # so we must load on the SMC-level for now
-    ligand_A = gufe.SmallMoleculeComponent.from_dict(
-        protocol_data["inputs"]["stateA"]["components"]["ligand"]
-    )
-    ligand_B = gufe.SmallMoleculeComponent.from_dict(
-        protocol_data["inputs"]["stateB"]["components"]["ligand"]
-    )
+    name_A = protocol_data["inputs"]["ligandmapping"]["componentA"]["molprops"]["ofe-name"]
+    name_B = protocol_data["inputs"]["ligandmapping"]["componentB"]["molprops"]["ofe-name"]
 
-    return ligand_A.name, ligand_B.name
+    return name_A, name_B
 
 
 def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     """Determine the simulation type based on the component types."""
 
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
-    chem_sys_A = gufe.ChemicalSystem.from_dict(protocol_data["inputs"]["stateA"])
-
-    if not chem_sys_A.contains(gufe.SolventComponent):
+    component_types = [
+        x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
+    ]
+    if "gufe.components.solventcomponent" not in component_types:
         return "vacuum"
-    elif chem_sys_A.contains(gufe.ProteinComponent):
+    elif "gufe.components.proteincomponent" in component_types:
         return "complex"
     else:
         return "solvent"
