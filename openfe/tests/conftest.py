@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import gzip
 import os
 import pathlib
 import urllib.error
@@ -9,15 +10,21 @@ from importlib import resources
 import gufe
 import mdtraj
 import numpy as np
+import openmm
 import pandas as pd
 import pytest
-from gufe import AtomMapper, LigandAtomMapping, SmallMoleculeComponent
-from openff.units import unit
+from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
+from openff.toolkit import ForceField
+from openff.units import unit as offunit
+from openmm import unit as ommunit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 import openfe
+from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
+from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
 from openfe.protocols.openmm_septop.utils import deserialize
+from openfe.tests.protocols.openmm_rfe.helpers import make_htf
 
 
 class SlowTests:
@@ -362,19 +369,19 @@ def am1bcc_ref_charges():
         "ambertools":[
             0.146957, -0.918943, 0.025557, 0.025557,
             0.025557, 0.347657, 0.347657
-        ] * unit.elementary_charge,
+        ] * offunit.elementary_charge,
         "openeye": [
             0.14713, -0.92016, 0.02595, 0.02595,
             0.02595, 0.34759, 0.34759
-        ] * unit.elementary_charge,
+        ] * offunit.elementary_charge,
         "nagl": [
             0.170413, -0.930417, 0.021593, 0.021593,
             0.021593, 0.347612, 0.347612
-        ] * unit.elementary_charge,
+        ] * offunit.elementary_charge,
         "espaloma": [
             0.017702, -0.966793, 0.063076, 0.063076,
             0.063076, 0.379931, 0.379931
-        ] * unit.elementary_charge,
+        ] * offunit.elementary_charge,
     }  # fmt: skip
     return ref_chgs
 
@@ -392,3 +399,140 @@ try:
     HAS_ESPALOMA = True
 except ModuleNotFoundError:
     HAS_ESPALOMA = False
+
+
+@pytest.fixture(scope="module")
+def chlorobenzene():
+    """Load chlorobenzene with partial charges from sdf file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        yield SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "chlorobenzene.sdf")
+
+
+@pytest.fixture(scope="module")
+def fluorobenzene():
+    """Load fluorobenzene with partial charges from sdf file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        yield SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "fluorobenzene.sdf")
+
+
+@pytest.fixture(scope="module")
+def chlorobenzene_to_fluorobenzene_mapping(chlorobenzene, fluorobenzene):
+    """Return a mapping from chlorobenzene to fluorobenzene."""
+    return LigandAtomMapping(
+        componentA=chlorobenzene,
+        componentB=fluorobenzene,
+        componentA_to_componentB={
+            # perfect one-to-one mapping
+            0: 0,
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+            10: 10,
+            11: 11,
+        },
+    )
+
+
+@pytest.fixture(scope="module")
+def t4_lysozyme_solvated():
+    """Load the T4 lysozyme L99A structure and solvent from the pdb file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        with gzip.open(f / "t4_lysozyme_data" / "t4_lysozyme_solvated.pdb.gz", "rb") as gzf:
+            yield ProteinComponent.from_pdb_file(gzf)
+
+
+def apply_box_vectors_and_fix_nb_force(
+    hybrid_topology_factory: HybridTopologyFactory, force_field: ForceField
+):
+    """
+    Edit the systems in the hybrid topology factory to have the correct box vectors and nonbonded force settings for the T4 lysozyme system.
+    """
+    hybrid_system = hybrid_topology_factory.hybrid_system
+    # as we use a pre-solvated system, we need to correct the nonbonded methods and cutoffs and set the box vectors
+    box_vectors = [
+        openmm.vec3.Vec3(x=6.90789161545809, y=0.0, z=0.0) * ommunit.nanometer,
+        openmm.vec3.Vec3(x=0.0, y=6.90789161545809, z=0.0) * ommunit.nanometer,
+        openmm.vec3.Vec3(x=3.453945807729045, y=3.453945807729045, z=4.88461700499211)
+        * ommunit.nanometer,
+    ]
+    hybrid_system.setDefaultPeriodicBoxVectors(*box_vectors)
+    for force in hybrid_system.getForces():
+        if isinstance(force, openmm.NonbondedForce):
+            force.setNonbondedMethod(openmm.NonbondedForce.PME)
+            force.setCutoffDistance(
+                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer)
+                * ommunit.nanometer
+            )
+            force.setUseDispersionCorrection(False)
+            force.setUseSwitchingFunction(False)
+        elif isinstance(force, openmm.CustomNonbondedForce):
+            force.setCutoffDistance(
+                force_field.get_parameter_handler("Electrostatics").cutoff.m_as(offunit.nanometer)
+                * ommunit.nanometer
+            )
+            force.setNonbondedMethod(force.CutoffPeriodic)
+            force.setUseLongRangeCorrection(False)
+            force.setUseSwitchingFunction(False)
+
+    # make sure both end state systems have the same cutoff method and distance
+    for end_state in [hybrid_topology_factory._old_system, hybrid_topology_factory._new_system]:
+        end_state.setDefaultPeriodicBoxVectors(*box_vectors)
+        for force in end_state.getForces():
+            if isinstance(force, openmm.NonbondedForce):
+                force.setNonbondedMethod(openmm.NonbondedForce.PME)
+                force.setCutoffDistance(
+                    force_field.get_parameter_handler("Electrostatics").cutoff.m_as(
+                        offunit.nanometer
+                    )
+                    * ommunit.nanometer
+                )
+                force.setUseDispersionCorrection(False)
+                force.setUseSwitchingFunction(False)
+
+
+@pytest.fixture(scope="module")
+def htf_cmap_chlorobenzene_to_fluorobenzene(
+    chlorobenzene_to_fluorobenzene_mapping, t4_lysozyme_solvated
+):
+    """Generate the htf for chlorobenzene to fluorobenzene with a CMAP term."""
+    settings = RelativeHybridTopologyProtocol.default_settings()
+    # make sure we interpolate the 1-4 exceptions involving dummy atoms if present
+    settings.alchemical_settings.turn_off_core_unique_exceptions = True
+    small_ff = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in small_ff:
+        small_ff += ".offxml"
+    ff = ForceField(small_ff)
+    # update the default force fields to include a force field with CMAP terms
+    settings.forcefield_settings.forcefields = [
+        "amber/protein.ff19SB.xml",  # cmap amber ff
+        "amber/tip3p_standard.xml",  # TIP3P and recommended monovalent ion parameters
+        "amber/tip3p_HFE_multivalent.xml",  # for divalent ions
+        "amber/phosaa19SB.xml",  # Handles THE TPO
+    ]
+    htf = make_htf(
+        mapping=chlorobenzene_to_fluorobenzene_mapping,
+        protein=t4_lysozyme_solvated,
+        settings=settings,
+    )
+    # apply box vectors and fix nonbonded force settings so we can use PME
+    apply_box_vectors_and_fix_nb_force(hybrid_topology_factory=htf, force_field=ff)
+    hybrid_system = htf.hybrid_system
+    forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+    return {
+        "htf": htf,
+        "hybrid_system": hybrid_system,
+        "forces": forces,
+        "mapping": chlorobenzene_to_fluorobenzene_mapping,
+        "chlorobenzene": chlorobenzene_to_fluorobenzene_mapping.componentA,
+        "fluorobenzene": chlorobenzene_to_fluorobenzene_mapping.componentB,
+        "electrostatic_scale": ff.get_parameter_handler("Electrostatics").scale14,
+        "vdW_scale": ff.get_parameter_handler("vdW").scale14,
+        "force_field": ff,
+    }
