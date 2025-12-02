@@ -153,7 +153,7 @@ def format_df_with_precision(
     """
 
     # find all entries in both columns that contain strings:
-    df_is_string = df[[est_col_name, unc_col_name]].applymap(lambda x: isinstance(x, str))
+    df_is_string = df[[est_col_name, unc_col_name]].map(lambda x: isinstance(x, str))
 
     # if either the estimate or uncertainty entries are strings, dont format
     no_strings_mask = ~(df_is_string[est_col_name] | df_is_string[unc_col_name])
@@ -221,25 +221,23 @@ def _get_names(result: dict) -> tuple[str, str]:
 
     # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
-    ligand_A = gufe.SmallMoleculeComponent.from_dict(
-        protocol_data["inputs"]["stateA"]["components"]["ligand"]
-    )
-    ligand_B = gufe.SmallMoleculeComponent.from_dict(
-        protocol_data["inputs"]["stateB"]["components"]["ligand"]
-    )
 
-    return ligand_A.name, ligand_B.name
+    name_A = protocol_data["inputs"]["ligandmapping"]["componentA"]["molprops"]["ofe-name"]
+    name_B = protocol_data["inputs"]["ligandmapping"]["componentB"]["molprops"]["ofe-name"]
+
+    return name_A, name_B
 
 
 def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     """Determine the simulation type based on the component types."""
 
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
-    chem_sys_A = gufe.ChemicalSystem.from_dict(protocol_data["inputs"]["stateA"])
-
-    if not chem_sys_A.contains(gufe.SolventComponent):
+    component_types = [
+        x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
+    ]
+    if "gufe.components.solventcomponent" not in component_types:
         return "vacuum"
-    elif chem_sys_A.contains(gufe.ProteinComponent):
+    elif "gufe.components.proteincomponent" in component_types:
         return "complex"
     else:
         return "solvent"
