@@ -226,7 +226,7 @@ def _get_names(result: dict) -> tuple[str, str]:
     name_A = protocol_data["inputs"]["ligandmapping"]["componentA"]["molprops"]["ofe-name"]
     name_B = protocol_data["inputs"]["ligandmapping"]["componentB"]["molprops"]["ofe-name"]
 
-    return name_A, name_B
+    return str(name_A), str(name_B)
 
 
 def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
