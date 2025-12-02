@@ -1,4 +1,4 @@
-leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	uncertainty (kcal/mol)
+leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	1	25	39.88	0.61
 solvent	1	25	37.9	1.4
 standard_state_correction_A	1	25	-9.2	0.0

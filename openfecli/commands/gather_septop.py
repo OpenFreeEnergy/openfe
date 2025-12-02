@@ -180,10 +180,10 @@ def _get_ddgs(
 
     if 1 in n_repeats:
         error_func = _error_mbar
-        error_name = "MBAR uncertainty (kcal/mol)"
+        unc_col_name = "MBAR uncertainty (kcal/mol)"
     else:
         error_func = _error_std
-        error_name = "uncertainty (kcal/mol)"
+        unc_col_name = "std dev uncertainty (kcal/mol)"
 
     data = []
     for ligpair, results in sorted(results_dict.items()):
@@ -197,18 +197,24 @@ def _get_ddgs(
             "ligand_i",
             "ligand_j",
             "DDG(i->j) (kcal/mol)",
-            error_name,
+            unc_col_name,
         ],
     )
 
     return df
 
 
+def _infer_unc_col_name(df):
+    # TODO: do this better
+    unc_col_name = df.filter(regex="uncertainty").columns[0]
+    return unc_col_name
+
+
 def _generate_ddg(results_dict, allow_partial: bool = False) -> pd.DataFrame:
     df_ddgs = _get_ddgs(results_dict)
-    error_name = df_ddgs.filter(regex="uncertainty").columns[0]  # TODO: do this better
+    unc_col_name = _infer_unc_col_name(df_ddgs)
 
-    df_out = format_df_with_precision(df_ddgs, "DDG(i->j) (kcal/mol)", error_name, unc_prec=2)
+    df_out = format_df_with_precision(df_ddgs, "DDG(i->j) (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 
 
@@ -248,11 +254,14 @@ def _generate_dg_mle(
         femap.add_measurement(entry)
 
     femap.generate_absolute_values()
+
     df = femap.get_absolute_dataframe()
     df = df.iloc[:, :3]
-    df.rename({"label": "ligand"}, axis="columns", inplace=True)
-
-    df_out = format_df_with_precision(df, "DG (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2)
+    unc_col_name = _infer_unc_col_name(df)
+    df.rename(
+        {"label": "ligand", "uncertainty (kcal/mol)": unc_col_name}, axis="columns", inplace=True
+    )
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 
 
@@ -287,11 +296,11 @@ def _generate_raw(
             "ligand_i",
             "ligand_j",
             "DG(i->j) (kcal/mol)",
-            "uncertainty (kcal/mol)",
+            "MBAR uncertainty (kcal/mol)",
         ],
     )
     df_out = format_df_with_precision(
-        df, "DG(i->j) (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2
+        df, "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)", unc_prec=2
     )
 
     return df_out

@@ -164,10 +164,10 @@ def _generate_dg(results_dict: dict[str, dict[str, list]], allow_partial: bool) 
 
     if 1 in n_repeats:
         error_func = _error_mbar
-        error_name = "MBAR uncertainty (kcal/mol)"
+        unc_col_name = "MBAR uncertainty (kcal/mol)"
     else:
         error_func = _error_std
-        error_name = "uncertainty (kcal/mol)"
+        unc_col_name = "std dev uncertainty (kcal/mol)"
 
     data = []
     for lig, results in sorted(results_dict.items()):
@@ -180,10 +180,10 @@ def _generate_dg(results_dict: dict[str, dict[str, list]], allow_partial: bool) 
         columns=[
             "ligand",
             "DG (kcal/mol)",
-            error_name,
+            unc_col_name,
         ],
     )
-    df_out = format_df_with_precision(df, "DG (kcal/mol)", error_name, unc_prec=2)
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 
 
