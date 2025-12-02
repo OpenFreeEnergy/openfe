@@ -79,6 +79,13 @@ PYMBAR_DISABLE_JAX
 
 Due to a suspected memory leak in the JAX acceleration code in ``pymbar`` we disable JAX acceleration by default.
 This memory leak may result in the simulation crashing, wasting compute time.
+The error message may look like this:
+
+.. code-block:: bash
+
+   LLVM compilation error: Cannot allocate memory
+   LLVM ERROR: Unable to allocate section memory!
+
 We have decided to disable JAX acceleration by default to prevent wasted compute.
 However, if you wish to use the JAX acceleration, you may set ``PYMBAR_DISABLE_JAX`` to ``TRUE`` (e.g. put ``export PYMBAR_DISABLE_JAX=FALSE`` in your submission script before running ``openfe quickrun``).
 For more information, see these issues on github:
