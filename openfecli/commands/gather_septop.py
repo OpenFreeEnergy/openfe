@@ -203,8 +203,9 @@ def _get_ddgs(
     return df
 
 
-def _infer_unc_col_name(df):
-    # TODO: do this better
+def _infer_unc_col_name(df: pd.DataFrame) -> str:
+    """Return the full name of the first column name in df containing "uncertainty"."""
+
     unc_col_name = df.filter(regex="uncertainty").columns[0]
     return unc_col_name
 
