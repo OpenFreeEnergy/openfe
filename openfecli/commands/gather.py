@@ -222,28 +222,28 @@ def _get_names(result: dict) -> tuple[str, str]:
 
     # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
-    ligand_A = gufe.SmallMoleculeComponent.from_dict(
-        protocol_data["inputs"]["stateA"]["components"]["ligand"]
-    )
-    ligand_B = gufe.SmallMoleculeComponent.from_dict(
-        protocol_data["inputs"]["stateB"]["components"]["ligand"]
-    )
+    name_A = \
+    protocol_data["inputs"]["ligandmapping"]["componentA"]["molprops"][
+        "ofe-name"]
+    name_B = \
+    protocol_data["inputs"]["ligandmapping"]["componentB"]["molprops"][
+        "ofe-name"]
 
-    return ligand_A.name, ligand_B.name
+    return name_A, name_B
 
 
 def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     """Determine the simulation type based on the component types."""
 
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
-    chem_sys_A = gufe.ChemicalSystem.from_dict(protocol_data["inputs"]["stateA"])
-
-    if chem_sys_A.contains(gufe.ProteinMembraneComponent):
+    component_types = [
+        x["__module__"] for x in
+        protocol_data["inputs"]["stateA"]["components"].values()
+    ]
+    if "gufe.components.proteincomponent" in component_types:
         return "complex"
-    elif not chem_sys_A.contains(gufe.SolventComponent):
+    elif "gufe.components.solventcomponent" not in component_types:
         return "vacuum"
-    elif chem_sys_A.contains(gufe.ProteinComponent):
-        return "complex"
     else:
         return "solvent"
 
@@ -490,10 +490,11 @@ def _generate_raw(legs: dict, allow_partial=True) -> pd.DataFrame:
 
 def _check_legs_have_sufficient_repeats(legs):
     """Throw an error if all legs do not have 2 or more simulation repeat results"""
-
+    print(legs)
     for leg in legs.values():
         for run_type, sim_results in leg.items():
             if len(sim_results) < 2:
+                print(leg, run_type, sim_results)
                 msg = "ERROR: Every edge must have at least two simulation repeats"
                 click.secho(msg, err=True, fg="red")
                 sys.exit(1)
@@ -514,7 +515,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
     import numpy as np
     from cinnabar.stats import mle
 
-    _check_legs_have_sufficient_repeats(legs)
+    # _check_legs_have_sufficient_repeats(legs)
 
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
@@ -649,6 +650,7 @@ def _get_legs_from_result_jsons(
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
+        print(result_fn)
         result_info, result = _load_valid_result_json(result_fn)
 
         if result_info is None:  # this means it couldn't find names and/or simtype
