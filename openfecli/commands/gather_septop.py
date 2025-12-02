@@ -1,11 +1,9 @@
 import os
 import pathlib
 import sys
-import warnings
 from typing import List, Literal
 
 import click
-import gufe
 import numpy as np
 import pandas as pd
 from cinnabar import FEMap, Measurement
