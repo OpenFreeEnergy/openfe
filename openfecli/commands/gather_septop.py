@@ -190,7 +190,6 @@ def _get_ddgs(
         ddg = np.mean([v[0].m for v in results["overall"]])
         error = error_func(results)
         data.append((ligpair[0], ligpair[1], ddg, error))
-
     df = pd.DataFrame(
         data,
         columns=[
@@ -235,6 +234,7 @@ def _generate_dg_mle(
     """
 
     DDGs = _get_ddgs(results_dict)
+
     fe_results = []
     for inx, row in DDGs.iterrows():
         ligA, ligB, DDGbind, bind_unc = row.tolist()
@@ -257,7 +257,7 @@ def _generate_dg_mle(
 
     df = femap.get_absolute_dataframe()
     df = df.iloc[:, :3]
-    unc_col_name = _infer_unc_col_name(df)
+    unc_col_name = _infer_unc_col_name(DDGs)
     df.rename(
         {"label": "ligand", "uncertainty (kcal/mol)": unc_col_name}, axis="columns", inplace=True
     )
