@@ -82,6 +82,7 @@ This memory leak may result in the simulation crashing, wasting compute time.
 We have decided to disable JAX acceleration by default to prevent wasted compute.
 However, if you wish to use the JAX acceleration, you may set ``PYMBAR_DISABLE_JAX`` to ``TRUE`` (e.g. put ``export PYMBAR_DISABLE_JAX=FALSE`` in your submission script before running ``openfe quickrun``).
 For more information, see these issues on github:
-* https://github.com/choderalab/pymbar/issues/564
-* https://github.com/OpenFreeEnergy/openfe/issues/1534
-* https://github.com/OpenFreeEnergy/openfe/issues/1654
+
+- https://github.com/choderalab/pymbar/issues/564
+- https://github.com/OpenFreeEnergy/openfe/issues/1534
+- https://github.com/OpenFreeEnergy/openfe/issues/1654
