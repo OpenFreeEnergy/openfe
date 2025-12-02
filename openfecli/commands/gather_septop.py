@@ -137,7 +137,7 @@ def _get_names(result: dict) -> tuple[str, str]:
 
     name_A = solvent_data["inputs"]["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
     name_B = solvent_data["inputs"]["alchemical_components"]["stateB"][0]["molprops"]["ofe-name"]
-    # breakpoint()
+
     return str(name_A), str(name_B)
 
 
@@ -174,10 +174,18 @@ def _get_ddgs(
     pd.DataFrame
         A pandas DataFrame with the ddG results for each ligand pair.
     """
-    data = []
+
     # check the type of error which should be used based on the number of repeats
-    repeats = {len(v["overall"]) for v in results_dict.values()}
-    error_func = _error_mbar if 1 in repeats else _error_std
+    n_repeats = {len(v["overall"]) for v in results_dict.values()}
+
+    if 1 in n_repeats:
+        error_func = _error_mbar
+        error_name = "MBAR uncertainty (kcal/mol)"
+    else:
+        error_func = _error_std
+        error_name = "uncertainty (kcal/mol)"
+
+    data = []
     for ligpair, results in sorted(results_dict.items()):
         ddg = np.mean([v[0].m for v in results["overall"]])
         error = error_func(results)
@@ -189,7 +197,7 @@ def _get_ddgs(
             "ligand_i",
             "ligand_j",
             "DDG(i->j) (kcal/mol)",
-            "uncertainty (kcal/mol)",
+            error_name,
         ],
     )
 
@@ -198,9 +206,9 @@ def _get_ddgs(
 
 def _generate_ddg(results_dict, allow_partial: bool = False) -> pd.DataFrame:
     df_ddgs = _get_ddgs(results_dict)
-    df_out = format_df_with_precision(
-        df_ddgs, "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2
-    )
+    error_name = df_ddgs.filter(regex="uncertainty").columns[0]  # TODO: do this better
+
+    df_out = format_df_with_precision(df_ddgs, "DDG(i->j) (kcal/mol)", error_name, unc_prec=2)
     return df_out
 
 
