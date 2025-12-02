@@ -4,8 +4,17 @@
 # it
 
 import os
+import logging
 
+logger = logging.getLogger(__name__)
+
+if "PYMBAR_DISABLE_JAX" not in os.environ:
+    logger.warn("PYMBAR_DISABLE_JAX not set, setting to TRUE, see LINK for more details")
+
+# setdefault will only set PYMBAR_DISABLE_JAX if it is unset
 os.environ.setdefault("PYMBAR_DISABLE_JAX", "TRUE")
+
+
 
 # We need to do this first so that we can set up our
 # log control since some modules have warnings on import
