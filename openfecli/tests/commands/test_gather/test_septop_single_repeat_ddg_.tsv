@@ -1,4 +1,4 @@
-ligand_i	ligand_j	DDG(i->j) (kcal/mol)	uncertainty (kcal/mol)
+ligand_i	ligand_j	DDG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 1	25	2.0	1.6
 1	7a	1.2	1.4
 1	7b	-0.3	1.5

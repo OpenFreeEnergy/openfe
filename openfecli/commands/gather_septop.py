@@ -137,7 +137,7 @@ def _get_names(result: dict) -> tuple[str, str]:
 
     name_A = solvent_data["inputs"]["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
     name_B = solvent_data["inputs"]["alchemical_components"]["stateB"][0]["molprops"]["ofe-name"]
-    # breakpoint()
+
     return str(name_A), str(name_B)
 
 
@@ -174,33 +174,47 @@ def _get_ddgs(
     pd.DataFrame
         A pandas DataFrame with the ddG results for each ligand pair.
     """
-    data = []
+
     # check the type of error which should be used based on the number of repeats
-    repeats = {len(v["overall"]) for v in results_dict.values()}
-    error_func = _error_mbar if 1 in repeats else _error_std
+    n_repeats = {len(v["overall"]) for v in results_dict.values()}
+
+    if 1 in n_repeats:
+        error_func = _error_mbar
+        unc_col_name = "MBAR uncertainty (kcal/mol)"
+    else:
+        error_func = _error_std
+        unc_col_name = "std dev uncertainty (kcal/mol)"
+
+    data = []
     for ligpair, results in sorted(results_dict.items()):
         ddg = np.mean([v[0].m for v in results["overall"]])
         error = error_func(results)
         data.append((ligpair[0], ligpair[1], ddg, error))
-
     df = pd.DataFrame(
         data,
         columns=[
             "ligand_i",
             "ligand_j",
             "DDG(i->j) (kcal/mol)",
-            "uncertainty (kcal/mol)",
+            unc_col_name,
         ],
     )
 
     return df
 
 
+def _infer_unc_col_name(df: pd.DataFrame) -> str:
+    """Return the full name of the first column name in df containing "uncertainty"."""
+
+    unc_col_name = df.filter(regex="uncertainty").columns[0]
+    return unc_col_name
+
+
 def _generate_ddg(results_dict, allow_partial: bool = False) -> pd.DataFrame:
     df_ddgs = _get_ddgs(results_dict)
-    df_out = format_df_with_precision(
-        df_ddgs, "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2
-    )
+    unc_col_name = _infer_unc_col_name(df_ddgs)
+
+    df_out = format_df_with_precision(df_ddgs, "DDG(i->j) (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 
 
@@ -221,6 +235,7 @@ def _generate_dg_mle(
     """
 
     DDGs = _get_ddgs(results_dict)
+
     fe_results = []
     for inx, row in DDGs.iterrows():
         ligA, ligB, DDGbind, bind_unc = row.tolist()
@@ -240,11 +255,14 @@ def _generate_dg_mle(
         femap.add_measurement(entry)
 
     femap.generate_absolute_values()
+
     df = femap.get_absolute_dataframe()
     df = df.iloc[:, :3]
-    df.rename({"label": "ligand"}, axis="columns", inplace=True)
-
-    df_out = format_df_with_precision(df, "DG (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2)
+    unc_col_name = _infer_unc_col_name(DDGs)
+    df.rename(
+        {"label": "ligand", "uncertainty (kcal/mol)": unc_col_name}, axis="columns", inplace=True
+    )
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 
 
@@ -279,11 +297,11 @@ def _generate_raw(
             "ligand_i",
             "ligand_j",
             "DG(i->j) (kcal/mol)",
-            "uncertainty (kcal/mol)",
+            "MBAR uncertainty (kcal/mol)",
         ],
     )
     df_out = format_df_with_precision(
-        df, "DG(i->j) (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2
+        df, "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)", unc_prec=2
     )
 
     return df_out

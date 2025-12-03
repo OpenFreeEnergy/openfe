@@ -158,10 +158,18 @@ def _generate_dg(results_dict: dict[str, dict[str, list]], allow_partial: bool) 
     pd.DataFrame
         A pandas DataFrame with the dG results for each ligand.
     """
-    data = []
+
     # check the type of error which should be used based on the number of repeats
-    repeats = {len(v["overall"]) for v in results_dict.values()}
-    error_func = _error_mbar if 1 in repeats else _error_std
+    n_repeats = {len(v["overall"]) for v in results_dict.values()}
+
+    if 1 in n_repeats:
+        error_func = _error_mbar
+        unc_col_name = "MBAR uncertainty (kcal/mol)"
+    else:
+        error_func = _error_std
+        unc_col_name = "std dev uncertainty (kcal/mol)"
+
+    data = []
     for lig, results in sorted(results_dict.items()):
         dg = np.mean([v[0].m for v in results["overall"]])
         error = error_func(results)
@@ -172,10 +180,10 @@ def _generate_dg(results_dict: dict[str, dict[str, list]], allow_partial: bool) 
         columns=[
             "ligand",
             "DG (kcal/mol)",
-            "uncertainty (kcal/mol)",
+            unc_col_name,
         ],
     )
-    df_out = format_df_with_precision(df, "DG (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2)
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 
 
@@ -207,10 +215,12 @@ def _generate_dg_raw(results_dict: dict[str, dict[str, list]], allow_partial: bo
             "leg",
             "ligand",
             "DG (kcal/mol)",
-            "uncertainty (kcal/mol)",
+            "MBAR uncertainty (kcal/mol)",
         ],
     )
-    df_out = format_df_with_precision(df, "DG (kcal/mol)", "uncertainty (kcal/mol)", unc_prec=2)
+    df_out = format_df_with_precision(
+        df, "DG (kcal/mol)", "MBAR uncertainty (kcal/mol)", unc_prec=2
+    )
     return df_out
 
 

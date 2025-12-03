@@ -1,4 +1,4 @@
-leg	ligand	DG (kcal/mol)	uncertainty (kcal/mol)
+leg	ligand	DG (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	1	36.87	0.36
 complex	1	39.24	0.44
 complex	1	37.46	0.48
