@@ -140,9 +140,9 @@ def _error_mbar(r):
 
     This also takes into account that repeats may have been run for this edge by using the average MBAR error
     """
-    complex_errors = [x[1].m for x in r["complex"]]
-    solvent_errors = [x[1].m for x in r["solvent"]]
-    return np.sqrt(np.mean(complex_errors) ** 2 + np.mean(solvent_errors) ** 2)
+    complex_errors = np.array([x[1].m for x in r["complex"]])
+    solvent_errors = np.array([x[1].m for x in r["solvent"]])
+    return np.sqrt(np.mean(complex_errors**2) + np.mean(solvent_errors**2))
 
 
 def _generate_dg(results_dict: dict[str, dict[str, list]], allow_partial: bool) -> pd.DataFrame:
