@@ -3,7 +3,7 @@ import pathlib
 import pytest
 from click.testing import CliRunner
 
-from openfecli.fetchables import RBFE_SHOWCASE, RBFE_TUTORIAL, RBFE_TUTORIAL_RESULTS
+from openfecli.fetchables import RBFE_TUTORIAL, RBFE_TUTORIAL_RESULTS
 from openfecli.fetching import FetchablePlugin
 
 from .conftest import HAS_INTERNET
@@ -31,8 +31,3 @@ def test_rbfe_tutorial():
 @pytest.mark.flaky(reruns=3)  # in case of Too Many Request error
 def test_rbfe_tutorial_results():
     fetchable_test(RBFE_TUTORIAL_RESULTS)
-
-
-@pytest.mark.flaky(reruns=3)  # in case of Too Many Request error
-def test_rbfe_showcase():
-    fetchable_test(RBFE_SHOWCASE)
