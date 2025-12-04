@@ -8,9 +8,9 @@ import os
 
 logger = logging.getLogger(__name__)
 
-if "PYMBAR_DISABLE_JAX" not in os.environ:
-    logger.warn(
-        "PYMBAR_DISABLE_JAX not set, setting to TRUE, see https://docs.openfree.energy/en/latest/guide/troubleshooting.html#pymbar-disable-jax for more details"
+if "PYMBAR_DISABLE_JAX" in os.environ:
+    logger.info(
+        f"PYMBAR_DISABLE_JAX set to {os.environ.get('PYMBAR_DISABLE_JAX')}. See https://docs.openfree.energy/en/latest/guide/troubleshooting.html#pymbar-disable-jax for more details"
     )
 
 # setdefault will only set PYMBAR_DISABLE_JAX if it is unset
