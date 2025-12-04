@@ -16,9 +16,9 @@ from importlib.metadata import version
 from inspect import cleandoc
 from pathlib import Path
 
+import git
 import nbformat
 import nbsphinx
-from git import Repo
 from packaging.version import parse
 
 sys.path.insert(0, os.path.abspath("../"))
@@ -181,10 +181,14 @@ sass_out_dir = "_static/css"
 example_notebooks_path = Path("ExampleNotebooks")
 try:
     if example_notebooks_path.exists():
-        repo = Repo(example_notebooks_path)
-        repo.remote("origin").pull()
+        repo = git.Repo(example_notebooks_path)
+        try:
+            repo.remote("origin").pull()
+        except git.exc.GitCommandError:
+            # cannot pull if on a tag
+            pass
     else:
-        repo = Repo.clone_from(
+        repo = git.Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
             branch="2025.10.2",
             to_path=example_notebooks_path,
