@@ -362,8 +362,10 @@ def gather_septop(
     allow_partial: bool,
 ):
     """
-    Gathering of SepTop results with ``openfe gather-septop`` is an experimental feature
-    and is subject to change in a future release of openfe!
+    .. warning::
+
+        Gathering of SepTop results with ``openfe gather-septop`` is an experimental feature
+        and is subject to change in a future release of openfe!
 
     Gather simulation result JSON files from SepTop simulations and generate a report.
 

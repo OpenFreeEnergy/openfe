@@ -277,8 +277,10 @@ def gather_abfe(
     allow_partial: bool,
 ):
     """
-    WARNING! Gathering of ABFE results with ``openfe gather-abfe`` is an experimental feature
-    and is subject to change in a future release of openfe!
+    .. warning::
+
+        Gathering of ABFE results with ``openfe gather-abfe`` is an experimental feature
+        and is subject to change in a future release of openfe!
 
     Gather simulation result JSON files from ABFE simulations and generate a report.
 
