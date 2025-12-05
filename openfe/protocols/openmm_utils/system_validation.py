@@ -14,7 +14,6 @@ from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
 )
-from openff.toolkit import Molecule as OFFMol
 
 
 def get_alchemical_components(
@@ -42,35 +41,22 @@ def get_alchemical_components(
     ValueError
       If there are any duplicate components in states A or B.
     """
-    matched_components: dict[Component, Component] = {}
+    # Check if there are any duplicate components in either state
+    for state in [stateA, stateB]:
+        comp_list = list(state.components.values())
+        unique_comp_list = list(set(comp_list))
+        if len(comp_list) != len(unique_comp_list):
+            errmsg = f"Duplicate components found in ChemicalSystem: {state}"
+            raise ValueError(errmsg)
+
     alchemical_components: dict[str, list[Component]] = {
         "stateA": [],
         "stateB": [],
     }
 
-    for keyA, valA in stateA.components.items():
-        for keyB, valB in stateB.components.items():
-            if valA == valB:
-                if valA not in matched_components.keys():
-                    matched_components[valA] = valB
-                else:
-                    # Could be that either we have a duplicate component
-                    # in stateA or in stateB
-                    errmsg = (
-                        f"state A components {keyA}: {valA} matches "
-                        "multiple components in stateA or stateB"
-                    )
-                    raise ValueError(errmsg)
-
-    # populate stateA alchemical components
-    for valA in stateA.components.values():
-        if valA not in matched_components.keys():
-            alchemical_components["stateA"].append(valA)
-
-    # populate stateB alchemical components
-    for valB in stateB.components.values():
-        if valB not in matched_components.values():
-            alchemical_components["stateB"].append(valB)
+    diff = stateA.component_diff(stateB)
+    alchemical_components["stateA"].extend(diff[0])
+    alchemical_components["stateB"].extend(diff[1])
 
     return alchemical_components
 
@@ -95,7 +81,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         `nocutoff`.
       * If the SolventComponent solvent is not water.
     """
-    solv = [comp for comp in state.values() if isinstance(comp, SolventComponent)]
+    solv = state.get_components_of_type(SolventComponent)
 
     if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
         errmsg = "nocutoff cannot be used for solvent transformations"
@@ -129,9 +115,9 @@ def validate_protein(state: ChemicalSystem):
     ValueError
       If there are multiple ProteinComponent in the ChemicalSystem.
     """
-    nprot = sum(1 for comp in state.values() if isinstance(comp, ProteinComponent))
+    prots = state.get_components_of_type(ProteinComponent)
 
-    if nprot > 1:
+    if len(prots) > 1:
         errmsg = "Multiple ProteinComponent found, only one is supported"
         raise ValueError(errmsg)
 
