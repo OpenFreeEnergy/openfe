@@ -228,8 +228,10 @@ def _pre_equilibrate(
     )
     equilibrated_positions = state.getPositions(asNumpy=True)
     box = state.getPeriodicBoxVectors()
+
     # cautiously delete out contexts & integrator
     del simulation.context, integrator
+
     return equilibrated_positions, box
 
 

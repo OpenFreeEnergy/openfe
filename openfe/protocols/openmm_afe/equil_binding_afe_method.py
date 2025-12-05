@@ -629,7 +629,6 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         )
         # fmt: on
 
-
     @staticmethod
     def _validate_endstates(
         stateA: ChemicalSystem,

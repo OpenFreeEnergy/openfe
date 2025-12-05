@@ -2004,7 +2004,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         )
 
         omm_topology_AB.setPeriodicBoxVectors(box_AB)
-        print(omm_topology_AB.getPeriodicBoxVectors())
 
         # ToDo: also apply REST
         system_outfile = self.shared_basepath / "system.xml.bz2"

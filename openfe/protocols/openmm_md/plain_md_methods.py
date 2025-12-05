@@ -640,14 +640,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 stateA_topology,
                 molecules=[s.to_openff() for s in small_mols],
             )
-        print(stateA_topology)
-        print(stateA_positions)
-        print(stateA_topology.getPeriodicBoxVectors())
         box = [
             openmm.Vec3(*v.value_in_unit(omm_unit.nanometer))
             for v in stateA_system.getDefaultPeriodicBoxVectors()
         ] * omm_unit.nanometer
-        print(box)
         stateA_topology.setPeriodicBoxVectors(box)
 
         # f. Save pdb of entire system

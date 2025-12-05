@@ -139,6 +139,7 @@ def get_system_generator(
         )
     else:
         barostat = None
+
     system_generator = SystemGenerator(
         forcefields=forcefield_settings.forcefields,
         small_molecule_forcefield=forcefield_settings.small_molecule_forcefield,
@@ -273,4 +274,5 @@ def get_omm_modeller(
         for r in system_modeller.topology.residues():
             if r.name == "WAT":
                 r.name = "HOH"
+                
     return system_modeller, component_resids

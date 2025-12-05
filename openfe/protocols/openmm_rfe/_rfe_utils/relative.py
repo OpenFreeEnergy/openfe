@@ -210,7 +210,9 @@ class HybridTopologyFactory:
         # interactions that we need:
         logger.info("Adding forces")
         self._handle_harmonic_bonds()
+
         self._handle_harmonic_angles()
+
         self._handle_periodic_torsion_force()
 
         # add cmap terms if possible
