@@ -150,7 +150,8 @@ class TestT4LysozymeDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 2634
     num_complex_atoms = 2613
-    num_solvent_atoms = 12
+    # No ions
+    num_ligand_atoms = 12
 
     @pytest.fixture(scope="class")
     def protocol(self, settings):
@@ -205,6 +206,9 @@ class TestT4LysozymeDryRun:
         assert len(complex_units) == 1
         assert len(solvent_units) == 1
 
+    def _get_barostat_type(self, complexed: bool):
+        return MonteCarloBarostat
+
     def _assert_force_num(self, system, forcetype, number):
         forces = [f for f in system.getForces() if isinstance(f, forcetype)]
         assert len(forces) == number
@@ -213,13 +217,14 @@ class TestT4LysozymeDryRun:
         """
         Assert the forces expected in the alchemical system.
         """
+        barostat_type = self._get_barostat_type(complexed)
         self._assert_force_num(system, NonbondedForce, 1)
         self._assert_force_num(system, CustomNonbondedForce, 2)
         self._assert_force_num(system, CustomBondForce, 2)
         self._assert_force_num(system, HarmonicBondForce, 1)
         self._assert_force_num(system, HarmonicAngleForce, 1)
         self._assert_force_num(system, PeriodicTorsionForce, 1)
-        self._assert_force_num(system, MonteCarloBarostat, 1)
+        self._assert_force_num(system, barostat_type, 1)
 
         if complexed:
             self._assert_force_num(system, CustomCompoundBondForce, 1)
@@ -237,7 +242,7 @@ class TestT4LysozymeDryRun:
         )
 
         # Check the barostat made it all the way through
-        barostat = [f for f in system.getForces() if isinstance(f, MonteCarloBarostat)]
+        barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
         assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
@@ -245,15 +250,16 @@ class TestT4LysozymeDryRun:
             settings.thermo_settings.temperature
         )
 
-    def _assert_expected_nonalchemical_forces(self, system, settings):
+    def _assert_expected_nonalchemical_forces(self, system, complexed: bool, settings):
         """
         Assert the forces expected in the non-alchemical system.
         """
+        barostat_type = self._get_barostat_type(complexed)
         self._assert_force_num(system, NonbondedForce, 1)
         self._assert_force_num(system, HarmonicBondForce, 1)
         self._assert_force_num(system, HarmonicAngleForce, 1)
         self._assert_force_num(system, PeriodicTorsionForce, 1)
-        self._assert_force_num(system, MonteCarloBarostat, 1)
+        self._assert_force_num(system, barostat_type, 1)
 
         assert len(system.getForces()) == 5
 
@@ -267,7 +273,7 @@ class TestT4LysozymeDryRun:
         )
 
         # Check the barostat made it all the way through
-        barostat = [f for f in system.getForces() if isinstance(f, MonteCarloBarostat)]
+        barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
         assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
@@ -288,6 +294,9 @@ class TestT4LysozymeDryRun:
         for state in sampler._thermodynamic_states:
             system = state.get_system(remove_thermostat=True)
             self._assert_expected_alchemical_forces(system, complexed, settings)
+
+    def _check_box_vectors(self, system):
+        self._test_dodecahedron_vectors(system)
 
     @staticmethod
     def _test_dodecahedron_vectors(system):
@@ -359,15 +368,15 @@ class TestT4LysozymeDryRun:
             self._assert_expected_alchemical_forces(
                 data["alchem_system"], complexed=True, settings=settings
             )
-            self._test_dodecahedron_vectors(data["alchem_system"])
+            self._check_box_vectors(data["alchem_system"])
 
             # Check the alchemical indices
-            expected_indices = [i + self.num_complex_atoms for i in range(self.num_solvent_atoms)]
+            expected_indices = [i + self.num_complex_atoms for i in range(self.num_ligand_atoms)]
             assert expected_indices == data["alchem_indices"]
 
             # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(data["system"], settings)
-            self._test_dodecahedron_vectors(data["system"])
+            self._assert_expected_nonalchemical_forces(data["system"], complexed=True, settings=settings)
+            self._check_box_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
                 from_openmm(data["alchem_system"].getDefaultPeriodicBoxVectors()),
@@ -401,11 +410,12 @@ class TestT4LysozymeDryRun:
             self._test_cubic_vectors(data["alchem_system"])
 
             # Check the alchemical indices
-            expected_indices = [i for i in range(self.num_solvent_atoms)]
+            expected_indices = [i for i in range(self.num_ligand_atoms)]
             assert expected_indices == data["alchem_indices"]
 
             # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(data["system"], settings)
+            self._assert_expected_nonalchemical_forces(
+                data["system"], complexed=False, settings=settings)
             self._test_cubic_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
@@ -415,7 +425,7 @@ class TestT4LysozymeDryRun:
 
             # Check the PDB
             pdb = mdt.load_pdb("alchemical_system.pdb")
-            assert pdb.n_atoms == self.num_solvent_atoms
+            assert pdb.n_atoms == self.num_ligand_atoms
 
             # Check energies
             alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"])
@@ -525,17 +535,12 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
             assert pytest.approx(prop_chgs[i]) == offsets[2]
 
 
-class TestA2AMembraneDryRun:
+class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 22170
     num_complex_atoms = 64119
+    # No ions
     num_ligand_atoms = 36
-
-    @pytest.fixture(scope="class")
-    def protocol(self, settings):
-        return openmm_afe.AbsoluteBindingProtocol(
-            settings=settings,
-        )
 
     @pytest.fixture(scope="class")
     def settings(self):
@@ -556,7 +561,7 @@ class TestA2AMembraneDryRun:
         ]
         return s
 
-    @pytest.fixture(scope="function")
+    @pytest.fixture(scope="class")
     def dag(self, protocol, a2a_ligands, a2a_protein_membrane_component):
         stateA = ChemicalSystem(
             {
@@ -579,96 +584,12 @@ class TestA2AMembraneDryRun:
             mapping=None,
         )
 
-    @pytest.fixture(scope="function")
-    def complex_units(self, dag):
-        return [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)]
 
-    @pytest.fixture(scope="function")
-    def solvent_units(self, dag):
-        return [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingSolventUnit)]
+    def _get_barostat_type(self, complexed: bool):
+        return MonteCarloMembraneBarostat if complexed else MonteCarloBarostat
 
-    def test_number_of_units(self, dag, complex_units, solvent_units):
-        assert len(list(dag.protocol_units)) == 2
-        assert len(complex_units) == 1
-        assert len(solvent_units) == 1
-
-    def _assert_force_num(self, system, forcetype, number):
-        forces = [f for f in system.getForces() if isinstance(f, forcetype)]
-        assert len(forces) == number
-
-    def _assert_expected_alchemical_forces(self, system, complexed: bool, settings):
-        """
-        Assert the forces expected in the alchemical system.
-        """
-        if complexed:
-            barostat_type = MonteCarloMembraneBarostat
-        else:
-            barostat_type = MonteCarloBarostat
-        self._assert_force_num(system, NonbondedForce, 1)
-        self._assert_force_num(system, CustomNonbondedForce, 2)
-        self._assert_force_num(system, CustomBondForce, 2)
-        self._assert_force_num(system, HarmonicBondForce, 1)
-        self._assert_force_num(system, HarmonicAngleForce, 1)
-        self._assert_force_num(system, PeriodicTorsionForce, 1)
-        self._assert_force_num(system, barostat_type, 1)
-
-        if complexed:
-            self._assert_force_num(system, CustomCompoundBondForce, 1)
-            assert len(system.getForces()) == 10
-        else:
-            assert len(system.getForces()) == 9
-
-        # Check the nonbonded force has the right contents
-        nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
-        assert len(nonbond) == 1
-        assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME
-        assert (
-            from_openmm(nonbond[0].getCutoffDistance())
-            == settings.forcefield_settings.nonbonded_cutoff
-        )
-
-        # Check the barostat made it all the way through
-        barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
-        assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
-        assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
-        assert barostat[0].getDefaultTemperature() == to_openmm(
-            settings.thermo_settings.temperature
-        )
-
-    def _assert_expected_nonalchemical_forces(self, system, complexed: bool, settings):
-        """
-        Assert the forces expected in the non-alchemical system.
-        """
-        if complexed:
-            barostat_type = MonteCarloMembraneBarostat
-        else:
-            barostat_type = MonteCarloBarostat
-        self._assert_force_num(system, NonbondedForce, 1)
-        self._assert_force_num(system, HarmonicBondForce, 1)
-        self._assert_force_num(system, HarmonicAngleForce, 1)
-        self._assert_force_num(system, PeriodicTorsionForce, 1)
-        self._assert_force_num(system, barostat_type, 1)
-
-        assert len(system.getForces()) == 5
-
-        # Check that the nonbonded force has the right contents
-        nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
-        assert len(nonbond) == 1
-        assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME
-        assert (
-            from_openmm(nonbond[0].getCutoffDistance())
-            == settings.forcefield_settings.nonbonded_cutoff
-        )
-
-        # Check the barostat made it all the way through
-        barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
-        assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
-        assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
-        assert barostat[0].getDefaultTemperature() == to_openmm(
-            settings.thermo_settings.temperature
-        )
+    def _check_box_vectors(self, system):
+        self._test_orthogonal_vectors(system)
 
     def _verify_sampler(self, sampler, complexed: bool, settings):
         """
@@ -712,125 +633,3 @@ class TestA2AMembraneDryRun:
         assert_allclose(
             vectors, expected_vectors, atol=1e-5, err_msg=f"Box is not orthogonal:\n{vectors}"
         )
-
-    @staticmethod
-    def _test_cubic_vectors(system):
-        # cube is an identity matrix
-        vectors = system.getDefaultPeriodicBoxVectors()
-        width = float(from_openmm(vectors)[0][0].to("nanometer").m)
-
-        expected_vectors = [
-            [width, 0, 0],
-            [0, width, 0],
-            [0, 0, width],
-        ] * offunit.nanometer
-
-        assert_allclose(
-            expected_vectors,
-            from_openmm(vectors),
-        )
-
-    @staticmethod
-    def _test_energies(reference_system, alchemical_system, alchemical_regions, positions):
-        compare_system_energies(
-            reference_system=reference_system,
-            alchemical_system=alchemical_system,
-            alchemical_regions=alchemical_regions,
-            positions=positions,
-        )
-
-        check_noninteracting_energy_components(
-            reference_system=reference_system,
-            alchemical_system=alchemical_system,
-            alchemical_regions=alchemical_regions,
-            positions=positions,
-        )
-
-        check_interacting_energy_components(
-            reference_system=reference_system,
-            alchemical_system=alchemical_system,
-            alchemical_regions=alchemical_regions,
-            positions=positions,
-        )
-
-    def test_complex_dry_run(self, complex_units, settings, tmpdir):
-        with tmpdir.as_cwd():
-            data = complex_units[0].run(dry=True, verbose=True)["debug"]
-            # Check the sampler
-            self._verify_sampler(data["sampler"], complexed=True, settings=settings)
-
-            # Check the alchemical system
-            self._assert_expected_alchemical_forces(
-                data["alchem_system"], complexed=True, settings=settings
-            )
-            self._test_orthogonal_vectors(data["alchem_system"])
-
-            # Check the alchemical indices
-            expected_indices = [i + self.num_complex_atoms for i in range(self.num_ligand_atoms)]
-            assert expected_indices == data["alchem_indices"]
-
-            # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                data["system"], complexed=True, settings=settings
-            )
-            self._test_orthogonal_vectors(data["system"])
-            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
-            assert_allclose(
-                from_openmm(data["alchem_system"].getDefaultPeriodicBoxVectors()),
-                from_openmm(data["system"].getDefaultPeriodicBoxVectors()),
-            )
-
-            # Check the PDB
-            pdb = mdt.load_pdb("alchemical_system.pdb")
-            assert pdb.n_atoms == self.num_all_not_water
-
-            # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"])
-            self._test_energies(
-                reference_system=data["system"],
-                alchemical_system=data["alchem_system"],
-                alchemical_regions=alchem_region,
-                positions=data["positions"],
-            )
-
-    def test_solvent_dry_run(self, solvent_units, settings, tmpdir):
-        with tmpdir.as_cwd():
-            data = solvent_units[0].run(dry=True, verbose=True)["debug"]
-
-            # Check the sampler
-            self._verify_sampler(data["sampler"], complexed=False, settings=settings)
-
-            # Check the alchemical system
-            self._assert_expected_alchemical_forces(
-                data["alchem_system"], complexed=False, settings=settings
-            )
-            self._test_cubic_vectors(data["alchem_system"])
-
-            # Check the alchemical indices
-            expected_indices = [i for i in range(self.num_ligand_atoms)]
-            assert expected_indices == data["alchem_indices"]
-
-            # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                data["system"], complexed=False, settings=settings
-            )
-            self._test_cubic_vectors(data["system"])
-            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
-            assert_allclose(
-                from_openmm(data["alchem_system"].getDefaultPeriodicBoxVectors()),
-                from_openmm(data["system"].getDefaultPeriodicBoxVectors()),
-            )
-
-            # Check the PDB
-            pdb = mdt.load_pdb("alchemical_system.pdb")
-            assert pdb.n_atoms == self.num_ligand_atoms
-
-            # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"])
-
-            self._test_energies(
-                reference_system=data["system"],
-                alchemical_system=data["alchem_system"],
-                alchemical_regions=alchem_region,
-                positions=data["positions"],
-            )

@@ -274,5 +274,5 @@ def get_omm_modeller(
         for r in system_modeller.topology.residues():
             if r.name == "WAT":
                 r.name = "HOH"
-                
+
     return system_modeller, component_resids

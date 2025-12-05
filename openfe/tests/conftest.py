@@ -326,13 +326,13 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
     return SmallMoleculeComponent.from_sdf_file(eg5_cofactor_sdf)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def a2a_ligands_sdf():
     with resources.as_file(resources.files("openfe.tests.data.a2a")) as d:
         yield str(d / "ligands.sdf")
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def a2a_ligands(a2a_ligands_sdf) -> list[SmallMoleculeComponent]:
     return [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(a2a_ligands_sdf, removeHs=False)]
 
