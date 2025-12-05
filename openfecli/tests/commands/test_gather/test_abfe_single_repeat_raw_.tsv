@@ -1,0 +1,4 @@
+leg	ligand	DG (kcal/mol)	MBAR uncertainty (kcal/mol)
+complex	1	36.87	0.36
+solvent	1	10.57	0.66
+standard_state_correction	1	-8.9	0.0

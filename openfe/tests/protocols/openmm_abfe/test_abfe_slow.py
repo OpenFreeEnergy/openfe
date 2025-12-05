@@ -7,12 +7,16 @@ from openff.units import unit as offunit
 
 import openfe
 from openfe.protocols.openmm_afe import AbsoluteBindingProtocol
-from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL
+from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEYE
 
 
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.skipif(not HAS_NAGL, reason="need NAGL")
+@pytest.mark.xfail(
+    HAS_OPENEYE and HAS_NAGL,
+    reason="NAGL/openeye incompatibility. See https://github.com/openforcefield/openff-nagl/issues/177",
+)
 @pytest.mark.parametrize("platform", ["CUDA"])
 def test_openmm_run_engine(
     platform,

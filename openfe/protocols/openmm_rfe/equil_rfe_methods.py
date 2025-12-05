@@ -1186,20 +1186,24 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             print(sampler._thermodynamic_states[0].system.getForces())
             if not dry:  # pragma: no-cover
                 # minimize
-                print('box2', sampler._thermodynamic_states[0].system.getDefaultPeriodicBoxVectors())
+                print(
+                    "box2", sampler._thermodynamic_states[0].system.getDefaultPeriodicBoxVectors()
+                )
                 if verbose:
                     self.logger.info("Running minimization")
 
                 sampler.minimize(max_iterations=sampler_settings.minimization_steps)
-                print('box1', sampler._thermodynamic_states[
-                    0].system.getDefaultPeriodicBoxVectors())
+                print(
+                    "box1", sampler._thermodynamic_states[0].system.getDefaultPeriodicBoxVectors()
+                )
                 # equilibrate
                 if verbose:
                     self.logger.info("Running equilibration phase")
 
                 sampler.equilibrate(int(equil_steps / steps_per_iteration))
-                print('box3', sampler._thermodynamic_states[
-                    0].system.getDefaultPeriodicBoxVectors())
+                print(
+                    "box3", sampler._thermodynamic_states[0].system.getDefaultPeriodicBoxVectors()
+                )
                 # production
                 if verbose:
                     self.logger.info("Running production phase")

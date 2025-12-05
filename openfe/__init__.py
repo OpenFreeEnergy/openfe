@@ -1,3 +1,22 @@
+# Before we do anything else, we want to disable JAX
+# acceleration by default but if a user has set
+# PYMBAR_DISABLE_JAX to some value, we want to keep
+# it
+
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
+if "PYMBAR_DISABLE_JAX" in os.environ:
+    logger.info(
+        f"PYMBAR_DISABLE_JAX set to {os.environ.get('PYMBAR_DISABLE_JAX')}. See https://docs.openfree.energy/en/latest/guide/troubleshooting.html#pymbar-disable-jax for more details"
+    )
+
+# setdefault will only set PYMBAR_DISABLE_JAX if it is unset
+os.environ.setdefault("PYMBAR_DISABLE_JAX", "TRUE")
+
+
 # We need to do this first so that we can set up our
 # log control since some modules have warnings on import
 from openfe.utils import logging_control
