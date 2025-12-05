@@ -754,12 +754,12 @@ class AbsoluteAlchemicalSettings(SettingsBaseModel):
     Eq. 13 from Pham and Shirts, J. Chem. Phys. 135, 034114 (2011).
     """
     softcore_b: float = 1.0
-   """
+    """
     Scaling constant ``b`` in
     Eq. 13 from Pham and Shirts, J. Chem. Phys. 135, 034114 (2011).
     """
     softcore_c: float = 6.0
-   """
+    """
     Scaling constant ``c`` in
     Eq. 13 from Pham and Shirts, J. Chem. Phys. 135, 034114 (2011).
     """

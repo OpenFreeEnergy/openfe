@@ -36,7 +36,7 @@ from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity, unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import app
-from openmm import unit as omm_unit
+from openmm import unit as ommunit
 from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
 from openmmtools.alchemy import (
@@ -168,10 +168,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         system: openmm.System,
         topology: openmm.app.Topology,
-        positions: omm_unit.Quantity,
+        positions: ommunit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool,
-    ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
+    ) -> tuple[ommunit.Quantity, ommunit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
 
@@ -619,6 +619,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         system: openmm.System,
         comp_resids: dict[Component, npt.NDArray],
         alchem_comps: dict[str, list[Component]],
+        alchemical_settings: AbsoluteAlchemicalSettings,
     ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[int]]:
         """
         Get an alchemically modified system and its associated factory
@@ -633,6 +634,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           A dictionary of residues for each component in the System.
         alchem_comps : dict[str, list[Component]]
           A dictionary of alchemical components for each end state.
+        alchemical_settings : AbsolulteAlchemicalSettings
+          Settings controlling how the alchemical system is built.
 
         Returns
         -------
@@ -652,9 +655,26 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         alchemical_region = AlchemicalRegion(
             alchemical_atoms=alchemical_indices,
+            softcore_alpha=alchemical_settings.softcore_alpha,
+            annihilate_electrostatics=True,
+            annihilate_sterics=alchemical_settings.annihilate_sterics,
+            softcore_a=alchemical_settings.softcore_a,
+            softcore_b=alchemical_settings.softcore_b,
+            softcore_c=alchemical_settings.softcore_c,
+            softcore_beta=0.0,
+            softcore_d=1.0,
+            softcore_e=1.0,
+            softcore_f=2.0,
         )
 
-        alchemical_factory = AbsoluteAlchemicalFactory()
+        alchemical_factory = AbsoluteAlchemicalFactory(
+            consistent_exceptions=alchemical_settings.consistent_exceptions,
+            switch_width=1.0 * ommunit.angstroms,
+            alchemical_pme_treatment='exact',
+            alchemical_rf_treatment='switched',
+            disable_alchemical_dispersion_correction=alchemical_settings.disable_alchemical_dispersion_correction,
+            split_alchemical_forces=True
+        )
         alchemical_system = alchemical_factory.create_alchemical_system(system, alchemical_region)
 
         return alchemical_factory, alchemical_system, alchemical_indices
@@ -1141,7 +1161,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # 7. Get alchemical system
         alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
-            omm_topology, restrained_omm_system, comp_resids, alchem_comps
+            topology=omm_topology,
+            system=restrained_omm_system,
+            comp_resids=comp_resids,
+            alchem_comps=alchem_comps,
+            alchemical_settings=settings["alchemical_settings"],
         )
 
         # 8. Get compound and sampler states
