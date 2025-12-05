@@ -52,6 +52,7 @@ from openmmtools.states import (
 )
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
+    AbsoluteAlchemicalSettings,
     BaseSolvationSettings,
     IntegratorSettings,
     MultiStateOutputSettings,
