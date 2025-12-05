@@ -167,7 +167,11 @@ def _pre_equilibrate(
 
     # Don't do anything if we're doing a dry run
     if dry:
-        return positions, system.getDefaultPeriodicBoxVectors()
+        box = [
+            openmm.Vec3(*v.value_in_unit(omm_unit.nanometer))
+            for v in system.getDefaultPeriodicBoxVectors()
+        ] * omm_unit.nanometer
+        return positions, box
 
     # TODO: Refactor this part to live outside the method call
     # We have to modify the output settings to have different output
@@ -1340,4 +1344,11 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 **unit_result_dict,
             }
         else:
-            return {"debug": {"sampler": sampler}}
+            return {
+                "debug": {
+                    "sampler": sampler,
+                    "alchem_system": system,
+                    "selection_indices": self.selection_indices,
+                    "positions": equil_positions,
+                }
+            }

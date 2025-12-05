@@ -22,8 +22,10 @@ import gufe
 import mdtraj
 import openmm
 import openmm.unit as omm_unit
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat
 from gufe import (
     ChemicalSystem,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     settings,
 )
@@ -187,7 +189,11 @@ class PlainMDProtocol(gufe.Protocol):
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
-        system_name = "Solvent MD" if solvent_comp is not None else "Vacuum MD"
+        system_name = (
+            "Solvent MD"
+            if solvent_comp is not None or isinstance(protein_comp, ProteinMembraneComponent)
+            else "Vacuum MD"
+        )
 
         for comp in [protein_comp] + small_mols:
             if comp is not None:
@@ -363,9 +369,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 logger.info("Running NVT equilibration")
 
             # Set barostat frequency to zero for NVT
-            for x in simulation.context.getSystem().getForces():
-                if x.getName() == "MonteCarloBarostat":
-                    x.setFrequency(0)
+            for force in simulation.context.getSystem().getForces():
+                if isinstance(force, (MonteCarloBarostat, MonteCarloMembraneBarostat)):
+                    force.setFrequency(0)
 
             simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
 
@@ -397,9 +403,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
 
         # Enable the barostat for NPT
-        for x in simulation.context.getSystem().getForces():
-            if x.getName() == "MonteCarloBarostat":
-                x.setFrequency(barostat_frequency.m)
+        for force in simulation.context.getSystem().getForces():
+            if isinstance(force, (MonteCarloBarostat, MonteCarloMembraneBarostat)):
+                force.setFrequency(barostat_frequency.m)
 
         t0 = time.time()
         simulation.step(equil_steps_npt)
@@ -585,7 +591,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
         # 1. Create stateA system
-        # Create a dictionary of OFFMol for each SMC for bookeeping
+        # Create a dictionary of OFFMol for each SMC for bookkeeping
         smc_components: dict[SmallMoleculeComponent, OFFMolecule]
 
         smc_components = {i: i.to_openff() for i in small_mols}
@@ -634,6 +640,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 stateA_topology,
                 molecules=[s.to_openff() for s in small_mols],
             )
+        box = [
+            openmm.Vec3(*v.value_in_unit(omm_unit.nanometer))
+            for v in stateA_system.getDefaultPeriodicBoxVectors()
+        ] * omm_unit.nanometer
+        stateA_topology.setPeriodicBoxVectors(box)
 
         # f. Save pdb of entire system
         if output_settings.preminimized_structure:

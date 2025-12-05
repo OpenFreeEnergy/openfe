@@ -39,6 +39,7 @@ import numpy.typing as npt
 from gufe import (
     ChemicalSystem,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     settings,
@@ -655,13 +656,19 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If stateB contains any unique Components.
           If the alchemical species is charged.
         """
-        if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
-            errmsg = "No ProteinComponent found"
-            raise ValueError(errmsg)
+        components = (ProteinComponent, ProteinMembraneComponent)
+        system_validation.require_components(
+            systems=[stateA, stateB],
+            component_types=components,
+            msg="No ProteinComponent or ProteinMembraneComponent found"
+        )
 
-        if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
-            errmsg = "No SolventComponent found"
-            raise ValueError(errmsg)
+        components = (SolventComponent, ProteinMembraneComponent)
+        system_validation.require_components(
+            systems=[stateA, stateB],
+            component_types=components,
+            msg="No SolventComponent or ProteinMembraneComponent found"
+        )
 
         # Needs gufe 1.3
         diff = stateA.component_diff(stateB)
@@ -944,6 +951,12 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # an error will have been raised when calling `validate_solvent`
         # in the Protocol's `_create`.
         # Similarly we don't need to check prot_comp
+
+        # If there is a ProteinMembraneComponent, we set the SolventComponent
+        # in the complex to None, as it is only used in the solvent leg
+        if isinstance(prot_comp, ProteinMembraneComponent):
+            solv_comp = None
+
         return alchem_comps, solv_comp, prot_comp, off_comps
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:

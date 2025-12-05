@@ -10,6 +10,7 @@ import click
 import gufe
 import pandas as pd
 
+from openfe import ProteinMembraneComponent
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
@@ -235,10 +236,10 @@ def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     component_types = [
         x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
     ]
+    if "gufe.components.proteincomponent" in component_types:
+        return "complex"
     if "gufe.components.solventcomponent" not in component_types:
         return "vacuum"
-    elif "gufe.components.proteincomponent" in component_types:
-        return "complex"
     else:
         return "solvent"
 
@@ -359,6 +360,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> pd.DataFrame:
     # only fails if there are no valid results
     DDGs = []
     bad_legs = []
+    print(legs.items())
     for ligpair, vals in sorted(legs.items()):
         leg_types = set(vals)
         # drop any leg types that have no values (these are failed runs)
@@ -485,10 +487,11 @@ def _generate_raw(legs: dict, allow_partial=True) -> pd.DataFrame:
 
 def _check_legs_have_sufficient_repeats(legs):
     """Throw an error if all legs do not have 2 or more simulation repeat results"""
-
+    print(legs)
     for leg in legs.values():
         for run_type, sim_results in leg.items():
             if len(sim_results) < 2:
+                print(leg, run_type, sim_results)
                 msg = "ERROR: Every edge must have at least two simulation repeats"
                 click.secho(msg, err=True, fg="red")
                 sys.exit(1)
@@ -644,6 +647,7 @@ def _get_legs_from_result_jsons(
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
+        print(result_fn)
         result_info, result = _load_valid_result_json(result_fn)
 
         if result_info is None:  # this means it couldn't find names and/or simtype
