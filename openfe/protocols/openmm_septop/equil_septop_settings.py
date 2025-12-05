@@ -23,6 +23,7 @@ from gufe.settings.typing import PicosecondQuantity
 from openff.units import unit as offunit
 from pydantic import field_validator
 
+from openfe.protocols.openmm_afe.equil_afe_settings import AlchemicalSettings
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     MDOutputSettings,
@@ -33,7 +34,6 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
 )
-from openfe.protocols.openmm_afe.equil_afe_settings import AlchemicalSettings
 from openfe.protocols.restraint_utils.settings import BaseRestraintSettings
 
 

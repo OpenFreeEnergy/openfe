@@ -671,10 +671,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         alchemical_factory = AbsoluteAlchemicalFactory(
             consistent_exceptions=alchemical_settings.consistent_exceptions,
             switch_width=1.0 * ommunit.angstroms,
-            alchemical_pme_treatment='exact',
-            alchemical_rf_treatment='switched',
+            alchemical_pme_treatment="exact",
+            alchemical_rf_treatment="switched",
             disable_alchemical_dispersion_correction=alchemical_settings.disable_alchemical_dispersion_correction,
-            split_alchemical_forces=True
+            split_alchemical_forces=True,
         )
         alchemical_system = alchemical_factory.create_alchemical_system(system, alchemical_region)
 

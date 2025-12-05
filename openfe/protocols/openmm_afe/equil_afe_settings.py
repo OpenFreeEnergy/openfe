@@ -46,6 +46,7 @@ class AlchemicalSettings(SettingsBaseModel):
     Alchemical settings for Protocols which use the
     AbsoluteAlchemicalFactory.
     """
+
     consistent_exceptions: bool = False
     """
     If True, the same functional form of the System's
