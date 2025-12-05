@@ -45,7 +45,7 @@ from openmmtools.states import (
 )
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    AbsoluteAlchemicalSettings,
+    AlchemicalSettings,
     BaseSolvationSettings,
     IntegratorSettings,
     MultiStateOutputSettings,
@@ -286,7 +286,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         system: openmm.System,
         alchem_indices_A: list[int],
         alchem_indices_B: list[int],
-        alchemical_settings: AbsoluteAlchemicalSettings,
+        alchemical_settings: AlchemicalSettings,
     ) -> tuple[AbsoluteAlchemicalFactory, openmm.System]:
         """
         Get an alchemically modified system and its associated factory
@@ -295,12 +295,14 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ----------
         system : openmm.System
           System to alchemically modify.
-        alchem_indices_A: list[int]
+        alchem_indices_A : list[int]
           A list of atom indices for the alchemically modified
           ligand A in the system.
-        alchem_indices_B: list[int]
+        alchem_indices_B : list[int]
           A list of atom indices for the alchemically modified
           ligand B in the system.
+        alchemical_settings : AlchemicalSettings
+          Settings controlling how the alchemical system will be built.
 
         Returns
         -------
@@ -797,7 +799,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
           * forcefield_settings : OpenMMSystemGeneratorFFSettings
           * thermo_settings : ThermoSettings
           * solvation_settings : BaseSolvationSettings
-          * alchemical_settings : AbsoluteAlchemicalSettings
+          * alchemical_settings : AlchemicalSettings
           * lambda_settings : LambdaSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings

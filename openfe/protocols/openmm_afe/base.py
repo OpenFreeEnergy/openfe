@@ -52,7 +52,7 @@ from openmmtools.states import (
 )
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    AbsoluteAlchemicalSettings,
+    AlchemicalSettings,
     BaseSolvationSettings,
     IntegratorSettings,
     MultiStateOutputSettings,
@@ -338,7 +338,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * forcefield_settings : OpenMMSystemGeneratorFFSettings
           * thermo_settings : ThermoSettings
           * solvation_settings : BaseSolvationSettings
-          * alchemical_settings : AbsoluteAlchemicalSettings
+          * alchemical_settings : AlchemicalSettings
           * lambda_settings : LambdaSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
@@ -620,7 +620,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         system: openmm.System,
         comp_resids: dict[Component, npt.NDArray],
         alchem_comps: dict[str, list[Component]],
-        alchemical_settings: AbsoluteAlchemicalSettings,
+        alchemical_settings: AlchemicalSettings,
     ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[int]]:
         """
         Get an alchemically modified system and its associated factory
@@ -635,7 +635,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           A dictionary of residues for each component in the System.
         alchem_comps : dict[str, list[Component]]
           A dictionary of alchemical components for each end state.
-        alchemical_settings : AbsolulteAlchemicalSettings
+        alchemical_settings : AlchemicalSettings
           Settings controlling how the alchemical system is built.
 
         Returns

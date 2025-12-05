@@ -55,7 +55,7 @@ from openmmtools import multistate
 from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings,
-    AbsoluteAlchemicalSettings,
+    AlchemicalSettings,
     IntegratorSettings,
     LambdaSettings,
     MDOutputSettings,
@@ -442,7 +442,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            alchemical_settings=AbsoluteAlchemicalSettings(),
+            alchemical_settings=AlchemicalSettings(),
             lambda_settings=LambdaSettings(
                 lambda_elec=[
                     0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
@@ -859,7 +859,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
             * thermo_settings : ThermoSettings
             * charge_settings : OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AbsoluteAlchemicalSettings
+            * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
@@ -934,7 +934,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * thermo_settings : ThermoSettings
             * charge_settings : OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AbsoluteAlchemicalSettings
+            * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings

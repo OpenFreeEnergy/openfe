@@ -34,12 +34,63 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
-    AbsoluteAlchemicalSettings,
 )
 from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
     BoreschRestraintSettings,
 )
+
+
+class AlchemicalSettings(SettingsBaseModel):
+    """
+    Alchemical settings for Protocols which use the
+    AbsoluteAlchemicalFactory.
+    """
+    consistent_exceptions: bool = False
+    """
+    If True, the same functional form of the System's
+    nonbonded method will be used to determine the electrostatic
+    potential energy contributions of 1,4 exceptions instead
+    of the classical q1*q2/(4*epsilon*epsilon0*pi*r). Default is False.
+    """
+    disable_alchemical_dispersion_correction: bool = False
+    """
+    If True, the long-range dispersion correction will not
+    be included for the alchemical region, avoiding the need
+    to recompute the correction. This can improve performance,
+    at the cost of accuracy. Default is False.
+    """
+    annihilate_sterics: bool = False
+    """
+    If True, sterics (Lennard-Jones) will be annhilated instead
+    of decoupled. Default is False.
+    """
+    softcore_alpha: float = 0.5
+    """
+    Alchemical softcore parameter for the Lennard-Jones interactions
+    (default is 0.5).
+
+    The generalized softcore potential formalism introduced by
+    Pham and Shirts, J. Chem. Phys. 135, 034114 (2011), equation 13,
+    is used here. The ``softcore_a``, ``softcore_b``, and
+    ``softcore_c`` parameters are used alongside ``softcore_alpha``
+    to control how the potential is scaled.
+    """
+    softcore_a: float = 1.0
+    """
+    Scaling constant ``a`` in
+    Eq. 13 from Pham and Shirts, J. Chem. Phys. 135, 034114 (2011).
+    """
+    softcore_b: float = 1.0
+    """
+    Scaling constant ``b`` in
+    Eq. 13 from Pham and Shirts, J. Chem. Phys. 135, 034114 (2011).
+    """
+    softcore_c: float = 6.0
+    """
+    Scaling constant ``c`` in
+    Eq. 13 from Pham and Shirts, J. Chem. Phys. 135, 034114 (2011).
+    """
 
 
 class LambdaSettings(SettingsBaseModel):
@@ -204,7 +255,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """Settings for solvating the system."""
 
     # Alchemical settings
-    alchemical_settings: AbsoluteAlchemicalSettings
+    alchemical_settings: AlchemicalSettings
     """
     Alchemical protocol settings.
     """
@@ -315,7 +366,7 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """Settings for solvating the system in the complex."""
 
     # Alchemical settings
-    alchemical_settings: AbsoluteAlchemicalSettings
+    alchemical_settings: AlchemicalSettings
     """
     Alchemical protocol settings.
     """

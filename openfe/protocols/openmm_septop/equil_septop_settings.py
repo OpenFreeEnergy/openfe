@@ -32,8 +32,8 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
-    AbsoluteAlchemicalSettings,
 )
+from openfe.protocols.openmm_afe.equil_afe_settings import AlchemicalSettings
 from openfe.protocols.restraint_utils.settings import BaseRestraintSettings
 
 
@@ -363,7 +363,7 @@ class SepTopSettings(SettingsBaseModel):
     """Settings for solvating the complex system."""
 
     # Alchemical settings
-    alchemical_settings: AbsoluteAlchemicalSettings
+    alchemical_settings: AlchemicalSettings
     """
     Alchemical protocol settings.
     """
