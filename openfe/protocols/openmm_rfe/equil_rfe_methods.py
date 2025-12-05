@@ -485,7 +485,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             state_label = "A" if i == 0 else "B"
 
             # Check that there is only one unique Component in each state
-            if len(entry) != 0:
+            if len(entry) != 1:
                 errmsg = (
                     "Only one alchemical component is allowed per end state. "
                     f"Found {len(entry)} in state {state_label}."
@@ -686,7 +686,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             self.settings.integrator_settings.timestep,
         )
 
-        _ = settings_validation.convert_steps_per_iteration(
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
             simulation_settings=self.settings.simulation_settings,
             integrator_settings=self.settings.integrator_settings,
         )
@@ -710,7 +710,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         # Validate alchemical settings
         # PR #125 temporarily pin lambda schedule spacing to n_replicas
-        if self.settings.simulation_settings.n_replicas != self.settings.lambda_settings.n_windows:
+        if self.settings.simulation_settings.n_replicas != self.settings.lambda_settings.lambda_windows:
             errmsg = (
                 "Number of replicas in simulation_settings must equal "
                 "number of lambda windows in lambda_settings."

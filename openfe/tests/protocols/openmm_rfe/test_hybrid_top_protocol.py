@@ -30,10 +30,6 @@ import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe._rfe_utils import topologyhelpers
-from openfe.protocols.openmm_rfe.equil_rfe_methods import (
-    _get_alchemical_charge_difference,
-    _validate_alchemical_components,
-)
 from openfe.protocols.openmm_utils import omm_compute, system_creation
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
