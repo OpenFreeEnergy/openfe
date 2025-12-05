@@ -77,87 +77,12 @@ from .equil_rfe_settings import (
 logger = logging.getLogger(__name__)
 
 
-def _get_alchemical_charge_difference(
-    mapping: LigandAtomMapping,
-    nonbonded_method: str,
-    explicit_charge_correction: bool,
-    solvent_component: SolventComponent,
-) -> int:
-    """
-    Checks and returns the difference in formal charge between state A and B.
-
-    Raises
-    ------
-    ValueError
-      * If an explicit charge correction is attempted and the
-        nonbonded method is not PME.
-      * If the absolute charge difference is greater than one
-        and an explicit charge correction is attempted.
-    UserWarning
-      If there is any charge difference.
-
-    Parameters
-    ----------
-    mapping : dict[str, ComponentMapping]
-      Dictionary of mappings between transforming components.
-    nonbonded_method : str
-      The OpenMM nonbonded method used for the simulation.
-    explicit_charge_correction : bool
-      Whether or not to use an explicit charge correction.
-    solvent_component : openfe.SolventComponent
-      The SolventComponent of the simulation.
-
-    Returns
-    -------
-    int
-      The formal charge difference between states A and B.
-      This is defined as sum(charge state A) - sum(charge state B)
-    """
-
-    difference = mapping.get_alchemical_charge_difference()
-
-    if abs(difference) > 0:
-        if explicit_charge_correction:
-            if nonbonded_method.lower() != "pme":
-                errmsg = "Explicit charge correction when not using PME is not currently supported."
-                raise ValueError(errmsg)
-            if abs(difference) > 1:
-                errmsg = (
-                    f"A charge difference of {difference} is observed "
-                    "between the end states and an explicit charge  "
-                    "correction has been requested. Unfortunately "
-                    "only absolute differences of 1 are supported."
-                )
-                raise ValueError(errmsg)
-
-            ion = {-1: solvent_component.positive_ion, 1: solvent_component.negative_ion}[
-                difference
-            ]
-            wmsg = (
-                f"A charge difference of {difference} is observed "
-                "between the end states. This will be addressed by "
-                f"transforming a water into a {ion} ion"
-            )
-            logger.warning(wmsg)
-            warnings.warn(wmsg)
-        else:
-            wmsg = (
-                f"A charge difference of {difference} is observed "
-                "between the end states. No charge correction has "
-                "been requested, please account for this in your "
-                "final results."
-            )
-            logger.warning(wmsg)
-            warnings.warn(wmsg)
-
-    return difference
-
-class RHTProtocolSetupUnit(gufe.Protocol):
+class HybridTopProtocolSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _assign_partial_charges(
-        charge_settings: OpenFFPartialChargeSettings,
-        off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]],
+        partial_charge_settings: OpenFFPartialChargeSettings,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
         Assign partial charges to SMCs.
@@ -166,20 +91,18 @@ class RHTProtocolSetupUnit(gufe.Protocol):
         ----------
         charge_settings : OpenFFPartialChargeSettings
           Settings for controlling how the partial charges are assigned.
-        off_small_mols : dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]]
-          Dictionary of dictionary of OpenFF Molecules to add, keyed by
-          state and SmallMoleculeComponent.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
         """
-        for smc, mol in chain(
-            off_small_mols["stateA"], off_small_mols["stateB"], off_small_mols["both"]
-        ):
+        for mol in smc_components.values():
             charge_generation.assign_offmol_partial_charges(
                 offmol=mol,
                 overwrite=False,
-                method=charge_settings.partial_charge_method,
-                toolkit_backend=charge_settings.off_toolkit_backend,
-                generate_n_conformers=charge_settings.number_of_conformers,
-                nagl_model=charge_settings.nagl_model,
+                method=partial_charge_settings.partial_charge_method,
+                toolkit_backend=partial_charge_settings.off_toolkit_backend,
+                generate_n_conformers=partial_charge_settings.number_of_conformers,
+                nagl_model=partial_charge_settings.nagl_model,
             )
 
     def _prepare(
@@ -219,8 +142,300 @@ class RHTProtocolSetupUnit(gufe.Protocol):
 
         Returns
         -------
-        
+        alchem_comps : dict[str, Component]
+            Dictionary of alchemical components.
+        solv_comp : SolventComponent
+            The solvent component.
+        protein_comp : ProteinComponent
+            The protein component.
+        small_mols : list[SmallMoleculeComponent: OFFMolecule]
+            List of small molecule components.
         """
+        stateA = self._inputs["stateA"]
+        stateB = self._inputs["stateB"]
+        alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
+
+        solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
+        _, _, smcs_B = system_validation.get_components(stateB)
+
+        small_mols = {
+            m: m.to_openff()
+            for m in set(smcs_A).union(set(smcs_B))
+        }
+
+        return alchem_comps, solvent_comp, protein_comp, small_mols
+
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
+        """
+        Get the protocol settings from the inputs.
+
+        Returns
+        -------
+        protocol_settings : RelativeHybridTopologyProtocolSettings
+            The protocol settings.
+        """
+        settings: RelativeHybridTopologyProtocolSettings = self._inputs["protocol"].settings
+
+        protocol_settings: dict[str, SettingsBaseModel] = {}
+        protocol_settings["forcefield_settings"] = settings.forcefield_settings
+        protocol_settings["thermo_settings"] = settings.thermo_settings
+        protocol_settings["alchemical_settings"] = settings.alchemical_settings
+        protocol_settings["lambda_settings"] = settings.lambda_settings
+        protocol_settings["charge_settings"] = settings.partial_charge_settings
+        protocol_settings["solvation_settings"] = settings.solvation_settings
+        protocol_settings["simulation_settings"] = settings.simulation_settings
+        protocol_settings["output_settings"] = settings.output_settings
+        protocol_settings["integrator_settings"] = settings.integrator_settings
+        protocol_settings["engine_settings"] = settings.engine_settings
+        return protocol_settings
+    
+    @staticmethod
+    def _get_system_generator(
+        shared_basepath: pathlib.Path,
+        settings: dict[str, SettingsBaseModel],
+        solvent_comp: SolventComponent | None,
+    ) -> SystemGenerator:
+        """
+        Get an OpenMM SystemGenerator.
+
+        Parameters
+        ----------
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of protocol settings.
+        solvent_comp : SolventComponent | None
+            The solvent component of the system, if any.
+        
+        Returns
+        -------
+        system_generator : openmmtools.SystemGenerator
+          The SystemGenerator for the protocol.
+        """
+        ffcache = settings["output_settings"].forcefield_cache
+        if ffcache is not None:
+            ffcache = shared_basepath / ffcache
+
+        # Block out oechem backend in system_generator calls to avoid
+        # any issues with smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system_generator = system_creation.get_system_generator(
+                forcefield_settings=settings["forcefield_settings"],
+                integrator_settings=settings["integrator_settings"],
+                thermo_settings=settings["thermo_settings"],
+                cache=ffcache,
+                has_solvent=solvent_comp is not None,
+            )
+        
+        return system_generator
+    
+    @staticmethod
+    def _create_stateA_system(
+        protein_component: ProteinComponent | None,
+        solvent_component: SolventComponent | None,
+        small_mols_stateA: dict[SmallMoleculeComponent, OFFMolecule],
+        system_generator: SystemGenerator,
+        solvation_settings: OpenMMSolvationSettings,
+    ):
+        stateA_modeller, comp_resids = system_creation.get_omm_modeller(
+            protein_comp=protein_component,
+            solvent_comp=solvent_component,
+            small_mols=small_mols_stateA,
+            omm_forcefield=system_generator.forcefield,
+            solvent_settings=solvation_settings,
+        )
+
+        stateA_topology = stateA_modeller.getTopology()
+        # Note: roundtrip positions to remove vec3 issues
+        stateA_positions = to_openmm(from_openmm(stateA_modeller.getPositions()))
+
+        with without_oechem_backend():
+            stateA_system = system_generator.create_system(
+                stateA_modeller.topology,
+                molecules=list(small_mols_stateA.values()),
+            )
+
+        return stateA_system, stateA_topology, stateA_positions, comp_resids
+    
+    @staticmethod
+    def _create_stateB_system(
+        small_mols_stateB: dict[SmallMoleculeComponent, OFFMolecule],
+        mapping: LigandAtomMapping,
+        stateA_topology: app.Topology,
+        exclude_resids: np.ndarray,
+        system_generator: SystemGenerator,
+    ):
+        stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
+            topology1=stateA_topology,
+            topology2=small_mols_stateB[mapping.componentB].to_topology().to_openmm(),
+            exclude_resids=exclude_resids,
+        )
+
+        with without_oechem_backend():
+            stateB_system = system_generator.create_system(
+                stateB_topology,
+                molecules=list(small_mols_stateB.values()),
+            )
+        
+        return stateB_system, stateB_topology, stateB_alchem_resids
+    
+    @staticmethod
+    def _handle_alchemical_waters(
+        stateA_topology: app.Topology,
+        stateA_positions: npt.NDArray,
+        stateB_topology: app.Topology,
+        stateB_system: openmm.System,
+        charge_difference: int,
+        system_mappings: dict[str, dict[int, int]],
+        alchemical_settings: AlchemicalSettings,
+        solvent_component: SolventComponent | None,
+    ):
+        if charge_difference == 0:
+            return
+
+        alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_waters(
+            stateA_topology,
+            stateA_positions,
+            charge_difference,
+            alchemical_settings.explicit_charge_correction_cutoff,
+        )
+
+        _rfe_utils.topologyhelpers.handle_alchemical_waters(
+            alchem_water_resids,
+            stateB_topology,
+            stateB_system,
+            system_mappings,
+            charge_difference,
+            solvent_component,
+        )
+    
+    def _get_omm_objects(
+        self,
+        stateA,
+        stateB,
+        mapping,
+        settings: dict[str, SettingsBaseModel],
+        protein_component: ProteinComponent | None,
+        solvent_component: SolventComponent | None,
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
+    ):
+        if self.verbose:
+            self.logger.info("Parameterizing system")
+
+        # Get the system generator and register the templates
+        system_generator = self._get_system_generator(
+            shared_basepath=self.shared_basepath,
+            settings=settings,
+            solvent_comp=solvent_component
+        )
+
+        system_generator.add_molecules(
+            molecules=list(small_mols.values())
+        )
+
+        # State A system creation
+        small_mols_stateA = {
+            smc: offmol
+            for smc, offmol in small_mols.items()
+            if stateA.contains(smc)
+        }
+
+        stateA_system, stateA_topology, stateA_positions, comp_resids = self._create_stateA_system(
+            protein_component=protein_component,
+            solvent_component=solvent_component,
+            small_mols_stateA=small_mols_stateA,
+            system_generator=system_generator,
+            solvation_settings=settings["solvation_settings"],
+        )
+
+        # State B system creation
+        small_mols_stateB = {
+            smc: offmol
+            for smc, offmol in small_mols.items()
+            if stateB.contains(smc)
+        }
+
+        stateB_system, stateB_topology, stateB_alchem_resids = self._create_stateB_system(
+            small_mols_stateB=small_mols_stateB,
+            mapping=mapping,
+            stateA_topology=stateA_topology,
+            exclude_resids = comp_resids[mapping.componentA],
+            system_generator=system_generator,
+        )
+
+        # Get the mapping between the two systems
+        system_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
+            old_to_new_atom_map=mapping.componentA_to_componentB,
+            old_system=stateA_system,
+            old_topology=stateA_topology,
+            old_resids=comp_resids[mapping.componentA],
+            new_system=stateB_system,
+            new_topology=stateB_topology,
+            new_resids=stateB_alchem_resids,
+            # These are non-optional settings for this method
+            fix_constraints=True,
+        )
+
+        # Handle alchemical waters if needed
+        if settings["alchemical_settings"].explicit_charge_correction:
+            self._handle_alchemical_waters(
+                stateA_topology=stateA_topology,
+                stateA_positions=stateA_positions,
+                stateB_topology=stateB_topology,
+                stateB_system=stateB_system,
+                charge_difference=mapping.get_alchemical_charge_difference(),
+                system_mappings=system_mappings,
+                alchemical_settings=settings["alchemical_settings"],
+                solvent_component=solvent_component,
+            )
+        
+        stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
+            system_mappings,
+            stateA_topology,
+            stateB_topology,
+            old_positions=ensure_quantity(stateA_positions, "openmm"),
+            insert_positions=ensure_quantity(
+                small_mols[mapping.componentB].conformers[0], "openmm"
+            ),
+        )
+
+        return (
+            stateA_system, stateA_topology, stateA_positions,
+            stateB_system, stateB_topology, stateB_positions,
+            system_mappings
+        )
+
+    @staticmethod
+    def _get_alchemical_system(
+        stateA_system,
+        stateA_positions,
+        stateA_topology,
+        stateB_system,
+        stateB_positions,
+        stateB_topology,
+        system_mappings,
+        alchemical_settings: AlchemicalSettings,
+    ):
+        if alchemical_settings.softcore_LJ.lower() == "gapsys":
+            softcore_LJ_v2 = True
+        elif alchemical_settings.softcore_LJ.lower() == "beutler":
+            softcore_LJ_v2 = False
+
+        hybrid_factory = _rfe_utils.relative.HybridTopologyFactory(
+            stateA_system,
+            stateA_positions,
+            stateA_topology,
+            stateB_system,
+            stateB_positions,
+            stateB_topology,
+            old_to_new_atom_map=system_mappings["old_to_new_atom_map"],
+            old_to_new_core_atom_map=system_mappings["old_to_new_core_atom_map"],
+            use_dispersion_correction=alchemical_settings.use_dispersion_correction,
+            softcore_alpha=alchemical_settings.softcore_alpha,
+            softcore_LJ_v2=softcore_LJ_v2,
+            softcore_LJ_v2_alpha=alchemical_settings.softcore_alpha,
+            interpolate_old_and_new_14s=alchemical_settings.turn_off_core_unique_exceptions,
+        )
+
+        return hybrid_factory, hybrid_factory.hybrid_system
 
     def run(
         self, *, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
@@ -260,254 +475,183 @@ class RHTProtocolSetupUnit(gufe.Protocol):
         )
 
         # Get the components
-
-        # Get the settings
-
-        # Get the OpenMM objects
-
-        # 0. General setup and settings dependency resolution step
-
-        # Extract relevant settings
-        protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs[
-            "protocol"
-        ].settings
+        mapping = self._inputs["ligandmapping"]
         stateA = self._inputs["stateA"]
         stateB = self._inputs["stateB"]
-        mapping = self._inputs["ligandmapping"]
+        alchem_comps, solvent_comp, protein_comp, off_small_mols = self._get_components()
 
-        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = (
-            protocol_settings.forcefield_settings
+        # Get the settings
+        settings = self._get_settings()
+
+        # Get the OpenMM objects
+        (
+            stateA_system, stateA_topology, stateA_positions,
+            stateB_system, stateB_topology, stateB_positions,
+            ligand_mappings
+        ) = self._get_omm_objects(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=mapping,
+            settings=settings,
+            protein_component=protein_comp,
+            solvent_component=solvent_comp,
+            small_mols=off_small_mols,
         )
-        thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
-        alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
-        lambda_settings: LambdaSettings = protocol_settings.lambda_settings
-        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
-        solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
-        sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
-        output_settings: MultiStateOutputSettings = protocol_settings.output_settings
-        integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
-
-        # TODO: Also validate various conversions?
-        # Convert various time based inputs to steps/iterations
-        steps_per_iteration = settings_validation.convert_steps_per_iteration(
-            simulation_settings=sampler_settings,
-            integrator_settings=integrator_settings,
-        )
-
-        equil_steps = settings_validation.get_simsteps(
-            sim_length=sampler_settings.equilibration_length,
-            timestep=integrator_settings.timestep,
-            mc_steps=steps_per_iteration,
-        )
-        prod_steps = settings_validation.get_simsteps(
-            sim_length=sampler_settings.production_length,
-            timestep=integrator_settings.timestep,
-            mc_steps=steps_per_iteration,
-        )
-
-        solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
-
-        # Get the change difference between the end states
-        # and check if the charge correction used is appropriate
-        charge_difference = _get_alchemical_charge_difference(
-            mapping,
-            forcefield_settings.nonbonded_method,
-            alchem_settings.explicit_charge_correction,
-            solvent_comp,
-        )
-
-        # 1. Create stateA system
-        self.logger.info("Parameterizing molecules")
-
-        # a. create offmol dictionaries and assign partial charges
-        # workaround for conformer generation failures
-        # see openfe issue #576
-        # calculate partial charges manually if not already given
-        # convert to OpenFF here,
-        # and keep the molecule around to maintain the partial charges
-        off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]]
-        off_small_mols = {
-            "stateA": [(mapping.componentA, mapping.componentA.to_openff())],
-            "stateB": [(mapping.componentB, mapping.componentB.to_openff())],
-            "both": [
-                (m, m.to_openff())
-                for m in small_mols
-                if (m != mapping.componentA and m != mapping.componentB)
-            ],
-        }
-
-        self._assign_partial_charges(charge_settings, off_small_mols)
-
-        # b. get a system generator
-        if output_settings.forcefield_cache is not None:
-            ffcache = shared_basepath / output_settings.forcefield_cache
-        else:
-            ffcache = None
-
-        # Block out oechem backend in system_generator calls to avoid
-        # any issues with smiles roundtripping between rdkit and oechem
-        with without_oechem_backend():
-            system_generator = system_creation.get_system_generator(
-                forcefield_settings=forcefield_settings,
-                integrator_settings=integrator_settings,
-                thermo_settings=thermo_settings,
-                cache=ffcache,
-                has_solvent=solvent_comp is not None,
-            )
-
-            # c. force the creation of parameters
-            # This is necessary because we need to have the FF templates
-            # registered ahead of solvating the system.
-            for smc, mol in chain(
-                off_small_mols["stateA"], off_small_mols["stateB"], off_small_mols["both"]
-            ):
-                system_generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
-
-            # c. get OpenMM Modeller + a dictionary of resids for each component
-            stateA_modeller, comp_resids = system_creation.get_omm_modeller(
-                protein_comp=protein_comp,
-                solvent_comp=solvent_comp,
-                small_mols=dict(chain(off_small_mols["stateA"], off_small_mols["both"])),
-                omm_forcefield=system_generator.forcefield,
-                solvent_settings=solvation_settings,
-            )
-
-        # d. get topology & positions
-        # Note: roundtrip positions to remove vec3 issues
-        stateA_topology = stateA_modeller.getTopology()
-        stateA_positions = to_openmm(from_openmm(stateA_modeller.getPositions()))
-
-        # e. create the stateA System
-        # Block out oechem backend in system_generator calls to avoid
-        # any issues with smiles roundtripping between rdkit and oechem
-        with without_oechem_backend():
-            stateA_system = system_generator.create_system(
-                stateA_modeller.topology,
-                molecules=[m for _, m in chain(off_small_mols["stateA"], off_small_mols["both"])],
-            )
-
-        # 2. Get stateB system
-        # a. get the topology
-        stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
-            stateA_topology,
-            # zeroth item (there's only one) then get the OFF representation
-            off_small_mols["stateB"][0][1].to_topology().to_openmm(),
-            exclude_resids=comp_resids[mapping.componentA],
-        )
-
-        # b. get a list of small molecules for stateB
-        # Block out oechem backend in system_generator calls to avoid
-        # any issues with smiles roundtripping between rdkit and oechem
-        with without_oechem_backend():
-            stateB_system = system_generator.create_system(
-                stateB_topology,
-                molecules=[m for _, m in chain(off_small_mols["stateB"], off_small_mols["both"])],
-            )
-
-        #  c. Define correspondence mappings between the two systems
-        ligand_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
-            mapping.componentA_to_componentB,
-            stateA_system,
-            stateA_topology,
-            comp_resids[mapping.componentA],
-            stateB_system,
-            stateB_topology,
-            stateB_alchem_resids,
-            # These are non-optional settings for this method
-            fix_constraints=True,
-        )
-
-        # d. if a charge correction is necessary, select alchemical waters
-        #    and transform them
-        if alchem_settings.explicit_charge_correction:
-            alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_waters(
-                stateA_topology,
-                stateA_positions,
-                charge_difference,
-                alchem_settings.explicit_charge_correction_cutoff,
-            )
-            _rfe_utils.topologyhelpers.handle_alchemical_waters(
-                alchem_water_resids,
-                stateB_topology,
-                stateB_system,
-                ligand_mappings,
-                charge_difference,
-                solvent_comp,
-            )
-
-        #  e. Finally get the positions
-        stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
-            ligand_mappings,
-            stateA_topology,
-            stateB_topology,
-            old_positions=ensure_quantity(stateA_positions, "openmm"),
-            insert_positions=ensure_quantity(
-                off_small_mols["stateB"][0][1].conformers[0], "openmm"
-            ),
-        )
-
-        # 3. Create the hybrid topology
-        # a. Get softcore potential settings
-        if alchem_settings.softcore_LJ.lower() == "gapsys":
-            softcore_LJ_v2 = True
-        elif alchem_settings.softcore_LJ.lower() == "beutler":
-            softcore_LJ_v2 = False
-        # b. Get hybrid topology factory
-        hybrid_factory = _rfe_utils.relative.HybridTopologyFactory(
+        
+        # Get the alchemical factory & system
+        hybrid_factory, hybrid_system = self._get_alchemical_system(
             stateA_system,
             stateA_positions,
             stateA_topology,
             stateB_system,
             stateB_positions,
             stateB_topology,
-            old_to_new_atom_map=ligand_mappings["old_to_new_atom_map"],
-            old_to_new_core_atom_map=ligand_mappings["old_to_new_core_atom_map"],
-            use_dispersion_correction=alchem_settings.use_dispersion_correction,
-            softcore_alpha=alchem_settings.softcore_alpha,
-            softcore_LJ_v2=softcore_LJ_v2,
-            softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
-            interpolate_old_and_new_14s=alchem_settings.turn_off_core_unique_exceptions,
+            ligand_mappings,
+            alchemical_settings=settings["alchemical_settings"],
         )
 
-        # 4. Create lambda schedule
-        # TODO - this should be exposed to users, maybe we should offer the
-        # ability to print the schedule directly in settings?
-        # fmt: off
-        lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
-            functions=lambda_settings.lambda_functions,
-            windows=lambda_settings.lambda_windows
+        # Verify alchemical system
+        if hybrid_factory.has_virtual_sites:
+            if not settings["integrator_settings"].reassign_velocities:
+                errmsg = (
+                    "Simulations with virtual sites without velocity "
+                    "reassignments are unstable in openmmtools"
+                )
+                raise ValueError(errmsg)
+
+        # Get the selection indices for the system
+        selection_indices = hybrid_factory.hybrid_topology.select(
+            settings["output_settings"].output_indices
         )
-        # fmt: on
-        # PR #125 temporarily pin lambda schedule spacing to n_replicas
-        n_replicas = sampler_settings.n_replicas
-        if n_replicas != len(lambdas.lambda_schedule):
-            errmsg = (
-                f"Number of replicas {n_replicas} "
-                f"does not equal the number of lambda windows "
-                f"{len(lambdas.lambda_schedule)}"
+
+        # Write out a PDB containing the subsampled hybrid state
+        bfactors = np.zeros_like(selection_indices, dtype=float)  # environment
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_old_atoms']))] = 0.25  # lig A
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['core_atoms']))] = 0.50  # core
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_new_atoms']))] = 0.75  # lig B
+
+        if len(selection_indices) > 0:
+            traj = mdtraj.Trajectory(
+                hybrid_factory.hybrid_positions[selection_indices, :],
+                hybrid_factory.hybrid_topology.subset(selection_indices),
+            ).save_pdb(
+                shared_basepath / settings["output_settings"].output_structure,
+                bfactors=bfactors,
             )
-            raise ValueError(errmsg)
 
-        # 9. Create the multistate reporter
-        # Get the sub selection of the system to print coords for
-        selection_indices = hybrid_factory.hybrid_topology.select(output_settings.output_indices)
+        # Serialize the hybrid system
+        system_outfile = self.shared_basepath / "hybrid_system.xml.bz2"
+        serialize(hybrid_system, system_outfile)
 
-        #  a. Create the multistate reporter
-        # convert checkpoint_interval from time to iterations
-        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
-            checkpoint_interval=output_settings.checkpoint_interval,
-            time_per_iteration=sampler_settings.time_per_iteration,
-        )
+        # Serialize the positions
+        positions_outfile = self.shared_basepath / "hybrid_positions.npz"
+        npy_positions_nm = from_openmm(hybrid_factory.hybrid_positions).to("nanometer").m
+        np.savez(positions_outfile, npy_positions_nm)
 
-        nc = shared_basepath / output_settings.output_filename
+
+        unit_result_dict = {
+            "system": system_outfile,
+            "positions": positions_outfile,
+            "pdb_structure": shared_basepath / settings["output_settings"].output_structure
+            "selection_indices": selection_indices,
+        }
+
+        # If this is a dry run, we return the objects directly
+        if dry:
+            unit_result_dict |= {
+                "hybrid_factory": hybrid_factory,
+                "hybrid_system": hybrid_system,
+            }
+
+        return unit_result_dict
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **inputs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            **outputs,
+        }
+
+
+class HybridTopProtocolSimulationUnit(gufe.ProtocolUnit):
+    def _prepare(
+        self,
+        verbose,
+        scratch_basepath: pathlib.Path | None,
+        shared_basepath: pathlib.Path | None,      
+    ):
+        """
+        Set basepaths and do some initial logging.
+
+        Parameters
+        ----------
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        basepath : Optional[pathlib.Path]
+          Optional base path to write files to.
+        """
+        self.verbose = verbose
+
+        if self.verbose:
+            self.logger.info("Setting up the hybrid topology simulation")
+
+        # set basepaths
+        def _set_optional_path(basepath):
+            if basepath is None:
+                return pathlib.Path(".")
+            return basepath
+
+        self.scratch_basepath = _set_optional_path(scratch_basepath)
+        self.shared_basepath = _set_optional_path(shared_basepath)
+
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
+        """
+        Get the protocol settings from the inputs.
+
+        Returns
+        -------
+        protocol_settings : RelativeHybridTopologyProtocolSettings
+            The protocol settings.
+        """
+        settings: RelativeHybridTopologyProtocolSettings = self._inputs["protocol"].settings
+
+        protocol_settings: dict[str, SettingsBaseModel] = {}
+        protocol_settings["forcefield_settings"] = settings.forcefield_settings
+        protocol_settings["thermo_settings"] = settings.thermo_settings
+        protocol_settings["alchemical_settings"] = settings.alchemical_settings
+        protocol_settings["lambda_settings"] = settings.lambda_settings
+        protocol_settings["charge_settings"] = settings.partial_charge_settings
+        protocol_settings["solvation_settings"] = settings.solvation_settings
+        protocol_settings["simulation_settings"] = settings.simulation_settings
+        protocol_settings["output_settings"] = settings.output_settings
+        protocol_settings["integrator_settings"] = settings.integrator_settings
+        protocol_settings["engine_settings"] = settings.engine_settings
+        return protocol_settings
+    
+    def _get_reporter(
+        self,
+        selection_indices: np.ndarray,
+        output_settings: MultiStateOutputSettings,
+        simulation_settings: MultiStateSimulationSettings,
+    ):
+        nc = self.shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
 
         if output_settings.positions_write_frequency is not None:
             pos_interval = settings_validation.divmod_time_and_check(
                 numerator=output_settings.positions_write_frequency,
-                denominator=sampler_settings.time_per_iteration,
+                denominator=simulation_settings.time_per_iteration,
                 numerator_name="output settings' position_write_frequency",
-                denominator_name="sampler settings' time_per_iteration",
+                denominator_name="simulation settings' time_per_iteration",
             )
         else:
             pos_interval = 0
@@ -522,7 +666,12 @@ class RHTProtocolSetupUnit(gufe.Protocol):
         else:
             vel_interval = 0
 
-        reporter = multistate.MultiStateReporter(
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
+
+        return multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
@@ -531,98 +680,68 @@ class RHTProtocolSetupUnit(gufe.Protocol):
             velocity_interval=vel_interval,
         )
 
-        #  b. Write out a PDB containing the subsampled hybrid state
-        # fmt: off
-        bfactors = np.zeros_like(selection_indices, dtype=float)  # solvent
-        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_old_atoms']))] = 0.25  # lig A
-        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['core_atoms']))] = 0.50  # core
-        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_new_atoms']))] = 0.75  # lig B
-        # bfactors[np.in1d(selection_indices, protein)] = 1.0  # prot+cofactor
-        if len(selection_indices) > 0:
-            traj = mdtraj.Trajectory(
-                hybrid_factory.hybrid_positions[selection_indices, :],
-                hybrid_factory.hybrid_topology.subset(selection_indices),
-            ).save_pdb(
-                shared_basepath / output_settings.output_structure,
-                bfactors=bfactors,
-            )
-        # fmt: on
+    @staticmethod
+    def _get_sampler(
+        system: openmm.System,
+        positions: openmm.Quantity,
+        lambdas: _rfe_utils.lambdaprotocol.LambdaProtocol,
+        integrator: openmmtools.mcmc.MCMCMove,
+        reporter: multistate.MultiStateReporter,
+        simulation_settings: MultiStateSimulationSettings,
+        thermo_settings: ThermodynamicSettings,
+        alchem_settings: AlchemicalSettings,
+        platform: openmm.Platform,
+        dry: bool,
+    ):
 
-        # 10. Get compute platform
-        # restrict to a single CPU if running vacuum
-        restrict_cpu = forcefield_settings.nonbonded_method.lower() == "nocutoff"
-        platform = omm_compute.get_openmm_platform(
-            platform_name=protocol_settings.engine_settings.compute_platform,
-            gpu_device_index=protocol_settings.engine_settings.gpu_device_index,
-            restrict_cpu_count=restrict_cpu,
-        )
-
-        # 11. Set the integrator
-        # a. Validate integrator settings for current system
-        # Virtual sites sanity check - ensure we restart velocities when
-        # there are virtual sites in the system
-        if hybrid_factory.has_virtual_sites:
-            if not integrator_settings.reassign_velocities:
-                errmsg = (
-                    "Simulations with virtual sites without velocity "
-                    "reassignments are unstable in openmmtools"
-                )
-                raise ValueError(errmsg)
-
-        #  b. create langevin integrator
-        integrator = openmmtools.mcmc.LangevinDynamicsMove(
-            timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
-            n_steps=steps_per_iteration,
-            reassign_velocities=integrator_settings.reassign_velocities,
-            n_restart_attempts=integrator_settings.n_restart_attempts,
-            constraint_tolerance=integrator_settings.constraint_tolerance,
-        )
-
-        # 12. Create sampler
-        self.logger.info("Creating and setting up the sampler")
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
-            simulation_settings=sampler_settings,
+            simulation_settings=simulation_settings,
         )
+    
         # convert early_termination_target_error from kcal/mol to kT
         early_termination_target_error = (
             settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
                 thermo_settings.temperature,
-                sampler_settings.early_termination_target_error,
+                simulation_settings.early_termination_target_error,
             )
         )
 
-        if sampler_settings.sampler_method.lower() == "repex":
+        if simulation_settings.sampler_method.lower() == "repex":
             sampler = _rfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
-                hybrid_factory=hybrid_factory,
+                hybrid_system=system,
+                hybrid_positions=positions,
                 online_analysis_interval=rta_its,
                 online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=rta_min_its,
             )
-        elif sampler_settings.sampler_method.lower() == "sams":
+
+        elif simulation_settings.sampler_method.lower() == "sams":
             sampler = _rfe_utils.multistate.HybridSAMSSampler(
                 mcmc_moves=integrator,
-                hybrid_factory=hybrid_factory,
+                hybrid_system=system,
+                hybrid_positions=positions,
                 online_analysis_interval=rta_its,
                 online_analysis_minimum_iterations=rta_min_its,
-                flatness_criteria=sampler_settings.sams_flatness_criteria,
-                gamma0=sampler_settings.sams_gamma0,
+                flatness_criteria=simulation_settings.sams_flatness_criteria,
+                gamma0=simulation_settings.sams_gamma0,
             )
-        elif sampler_settings.sampler_method.lower() == "independent":
+
+        elif simulation_settings.sampler_method.lower() == "independent":
             sampler = _rfe_utils.multistate.HybridMultiStateSampler(
                 mcmc_moves=integrator,
-                hybrid_factory=hybrid_factory,
+                hybrid_system=system,
+                hybrid_positions=positions,
                 online_analysis_interval=rta_its,
                 online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=rta_min_its,
             )
 
         else:
-            raise AttributeError(f"Unknown sampler {sampler_settings.sampler_method}")
+            raise AttributeError(f"Unknown sampler {simulation_settings.sampler_method}")
 
         sampler.setup(
-            n_replicas=sampler_settings.n_replicas,
+            n_replicas=simulation_settings.n_replicas,
             reporter=reporter,
             lambda_protocol=lambdas,
             temperature=to_openmm(thermo_settings.temperature),
@@ -633,23 +752,124 @@ class RHTProtocolSetupUnit(gufe.Protocol):
             minimization_steps=100 if not dry else None,
         )
 
+        sampler.energy_context_cache = energy_context_cache
+        sampler.sampler_context_cache = sampler_context_cache
+
+        return sampler
+
+    def _get_ctx_caches(
+        self,
+        platform: openmm.Platform,
+    ) -> tuple[openmmtools.cache.ContextCache, openmmtools.cache.ContextCache]:
+        """
+        Set the context caches based on the chosen platform
+
+        Parameters
+        ----------
+        platform: openmm.Platform
+          The OpenMM compute platform.
+
+        Returns
+        -------
+        energy_context_cache : openmmtools.cache.ContextCache
+          The energy state context cache.
+        sampler_context_cache : openmmtools.cache.ContextCache
+          The sampler state context cache.
+        """
+        energy_context_cache = openmmtools.cache.ContextCache(
+            capacity=None,
+            time_to_live=None,
+            platform=platform,
+        )
+
+        sampler_context_cache = openmmtools.cache.ContextCache(
+            capacity=None,
+            time_to_live=None,
+            platform=platform,
+        )
+
+        return energy_context_cache, sampler_context_cache
+
+    def run(self, *, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None):
+
+        # Get relevant outputs from setup
+        system = deserialize(self._inputs["setup_results"]["system"])
+        positions = to_openmm(
+            deserialize(self._inputs["setup_results"]["positions"]) * offunit.nm
+        )
+        selection_indices = self._inputs["setup_results"]["selection_indices"]
+
+        # Get the settings
+        settings = self._get_settings()
+
+        # Get the lambda schedule
+        lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
+            functions=lambda_settings.lambda_functions,
+            windows=lambda_settings.lambda_windows
+        )
+
+        # Define simulation steps
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings=settings["simulation_settings"],
+            integrator_settings=settings["integrator_settings"],
+        )
+
+        equilibration_steps = settings_validation.get_simsteps(
+            sim_length=settings["simulation_settings"].equilibration_length,
+            timestep=settings["integrator_settings"].timestep,
+            mc_steps=steps_per_iteration,
+        )
+
+        production_steps = settings_validation.get_simsteps(
+            sim_length=settings["simulation_settings"].production_length,
+            timestep=settings["integrator_settings"].timestep,
+            mc_steps=steps_per_iteration,
+        )
+
         try:
-            # Create context caches (energy + sampler)
-            energy_context_cache = openmmtools.cache.ContextCache(
-                capacity=None,
-                time_to_live=None,
-                platform=platform,
+            # Get the reporter
+            reporter = self._get_reporter(
+                selection_indices=selection_indices,
+                output_settings=settings["output_settings"],
+                simulation_settings=settings["simulation_settings"],
             )
 
-            sampler_context_cache = openmmtools.cache.ContextCache(
-                capacity=None,
-                time_to_live=None,
-                platform=platform,
+            # Get the compute platform
+            # restrict to a single CPU if running vacuum
+            restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
+            platform = omm_compute.get_openmm_platform(
+                platform_name=settings["engine_settings"].compute_platform,
+                gpu_device_index=settings["engine_settings"].gpu_device_index,
+                restrict_cpu_count=restrict_cpu,
             )
 
-            sampler.energy_context_cache = energy_context_cache
-            sampler.sampler_context_cache = sampler_context_cache
+            # Get the integrator
+            integrator = openmmtools.mcmc.LangevinDynamicsMove(
+                timestep=to_openmm(settings["integrator_settings"].timestep),
+                collision_rate=to_openmm(settings["integrator_settings"].langevin_collision_rate),
+                n_steps=steps_per_iteration,
+                reassign_velocities=settings["integrator_settings"].reassign_velocities,
+                n_restart_attempts=settings["integrator_settings"].n_restart_attempts,
+                constraint_tolerance=settings["integrator_settings"].constraint_tolerance,
+            )
+            # Create context caches
+            energy_context_cache, sampler_context_cache = self._get_ctx_caches(platform)
 
+            sampler = self._get_sampler(
+                system=system,
+                positions=positions,
+                lambdas=lambdas,
+                integrator=integrator,
+                reporter=reporter,
+                simulation_settings=settings["simulation_settings"],
+                thermo_settings=settings["thermo_settings"],
+                alchem_settings=settings["alchemical_settings"],
+                platform=platform,
+                dry=dry,
+                energy_context_cache=energy_context_cache,
+                sampler_context_cache=sampler_context_cache,
+            )
+    
             if not dry:  # pragma: no-cover
                 # minimize
                 if verbose:
@@ -670,18 +890,6 @@ class RHTProtocolSetupUnit(gufe.Protocol):
                 sampler.extend(int(prod_steps / steps_per_iteration))
 
                 self.logger.info("Production phase complete")
-
-                self.logger.info("Post-simulation analysis of results")
-                # calculate relevant analyses of the free energies & sampling
-                # First close & reload the reporter to avoid netcdf clashes
-                analyzer = multistate_analysis.MultistateEquilFEAnalysis(
-                    reporter,
-                    sampling_method=sampler_settings.sampler_method.lower(),
-                    result_units=unit.kilocalorie_per_mole,
-                )
-                analyzer.plot(filepath=shared_basepath, filename_prefix="")
-                analyzer.close()
-
             else:
                 # clean up the reporter file
                 fns = [
@@ -690,6 +898,7 @@ class RHTProtocolSetupUnit(gufe.Protocol):
                 ]
                 for fn in fns:
                     os.remove(fn)
+
         finally:
             # close reporter when you're done, prevent
             # file handle clashes
@@ -702,6 +911,7 @@ class RHTProtocolSetupUnit(gufe.Protocol):
                 del energy_context_cache._lru._data[context]
             for context in list(sampler_context_cache._lru._data.keys()):
                 del sampler_context_cache._lru._data[context]
+
             # cautiously clear out the global context cache too
             for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
                 del openmmtools.cache.global_context_cache._lru._data[context]
@@ -712,9 +922,68 @@ class RHTProtocolSetupUnit(gufe.Protocol):
                 del integrator, sampler
 
         if not dry:  # pragma: no-cover
-            return {"nc": nc, "last_checkpoint": chk, **analyzer.unit_results_dict}
+            return {
+                "nc": nc,
+                "last_checkpoint": chk
+            }
         else:
-            return {"debug": {"sampler": sampler}}
+            return {
+                "debug": {
+                    "sampler": sampler
+                }
+            }
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **inputs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        outputs = self.run(
+            dry=False,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared,
+        )
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            **outputs,
+        }
+    
+
+class HybridTopProtocolAnalysisUnit(gufe.ProtocolUnit):
+   def _prepare(
+        self,
+        verbose,
+        scratch_basepath: pathlib.Path | None,
+        shared_basepath: pathlib.Path | None,      
+    ):
+        """
+        Set basepaths and do some initial logging.
+
+        Parameters
+        ----------
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        basepath : Optional[pathlib.Path]
+          Optional base path to write files to.
+        """
+        self.verbose = verbose
+
+        if self.verbose:
+            self.logger.info("Setting up the hybrid topology simulation")
+
+        # set basepaths
+        def _set_optional_path(basepath):
+            if basepath is None:
+                return pathlib.Path(".")
+            return basepath
+
+        self.scratch_basepath = _set_optional_path(scratch_basepath)
+        self.shared_basepath = _set_optional_path(shared_basepath)
 
     @staticmethod
     def structural_analysis(scratch, shared) -> dict:
@@ -764,33 +1033,49 @@ class RHTProtocolSetupUnit(gufe.Protocol):
 
         return {"structural_analysis": shared / "structural_analysis.npz"}
 
+    def run(self, *, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None):
+        # set up logging and basepaths
+        trajectory = self._inputs["simulation_results"]["nc"]
+        checkpoint = self._inputs["simulation_results"]["last_checkpoint"]
+
+        self._prepare(
+            verbose=verbose,
+            scratch_basepath=scratch_basepath,
+            shared_basepath=shared_basepath,
+        )
+
+        # Get energies
+        try:
+            reporter = multistate.MultiStateReporter(
+                storage=trajectory,
+                checkpoint_storage=checkpoint,
+            )
+            
+            analyzer = multistate_analysis.MultistateEquilFEAnalysis(
+                reporter,
+                sampling_method=self._inputs["protocol"].settings.simulation_settings.sampler_method.lower(),
+                result_units=offunit.kilocalorie_per_mole,
+            )
+            analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
+            analyzer.close()
+
+            # analyzer.unit_results_dict
+        finally:
+            reporter.close()
+
+        # Get structural analysis -- todo: switch this away from the CLI
+        structural_analysis_outputs = self.structural_analysis(
+            scratch=self.scratch_basepath,
+            shared=self.shared_basepath,
+        )
+
+        return analyzer.unit_results_dict | structural_analysis_outputs
+
     def _execute(
         self,
         ctx: gufe.Context,
-        # protocol: gufe.Protocol, ?
-        **kwargs,
+        **inputs,
     ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
-
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            **outputs,
-        }
-
-
-class RHTProtocolSimulationUnit(gufe.Protocol):
-    def _execute(
-        self,
-        ctx: gufe.Context,
-        *,
-        # protocol: gufe.Protocol, ?
-        setup_results: gufe.ProtocolUnitResult,
-        **kwargs,
-    ) -> dict[str, Any]:
-        # Should we be doing this so often?
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
         outputs = self.run(
@@ -803,5 +1088,4 @@ class RHTProtocolSimulationUnit(gufe.Protocol):
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
             **outputs,
-            **struct_analysis_outputs,
         }

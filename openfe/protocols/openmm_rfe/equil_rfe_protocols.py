@@ -36,7 +36,9 @@ from gufe import (
     ComponentMapping,
     ProteinComponent,
     SmallMoleculeComponent,
+    SolventComponent,
     settings,
+    LigandAtomMapping
 )
 
 from openfe.due import Doi, due
@@ -307,12 +309,86 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                     logger.warning(wmsg)
                     warnings.warn(wmsg)
 
+    @staticmethod
+    def _validate_charge_difference(
+        mapping: LigandAtomMapping,
+        nonbonded_method: str,
+        explicit_charge_correction: bool,
+        solvent_component: SolventComponent | None,
+    ):
+        """
+        Validates the net charge difference between the two states.
+
+        Parameters
+        ----------
+        mapping : dict[str, ComponentMapping]
+          Dictionary of mappings between transforming components.
+        nonbonded_method : str
+          The OpenMM nonbonded method used for the simulation.
+        explicit_charge_correction : bool
+          Whether or not to use an explicit charge correction.
+        solvent_component : openfe.SolventComponent | None
+          The SolventComponent of the simulation.
+
+        Raises
+        ------
+        ValueError
+          * If an explicit charge correction is attempted and the
+            nonbonded method is not PME.
+          * If the absolute charge difference is greater than one
+            and an explicit charge correction is attempted.
+        UserWarning
+          * If there is any charge difference.
+        """
+        difference = mapping.get_alchemical_charge_difference()
+
+        if abs(difference) == 0:
+            return
+
+        if not explicit_charge_correction:
+            wmsg = (
+                f"A charge difference of {difference} is observed "
+                "between the end states. No charge correction has "
+                "been requested, please account for this in your "
+                "final results."
+            )
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+            return
+
+        # We implicitly check earlier that we have to have pme for a solvated
+        # system, so we only need to check the nonbonded method here
+        if nonbonded_method.lower() != "pme":
+            errmsg = "Explicit charge correction when not using PME is not currently supported."
+            raise ValueError(errmsg)
+
+        if abs(difference) > 1:
+            errmsg = (
+                f"A charge difference of {difference} is observed "
+                "between the end states and an explicit charge  "
+                "correction has been requested. Unfortunately "
+                "only absolute differences of 1 are supported."
+            )
+            raise ValueError(errmsg)
+
+        ion = {
+            -1: solvent_component.positive_ion,
+            1: solvent_component.negative_ion
+        }[difference]
+
+        wmsg = (
+            f"A charge difference of {difference} is observed "
+            "between the end states. This will be addressed by "
+            f"transforming a water into a {ion} ion"
+        )
+        logger.info(wmsg)
+
     def _validate(
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]],
-        extends: Optional[gufe.ProtocolDAGResult] = None,
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMapping] | None,
+        extends: gufe.ProtocolDAGResult | None = None,
     ) -> None:
         # Check we're not trying to extend
         if extends:
@@ -338,11 +414,56 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Validate protein component
         system_validation.validate_protein(stateA)
 
+        # Validate charge difference
+        # Note: validation depends on the mapping & solvent component checks
+        if stateA.contains(SolventComponent):
+            solv_comp = stateA.get_components_of_type(SolventComponent)[0]
+        else:
+            solv_comp = None
+
+        self._validate_charge_difference(
+            mapping=mapping[0] if isinstance(mapping, list) else mapping,
+            nonbonded_method=self.settings.forcefield_settings.nonbonded_method,
+            explicit_charge_correction=self.settings.alchemical_settings.explicit_charge_correction,
+            solvent_component=solv_comp,
+        )
+
         # Validate integrator things
         settings_validation.validate_timestep(
             self.settings.forcefield_settings.hydrogen_mass,
             self.settings.integrator_settings.timestep,
         )
+
+        _ = settings_validation.convert_steps_per_iteration(
+            simulation_settings=self.settings.simulation_settings,
+            integrator_settings=self.settings.integrator_settings,
+        )
+
+        _ = settings_validation.get_simsteps(
+            sim_length=self.settings.simulation_settings.equilibration_length,
+            timestep=self.settings.integrator_settings.timestep,
+            mc_steps=steps_per_iteration,
+        )
+
+        _ = settings_validation.get_simsteps(
+            sim_length=self.settings.simulation_settings.production_length,
+            timestep=self.settings.integrator_settings.timestep,
+            mc_steps=steps_per_iteration,
+        )
+
+        _ = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=self.settings.output_settings.checkpoint_interval,
+            time_per_iteration=self.settings.simulation_settings.time_per_iteration,
+        )
+
+        # Validate alchemical settings
+        # PR #125 temporarily pin lambda schedule spacing to n_replicas
+        if self.settings.simulation_settings.n_replicas != self.settings.lambda_settings.n_windows:
+            errmsg = (
+                "Number of replicas in simulation_settings must equal "
+                "number of lambda windows in lambda_settings."
+            )
+            raise ValueError(errmsg)
 
     def _create(
         self,
