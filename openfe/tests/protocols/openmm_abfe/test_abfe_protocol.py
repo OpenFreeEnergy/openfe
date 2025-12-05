@@ -756,7 +756,6 @@ class TestA2AMembraneDryRun:
     def test_complex_dry_run(self, complex_units, settings, tmpdir):
         with tmpdir.as_cwd():
             data = complex_units[0].run(dry=True, verbose=True)["debug"]
-            print(data["alchem_indices"])
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=True, settings=settings)
 

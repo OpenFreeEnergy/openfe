@@ -629,6 +629,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         )
         # fmt: on
 
+
     @staticmethod
     def _validate_endstates(
         stateA: ChemicalSystem,
@@ -657,20 +658,18 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If the alchemical species is charged.
         """
         components = (ProteinComponent, ProteinMembraneComponent)
-        if not (
-            any(stateA.contains(c) for c in components)
-            and any(stateB.contains(c) for c in components)
-        ):
-            errmsg = "No ProteinComponent or ProteinMembraneComponent found"
-            raise ValueError(errmsg)
+        system_validation.require_components(
+            systems=[stateA, stateB],
+            component_types=components,
+            msg="No ProteinComponent or ProteinMembraneComponent found"
+        )
 
         components = (SolventComponent, ProteinMembraneComponent)
-        if not (
-            any(stateA.contains(c) for c in components)
-            and any(stateB.contains(c) for c in components)
-        ):
-            errmsg = "No SolventComponent or ProteinMembraneComponent found"
-            raise ValueError(errmsg)
+        system_validation.require_components(
+            systems=[stateA, stateB],
+            component_types=components,
+            msg="No SolventComponent or ProteinMembraneComponent found"
+        )
 
         # Needs gufe 1.3
         diff = stateA.component_diff(stateB)

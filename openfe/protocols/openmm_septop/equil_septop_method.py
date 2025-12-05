@@ -1157,21 +1157,19 @@ class SepTopProtocol(gufe.Protocol):
         """
         # Check that there is a ProteinComponent or ProteinMembraneComponent
         components = (ProteinComponent, ProteinMembraneComponent)
-        if not (
-            any(stateA.contains(c) for c in components)
-            and any(stateB.contains(c) for c in components)
-        ):
-            errmsg = "No ProteinComponent or ProteinMembraneComponent found"
-            raise ValueError(errmsg)
+        system_validation.require_components(
+            systems=[stateA, stateB],
+            component_types=components,
+            msg="No ProteinComponent or ProteinMembraneComponent found"
+        )
 
         # Check that there is a SolventComponent or ProteinMembraneComponent
         components = (SolventComponent, ProteinMembraneComponent)
-        if not (
-            any(stateA.contains(c) for c in components)
-            and any(stateB.contains(c) for c in components)
-        ):
-            errmsg = "No SolventComponent or ProteinMembraneComponent found"
-            raise ValueError(errmsg)
+        system_validation.require_components(
+            systems=[stateA, stateB],
+            component_types=components,
+            msg="No SolventComponent or ProteinMembraneComponent found"
+        )
 
     @staticmethod
     def _validate_alchemical_components(alchemical_components: dict[str, list[Component]]) -> None:

@@ -228,11 +228,6 @@ def _pre_equilibrate(
     )
     equilibrated_positions = state.getPositions(asNumpy=True)
     box = state.getPeriodicBoxVectors()
-    print("box")
-    # # Convert box vectors to plain floats in nanometers
-    # box_no_units = [v.value_in_unit(omm_unit.nanometer) for v in box]
-    # box_quantity = omm_unit.Quantity(box_no_units, omm_unit.nanometer)
-    print("box equ", box)
     # cautiously delete out contexts & integrator
     del simulation.context, integrator
     return equilibrated_positions, box

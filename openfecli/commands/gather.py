@@ -226,7 +226,7 @@ def _get_names(result: dict) -> tuple[str, str]:
     name_A = protocol_data["inputs"]["ligandmapping"]["componentA"]["molprops"]["ofe-name"]
     name_B = protocol_data["inputs"]["ligandmapping"]["componentB"]["molprops"]["ofe-name"]
 
-    return name_A, name_B
+    return str(name_A), str(name_B)
 
 
 def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
@@ -360,6 +360,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> pd.DataFrame:
     # only fails if there are no valid results
     DDGs = []
     bad_legs = []
+    print(legs.items())
     for ligpair, vals in sorted(legs.items()):
         leg_types = set(vals)
         # drop any leg types that have no values (these are failed runs)
@@ -511,7 +512,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
     import numpy as np
     from cinnabar.stats import mle
 
-    # _check_legs_have_sufficient_repeats(legs)
+    _check_legs_have_sufficient_repeats(legs)
 
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []

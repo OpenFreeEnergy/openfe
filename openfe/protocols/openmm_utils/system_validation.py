@@ -76,6 +76,34 @@ def get_alchemical_components(
     return alchemical_components
 
 
+def require_components(systems, component_types, msg=None):
+    """
+    Ensure that every system in `systems` contains at least one component
+    whose type is in `component_types`.
+
+    Parameters
+    ----------
+    systems : iterable
+        Chemical systems / states to check (e.g., stateA, stateB).
+    component_types : tuple[type]
+        Component classes to test for (e.g., (ProteinComponent, ProteinMembraneComponent)).
+    msg : str, optional
+        Custom error message.
+
+    Raises
+    ------
+    ValueError
+        If any system does not contain at least one component of the allowed types.
+    """
+    for i, system in enumerate(systems):
+        if not any(system.contains(t) for t in component_types):
+            default = (
+                f"System {i} does not contain any of the required component types: "
+                f"{component_types}"
+            )
+            raise ValueError(msg or default)
+
+
 def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     """
     Checks that the ChemicalSystem component has the right solvent
@@ -100,9 +128,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     """
     solv = [comp for comp in state.values() if isinstance(comp, SolventComponent)]
     # ToDo: Also validate the solvent in the ProteinMembraneComponent?
-    protein_membrane = [
-        comp for comp in state.values() if isinstance(comp, ProteinMembraneComponent)
-    ]
+    protein_membrane = state.get_components_of_type(ProteinMembraneComponent)
 
     if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
         errmsg = "nocutoff cannot be used for solvent transformations"
@@ -142,9 +168,7 @@ def validate_protein(state: ChemicalSystem):
         errmsg = "Multiple ProteinComponent found, only one is supported"
         raise ValueError(errmsg)
 
-    protein_membrane = [
-        comp for comp in state.values() if isinstance(comp, ProteinMembraneComponent)
-    ]
+    protein_membrane = state.get_components_of_type(ProteinMembraneComponent)
 
     if len(protein_membrane) == 1 and not protein_membrane[0]._periodic_box_vectors:
         errmsg = "No periodic box vector is supplied with the ProteinMembraneComponent"

@@ -22,6 +22,7 @@ import gufe
 import mdtraj
 import openmm
 import openmm.unit as omm_unit
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat
 from gufe import (
     ChemicalSystem,
     ProteinMembraneComponent,
@@ -369,7 +370,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
             # Set barostat frequency to zero for NVT
             for force in simulation.context.getSystem().getForces():
-                if force.getName() in ("MonteCarloBarostat", "MonteCarloMembraneBarostat"):
+                if isinstance(force, (MonteCarloBarostat, MonteCarloMembraneBarostat)):
                     force.setFrequency(0)
 
             simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
@@ -403,7 +404,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # Enable the barostat for NPT
         for force in simulation.context.getSystem().getForces():
-            if force.getName() in ("MonteCarloBarostat", "MonteCarloMembraneBarostat"):
+            if isinstance(force, (MonteCarloBarostat, MonteCarloMembraneBarostat)):
                 force.setFrequency(barostat_frequency.m)
 
         t0 = time.time()
