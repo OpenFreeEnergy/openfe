@@ -337,7 +337,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * forcefield_settings : OpenMMSystemGeneratorFFSettings
           * thermo_settings : ThermoSettings
           * solvation_settings : BaseSolvationSettings
-          * alchemical_settings : AlchemicalSettings
+          * alchemical_settings : AbsoluteAlchemicalSettings
           * lambda_settings : LambdaSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings

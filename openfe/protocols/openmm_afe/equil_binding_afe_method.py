@@ -58,7 +58,7 @@ from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     ABFEPreEquilOutputSettings,
     AbsoluteBindingSettings,
-    AlchemicalSettings,
+    AbsoluteAlchemicalSettings,
     BoreschRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
@@ -553,7 +553,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 temperature=298.15 * offunit.kelvin,
                 pressure=1 * offunit.bar,
             ),
-            alchemical_settings=AlchemicalSettings(),
+            alchemical_settings=AbsoluteAlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
                 lambda_elec=[
                     0.0, 0.25, 0.5, 0.75, 1.0,
@@ -958,7 +958,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             * thermo_settings : ThermoSettings
             * charge_settings : OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
+            * alchemical_settings : AbsoluteAlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
@@ -1306,7 +1306,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
             * thermo_settings : ThermoSettings
             * charge_settings : OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
+            * alchemical_settings : AbsoluteAlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings

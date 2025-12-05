@@ -68,7 +68,7 @@ from rdkit import Chem
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_septop.equil_septop_settings import (
-    AlchemicalSettings,
+    AbsoluteAlchemicalSettings,
     IntegratorSettings,
     LambdaSettings,
     MDSimulationSettings,
@@ -241,7 +241,7 @@ class SepTopComplexMixin:
             * thermo_settings : ThermoSettings
             * charge_settings : OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
+            * alchemical_settings : AbsoluteAlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
@@ -327,7 +327,7 @@ class SepTopSolventMixin:
             * thermo_settings : ThermoSettings
             * charge_settings : OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
+            * alchemical_settings : AbsoluteAlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
@@ -894,7 +894,7 @@ class SepTopProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            alchemical_settings=AlchemicalSettings(),
+            alchemical_settings=AbsoluteAlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
                 lambda_elec_A=[
                     0.0,
