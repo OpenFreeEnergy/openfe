@@ -13,7 +13,15 @@ import pytest
 from numpy.testing import assert_allclose
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import CustomNonbondedForce, NonbondedForce
+from openmm import (
+    CustomBondForce,
+    CustomNonbondedForce,
+    HarmonicAngleForce,
+    HarmonicBondForce,
+    MonteCarloBarostat,
+    NonbondedForce,
+    PeriodicTorsionForce,
+)
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 import openfe
@@ -86,6 +94,54 @@ def test_create_independent_repeat_ids(benzene_system):
     assert len(repeat_ids) == 12
 
 
+def _assert_num_forces(system, forcetype, number):
+    """
+    Helper method to check the number of forces of a given
+    type in a system.
+    """
+    forces = [f for f in system.getForces() if isinstance(f, forcetype)]
+    assert len(forces) == number
+
+
+def _verify_alchemical_sterics_force_parameters(
+    force,
+    long_range=True,
+    alpha=0.5,
+    beta=0,
+    a=1.0,
+    b=1.0,
+    c=6.0,
+    d=1.0,
+    e=1.0,
+    f=2.0,
+):
+    assert force.getUseLongRangeCorrection() is long_range
+
+    if force.getNumGlobalParameters() == 8:
+        shift = 0
+    else:
+        shift = 1
+
+    # Check the softcore parameters for the sterics forces
+    assert force.getGlobalParameterName(0 + shift) == 'softcore_alpha'
+    assert force.getGlobalParameterName(1 + shift) == 'softcore_beta'
+    assert force.getGlobalParameterName(2 + shift) == 'softcore_a'
+    assert force.getGlobalParameterName(3 + shift) == 'softcore_b'
+    assert force.getGlobalParameterName(4 + shift) == 'softcore_c'
+    assert force.getGlobalParameterName(5 + shift) == 'softcore_d'
+    assert force.getGlobalParameterName(6 + shift) == 'softcore_e'
+    assert force.getGlobalParameterName(7 + shift) == 'softcore_f'
+
+    assert force.getGlobalParameterDefaultValue(0 + shift) == alpha
+    assert force.getGlobalParameterDefaultValue(1 + shift) == beta
+    assert force.getGlobalParameterDefaultValue(2 + shift) == a
+    assert force.getGlobalParameterDefaultValue(3 + shift) == b
+    assert force.getGlobalParameterDefaultValue(4 + shift) == c
+    assert force.getGlobalParameterDefaultValue(5 + shift) == d
+    assert force.getGlobalParameterDefaultValue(6 + shift) == e
+    assert force.getGlobalParameterDefaultValue(7 + shift) == f
+
+
 @pytest.mark.parametrize("method", ["repex", "sams", "independent", "InDePeNdENT"])
 def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpdir):
     protocol_dry_settings.vacuum_simulation_settings.sampler_method = method
@@ -114,8 +170,98 @@ def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpd
     assert len(sol_unit) == 1
 
     with tmpdir.as_cwd():
-        vac_sampler = vac_unit[0].run(dry=True)["debug"]["sampler"]
+        debug = vac_unit[0].run(dry=True)["debug"]
+        vac_sampler = debug["sampler"]
         assert not vac_sampler.is_periodic
+
+        # standard system
+        system = debug["system"]
+        assert system.getNumParticles() == 12
+        assert len(system.getForces()) == 4
+        _assert_num_forces(system, NonbondedForce, 1)
+        _assert_num_forces(system, HarmonicBondForce, 1)
+        _assert_num_forces(system, HarmonicAngleForce, 1)
+        _assert_num_forces(system, PeriodicTorsionForce, 1)
+
+        # alchemical system
+        alchem_system = debug["alchem_system"]
+        assert alchem_system.getNumParticles() == 12
+        assert len(alchem_system.getForces()) == 12
+        _assert_num_forces(alchem_system, NonbondedForce, 1)
+        _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
+        _assert_num_forces(alchem_system, CustomBondForce, 4)
+        _assert_num_forces(alchem_system, HarmonicBondForce, 1)
+        _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
+        _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
+
+        # Check some force contents
+        stericsf = [
+            f for f in alchem_system.getForces()
+            if isinstance(f, CustomNonbondedForce) and 'U_sterics' in f.getEnergyFunction()
+        ]
+
+        for force in stericsf:
+            _verify_alchemical_sterics_force_parameters(force)
+
+
+def test_alchemical_settings_dry_run_vacuum(benzene_system, protocol_dry_settings, tmpdir):
+    """
+    Test non default alchemical settings
+    """
+    protocol_dry_settings.alchemical_settings.softcore_alpha = 0.2
+    protocol_dry_settings.alchemical_settings.softcore_a = 2
+    protocol_dry_settings.alchemical_settings.softcore_b = 2
+    protocol_dry_settings.alchemical_settings.softcore_c = 1
+    protocol_dry_settings.alchemical_settings.disable_alchemical_dispersion_correction = True
+    protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
+
+    stateA = benzene_system
+
+    stateB = ChemicalSystem({"solvent": SolventComponent()})
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first vacuum unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    assert len(prot_units) == 2
+
+    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)]
+    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
+
+    assert len(vac_unit) == 1
+    assert len(sol_unit) == 1
+
+    with tmpdir.as_cwd():
+        debug = vac_unit[0].run(dry=True)["debug"]
+
+        alchem_system = debug["alchem_system"]
+        _assert_num_forces(alchem_system, NonbondedForce, 1)
+        _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
+        _assert_num_forces(alchem_system, CustomBondForce, 4)
+        _assert_num_forces(alchem_system, HarmonicBondForce, 1)
+        _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
+        _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
+
+        # Check some force contents
+        stericsf = [
+            f for f in alchem_system.getForces()
+            if isinstance(f, CustomNonbondedForce) and 'U_sterics' in f.getEnergyFunction()
+        ]
+
+        for force in stericsf:
+            _verify_alchemical_sterics_force_parameters(
+                force,
+                long_range=False,
+                alpha=0.2,
+                a=2.0,
+                b=2.0,
+                c=1.0,
+            )
 
 
 def test_confgen_fail_AFE(benzene_system, protocol_dry_settings, tmpdir):

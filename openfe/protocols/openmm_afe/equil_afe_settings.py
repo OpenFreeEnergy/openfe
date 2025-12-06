@@ -46,14 +46,6 @@ class AlchemicalSettings(SettingsBaseModel):
     Alchemical settings for Protocols which use the
     AbsoluteAlchemicalFactory.
     """
-
-    consistent_exceptions: bool = False
-    """
-    If True, the same functional form of the System's
-    nonbonded method will be used to determine the electrostatic
-    potential energy contributions of 1,4 exceptions instead
-    of the classical q1*q2/(4*epsilon*epsilon0*pi*r). Default is False.
-    """
     disable_alchemical_dispersion_correction: bool = False
     """
     If True, the long-range dispersion correction will not

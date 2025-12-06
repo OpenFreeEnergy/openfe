@@ -669,7 +669,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         alchemical_factory = AbsoluteAlchemicalFactory(
-            consistent_exceptions=alchemical_settings.consistent_exceptions,
+            consistent_exceptions=False,
             switch_width=1.0 * ommunit.angstroms,
             alchemical_pme_treatment="exact",
             alchemical_rf_treatment="switched",
