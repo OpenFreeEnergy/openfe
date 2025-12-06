@@ -13,21 +13,20 @@ import numpy.typing as npt
 import openmm
 import openmm.app
 import openmm.unit
+import pytest
+from numpy.testing import assert_allclose
+from openff.units import unit as offunit
+from openff.units.openmm import ensure_quantity, from_openmm
 from openmm import (
     CustomBondForce,
+    CustomCompoundBondForce,
     CustomNonbondedForce,
     HarmonicAngleForce,
     HarmonicBondForce,
     MonteCarloBarostat,
     NonbondedForce,
     PeriodicTorsionForce,
-    CustomCompoundBondForce,
-    MonteCarloBarostat
 )
-import pytest
-from numpy.testing import assert_allclose
-from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
@@ -744,7 +743,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
 
         # Check steric forces
         for f in alchem_system.getForces():
-            if isinstance(f, CustomNonbondedForce) and 'U_sterics' in f.getEnergyFunction():
+            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction():
                 _verify_alchemical_sterics_force_parameters(f)
 
         complex_setup_output = complex_setup_unit[0].run(dry=True)
@@ -776,7 +775,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
 
         # Check steric forces
         for f in alchem_system.getForces():
-            if isinstance(f, CustomNonbondedForce) and 'U_sterics' in f.getEnergyFunction():
+            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction():
                 _verify_alchemical_sterics_force_parameters(f)
 
 

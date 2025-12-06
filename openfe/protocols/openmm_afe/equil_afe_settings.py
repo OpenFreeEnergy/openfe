@@ -46,6 +46,7 @@ class AlchemicalSettings(SettingsBaseModel):
     Alchemical settings for Protocols which use the
     AbsoluteAlchemicalFactory.
     """
+
     disable_alchemical_dispersion_correction: bool = False
     """
     If True, the long-range dispersion correction will not

@@ -123,14 +123,14 @@ def _verify_alchemical_sterics_force_parameters(
         shift = 1
 
     # Check the softcore parameters for the sterics forces
-    assert force.getGlobalParameterName(0 + shift) == 'softcore_alpha'
-    assert force.getGlobalParameterName(1 + shift) == 'softcore_beta'
-    assert force.getGlobalParameterName(2 + shift) == 'softcore_a'
-    assert force.getGlobalParameterName(3 + shift) == 'softcore_b'
-    assert force.getGlobalParameterName(4 + shift) == 'softcore_c'
-    assert force.getGlobalParameterName(5 + shift) == 'softcore_d'
-    assert force.getGlobalParameterName(6 + shift) == 'softcore_e'
-    assert force.getGlobalParameterName(7 + shift) == 'softcore_f'
+    assert force.getGlobalParameterName(0 + shift) == "softcore_alpha"
+    assert force.getGlobalParameterName(1 + shift) == "softcore_beta"
+    assert force.getGlobalParameterName(2 + shift) == "softcore_a"
+    assert force.getGlobalParameterName(3 + shift) == "softcore_b"
+    assert force.getGlobalParameterName(4 + shift) == "softcore_c"
+    assert force.getGlobalParameterName(5 + shift) == "softcore_d"
+    assert force.getGlobalParameterName(6 + shift) == "softcore_e"
+    assert force.getGlobalParameterName(7 + shift) == "softcore_f"
 
     assert force.getGlobalParameterDefaultValue(0 + shift) == alpha
     assert force.getGlobalParameterDefaultValue(1 + shift) == beta
@@ -196,8 +196,9 @@ def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpd
 
         # Check some force contents
         stericsf = [
-            f for f in alchem_system.getForces()
-            if isinstance(f, CustomNonbondedForce) and 'U_sterics' in f.getEnergyFunction()
+            f
+            for f in alchem_system.getForces()
+            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction()
         ]
 
         for force in stericsf:
@@ -249,8 +250,9 @@ def test_alchemical_settings_dry_run_vacuum(benzene_system, protocol_dry_setting
 
         # Check some force contents
         stericsf = [
-            f for f in alchem_system.getForces()
-            if isinstance(f, CustomNonbondedForce) and 'U_sterics' in f.getEnergyFunction()
+            f
+            for f in alchem_system.getForces()
+            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction()
         ]
 
         for force in stericsf:
