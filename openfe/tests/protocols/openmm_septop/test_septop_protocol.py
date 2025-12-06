@@ -17,7 +17,16 @@ import pytest
 from numpy.testing import assert_allclose
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce
+from openmm import (
+    CustomBondForce,
+    CustomCompoundBondForce,
+    CustomNonbondedForce,
+    HarmonicAngleForce,
+    HarmonicBondForce,
+    MonteCarloBarostat,
+    NonbondedForce,
+    PeriodicTorsionForce,
+)
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
@@ -38,6 +47,10 @@ from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
+from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
+    _assert_num_forces,
+    _verify_alchemical_sterics_force_parameters,
+)
 
 E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
 EPSILON0 = (
@@ -717,6 +730,22 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 31
 
+        # Test the solvent system
+        alchem_system = deserialize(serialized_system)
+        assert len(alchem_system.getForces()) == 14
+        _assert_num_forces(alchem_system, NonbondedForce, 1)
+        _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
+        _assert_num_forces(alchem_system, CustomBondForce, 4)
+        _assert_num_forces(alchem_system, HarmonicBondForce, 2)
+        _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
+        _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
+        _assert_num_forces(alchem_system, MonteCarloBarostat, 1)
+
+        # Check steric forces
+        for f in alchem_system.getForces():
+            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction():
+                _verify_alchemical_sterics_force_parameters(f)
+
         complex_setup_output = complex_setup_unit[0].run(dry=True)
         serialized_topology = complex_setup_output["topology"]
         serialized_system = complex_setup_output["system"]
@@ -731,6 +760,23 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 2687
+
+        # Test the complex system
+        alchem_system = deserialize(serialized_system)
+        assert len(alchem_system.getForces()) == 15
+        _assert_num_forces(alchem_system, NonbondedForce, 1)
+        _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
+        _assert_num_forces(alchem_system, CustomBondForce, 4)
+        _assert_num_forces(alchem_system, HarmonicBondForce, 1)
+        _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
+        _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
+        _assert_num_forces(alchem_system, CustomCompoundBondForce, 2)
+        _assert_num_forces(alchem_system, MonteCarloBarostat, 1)
+
+        # Check steric forces
+        for f in alchem_system.getForces():
+            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction():
+                _verify_alchemical_sterics_force_parameters(f)
 
 
 @pytest.mark.parametrize("method", ["repex", "sams", "independent"])

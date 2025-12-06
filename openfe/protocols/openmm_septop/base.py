@@ -45,6 +45,7 @@ from openmmtools.states import (
 )
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
+    AlchemicalSettings,
     BaseSolvationSettings,
     IntegratorSettings,
     MultiStateOutputSettings,
@@ -285,6 +286,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         system: openmm.System,
         alchem_indices_A: list[int],
         alchem_indices_B: list[int],
+        alchemical_settings: AlchemicalSettings,
     ) -> tuple[AbsoluteAlchemicalFactory, openmm.System]:
         """
         Get an alchemically modified system and its associated factory
@@ -293,12 +295,14 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ----------
         system : openmm.System
           System to alchemically modify.
-        alchem_indices_A: list[int]
+        alchem_indices_A : list[int]
           A list of atom indices for the alchemically modified
           ligand A in the system.
-        alchem_indices_B: list[int]
+        alchem_indices_B : list[int]
           A list of atom indices for the alchemically modified
           ligand B in the system.
+        alchemical_settings : AlchemicalSettings
+          Settings controlling how the alchemical system will be built.
 
         Returns
         -------
@@ -313,13 +317,42 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             switch_width=1.0 * unit.angstroms,
             alchemical_pme_treatment="exact",
             alchemical_rf_treatment="switched",
-            disable_alchemical_dispersion_correction=False,
+            disable_alchemical_dispersion_correction=alchemical_settings.disable_alchemical_dispersion_correction,
             split_alchemical_forces=True,
         )
+
         # Alchemical Region for ligand A
-        alchemical_region_A = AlchemicalRegion(alchemical_atoms=alchem_indices_A, name="A")
+        alchemical_region_A = AlchemicalRegion(
+            alchemical_atoms=alchem_indices_A,
+            name="A",
+            softcore_alpha=alchemical_settings.softcore_alpha,
+            annihilate_electrostatics=True,
+            annihilate_sterics=alchemical_settings.annihilate_sterics,
+            softcore_a=alchemical_settings.softcore_a,
+            softcore_b=alchemical_settings.softcore_b,
+            softcore_c=alchemical_settings.softcore_c,
+            softcore_beta=0.0,
+            softcore_d=1.0,
+            softcore_e=1.0,
+            softcore_f=2.0,
+        )
+
         # Alchemical Region for ligand B
-        alchemical_region_B = AlchemicalRegion(alchemical_atoms=alchem_indices_B, name="B")
+        alchemical_region_B = AlchemicalRegion(
+            alchemical_atoms=alchem_indices_B,
+            name="B",
+            softcore_alpha=alchemical_settings.softcore_alpha,
+            annihilate_electrostatics=True,
+            annihilate_sterics=alchemical_settings.annihilate_sterics,
+            softcore_a=alchemical_settings.softcore_a,
+            softcore_b=alchemical_settings.softcore_b,
+            softcore_c=alchemical_settings.softcore_c,
+            softcore_beta=0.0,
+            softcore_d=1.0,
+            softcore_e=1.0,
+            softcore_f=2.0,
+        )
+
         alchemical_system = alchemical_factory.create_alchemical_system(
             system, [alchemical_region_A, alchemical_region_B]
         )
