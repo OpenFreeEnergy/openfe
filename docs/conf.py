@@ -102,6 +102,7 @@ exclude_patterns = [
 ]
 
 autodoc_mock_imports = [
+    "cinnabar",
     "MDAnalysis",
     "matplotlib",
     "mdtraj",
