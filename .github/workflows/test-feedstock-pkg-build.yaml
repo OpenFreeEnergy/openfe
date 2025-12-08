@@ -32,9 +32,9 @@ jobs:
       - name: Checkout conda-forge feedstock
         uses: actions/checkout@v4
         with:
-          repository: conda-forge/openfe-feedstock
+          repository: atravitz/openfe-feedstock
           path: openfe-feedstock
-          ref: atravitz:release/1.8.0
+          ref: release/1.8.0
       
       - name: Set up Python
         uses: actions/setup-python@v5
