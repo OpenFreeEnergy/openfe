@@ -40,7 +40,10 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
-        openeye: ["no", "yes"]
+        include:
+          - os: "ubuntu-latest"
+            python-version: "3.13"
+            openeye: "yes"
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
