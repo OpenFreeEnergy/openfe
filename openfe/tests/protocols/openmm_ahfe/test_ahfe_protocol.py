@@ -205,13 +205,15 @@ def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpd
             _verify_alchemical_sterics_force_parameters(force)
 
 
-@pytest.mark.parametrize('alpha, a, b, c, correction', [
-    [0.2, 2, 2, 1, True],
-    [0.35, 2.2, 1.5, 0, False],
-])
+@pytest.mark.parametrize(
+    "alpha, a, b, c, correction",
+    [
+        [0.2, 2, 2, 1, True],
+        [0.35, 2.2, 1.5, 0, False],
+    ],
+)
 def test_alchemical_settings_dry_run_vacuum(
-    alpha, a, b, c, correction,
-    benzene_system, protocol_dry_settings, tmpdir
+    alpha, a, b, c, correction, benzene_system, protocol_dry_settings, tmpdir
 ):
     """
     Test non default alchemical settings
