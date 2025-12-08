@@ -289,17 +289,15 @@ def gather_abfe(
     All directories will be walked recursively and any valid JSON results files will be gathered.
     Files must end in .json to be collected, and invalid files will be ignored.
 
-    Each JSON contains the results of a separate leg from a Absolute Binding Free Energy calculation.
+    Each JSON contains the results of a separate leg from an Absolute Binding Free Energy calculation.
     See https://docs.openfree.energy/en/latest/tutorials/abfe_tutorial.html for details on running ABFE calculations.
 
-    The results reported depends on ``--report`` flag:
+    The results reported depends on the ``--report`` flag:
 
     \b
     * ``--report=dg`` (default) reports the ligand, its absolute free energy, and
-      the associated uncertainty as the maximum likelihood estimate obtained
-      from DG replica averages and standard deviations.  These MLE estimates
-      are centred around 0.0, and when plotted can be shifted to match
-      experimental values.
+      the associated uncertainty obtained from DG replica averages and
+      standard deviations.
     * ``--report=raw`` reports the raw results, which each repeat simulation given
       separately (i.e. no combining of redundant simulations is performed)
 
