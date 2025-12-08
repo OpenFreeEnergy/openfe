@@ -635,6 +635,55 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         )
         logger.info(wmsg)
 
+    @staticmethod
+    def _validate_simulation_settings(
+        simulation_settings,
+        integrator_settings,
+        output_settings,
+    ):
+
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings=simulation_settings,
+            integrator_settings=integrator_settings,
+        )
+
+        _ = settings_validation.get_simsteps(
+            sim_length=simulation_settings.equilibration_length,
+            timestep=integrator_settings.timestep,
+            mc_steps=steps_per_iteration,
+        )
+
+        _ = settings_validation.get_simsteps(
+            sim_length=simulation_settings.production_length,
+            timestep=integrator_settings.timestep,
+            mc_steps=steps_per_iteration,
+        )
+
+        _ = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
+
+        if output_settings.positions_write_frequency is not None:
+            _ = settings_validation.divmod_time_and_check(
+                numerator=output_settings.positions_write_frequency,
+                denominator=sampler_settings.time_per_iteration,
+                numerator_name="output settings' position_write_frequency",
+                denominator_name="sampler settings' time_per_iteration",
+            )
+
+        if output_settings.velocities_write_frequency is not None:
+            _ = settings_validation.divmod_time_and_check(
+                numerator=output_settings.velocities_write_frequency,
+                denominator=sampler_settings.time_per_iteration,
+                numerator_name="output settings' velocity_write_frequency",
+                denominator_name="sampler settings' time_per_iteration",
+            )
+
+        _, _ = settings_validation.convert_real_time_analysis_iterations(
+            simulation_settings=sampler_settings,
+        )
+
     def _validate(
         self,
         stateA: ChemicalSystem,
@@ -686,26 +735,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             self.settings.integrator_settings.timestep,
         )
 
-        steps_per_iteration = settings_validation.convert_steps_per_iteration(
-            simulation_settings=self.settings.simulation_settings,
-            integrator_settings=self.settings.integrator_settings,
-        )
-
-        _ = settings_validation.get_simsteps(
-            sim_length=self.settings.simulation_settings.equilibration_length,
-            timestep=self.settings.integrator_settings.timestep,
-            mc_steps=steps_per_iteration,
-        )
-
-        _ = settings_validation.get_simsteps(
-            sim_length=self.settings.simulation_settings.production_length,
-            timestep=self.settings.integrator_settings.timestep,
-            mc_steps=steps_per_iteration,
-        )
-
-        _ = settings_validation.convert_checkpoint_interval_to_iterations(
-            checkpoint_interval=self.settings.output_settings.checkpoint_interval,
-            time_per_iteration=self.settings.simulation_settings.time_per_iteration,
+        # Validate simulation & output settings
+        self._validate_simulation_settings(
+            self.settings.simulation_settings,
+            self.settings.integrator_settings,
+            self.settings.output_settings,
         )
 
         # Validate alchemical settings
