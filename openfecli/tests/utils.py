@@ -1,10 +1,11 @@
 """Helper utilities for CLI tests"""
 
-import click
 import traceback
 
+import click
 
-def assert_click_success(result: click.testing.Result): # -no-cov-
+
+def assert_click_success(result: click.testing.Result):  # -no-cov-
     """Pass through error message if a click test fails.
     Taken from https://github.com/openpathsampling/openpathsampling-cli/blob/main/paths_cli/commands/pathsampling.py
     """

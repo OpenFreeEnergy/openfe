@@ -1,17 +1,19 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from importlib import resources
+from typing import Iterable, NamedTuple
+
 import pytest
 from rdkit import Chem
-from importlib import resources
 
-from openfe import SmallMoleculeComponent, LigandAtomMapping, LigandNetwork
-from typing import Iterable, NamedTuple
+from openfe import LigandAtomMapping, LigandNetwork, SmallMoleculeComponent
 
 from ..conftest import mol_from_smiles
 
 
 class _NetworkTestContainer(NamedTuple):
     """Container to facilitate network testing"""
+
     network: LigandNetwork
     nodes: Iterable[SmallMoleculeComponent]
     edges: Iterable[LigandAtomMapping]
@@ -49,13 +51,13 @@ def simple_network(mols, std_edges):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
-    with resources.as_file(resources.files('openfe.tests.data')) as d:
-        fn = str(d / 'benzene_modifications.sdf')
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "benzene_modifications.sdf")
         supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
-            mols[mol.GetProp('_Name')] = SmallMoleculeComponent(mol)
+            mols[mol.GetProp("_Name")] = SmallMoleculeComponent(mol)
     return mols

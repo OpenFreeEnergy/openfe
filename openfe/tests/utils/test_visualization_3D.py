@@ -1,9 +1,8 @@
 import pytest
+from openff.utilities.testing import skip_if_missing
+
 from openfe.setup import LigandAtomMapping
-
-
-pytest.importorskip('py3Dmol')
-from openfe.utils.visualization_3D import view_mapping_3d, view_components_3d
+from openfe.utils.visualization_3D import view_components_3d, view_mapping_3d
 
 
 @pytest.fixture(scope="module")
@@ -23,6 +22,7 @@ def benzene_phenol_mapping(benzene_transforms, maps):
     return LigandAtomMapping(mol1, mol2, mapping)
 
 
+@skip_if_missing("py3Dmol")
 def test_visualize_component_coords_give_iterable(benzene_transforms):
     """
     smoke test just checking if nothing goes horribly wrong
@@ -31,6 +31,7 @@ def test_visualize_component_coords_give_iterable(benzene_transforms):
     view_components_3d(components, style="stick")
 
 
+@skip_if_missing("py3Dmol")
 def test_visualize_component_coords_give_iterable_shift(benzene_transforms):
     """
     smoke test just checking if nothing goes horribly wrong
@@ -38,6 +39,8 @@ def test_visualize_component_coords_give_iterable_shift(benzene_transforms):
     components = [benzene_transforms["benzene"], benzene_transforms["phenol"]]
     view_components_3d(components, shift=(1, 1, 1))
 
+
+@skip_if_missing("py3Dmol")
 def test_visualize_component_coords_reuse_view(benzene_transforms):
     """
     smoke test just checking if nothing goes horribly wrong
@@ -47,8 +50,10 @@ def test_visualize_component_coords_reuse_view(benzene_transforms):
     view_components_3d(components, view=view)
 
 
+@skip_if_missing("py3Dmol")
 def test_visualize_3D_mapping(benzene_phenol_mapping):
     """
     smoke test just checking if nothing goes horribly wrong
     """
-    view_mapping_3d(mapping=benzene_phenol_mapping)
+    with pytest.warns(DeprecationWarning, match=r"LigandAtomMapping"):
+        view_mapping_3d(mapping=benzene_phenol_mapping)

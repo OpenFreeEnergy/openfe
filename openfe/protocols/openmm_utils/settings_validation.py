@@ -4,18 +4,20 @@
 Reusable utility methods to validate input settings to OpenMM-based alchemical
 Protocols.
 """
-from openff.units import unit, Quantity
+
 from typing import Optional
+
+from openff.units import Quantity, unit
+
+from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
+
 from .omm_settings import (
     IntegratorSettings,
     MultiStateSimulationSettings,
 )
-from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 
 
-def validate_openmm_solvation_settings(
-    settings: OpenMMSolvationSettings
-) -> None:
+def validate_openmm_solvation_settings(settings: OpenMMSolvationSettings) -> None:
     """
     Checks that the OpenMMSolvation settings are correct.
 
@@ -28,19 +30,25 @@ def validate_openmm_solvation_settings(
       or ``box_size``.
     """
     unique_attributes = (
-        settings.solvent_padding, settings.number_of_solvent_molecules,
-        settings.box_vectors, settings.box_size,
+        settings.solvent_padding,
+        settings.number_of_solvent_molecules,
+        settings.box_vectors,
+        settings.box_size,
     )
     if len([x for x in unique_attributes if x is not None]) > 1:
-        errmsg = ("Only one of solvent_padding, number_of_solvent_molecules, "
-                  "box_vectors, and box_size can be defined in the solvation "
-                  "settings.")
+        errmsg = (
+            "Only one of solvent_padding, number_of_solvent_molecules, "
+            "box_vectors, and box_size can be defined in the solvation "
+            "settings."
+        )
         raise ValueError(errmsg)
 
     if settings.box_shape is not None:
         if settings.box_size is not None or settings.box_vectors is not None:
-            errmsg = ("box_shape cannot be defined alongside either box_size "
-                      "or box_vectors in the solvation settings.")
+            errmsg = (
+                "box_shape cannot be defined alongside either box_size "
+                "or box_vectors in the solvation settings."
+            )
             raise ValueError(errmsg)
 
 
@@ -69,8 +77,7 @@ def validate_timestep(hmass: float, timestep: Quantity):
             raise ValueError(errmsg)
 
 
-def get_simsteps(sim_length: Quantity,
-                 timestep: Quantity, mc_steps: int) -> int:
+def get_simsteps(sim_length: Quantity, timestep: Quantity, mc_steps: int) -> int:
     """
     Gets and validates the number of simulation steps.
 
@@ -89,17 +96,19 @@ def get_simsteps(sim_length: Quantity,
       The number of simulation timesteps.
     """
 
-    sim_time = round(sim_length.to('attosecond').m)  # type: ignore
-    ts = round(timestep.to('attosecond').m)  # type: ignore
+    sim_time = round(sim_length.to("attosecond").m)  # type: ignore
+    ts = round(timestep.to("attosecond").m)  # type: ignore
 
     sim_steps, mod = divmod(sim_time, ts)
     if mod != 0:
         raise ValueError("Simulation time not divisible by timestep")
 
     if (sim_steps % mc_steps) != 0:
-        errmsg =  (f"Simulation time {sim_time/1000000} ps should contain a "
-                   "number of steps divisible by the number of integrator "
-                   f"timesteps between MC moves {mc_steps}")
+        errmsg = (
+            f"Simulation time {sim_time / 1000000} ps should contain a "
+            "number of steps divisible by the number of integrator "
+            f"timesteps between MC moves {mc_steps}"
+        )
         raise ValueError(errmsg)
 
     return sim_steps
@@ -134,8 +143,9 @@ def divmod_time(
     return iterations, remainder
 
 
-def divmod_time_and_check(numerator: Quantity, denominator: Quantity,
-                          numerator_name: str, denominator_name: str) -> int:
+def divmod_time_and_check(
+    numerator: Quantity, denominator: Quantity, numerator_name: str, denominator_name: str
+) -> int:
     """Perform a division of time, failing if there is a remainder
 
     For example numerator 20.0 ps and denominator 4.0 fs gives 5000
@@ -161,9 +171,11 @@ def divmod_time_and_check(numerator: Quantity, denominator: Quantity,
     its, rem = divmod_time(numerator, denominator)
 
     if rem:
-        errmsg = (f"The {numerator_name} ({numerator}) "
-                  "does not evenly divide by the "
-                  f"{denominator_name} ({denominator})")
+        errmsg = (
+            f"The {numerator_name} ({numerator}) "
+            "does not evenly divide by the "
+            f"{denominator_name} ({denominator})"
+        )
         raise ValueError(errmsg)
 
     return its
@@ -195,9 +207,11 @@ def convert_checkpoint_interval_to_iterations(
     iterations, rem = divmod_time(checkpoint_interval, time_per_iteration)
 
     if rem:
-        errmsg = (f"The amount of time per checkpoint {checkpoint_interval} "
-                  "does not evenly divide by the amount of time per "
-                  f"state MCMC move attempt {time_per_iteration}")
+        errmsg = (
+            f"The amount of time per checkpoint {checkpoint_interval} "
+            "does not evenly divide by the amount of time per "
+            f"state MCMC move attempt {time_per_iteration}"
+        )
         raise ValueError(errmsg)
 
     return iterations

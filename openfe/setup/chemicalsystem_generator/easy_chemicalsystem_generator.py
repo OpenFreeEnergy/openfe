@@ -1,18 +1,19 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from .abstract_chemicalsystem_generator import (
-    AbstractChemicalSystemGenerator,
-    RFEComponentLabels,
-)
 from typing import Iterable, Optional
 
 from gufe import (
-    Component,
-    SmallMoleculeComponent,
-    ProteinComponent,
-    SolventComponent,
     ChemicalSystem,
+    Component,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+)
+
+from .abstract_chemicalsystem_generator import (
+    AbstractChemicalSystemGenerator,
+    RFEComponentLabels,
 )
 
 
@@ -68,9 +69,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
                 "Chemical system generator is unable to generate any chemical systems with neither protein nor solvent nor do_vacuum"
             )
 
-    def __call__(
-        self, component: SmallMoleculeComponent
-    ) -> Iterable[ChemicalSystem]:
+    def __call__(self, component: SmallMoleculeComponent) -> Iterable[ChemicalSystem]:
         """Generate systems around the given :class:`SmallMoleculeComponent`.
 
         Parameters
@@ -112,12 +111,10 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
                 RFEComponentLabels.PROTEIN.value: self.protein,
             }
             for i, c in enumerate(self.cofactors):
-                components.update({f'{RFEComponentLabels.COFACTOR.value}{i+1}': c})
+                components.update({f"{RFEComponentLabels.COFACTOR.value}{i + 1}": c})
             if self.solvent is not None:
                 components.update({RFEComponentLabels.SOLVENT.value: self.solvent})
-            chem_sys = ChemicalSystem(
-                components=components, name=component.name + "_complex"
-            )
+            chem_sys = ChemicalSystem(components=components, name=component.name + "_complex")
             yield chem_sys
 
         return

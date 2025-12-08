@@ -13,15 +13,15 @@
 import os
 import sys
 from importlib.metadata import version
-from packaging.version import parse
-from pathlib import Path
 from inspect import cleandoc
+from pathlib import Path
 
-from git import Repo
-import nbsphinx
+import git
 import nbformat
+import nbsphinx
+from packaging.version import parse
 
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath("../"))
 
 
 os.environ["SPHINX"] = "True"
@@ -31,7 +31,7 @@ os.environ["SPHINX"] = "True"
 project = "OpenFE"
 copyright = "2022, The OpenFE Development Team"
 author = "The OpenFE Development Team"
- # don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
+# don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
 version = f"{parse(version('openfe')).major}.{parse(version('openfe')).minor}"
 
 # -- General configuration ---------------------------------------------------
@@ -55,13 +55,13 @@ extensions = [
     "nbsphinx_link",
     "sphinx.ext.mathjax",
 ]
+suppress_warnings = ["config.cache"]  # https://github.com/sphinx-doc/sphinx/issues/12300
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.9", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "scikit.learn": ("https://scikit-learn.org/stable", None),
-    "openmm": ("http://docs.openmm.org/latest/api-python/", None),
+    "openmm": ("https://docs.openmm.org/latest/api-python/", None),
     "rdkit": ("https://www.rdkit.org/docs", None),
     "openeye": ("https://docs.eyesopen.com/toolkits/python/", None),
     "mdtraj": ("https://www.mdtraj.org/1.9.5/", None),
@@ -102,6 +102,7 @@ exclude_patterns = [
 ]
 
 autodoc_mock_imports = [
+    "cinnabar",
     "MDAnalysis",
     "matplotlib",
     "mdtraj",
@@ -113,6 +114,7 @@ autodoc_mock_imports = [
     "openmmforcefields",
     "psutil",
     "py3Dmol",
+    "zstandard",
 ]
 
 # Extensions for the myst parser
@@ -144,17 +146,13 @@ html_theme_options = {
     ],
     "accent_color": "cantina-purple",
     "navigation_with_keys": False,
-    "navbar_end": ["navbar-icon-links"],  # TODO: add "theme-switcher" to add back dark mode toggle
 }
 html_logo = "_static/OFE-color-icon.svg"
-html_favicon = '_static/OFE-color-icon.svg'
-html_context = {
-   "default_mode": "light"
-}
+html_favicon = "_static/OFE-color-icon.svg"
 # temporary fix, see https://github.com/pydata/pydata-sphinx-theme/issues/1662
 html_sidebars = {
     "installation": [],
-    "CHANGELOG":[],
+    "CHANGELOG": [],
 }
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -185,12 +183,16 @@ sass_out_dir = "_static/css"
 example_notebooks_path = Path("ExampleNotebooks")
 try:
     if example_notebooks_path.exists():
-        repo = Repo(example_notebooks_path)
-        repo.remote('origin').pull()
+        repo = git.Repo(example_notebooks_path)
+        try:
+            repo.remote("origin").pull()
+        except git.exc.GitCommandError:
+            # cannot pull if on a tag
+            pass
     else:
-        repo = Repo.clone_from(
+        repo = git.Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch='june-2025',
+            branch="2025.12.04",
             to_path=example_notebooks_path,
         )
 except Exception as e:
@@ -198,7 +200,7 @@ except Exception as e:
 
     filename = e.__traceback__.tb_frame.f_code.co_filename
     lineno = e.__traceback__.tb_lineno
-    getLogger('sphinx.ext.openfe_git').warning(
+    getLogger("sphinx.ext.openfe_git").warning(
         f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
     )
 
@@ -232,14 +234,6 @@ nbsphinx_prolog = cleandoc(r"""
         ~ "/"
         ~ path
     -%}
-    {%- set colab_url =
-        "http://colab.research.google.com/github/"
-        ~ gh_repo
-        ~ "/blob/"
-        ~ gh_branch
-        ~ "/"
-        ~ path
-    -%}
 
     .. container:: ofe-top-of-notebook
 
@@ -256,13 +250,6 @@ nbsphinx_prolog = cleandoc(r"""
             :outline:
 
             :octicon:`download` Download Notebook
-
-        .. button-link:: {{colab_url}}
-            :color: primary
-            :shadow:
-            :outline:
-
-            :octicon:`rocket` Run in Colab
 
     .. _{{ env.doc2path(env.docname, base=None) }}:
 """)

@@ -1,0 +1,20 @@
+# https://github.com/OpenFreeEnergy/openfe/pull/1604 - ruff formatting part 1
+3a08b6809fc57662e4146db3c7ccedfbc7c7c8df  
+
+# https://github.com/OpenFreeEnergy/openfe/pull/1610 - ruff formatting part 2
+2311a2f2d956dd30e95c180841ce19b921d89e1f
+
+# https://github.com/OpenFreeEnergy/openfe/pull/1622 - ruff formatting part 3
+d7196d119e2f65d88e488afc665f2521e4f68042
+
+# https://github.com/OpenFreeEnergy/openfe/pull/1623 - ruff formatting part 4
+036869ae81670c6dcfa2532f125ee88c3f35936c
+
+# https://github.com/OpenFreeEnergy/openfe/pull/1665 - ruff isort
+588f552ca9200a99fd77aed993ea3766b154ee53
+
+# https://github.com/OpenFreeEnergy/openfe/pull/1667 - ruff f-strings and whitespace
+18f211db974cdde38a5d88d6e74aaaf78fda8897
+
+# https://github.com/OpenFreeEnergy/openfe/pull/1668 - ruff pycodestyle changes 
+b693d37c8ac0e30283bd8b5f13386fdc98901cf8

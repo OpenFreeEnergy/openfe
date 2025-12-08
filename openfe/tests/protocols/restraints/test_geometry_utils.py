@@ -2,14 +2,17 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import itertools
-from importlib import resources
 import os
 import pathlib
+from importlib import resources
 
 import MDAnalysis as mda
 import numpy as np
 import pooch
 import pytest
+from openff.units import unit
+from rdkit import Chem
+
 from openfe.protocols.restraint_utils.geometry.utils import (
     CentroidDistanceSort,
     FindHostAtoms,
@@ -28,8 +31,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     protein_chain_selection,
     stable_secondary_structure_selection,
 )
-from openff.units import unit
-from rdkit import Chem
 
 from ...conftest import HAS_INTERNET
 
@@ -57,22 +58,13 @@ zenodo_restraint_data = pooch.create(
     },
     retry_if_failed=5,
 )
-pdb_data = pooch.create(
-    path=POOCH_CACHE,
-    base_url="https://files.rcsb.org/download/",
-    registry={
-        "6CZJ.pdb": "sha256:94ab621b420bd10016c54c5c09a16b935313203eb71dfbf56b5e50b2d1940622"
-    },
-    retry_if_failed=5,
-)
 
 
 @pytest.fixture
 def t4_lysozyme_trajectory_universe():
     zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
-        pooch.os_cache("openfe")
-        / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
+        pooch.os_cache("openfe") / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
     )
     universe = mda.Universe(
         str(cache_dir / "t4_toluene_complex.pdb"),
@@ -83,9 +75,9 @@ def t4_lysozyme_trajectory_universe():
 
 @pytest.fixture
 def beta_barrel_universe():
-    pdb_data.fetch("6CZJ.pdb")
-    file_path = pathlib.Path(pooch.os_cache("openfe") / "6CZJ.pdb")
-    return mda.Universe(file_path)
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        beta_barrel_universe = mda.Universe(str(d / "6CZJ.pdb.gz"))
+    return beta_barrel_universe
 
 
 def test_mda_selection_none_error(eg5_pdb_universe):
@@ -95,9 +87,7 @@ def test_mda_selection_none_error(eg5_pdb_universe):
 
 def test_mda_selection_both_args_error(eg5_pdb_universe):
     with pytest.raises(ValueError, match="both atom_list and"):
-        _ = _get_mda_selection(
-            eg5_pdb_universe, atom_list=[0, 1, 2, 3], selection="all"
-        )
+        _ = _get_mda_selection(eg5_pdb_universe, atom_list=[0, 1, 2, 3], selection="all")
 
 
 def test_mda_selection_universe_atom_list(eg5_pdb_universe):
@@ -254,7 +244,11 @@ def test_collinear_index_match_error_index():
 )
 def test_is_collinear_three_atoms(arr, thresh, truth):
     assert (
-        is_collinear(positions=np.array(arr), atoms=[0, 1, 2], threshold=thresh)
+        is_collinear(
+            positions=np.array(arr),
+            atoms=[0, 1, 2],
+            threshold=thresh,
+        )
         == truth
     )
 
@@ -437,7 +431,6 @@ def test_atomgroup_has_bonds(eg5_protein_pdb):
     reason="Internet seems to be unavailable and test data is not cached locally.",
 )
 def test_atomgroup_has_bonds_ions(t4_lysozyme_trajectory_universe):
-
     # make a copy of the universe so we don't change things
     u = t4_lysozyme_trajectory_universe.copy()
 
@@ -447,17 +440,14 @@ def test_atomgroup_has_bonds_ions(t4_lysozyme_trajectory_universe):
     assert _atomgroup_has_bonds(u.select_atoms("resname UNK"))
 
     # Guess the bonds, ions won't have them but otherwise all residues should
-    u.select_atoms('not resname NA CL').guess_bonds()  # don't guess ions
+    u.select_atoms("not resname NA CL").guess_bonds()  # don't guess ions
     assert _atomgroup_has_bonds(u)
 
 
 def test_centroid_distance_sort(eg5_protein_ligand_universe):
-
     # quickly sort the atoms of the first residue
     atom_sort = CentroidDistanceSort(
-        sortable_atoms=eg5_protein_ligand_universe.select_atoms(
-            "backbone and resnum 15"
-        ),
+        sortable_atoms=eg5_protein_ligand_universe.select_atoms("backbone and resnum 15"),
         reference_atoms=eg5_protein_ligand_universe.select_atoms("resname LIG"),
     )
     atom_sort.run()
@@ -467,7 +457,6 @@ def test_centroid_distance_sort(eg5_protein_ligand_universe):
 
 
 def test_find_host_atoms(eg5_protein_ligand_universe):
-
     # very small window to limit atoms for speed
     min_cutoff = 1 * unit.nanometer
     max_cutoff = 1.1 * unit.nanometer
@@ -534,13 +523,10 @@ def test_get_rmsf_trajectory(t4_lysozyme_trajectory_universe):
 )
 class TestStableSelection:
     def test_stable_ss_selection(self, t4_lysozyme_trajectory_universe):
-
         ligand = t4_lysozyme_trajectory_universe.select_atoms("resname LIG")
 
         # Topology is PDB so bonds will be missing
-        with pytest.warns(
-            match="No bonds found in input Universe, will attempt to guess them."
-        ):
+        with pytest.warns(match="No bonds found in input Universe, will attempt to guess them."):
             stable_protein = stable_secondary_structure_selection(
                 # DDSP should filter by protein we will check at the end
                 atomgroup=t4_lysozyme_trajectory_universe.atoms,
@@ -559,7 +545,7 @@ class TestStableSelection:
             atomgroup=t4_lysozyme_trajectory_universe.atoms,
             min_structure_size=999,
         )
-    
+
         # Should have an empty atomgroup
         assert len(stable_protein) == 0
 
@@ -571,7 +557,7 @@ class TestStableSelection:
 
         # rename all CA atoms to LA to make things break
         for at in u_copy.atoms:
-            at.name = 'LA'
+            at.name = "LA"
 
         stable_protein = stable_secondary_structure_selection(
             atomgroup=u_copy.atoms,
@@ -592,13 +578,10 @@ class TestStableSelection:
 
 
 def test_protein_chain_selection(eg5_protein_ligand_universe):
-
     ligand = eg5_protein_ligand_universe.select_atoms("resname LIG")
 
     # Topology is PDB so bonds will be missing
-    with pytest.warns(
-        match="No bonds found in input Universe, will attempt to guess them."
-    ):
+    with pytest.warns(match="No bonds found in input Universe, will attempt to guess them."):
         chain_selection = protein_chain_selection(
             # the selection should filter for the protein we will check at the end
             atomgroup=eg5_protein_ligand_universe.atoms,
@@ -634,6 +617,7 @@ def test_protein_chain_selection_nochains(eg5_pdb_universe):
     )
 
     assert len(sele) == 0
+
 
 def test_protein_chain_selection_trim_too_large(eg5_pdb_universe):
     """

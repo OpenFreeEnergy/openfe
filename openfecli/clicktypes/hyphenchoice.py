@@ -1,7 +1,9 @@
 import click
 
+
 def _normalize_to_hyphen(string):
     return string.replace("_", "-")
+
 
 class HyphenAwareChoice(click.Choice):
     def __init__(self, choices, case_sensitive=True):

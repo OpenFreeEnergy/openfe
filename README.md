@@ -2,7 +2,7 @@
 [![build](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml)
 [![coverage](https://codecov.io/gh/OpenFreeEnergy/openfe/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenFreeEnergy/openfe)
 [![documentation](https://readthedocs.org/projects/openfe/badge/?version=stable)](https://docs.openfree.energy/en/stable/?badge=stable)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8344248.svg)](https://doi.org/10.5281/zenodo.8344248)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8344248.svg)](https://doi.org/10.5281/zenodo.17258732)
 
 
 # `openfe` - A Python package for executing alchemical free energy calculations.

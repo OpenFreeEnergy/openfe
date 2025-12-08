@@ -2,12 +2,12 @@
 
 .. module:: openfe
 
-====================================
-Welcome to the OpenFE documentation!
-====================================
+=====================================
+Welcome to OpenFE's documentation!
+=====================================
 
 The **OpenFE** toolkit provides a free and open-source framework for alchemical free energy calculations.
-Using this toolkit you can plan, execute and analyse free energy calculations using a variety of methods.
+Using this toolkit you can plan, execute, and analyze free energy calculations using a variety of methods.
 
 **Useful Links**:
 `OpenFE Website <https://openfree.energy/>`__ |
@@ -18,13 +18,6 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 .. grid:: 1 2 2 4
     :gutter: 3
 
-    .. grid-item-card:: :fas:`laptop-code` Try openfe in your browser
-        :text-align: center
-        :link: http://try.openfree.energy
-        :link-type: url
-
-        Curious about **openfe**?  Start here and run the openfe showcase notebook in your browser.
-
     .. grid-item-card:: :fas:`download` Install openfe
         :text-align: center
         :link: installation
@@ -32,6 +25,12 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
         Follow our installation guide to get **openfe** running on your machine!
 
+    .. grid-item-card:: :fas:`laptop-code` CLI
+        :text-align: center
+        :link: reference/cli/index
+        :link-type: doc
+
+        Documentation for **openfe**\'s simple command line interface.
 
     .. grid-item-card:: :fas:`person-chalkboard` Tutorials
         :text-align: center
@@ -54,12 +53,12 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
         How-to guides for common tasks.
 
-    .. grid-item-card:: :fas:`code` API Reference
+    .. grid-item-card:: :fas:`code` Python API
         :text-align: center
-        :link: reference/index
+        :link: reference/api/index
         :link-type: doc
 
-        Comprehensive details of both the **openfe** CLI and Python API.
+        Comprehensive details of the **openfe** Python API.
 
     .. grid-item-card:: :fas:`gears` Protocols
         :text-align: center
@@ -86,9 +85,19 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
    reference/index
    CHANGELOG
 
-Indices and tables
-------------------
+Other OpenFE Ecosystem Projects:
+--------------------------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+**openfe** is Open Free Energy's user-facing software for performing alchemical free energy calculations.
+Below are other software projects the Open Free Energy team maintains, many of which are used by **openfe** itself.
+
+* `konnektor <https://github.com/OpenFreeEnergy/konnektor/>`_: free energy network planning, modification, and analysis
+* `kartograf <https://github.com/OpenFreeEnergy/kartograf/>`_: atom mappings focusing on 3D geometries
+* `Lomap <https://github.com/OpenFreeEnergy/Lomap/>`_: planning perturbation networks for free energy calculations
+* `cinnabar <https://github.com/OpenFreeEnergy/cinnabar/>`_ (formerly arsenic): plotting free energy calculation results
+* `gufe <https://gufe.openfree.energy/en/latest/>`_ : data structures and models underlying the OpenFE ecosystem
+
+Community-Developed Projects:
+-----------------------------
+
+* `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution, developed by `Datryllic <https://datryllic.com/>`_.

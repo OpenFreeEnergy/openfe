@@ -1,18 +1,15 @@
-import click
-from openfecli import OFECommandPlugin
+import os
 import sys
 
+import click
 import pytest
-import os
 
+from openfecli import OFECommandPlugin
 from openfecli.utils import write
 
-@click.command(
-    "test",
-    short_help="Run the OpenFE test suite"
-)
-@click.option('--long', is_flag=True, default=False,
-              help="Run additional tests (takes much longer)")
+
+@click.command("test", short_help="Run the OpenFE test suite")
+@click.option('--long', is_flag=True, default=False, help="Run additional tests (takes much longer)")  # fmt: skip
 def test(long):
     """
     Run the OpenFE test suite. This first checks that OpenFE is correctly
@@ -31,6 +28,7 @@ def test(long):
 
         write("Testing can import....")
         import openfe
+
         write("Running the main package tests")
         return_value = pytest.main(["-v", "--pyargs", "openfe", "--pyargs", "openfecli"])
     finally:
@@ -38,8 +36,5 @@ def test(long):
         os.environ.update(old_env)
         sys.exit(return_value)
 
-PLUGIN = OFECommandPlugin(
-    test,
-    "Miscellaneous",
-    requires_ofe=(0, 7,5)
-)
+
+PLUGIN = OFECommandPlugin(test, "Miscellaneous", requires_ofe=(0, 7, 5))

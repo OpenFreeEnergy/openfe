@@ -2,9 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from typing import TypeVar
-from rdkit import Chem
+
 import matplotlib.axes
 import matplotlib.backend_bases
+from rdkit import Chem
 
 try:
     from typing import TypeAlias
@@ -13,7 +14,7 @@ except ImportError:
 
 RDKitMol: TypeAlias = Chem.rdchem.Mol
 
-OEMol = TypeVar('OEMol')
+OEMol = TypeVar("OEMol")
 MPL_FigureCanvasBase: TypeAlias = matplotlib.backend_bases.FigureCanvasBase
 MPL_MouseEvent: TypeAlias = matplotlib.backend_bases.MouseEvent
 MPL_Axes: TypeAlias = matplotlib.axes.Axes

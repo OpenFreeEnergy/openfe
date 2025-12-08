@@ -1,11 +1,11 @@
 from importlib import resources
 
-import pytest
 import click
+import pytest
 
 import openfe
-from openfecli.parameters.mol import get_molecule
 from openfe import SmallMoleculeComponent
+from openfecli.parameters.mol import get_molecule
 
 
 def test_get_molecule_smiles():
@@ -31,7 +31,7 @@ def test_get_molecule_mol2():
         f = d / "toluene.mol2"
         mol = get_molecule(str(f))
 
-        assert mol.smiles == 'Cc1ccccc1'
+        assert mol.smiles == "Cc1ccccc1"
 
 
 def test_get_molecule_error():

@@ -3,6 +3,7 @@ import pytest
 from openfe.setup.atom_mapping.ligandatommapper import LigandAtomMapper
 from openfe.utils import ligand_utils
 
+
 class TestAtomMapper:
     def test_abstract_error(self, simple_mapping):
         # suggest_mappings should fail with NotImplementedError if the user
@@ -28,7 +29,7 @@ class TestAtomMapper:
                 return {}
 
             def _to_dict(self):
-                return {'mappings': self.mappings}
+                return {"mappings": self.mappings}
 
             @classmethod
             def _from_dict(cls, dct):
@@ -42,7 +43,6 @@ class TestAtomMapper:
         results = list(mapper.suggest_mappings(molA, molB))
         assert len(results) == 2
         assert results == [simple_mapping, other_mapping]
-
 
     def test_alchemical_charge_deprecation_warning(self, simple_mapping):
         with pytest.warns(DeprecationWarning, match=r"Use gufe\.LigandAtomMapping"):

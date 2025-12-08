@@ -1,12 +1,12 @@
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
-from openfe.analysis.plotting import (
-    plot_lambda_transition_matrix,
-    plot_2D_rmsd,
-)
 
+from openfe.analysis.plotting import (
+    plot_2D_rmsd,
+    plot_lambda_transition_matrix,
+)
 
 MBAR_HIGH_FLOAT_PREC = np.array([
     [4.04963280e-01, 2.64851626e-01, 1.55960834e-01,
@@ -53,7 +53,7 @@ MBAR_HIGH_FLOAT_PREC = np.array([
      1.44570756e-48, 3.81491237e-48, 7.12658815e-48,
      2.77171908e-09, 3.34696054e-03, 1.34272920e-01,
      3.93084315e-01, 4.91518742e-01],
-])
+])  # fmt: skip
 
 
 MBAR_HIGH_FLOAT_ABNORMAL = np.array([
@@ -101,9 +101,11 @@ MBAR_HIGH_FLOAT_ABNORMAL = np.array([
      1.06553350e-179, 8.33933879e-180, 3.64830252e-180,
      9.81085527e-009, 4.59238353e-003, 1.76251997e-001,
      5.86475486e-001, 8.06379597e-001],
-])
+])  # fmt: skip
 
-@pytest.mark.parametrize("matrix",
+
+@pytest.mark.parametrize(
+    "matrix",
     [MBAR_HIGH_FLOAT_PREC, MBAR_HIGH_FLOAT_ABNORMAL],
 )
 def test_mbar_overlap_plot_high_warn(matrix):
@@ -147,20 +149,21 @@ MBAR_OVERLAP_NORMAL = np.array([
     [5.95535941e-14, 5.45494512e-12, 4.89327222e-10, 4.64070520e-08,
      2.55919445e-06, 6.43253565e-05, 1.27769523e-03, 1.42066757e-02,
      8.47061646e-02, 2.88828537e-01, 6.10913996e-01]
-])
+])  # fmt: skip
+
 
 def test_mbar_overlap_plot():
     ax = plot_lambda_transition_matrix(MBAR_OVERLAP_NORMAL)
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
-@pytest.mark.parametrize('num', [i for i in range(1, 30)])
+@pytest.mark.parametrize("num", [i for i in range(1, 30)])
 def test_plot_2D_rmsd(num):
     """
     Smoke test:
       Loop through and test plotting fictitious 2D data
     """
-    points = num * (num-1) // 2
+    points = num * (num - 1) // 2
     data = [[0.5 for x in range(points)] for i in range(num)]
     fig = plot_2D_rmsd(data)
     plt.close(fig)

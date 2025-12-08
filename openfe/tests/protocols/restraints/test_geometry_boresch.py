@@ -6,12 +6,13 @@ import pathlib
 import MDAnalysis as mda
 import pooch
 import pytest
+from openff.units import unit
+from rdkit import Chem
+
 from openfe.protocols.restraint_utils.geometry.boresch.geometry import (
     BoreschRestraintGeometry,
     find_boresch_restraint,
 )
-from openff.units import unit
-from rdkit import Chem
 
 from ...conftest import HAS_INTERNET
 
@@ -47,9 +48,7 @@ def test_boresch_too_few_host_atoms_found(eg5_protein_ligand_universe, eg5_ligan
     """
     Test an error is raised if we can not find a set of host atoms
     """
-    with pytest.raises(
-        ValueError, match="Boresch-like restraint generation: too few atoms"
-    ):
+    with pytest.raises(ValueError, match="Boresch-like restraint generation: too few atoms"):
         ligand_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG")
         host_atoms = eg5_protein_ligand_universe.select_atoms("protein")
         _ = find_boresch_restraint(
@@ -105,9 +104,7 @@ def test_boresch_no_guest_atoms_found_ethane(eg5_protein_pdb):
     universe = mda.Merge(protein.atoms, lig.atoms)
 
     ligand_atoms = universe.select_atoms("resname LIG")
-    with pytest.raises(
-        ValueError, match="No suitable ligand atoms were found for the restraint"
-    ):
+    with pytest.raises(ValueError, match="No suitable ligand atoms were found for the restraint"):
         _ = find_boresch_restraint(
             universe=universe,
             guest_rdmol=lig.atoms.convert_to("RDKIT"),
@@ -125,9 +122,7 @@ def test_boresch_no_guest_atoms_found_collinear(eg5_protein_pdb):
     universe = mda.Merge(protein.atoms, lig.atoms)
 
     ligand_atoms = universe.select_atoms("resname LIG")
-    with pytest.raises(
-        ValueError, match="No suitable ligand atoms found for the restraint."
-    ):
+    with pytest.raises(ValueError, match="No suitable ligand atoms found for the restraint."):
         _ = find_boresch_restraint(
             universe=universe,
             guest_rdmol=lig.atoms.convert_to("RDKIT", force=True),
@@ -143,9 +138,7 @@ def test_boresch_no_host_atom_pool(eg5_protein_ligand_universe, eg5_ligands):
     """
     ligand_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG")
     host_atoms = eg5_protein_ligand_universe.select_atoms("protein")
-    with pytest.raises(
-        ValueError, match="No host atoms found within the search distance"
-    ):
+    with pytest.raises(ValueError, match="No host atoms found within the search distance"):
         _ = find_boresch_restraint(
             universe=eg5_protein_ligand_universe,
             guest_rdmol=eg5_ligands[1].to_rdkit(),
@@ -255,12 +248,9 @@ zenodo_restraint_data = pooch.create(
 
 @pytest.fixture
 def industry_benchmark_files():
-    zenodo_restraint_data.fetch(
-        "industry_benchmark_systems.zip", processor=pooch.Unzip()
-    )
+    zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
-        pooch.os_cache("openfe")
-        / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
+        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
     )
     return cache_dir
 
@@ -310,9 +300,7 @@ def industry_benchmark_files():
         "miscellaneous_set/hiv1_protease",
     ],
 )
-def test_get_boresch_restrain_industry_benchmark_systems(
-    system, industry_benchmark_files
-):
+def test_get_boresch_restrain_industry_benchmark_systems(system, industry_benchmark_files):
     """
     Regression test generating boresch restraints for a single frame for most industry benchmark systems.
     Currently, a single ligand is used from each system and the expected reference data is stored as SDtags
@@ -343,7 +331,7 @@ def test_get_boresch_restrain_industry_benchmark_systems(
         guest_idxs=lig_ids,
         host_idxs=host_ids,
         host_selection="backbone",
-        anchor_finding_strategy='multi-residue',
+        anchor_finding_strategy="multi-residue",
         dssp_filter=False,
         # reduce the search space for CI speed!
         host_max_distance=1.5 * unit.nanometer,
@@ -365,7 +353,4 @@ def test_get_boresch_restrain_industry_benchmark_systems(
     for i, atom in enumerate(restraint_geometry.guest_atoms):
         assert ligand.GetIntProp(f"Guest{i}") == atom
     for prop in ["r_aA0", "theta_A0", "theta_B0", "phi_A0", "phi_B0", "phi_C0"]:
-        assert (
-            pytest.approx(ligand.GetDoubleProp(prop))
-            == getattr(restraint_geometry, prop).m
-        )
+        assert pytest.approx(ligand.GetDoubleProp(prop)) == getattr(restraint_geometry, prop).m

@@ -18,6 +18,7 @@ Relative Free Energies
 Absolute Free Energies
 ----------------------
 
+- :any:`Absolute Absolute Free Energy Protocol <abfe_tutorial>`: A walk-through of calculating the absolute binding free energy of toluene to T4 Lysozyme.
 - :any:`Absolute Solvation Free Energy Protocol <ahfe_tutorial>`: A walk-through of calculating the hydration free energy of a benzene ligand.
 
 Relative Free Energies using Separated Topologies
@@ -49,8 +50,11 @@ Generating Partial Charges
     showcase_notebook
     rbfe_python_tutorial
     rbfe_cli_tutorial
+    abfe_tutorial
+    abfe_analysis_tutorial
     ahfe_tutorial
     septop_tutorial
+    septop_analysis_tutorial
     md_tutorial
     plotting_with_cinnabar
     charge_molecules_cli_tutorial

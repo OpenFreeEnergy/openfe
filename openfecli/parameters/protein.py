@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
+from plugcli.params import NOT_PARSED, MultiStrategyGetter, Option
+
 
 def _load_protein_from_pdb(user_input, context):
     if ".pdb" not in str(user_input):  # this silences some stderr spam
@@ -16,7 +17,9 @@ def _load_protein_from_pdb(user_input, context):
 
 
 def _load_protein_from_pdbx(user_input, context):
-    if not any([ext in str(user_input) for ext in [".pdb", ".cif", ".pdbx"]]):  # this silences some stderr spam
+    if not any(
+        [ext in str(user_input) for ext in [".pdb", ".cif", ".pdbx"]]
+    ):  # this silences some stderr spam
         return NOT_PARSED
 
     from gufe import ProteinComponent
@@ -38,9 +41,6 @@ get_molecule = MultiStrategyGetter(
 PROTEIN = Option(
     "-p",
     "--protein",
-    help=(
-        "ProteinComponent. Can be provided as an PDB or as a PDBx/mmCIF file. "
-        " string."
-    ),
+    help=("ProteinComponent. Can be provided as an PDB or as a PDBx/mmCIF file.  string."),
     getter=get_molecule,
 )

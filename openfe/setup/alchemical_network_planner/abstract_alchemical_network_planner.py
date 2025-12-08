@@ -3,6 +3,7 @@
 
 import abc
 from typing import Iterable
+
 from gufe import AlchemicalNetwork
 
 

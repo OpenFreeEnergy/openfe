@@ -7,9 +7,10 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
+
 import abc
 
-from pydantic.v1 import BaseModel, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class BaseRestraintGeometry(BaseModel, abc.ABC):
@@ -17,8 +18,7 @@ class BaseRestraintGeometry(BaseModel, abc.ABC):
     A base class for a restraint geometry.
     """
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class HostGuestRestraintGeometry(BaseRestraintGeometry):
@@ -42,9 +42,9 @@ class HostGuestRestraintGeometry(BaseRestraintGeometry):
     """
     host_atoms: list[int]
 
-    @validator("guest_atoms", "host_atoms")
+    @field_validator("guest_atoms", "host_atoms")
     def positive_idxs(cls, v):
-        if v is not None and any([i < 0 for i in v]):
+        if v is not None and any([i < 0 for i in v]):  # TODO: when would None be valid here?
             errmsg = "negative indices passed"
             raise ValueError(errmsg)
         return v

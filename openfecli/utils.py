@@ -1,12 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
-import importlib
 import functools
-from typing import Callable, Optional
-from datetime import datetime
+import importlib
 import logging
+from datetime import datetime
+from typing import Callable, Optional
+
+import click
 
 
 def import_thing(import_string: str):
@@ -22,7 +23,7 @@ def import_thing(import_string: str):
     Any :
         the object from that namespace
     """
-    splitted = import_string.split('.')
+    splitted = import_string.split(".")
     if len(splitted) > 1:
         # if the string has a dot, import the module and getattr the object
         obj = splitted[-1]
@@ -57,21 +58,25 @@ def _should_configure_logger(logger: logging.Logger):
         return False
 
     # walk up the logging tree to see if any parent loggers are not default
-    l = logger
+    _logger = logger
     while (
-        l.parent is not None  # not the root logger
-        and l.level == logging.NOTSET  # level not already set
-        and l.propagate  # configured to use parent when not set
+        _logger.parent is not None  # not the root logger
+        and _logger.level == logging.NOTSET  # level not already set
+        and _logger.propagate  # configured to use parent when not set
     ):
-        l = l.parent
+        _logger = _logger.parent
 
-    is_default = (l == logging.root and l.level == logging.WARNING)
+    is_default = (_logger == logging.root and _logger.level == logging.WARNING)  # fmt: skip
 
     return is_default
 
 
-def configure_logger(logger_name: str, level: int = logging.INFO, *,
-                     handler: Optional[logging.Handler] = None):
+def configure_logger(
+    logger_name: str,
+    level: int = logging.INFO,
+    *,
+    handler: Optional[logging.Handler] = None,
+):
     """Configure the logger at ``logger_name`` to be at ``level``.
 
     This is used to prevent accidentally overwriting existing logging
@@ -103,6 +108,7 @@ def print_duration(function: Callable) -> Callable:
     the decorated function.
 
     """
+
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
         start_time = datetime.now()
@@ -115,4 +121,3 @@ def print_duration(function: Callable) -> Callable:
         return result
 
     return wrapper
-

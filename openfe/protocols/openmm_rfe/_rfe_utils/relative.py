@@ -3,16 +3,20 @@
 # The eventual goal is to move a version of this towards openmmtools
 # LICENSE: MIT
 
-import logging
-import openmm
-from openmm import unit, app
-import numpy as np
+# turn off formatting since this is mostly vendored code
+# fmt: off
+
 import copy
 import itertools
+import logging
+
+import mdtraj as mdt
+import numpy as np
+import openmm
+from openmm import app, unit
+
 # OpenMM constant for Coulomb interactions (implicitly in md_unit_system units)
 from openmmtools.constants import ONE_4PI_EPS0
-import mdtraj as mdt
-
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +215,9 @@ class HybridTopologyFactory:
 
         self._handle_periodic_torsion_force()
 
+        # add cmap terms if possible
+        self._handle_cmap_torsion_force()
+
         if has_nonbonded_force:
             self._handle_nonbonded()
             if not (len(self._old_system_exceptions.keys()) == 0 and
@@ -224,6 +231,155 @@ class HybridTopologyFactory:
         self._hybrid_topology = self._create_mdtraj_topology()
         self._omm_hybrid_topology = self._create_hybrid_topology()
         logger.info("Hybrid system created")
+
+    @staticmethod
+    def _verify_cmap_compatibility(
+        cmap_old: openmm.CMAPTorsionForce,
+        cmap_new: openmm.CMAPTorsionForce,
+    ) -> tuple[
+        int,
+        int,
+        int,
+        int,
+    ]:
+        """
+        Verify CMAPTorsionForce compatibility between two systems.
+
+        Parameters
+        ----------
+        cmap_old : openmm.CMAPTorsionForce
+           CMAPTorsionForce from the old system
+        cmap_new : openmm.CMAPTorsionForce
+           CMAPTorsionForce from the new system
+
+        Returns
+        -------
+        tuple
+            (old_num_maps, new_num_maps, old_num_torsions, new_num_torsions)
+            four integers describing the number of maps and
+            torsions in each force.
+
+        Raises
+        ------
+        RuntimeError
+           If only one of the forces is present, or if the number of maps or the
+           number of torsions differs between the two forces.
+        """
+        logger.info("CMAPTorsionForce found checking compatibility")
+
+        # some quick checks on compatibility like the number of maps and total number of terms
+        old_num_maps = cmap_old.getNumMaps()
+        new_num_maps = cmap_new.getNumMaps()
+        if old_num_maps != new_num_maps:
+            raise RuntimeError(
+                f"Incompatible CMAPTorsionForce between end states expected to have same number of maps, "
+                f"found old: {old_num_maps} and new: {new_num_maps}")
+
+        old_num_torsions = cmap_old.getNumTorsions()
+        new_num_torsions = cmap_new.getNumTorsions()
+        if old_num_torsions != new_num_torsions:
+            raise RuntimeError(
+                f"Incompatible CMAPTorsionForce between end states expected to have same number of torsions, "
+                f"found old: {old_num_torsions} and new: {new_num_torsions}")
+
+        return old_num_maps, new_num_maps, old_num_torsions, new_num_torsions
+
+    def _handle_cmap_torsion_force(self):
+        """
+        This method does the following in order:
+            - Some basic checks that the CMAPTorsionForce exists in both old/new systems.
+            - Adds the CMAPTorsionForce from the old system
+            - Checks that the new system CMAPTorsionForce terms are equal to the old system's (we do not allow for alchemically changing CMAP terms).
+        """
+        cmap_old = self._old_system_forces.get("CMAPTorsionForce", None)
+        cmap_new = self._new_system_forces.get("CMAPTorsionForce", None)
+
+        # if only one has cmap raise an error
+        if (cmap_new is None) ^ (cmap_old is None):
+            raise RuntimeError(f"Inconsistent CMAPTorsionForce between end states expected to be present in both"
+                               f"but found in old: {bool(cmap_old)} and new: {bool(cmap_new)}")
+
+        if cmap_new == cmap_old is None:
+            logger.info("No CMAPTorsionForce found. Skipping adding force.")
+            return
+
+        # verify compatibility and extract numbers of maps and torsions
+        (
+            old_num_maps,
+            new_num_maps,
+            old_num_torsions,
+            new_num_torsions
+        ) = self._verify_cmap_compatibility(
+            cmap_old, cmap_new
+        )
+
+        logger.info("Adding CMAPTorsionForce to hybrid system")
+        # start looping through the old system terms and add them to the hybrid system
+        # track the terms we add so we can cross compare with the new system and also make sure we don't hit
+        # an index in the alchemical region
+        hybrid_cmap_force = openmm.CMAPTorsionForce()
+        self._hybrid_system.addForce(hybrid_cmap_force)
+        self._hybrid_system_forces["cmap_torsion_force"] = hybrid_cmap_force
+
+        old_system_maps = {}
+        old_system_terms = {}
+
+        logger.info("Adding CMAP forces")
+        # add all the old maps
+        for i in range(old_num_maps):
+            size, energy = cmap_old.getMapParameters(i)
+            old_system_maps[i] = (size, energy)
+            # also add the map to the hybrid system
+            hybrid_cmap_force.addMap(size, energy)
+
+        logger.info("Adding CMAP force terms")
+        # now add the terms we need to map from the old to the new index
+        old_to_hybrid_index = self._old_to_hybrid_map
+        new_to_hybrid_index = self._new_to_hybrid_map
+        for i in range(old_num_torsions):
+            # get the parameters for the torsion using the same notation as OpenMM
+            map_index, a1, a2, a3, a4, b1, b2, b3, b4 = cmap_old.getTorsionParameters(i)
+            atom_ids = [a1, a2, a3, a4, b1, b2, b3, b4]
+            # map to hybrid indices
+            hybrid_atom_ids = [old_to_hybrid_index[a_id] for a_id in atom_ids]
+            # add to the hybrid system using the hybrid index
+            hybrid_cmap_force.addTorsion(map_index, *hybrid_atom_ids)
+            # track the atoms we add in the hybrid system to cross compare with new system
+            old_system_terms[tuple(hybrid_atom_ids)] = map_index
+
+        # gather all alchemical atoms, use a copy so we don't change the groups
+        alchemical_atoms = self._atom_classes["core_atoms"].copy()
+        alchemical_atoms.update(self._atom_classes["unique_old_atoms"], self._atom_classes["unique_new_atoms"])
+        # check if any of the atoms added are in the alchemical region
+        old_added_atoms = {atom_id for atoms in old_system_terms.keys() for atom_id in atoms}
+        if overlap_atoms := alchemical_atoms.intersection(old_added_atoms):
+            raise RuntimeError(
+                f"Incompatible CMAPTorsionForce term found in alchemical region for old system atoms {overlap_atoms}")
+
+        # now loop over the new system force and check the terms are compatible
+        # we expect to add no new terms
+        for i in range(new_num_maps):
+            size, energy = cmap_new.getMapParameters(i)
+            if (size, energy) != old_system_maps[i]:
+                raise RuntimeError(f"Incompatible CMAPTorsionForce map parameters found between end states for map {i} "
+                                   f"expected {old_system_maps[i]} found {(size, energy)}")
+
+        for i in range(new_num_torsions):
+            map_index, a1, a2, a3, a4, b1, b2, b3, b4 = cmap_new.getTorsionParameters(i)
+            atom_ids = [a1, a2, a3, a4, b1, b2, b3, b4]
+            # map to hybrid indices
+            hybrid_atom_ids = [new_to_hybrid_index[a_id] for a_id in atom_ids]
+            # check its in the old system terms
+            if tuple(hybrid_atom_ids) not in old_system_terms.keys():
+                raise RuntimeError(
+                    f"Incompatible CMAPTorsionForce term found between end states for atoms {hybrid_atom_ids} "
+                    f"not found in old system terms.")
+            # check the map index is the same
+            if map_index != old_system_terms[tuple(hybrid_atom_ids)]:
+                raise RuntimeError(
+                    f"Incompatible CMAPTorsionForce map index found between end states for atoms {hybrid_atom_ids} "
+                    f"expected {old_system_terms[tuple(hybrid_atom_ids)]} found {map_index}")
+        logger.info("CMAPTorsionForce added to the hybrid system")
 
     @staticmethod
     def _check_bounds(value, varname, minmax=(0, 1)):
@@ -316,7 +472,7 @@ class HybridTopologyFactory:
             # TODO: double check that CMMotionRemover is ok being here
             known_forces = {'HarmonicBondForce', 'HarmonicAngleForce',
                             'PeriodicTorsionForce', 'NonbondedForce',
-                            'MonteCarloBarostat', 'CMMotionRemover'}
+                            'MonteCarloBarostat', 'CMMotionRemover', 'CMAPTorsionForce'}
 
             force_names = forces.keys()
             unknown_forces = set(force_names) - set(known_forces)
@@ -550,7 +706,7 @@ class HybridTopologyFactory:
         """
         Helper method to copy a ThreeParticleAverageSite virtual site
         from two mapped Systems.
-        
+
         Parameters
         ----------
         atm_map : dict[int, int]
@@ -559,7 +715,7 @@ class HybridTopologyFactory:
           A list of environment atoms for the target System. This
           checks that no alchemical atoms are being tied to.
         vs : openmm.ThreeParticleAverageSite
-        
+
         Returns
         -------
         openmm.ThreeParticleAverageSite
@@ -577,7 +733,7 @@ class HybridTopologyFactory:
             particles[0], particles[1], particles[2],
             weights[0], weights[1], weights[2],
         )
-                    
+
     def _handle_virtual_sites(self):
         """
         Ensure that all virtual sites in old and new system are copied over to
@@ -2034,7 +2190,7 @@ class HybridTopologyFactory:
 
                     exception_index = self._hybrid_system_forces['standard_nonbonded_force'].addException(
                                           index1_hybrid, index2_hybrid,
-                                          chargeProd_old, sigma_old, 
+                                          chargeProd_old, sigma_old,
                                           epsilon_old)
 
                     self._hybrid_system_forces['standard_nonbonded_force'].addExceptionParameterOffset(
@@ -2067,12 +2223,12 @@ class HybridTopologyFactory:
 
         if self._softcore_LJ_v2:
             old_new_nonbonded_exceptions += "U_sterics = select(step(r - r_LJ), 4*epsilon*x*(x-1.0), U_sterics_quad);"
-            old_new_nonbonded_exceptions += f"U_sterics_quad = Force*(((r - r_LJ)^2)/2 - (r - r_LJ)) + U_sterics_cut;"
-            old_new_nonbonded_exceptions += f"U_sterics_cut = 4*epsilon*((sigma/r_LJ)^6)*(((sigma/r_LJ)^6) - 1.0);"
-            old_new_nonbonded_exceptions += f"Force = -4*epsilon*((-12*sigma^12)/(r_LJ^13) + (6*sigma^6)/(r_LJ^7));"
-            old_new_nonbonded_exceptions += f"x = (sigma/r)^6;"
-            old_new_nonbonded_exceptions += f"r_LJ = softcore_alpha*((26/7)*(sigma^6)*lambda_sterics_deprecated)^(1/6);"
-            old_new_nonbonded_exceptions += f"lambda_sterics_deprecated = new_interaction*(1.0 - lambda_sterics_insert) + old_interaction*lambda_sterics_delete;"
+            old_new_nonbonded_exceptions += "U_sterics_quad = Force*(((r - r_LJ)^2)/2 - (r - r_LJ)) + U_sterics_cut;"
+            old_new_nonbonded_exceptions += "U_sterics_cut = 4*epsilon*((sigma/r_LJ)^6)*(((sigma/r_LJ)^6) - 1.0);"
+            old_new_nonbonded_exceptions += "Force = -4*epsilon*((-12*sigma^12)/(r_LJ^13) + (6*sigma^6)/(r_LJ^7));"
+            old_new_nonbonded_exceptions += "x = (sigma/r)^6;"
+            old_new_nonbonded_exceptions += "r_LJ = softcore_alpha*((26/7)*(sigma^6)*lambda_sterics_deprecated)^(1/6);"
+            old_new_nonbonded_exceptions += "lambda_sterics_deprecated = new_interaction*(1.0 - lambda_sterics_insert) + old_interaction*lambda_sterics_delete;"
         else:
             old_new_nonbonded_exceptions += "U_sterics = 4*epsilon*x*(x-1.0); x = (sigma/reff_sterics)^6;"
             old_new_nonbonded_exceptions += "reff_sterics = sigma*((softcore_alpha*lambda_alpha + (r/sigma)^6))^(1/6);"
@@ -2270,7 +2426,7 @@ class HybridTopologyFactory:
             # find mapped atoms
             new_system_atom_set = {atom.index for atom in new_system_res.atoms}
 
-            # Now, we find the subset of atoms that are mapped. These must be 
+            # Now, we find the subset of atoms that are mapped. These must be
             # in the "core" category, since they are mapped and part of a
             # changing residue
             mapped_new_atom_indices = core_atoms_new_indices.intersection(
@@ -2345,17 +2501,20 @@ class HybridTopologyFactory:
         # In the first instance, create a list of necessary atoms from
         # both old & new Topologies
         atom_list = []
+        # iterate once over the topologies for speed
+        old_topology_atoms = list(self._old_topology.atoms())
+        new_topology_atoms = list(self._new_topology.atoms())
 
         for pidx in range(self.hybrid_system.getNumParticles()):
             if pidx in self._hybrid_to_old_map:
                 idx = self._hybrid_to_old_map[pidx]
-                atom_list.append(list(self._old_topology.atoms())[idx])
+                atom_list.append(old_topology_atoms[idx])
             else:
                 idx = self._hybrid_to_new_map[pidx]
-                atom_list.append(list(self._new_topology.atoms())[idx])
+                atom_list.append(new_topology_atoms[idx])
 
         # Now we loop over the atoms and add them in alongside chains & resids
-        
+
         # Non ideal variables to track the previous set of residues & chains
         # without having to constantly search backwards
         prev_res = None
@@ -2377,14 +2536,16 @@ class HybridTopologyFactory:
             )
 
         # Next we deal with bonds
+        # loop over the topology atoms once to avoid repeated calls
+        hybrid_top_atom_list = list(hybrid_top.atoms())
         # First we add in all the old topology bonds
         for bond in self._old_topology.bonds():
             at1 = self.old_to_hybrid_atom_map[bond.atom1.index]
             at2 = self.old_to_hybrid_atom_map[bond.atom2.index]
 
             hybrid_top.addBond(
-                list(hybrid_top.atoms())[at1],
-                list(hybrid_top.atoms())[at2],
+                hybrid_top_atom_list[at1],
+                hybrid_top_atom_list[at2],
                 bond.type, bond.order,
             )
 
@@ -2396,8 +2557,8 @@ class HybridTopologyFactory:
             if ((at1 in self._atom_classes['unique_new_atoms']) or
                 (at2 in self._atom_classes['unique_new_atoms'])):
                 hybrid_top.addBond(
-                    list(hybrid_top.atoms())[at1],
-                    list(hybrid_top.atoms())[at2],
+                    hybrid_top_atom_list[at1],
+                    hybrid_top_atom_list[at2],
                     bond.type, bond.order,
                 )
 
@@ -2426,7 +2587,7 @@ class HybridTopologyFactory:
         old_positions = unit.Quantity(np.zeros([n_atoms_old, 3]),
                                       unit=unit.nanometer)
         for idx in range(n_atoms_old):
-            hyb_idx = self._new_to_hybrid_map[idx]
+            hyb_idx = self._old_to_hybrid_map[idx]
             old_positions[idx, :] = hybrid_positions[hyb_idx, :]
         return old_positions
 
@@ -2445,7 +2606,7 @@ class HybridTopologyFactory:
         new_positions : [m, 3] np.ndarray with unit
             The positions of the new system
         """
-        n_atoms_new = self._new_system.getNumParticles
+        n_atoms_new = self._new_system.getNumParticles()
         # making sure hybrid positions are simtk.unit.Quantity objects
         if not isinstance(hybrid_positions, unit.Quantity):
             hybrid_positions = unit.Quantity(hybrid_positions,
@@ -2512,7 +2673,7 @@ class HybridTopologyFactory:
     def hybrid_topology(self):
         """
         An MDTraj hybrid topology for the purpose of writing out trajectories.
-        
+
         Note that we do not expect this to be able to be parameterized by the
         openmm forcefield class.
 
