@@ -34,6 +34,7 @@ jobs:
         with:
           repository: conda-forge/openfe-feedstock
           path: openfe-feedstock
+          branch: atravitz:release/1.8.0
       
       - name: Set up Python
         uses: actions/setup-python@v5
