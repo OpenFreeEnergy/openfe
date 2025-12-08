@@ -205,15 +205,22 @@ def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpd
             _verify_alchemical_sterics_force_parameters(force)
 
 
-def test_alchemical_settings_dry_run_vacuum(benzene_system, protocol_dry_settings, tmpdir):
+@pytest.mark.parametrize('alpha, a, b, c, correction', [
+    [0.2, 2, 2, 1, True],
+    [0.35, 2.2, 1.5, 0, False],
+])
+def test_alchemical_settings_dry_run_vacuum(
+    alpha, a, b, c, correction,
+    benzene_system, protocol_dry_settings, tmpdir
+):
     """
     Test non default alchemical settings
     """
-    protocol_dry_settings.alchemical_settings.softcore_alpha = 0.2
-    protocol_dry_settings.alchemical_settings.softcore_a = 2
-    protocol_dry_settings.alchemical_settings.softcore_b = 2
-    protocol_dry_settings.alchemical_settings.softcore_c = 1
-    protocol_dry_settings.alchemical_settings.disable_alchemical_dispersion_correction = True
+    protocol_dry_settings.alchemical_settings.softcore_alpha = alpha
+    protocol_dry_settings.alchemical_settings.softcore_a = a
+    protocol_dry_settings.alchemical_settings.softcore_b = b
+    protocol_dry_settings.alchemical_settings.softcore_c = c
+    protocol_dry_settings.alchemical_settings.disable_alchemical_dispersion_correction = correction
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
 
     stateA = benzene_system
@@ -258,11 +265,11 @@ def test_alchemical_settings_dry_run_vacuum(benzene_system, protocol_dry_setting
         for force in stericsf:
             _verify_alchemical_sterics_force_parameters(
                 force,
-                long_range=False,
-                alpha=0.2,
-                a=2.0,
-                b=2.0,
-                c=1.0,
+                long_range=not correction,
+                alpha=alpha,
+                a=a,
+                b=b,
+                c=c,
             )
 
 
