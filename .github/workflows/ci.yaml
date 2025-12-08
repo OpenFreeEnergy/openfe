@@ -40,14 +40,7 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
-        openeye: ["no"]
-        include: # NOTE: openeye does not yet support 3.13.
-          - os: "ubuntu-latest"
-            python-version: "3.11"
-            openeye: "yes"
-          - os: "macos-latest"
-            python-version: "3.12"
-            openeye: "yes"
+        openeye: ["no", "yes"]
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
