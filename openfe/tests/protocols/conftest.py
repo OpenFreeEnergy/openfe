@@ -374,3 +374,28 @@ def compute_energy(
     potential = state.getPotentialEnergy()
     del context, integrator, state
     return from_openmm(potential)
+
+
+@pytest.fixture(scope="module")
+def chloroethane():
+    """Load chloroethane with partial charges from sdf file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        return openfe.SmallMoleculeComponent.from_sdf_file(f / "chloroethane.sdf")
+
+@pytest.fixture(scope="module")
+def ethane():
+    """Load ethane with partial charges from sdf file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        return openfe.SmallMoleculeComponent.from_sdf_file(f / "ethane.sdf")
+
+@pytest.fixture(scope="module")
+def chloroethane_to_ethane_mapping(chloroethane, ethane):
+    """Return a mapping from chloroethane to ethane."""
+    return openfe.LigandAtomMapping(
+        componentA=chloroethane,
+        componentB=ethane,
+        componentA_to_componentB={
+            # Cl-H not mapped, all others one-to-one
+            1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7,
+        }
+    )

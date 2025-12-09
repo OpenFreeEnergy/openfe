@@ -1001,6 +1001,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
             interpolate_old_and_new_14s=alchem_settings.turn_off_core_unique_exceptions,
         )
+        # work out if we need to scale the dummy-core junction terms
+        if alchem_settings.dummy_junction_angle_torsion_scale_factor != 1.0:
+            self.logger.info(f"Softening angles and torsions involving dummy atoms in the hybrid system by {(1.0 - alchem_settings.dummy_junction_angle_torsion_scale_factor) * 100}%")
+            hybrid_factory = _rfe_utils.topologyhelpers._scale_angles_and_torsions(
+                htf=hybrid_factory,
+                scale_factor=alchem_settings.dummy_junction_angle_torsion_scale_factor,
+                scale_angles=alchem_settings.scale_dummy_junction_angle_terms
+            )
 
         # 4. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the

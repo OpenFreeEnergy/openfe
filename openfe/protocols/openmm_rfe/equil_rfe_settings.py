@@ -100,6 +100,15 @@ class AlchemicalSettings(SettingsBaseModel):
     The minimum distance from the system solutes from which an
     alchemical water can be chosen. Default 0.8 * unit.nanometer.
     """
+    dummy_junction_angle_torsion_scale_factor: float = 1.0
+    """
+    The factor by which to scale the angles and torsion (0 to 1) for constants by for dummy-core junction terms,
+    by default 1.0.
+    """
+    scale_dummy_junction_angle_terms: bool = True
+    """
+    Whether to scale angles (True) or not (False) in the dummy-core junction, by default True.
+    """
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):

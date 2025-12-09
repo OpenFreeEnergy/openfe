@@ -16,7 +16,7 @@ import pytest
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
-from openff.toolkit import Molecule
+from openff.toolkit import Molecule, ForceField
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce, XmlSerializer, app
@@ -279,6 +279,242 @@ def test_dry_run_default_vacuum(
             new_positions.value_in_unit(omm_unit.angstrom),
             htf._new_positions.value_in_unit(omm_unit.angstrom),
         )
+
+
+@pytest.mark.parametrize("phase", ["vacuum", "solvent"])
+def test_dry_run_scaled_angle_junction_terms(phase, chloroethane_to_ethane_mapping, tmpdir, vac_settings, solv_settings):
+    """
+    Make sure that angle terms in the dummy-core junction are scaled by the requested factor in both vacuum and solvent.
+    """
+    state_a_dict = {"ligand": chloroethane_to_ethane_mapping.componentA}
+    state_b_dict = {"ligand": chloroethane_to_ethane_mapping.componentB}
+    if phase == "vacuum":
+        settings = vac_settings
+    else:
+        settings = solv_settings
+        state_a_dict["solvent"] = openfe.SolventComponent()
+        state_b_dict["solvent"] = openfe.SolventComponent()
+
+    scale_factor = 0.1
+    settings.alchemical_settings.dummy_junction_angle_torsion_scale_factor = scale_factor
+    settings.alchemical_settings.scale_dummy_junction_angle_terms = True
+    # Turn on 1-4 scaling as well
+    settings.alchemical_settings.turn_off_core_unique_exceptions = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+    ff_name = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in ff_name:
+        ff_name += ".offxml"
+    ff = ForceField(ff_name)
+    off_chloroethane = chloroethane_to_ethane_mapping.componentA.to_openff()
+    off_ethane = chloroethane_to_ethane_mapping.componentB.to_openff()
+    chloro_labels = ff.label_molecules(off_chloroethane.to_topology())[0]
+    ethane_labels = ff.label_molecules(off_ethane.to_topology())[0]
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem(state_a_dict),
+        stateB=openfe.ChemicalSystem(state_b_dict),
+        mapping=chloroethane_to_ethane_mapping,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        htf = sampler._hybrid_factory
+        # the new dummy atom is added to the end of the system so we need to account for that
+        ethane_dummy_index = list(htf._atom_classes["unique_new_atoms"])[0]
+        hybrid_system = htf.hybrid_system
+        forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+        # there should be 0 standard angle force terms (non-interpolated)
+        # as we now soften the unique angles they should have been moved to the custom angle force
+        standard_angle_force = forces["HarmonicAngleForce"]
+        num_angles = standard_angle_force.getNumAngles()
+        assert num_angles == 0
+
+        # there should then be 15 interpolated angle terms
+        # included a mix of unique and fully mapped terms
+        custom_angle_force = forces["CustomAngleForce"]
+        # there should be a single global parameter for lambda
+        assert custom_angle_force.getNumGlobalParameters() == 1
+        # make sure it has the correct name
+        assert custom_angle_force.getGlobalParameterName(0) == "lambda_angles"
+
+        num_angles = custom_angle_force.getNumAngles()
+        assert num_angles == 15
+        for i in range(num_angles):
+            p1, p2, p3, params = custom_angle_force.getAngleParameters(i)
+            # p1, p2, p3 are the index in chloroethane get the expected parameters from the labels
+            if p1 == 0 or p3 == 0:
+                # this is the chlorine atom which goes to a dummy in ethane
+                chloro_angle = chloro_labels["Angles"][(p1, p2, p3)]
+                # lambda_0 angle
+                assert params[0] == chloro_angle.angle.m_as(unit.radian)
+                # lambda_0 k
+                assert params[1] == chloro_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2)
+                # lambda_1 angle stays the same
+                assert params[2] == chloro_angle.angle.m_as(unit.radian)
+                # lambda_1 k is scaled by (1 - 0.9) = 0.1
+                expected_k = chloro_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2) * scale_factor
+                assert params[3] == expected_k
+            elif p1 == ethane_dummy_index or p3 == ethane_dummy_index:
+                # this is the hydrogen atom which goes to a dummy in chloroethane
+                # map the terms
+                e1 = chloroethane_to_ethane_mapping.componentA_to_componentB[p1] if p1 != ethane_dummy_index else 0
+                e2 = chloroethane_to_ethane_mapping.componentA_to_componentB[p2]
+                e3 = chloroethane_to_ethane_mapping.componentA_to_componentB[p3] if p3 != ethane_dummy_index else 0
+                ethane_angle = ethane_labels["Angles"][(e1, e2, e3)]
+                # lambda_0 should have the same angle
+                assert params[0] == ethane_angle.angle.m_as(unit.radian)
+                # lambda_0 k is scaled by (1 - 0.9) = 0.1
+                expected_k = ethane_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2) * scale_factor
+                assert params[1] == expected_k
+                # lambda_1 angle
+                assert params[2] == ethane_angle.angle.m_as(unit.radian)
+                # lambda_1 k
+                assert params[3] == ethane_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2)
+            else:
+                # fully mapped angle
+                chloro_angle = chloro_labels["Angles"][(p1, p2, p3)]
+                e1 = chloroethane_to_ethane_mapping.componentA_to_componentB[p1]
+                e2 = chloroethane_to_ethane_mapping.componentA_to_componentB[p2]
+                e3 = chloroethane_to_ethane_mapping.componentA_to_componentB[p3]
+                ethane_angle = ethane_labels["Angles"][(e1, e2, e3)]
+                # lambda_0 angle
+                assert params[0] == chloro_angle.angle.m_as(unit.radian)
+                # lambda_0 k
+                assert params[1] == chloro_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2)
+                # lambda_1 angle
+                assert params[2] == ethane_angle.angle.m_as(unit.radian)
+                # lambda_1 k
+                assert params[3] == ethane_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2)
+
+
+@pytest.mark.parametrize("phase", ["vacuum", "solvent"])
+def test_dry_run_scaled_torsion_junction_terms(phase, chloroethane_to_ethane_mapping, tmpdir, vac_settings, solv_settings):
+    """
+    Make sure that torsion terms in the dummy-core junction are scaled by the requested factor.
+    """
+    state_a_dict = {"ligand": chloroethane_to_ethane_mapping.componentA}
+    state_b_dict = {"ligand": chloroethane_to_ethane_mapping.componentB}
+    if phase == "vacuum":
+        settings = vac_settings
+    else:
+        settings = solv_settings
+        state_a_dict["solvent"] = openfe.SolventComponent()
+        state_b_dict["solvent"] = openfe.SolventComponent()
+
+    scale_factor = 0.1
+    settings.alchemical_settings.dummy_junction_angle_torsion_scale_factor = scale_factor
+    settings.alchemical_settings.scale_dummy_junction_angle_terms = True
+    # Turn on 1-4 scaling as well
+    settings.alchemical_settings.turn_off_core_unique_exceptions = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+    ff_name = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in ff_name:
+        ff_name += ".offxml"
+    ff = ForceField(ff_name)
+    off_chloroethane = chloroethane_to_ethane_mapping.componentA.to_openff()
+    off_ethane = chloroethane_to_ethane_mapping.componentB.to_openff()
+    chloro_labels = ff.label_molecules(off_chloroethane.to_topology())[0]
+    ethane_labels = ff.label_molecules(off_ethane.to_topology())[0]
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem(state_a_dict),
+        stateB=openfe.ChemicalSystem(state_b_dict),
+        mapping=chloroethane_to_ethane_mapping,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        htf = sampler._hybrid_factory
+        # the new dummy atom is added to the end of the system so we need to account for that
+        ethane_dummy_index = list(htf._atom_classes["unique_new_atoms"])[0]
+        hybrid_system = htf.hybrid_system
+        forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+        # there should be 9 interpolated torsion terms only involving ghost atoms
+        # there should be 3 terms for the chloroethane unique torsions with 2 peroidicities each
+        # and 3 terms for the ethane unique torsions with 1 periodicity
+        custom_torsion_force = forces["CustomTorsionForce"]
+        # there should be a single global parameter for lambda
+        assert custom_torsion_force.getNumGlobalParameters() == 1
+        # make sure it has the correct name
+        assert custom_torsion_force.getGlobalParameterName(0) == "lambda_torsions"
+        num_torsions = custom_torsion_force.getNumTorsions()
+        assert num_torsions == 9
+
+        for i in range(num_torsions):
+            p1, p2, p3, p4, params = custom_torsion_force.getTorsionParameters(i)
+            # p1, p2, p3, p4 are the index in chloroethane get the expected parameters from the labels
+            if p1 == 0 or p4 == 0:
+                # this is the chlorine atom which goes to a dummy in ethane
+                chloro_torsion = chloro_labels["ProperTorsions"][(p1, p2, p3, p4)]
+                # lambda_0 periodicity
+                assert params[0] in chloro_torsion.periodicity
+                term_index = chloro_torsion.periodicity.index(params[0])
+                # lambda_0 phase
+                assert params[1] == chloro_torsion.phase[term_index].m_as(unit.radian)
+                # lambda_0 k
+                assert params[2] == chloro_torsion.k[term_index].m_as(unit.kilojoule_per_mole)
+                # lambda_1 periodicity stays the same
+                assert params[3] in chloro_torsion.periodicity
+                # lambda_1 phase stays the same
+                assert params[4] == chloro_torsion.phase[term_index].m_as(unit.radian)
+                # lambda_1 k is scaled by (1 - 0.9) = 0.1
+                expected_k = chloro_torsion.k[term_index].m_as(unit.kilojoule_per_mole) * scale_factor
+                assert params[5] == expected_k
+            elif p1 == ethane_dummy_index or p4 == ethane_dummy_index:
+                # this is the hydrogen atom which goes to a dummy in chloroethane
+                # map the terms
+                e1 = chloroethane_to_ethane_mapping.componentA_to_componentB[p1] if p1 != ethane_dummy_index else 0
+                e2 = chloroethane_to_ethane_mapping.componentA_to_componentB[p2]
+                e3 = chloroethane_to_ethane_mapping.componentA_to_componentB[p3]
+                e4 = chloroethane_to_ethane_mapping.componentA_to_componentB[p4] if p4 != ethane_dummy_index else 0
+                ethane_torsion = ethane_labels["ProperTorsions"][(e1, e2, e3, e4)]
+                # lambda_0 periodicity
+                assert params[0] in ethane_torsion.periodicity
+                term_index = ethane_torsion.periodicity.index(params[0])
+                # lambda_0 phase
+                assert params[1] == ethane_torsion.phase[term_index].m_as(unit.radian)
+                # lambda_0 k is scaled by (1 - 0.9) = 0.1
+                expected_k = ethane_torsion.k[term_index].m_as(unit.kilojoule_per_mole) * scale_factor
+                assert params[2] == expected_k
+                # lambda_1 periodicity
+                assert params[3] in ethane_torsion.periodicity
+                # lambda_1 phase
+                assert params[4] == ethane_torsion.phase[term_index].m_as(unit.radian)
+                # lambda_1 k
+                assert params[5] == ethane_torsion.k[term_index].m_as(unit.kilojoule_per_mole)
+            else:
+                assert False, f"All torsions in this test should involve a transforming atom but found the following torsion: {(p1, p2, p3, p4)}"
+
+        # check the standard torsion force has the correct number of terms
+        standard_torsion_force = forces["PeriodicTorsionForce"]
+        num_standard_torsions = standard_torsion_force.getNumTorsions()
+        # there should be 6 fully mapped torsions which each have a single periodicity
+        assert num_standard_torsions == 6
+        # make sure the terms are correct
+        for i in range(num_standard_torsions):
+            p1, p2, p3, p4, periodicity, phase, k = standard_torsion_force.getTorsionParameters(i)
+            chloro_torsion = chloro_labels["ProperTorsions"][(p1, p2, p3, p4)]
+            e1 = chloroethane_to_ethane_mapping.componentA_to_componentB[p1]
+            e2 = chloroethane_to_ethane_mapping.componentA_to_componentB[p2]
+            e3 = chloroethane_to_ethane_mapping.componentA_to_componentB[p3]
+            e4 = chloroethane_to_ethane_mapping.componentA_to_componentB[p4]
+            ethane_torsion = ethane_labels["ProperTorsions"][(e1, e2, e3, e4)]
+            # check against chloroethane parameters
+            assert periodicity in chloro_torsion.periodicity
+            term_index = chloro_torsion.periodicity.index(periodicity)
+            assert phase == chloro_torsion.phase[term_index].m_as(unit.radian) * omm_unit.radian
+            assert k == chloro_torsion.k[term_index].m_as(unit.kilojoule_per_mole) * omm_unit.kilojoule_per_mole
+            # check against ethane parameters
+            assert periodicity in ethane_torsion.periodicity
+            term_index = ethane_torsion.periodicity.index(periodicity)
+            assert phase == ethane_torsion.phase[term_index].m_as(unit.radian) * omm_unit.radian
+            assert k == ethane_torsion.k[term_index].m_as(unit.kilojoule_per_mole) * omm_unit.kilojoule_per_mole
 
 
 def test_dry_run_gaff_vacuum(
