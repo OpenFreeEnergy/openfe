@@ -36,6 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
+        openeye: ["no"]
         python-version:
           - "3.11"
           - "3.12"
