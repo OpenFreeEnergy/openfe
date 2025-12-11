@@ -304,6 +304,7 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
     result = load_json(fpath)
     try:
         result_id = _get_result_id(result, fpath)
+        print(result_id)
     except (ValueError, IndexError):
         click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.",err=True, fg="yellow")  # fmt: skip
         return None, None
@@ -434,6 +435,7 @@ def _generate_ddg(legs: dict, allow_partial: bool) -> pd.DataFrame:
     data = []
     for _, row in DDGs.iterrows():
         ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc = row.to_list()
+        print(ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc)
         if not pd.isna(DDGbind):
             data.append((ligA, ligB, DDGbind, bind_unc))
         if not pd.isna(DDGhyd):
@@ -445,6 +447,7 @@ def _generate_ddg(legs: dict, allow_partial: bool) -> pd.DataFrame:
         columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"],
     )
     df_out = format_df_with_precision(df, "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)")
+    print(df_out)
     return df_out
 
 
@@ -647,7 +650,6 @@ def _get_legs_from_result_jsons(
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
-        print(result_fn)
         result_info, result = _load_valid_result_json(result_fn)
 
         if result_info is None:  # this means it couldn't find names and/or simtype
@@ -786,6 +788,7 @@ def gather(
         "ddg": _generate_ddg,
         "raw": _generate_raw,
     }[report.lower()]
+    print(legs)
     df = report_func(legs, allow_partial)
 
     # write output
