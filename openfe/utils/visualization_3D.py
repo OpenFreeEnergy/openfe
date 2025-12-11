@@ -137,7 +137,6 @@ def view_components_3d(
     py3Dmol.view
         view containing all component coordinates
     """
-    warnings.warn("Use gufe.LigandAtomMapping.view_3d() instead.", DeprecationWarning)
 
     if view is None:
         view = py3Dmol.view(width=600, height=600)
