@@ -13,7 +13,6 @@ import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
-from build.lib.openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
