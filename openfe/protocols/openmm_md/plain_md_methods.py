@@ -22,7 +22,6 @@ import gufe
 import mdtraj
 import openmm
 import openmm.unit as omm_unit
-from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat
 from gufe import (
     ChemicalSystem,
     ProteinMembraneComponent,
@@ -34,6 +33,7 @@ from mdtraj.reporters import XTCReporter
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity, unit
 from openff.units.openmm import from_openmm, to_openmm
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat
 
 from openfe.protocols.openmm_md.plain_md_settings import (
     IntegratorSettings,

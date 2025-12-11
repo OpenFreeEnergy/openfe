@@ -375,7 +375,9 @@ class TestT4LysozymeDryRun:
             assert expected_indices == data["alchem_indices"]
 
             # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(data["system"], complexed=True, settings=settings)
+            self._assert_expected_nonalchemical_forces(
+                data["system"], complexed=True, settings=settings
+            )
             self._check_box_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
@@ -415,7 +417,8 @@ class TestT4LysozymeDryRun:
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(
-                data["system"], complexed=False, settings=settings)
+                data["system"], complexed=False, settings=settings
+            )
             self._test_cubic_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
@@ -583,7 +586,6 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
             stateB=stateB,
             mapping=None,
         )
-
 
     def _get_barostat_type(self, complexed: bool):
         return MonteCarloMembraneBarostat if complexed else MonteCarloBarostat

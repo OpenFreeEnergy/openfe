@@ -13,6 +13,7 @@ import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
+from build.lib.openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
@@ -34,8 +35,6 @@ from rdkit import Chem
 from rdkit.Geometry import Point3D
 
 import openfe
-from build.lib.openfe.protocols.openmm_rfe import \
-    RelativeHybridTopologyProtocol
 from openfe import setup
 from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe._rfe_utils import topologyhelpers
@@ -974,7 +973,44 @@ def test_dry_run_membrane_complex(
     mapping = openfe.LigandAtomMapping(
         componentA=ligA,
         componentB=ligB,
-        componentA_to_componentB={21: 21, 22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27, 28: 28, 29: 29, 30: 30, 31: 31, 32: 32, 33: 33, 34: 34, 35: 35, 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 19: 19, 20: 20},
+        componentA_to_componentB={
+            21: 21,
+            22: 22,
+            23: 23,
+            24: 24,
+            25: 25,
+            26: 26,
+            27: 27,
+            28: 28,
+            29: 29,
+            30: 30,
+            31: 31,
+            32: 32,
+            33: 33,
+            34: 34,
+            35: 35,
+            0: 0,
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+            10: 10,
+            11: 11,
+            12: 12,
+            13: 13,
+            14: 14,
+            15: 15,
+            16: 16,
+            17: 17,
+            18: 18,
+            19: 19,
+            20: 20,
+        },
     )
 
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
@@ -1024,24 +1060,22 @@ def test_dry_run_membrane_complex(
         vectors = from_openmm(box)  # convert to a Quantity array
 
         # Extract box lengths in nanometers
-        width_x, width_y, width_z = [v[i].to("nanometer").m for i, v in
-                                     enumerate(vectors)]
+        width_x, width_y, width_z = [v[i].to("nanometer").m for i, v in enumerate(vectors)]
 
         # Expected orthogonal box (axis-aligned)
         expected_vectors = (
-                np.array(
-                    [
-                        [width_x, 0, 0],
-                        [0, width_y, 0],
-                        [0, 0, width_z],
-                    ]
-                )
-                * unit.nanometer
+            np.array(
+                [
+                    [width_x, 0, 0],
+                    [0, width_y, 0],
+                    [0, 0, width_z],
+                ]
+            )
+            * unit.nanometer
         )
 
         assert_allclose(
-            vectors, expected_vectors, atol=1e-5,
-            err_msg=f"Box is not orthogonal:\n{vectors}"
+            vectors, expected_vectors, atol=1e-5, err_msg=f"Box is not orthogonal:\n{vectors}"
         )
 
 

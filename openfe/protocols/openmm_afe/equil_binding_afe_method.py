@@ -660,14 +660,14 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         system_validation.require_components(
             systems=[stateA, stateB],
             component_types=components,
-            msg="No ProteinComponent or ProteinMembraneComponent found"
+            msg="No ProteinComponent or ProteinMembraneComponent found",
         )
 
         components = (SolventComponent, ProteinMembraneComponent)
         system_validation.require_components(
             systems=[stateA, stateB],
             component_types=components,
-            msg="No SolventComponent or ProteinMembraneComponent found"
+            msg="No SolventComponent or ProteinMembraneComponent found",
         )
 
         # Needs gufe 1.3

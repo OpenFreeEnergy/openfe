@@ -1160,7 +1160,7 @@ class SepTopProtocol(gufe.Protocol):
         system_validation.require_components(
             systems=[stateA, stateB],
             component_types=components,
-            msg="No ProteinComponent or ProteinMembraneComponent found"
+            msg="No ProteinComponent or ProteinMembraneComponent found",
         )
 
         # Check that there is a SolventComponent or ProteinMembraneComponent
@@ -1168,7 +1168,7 @@ class SepTopProtocol(gufe.Protocol):
         system_validation.require_components(
             systems=[stateA, stateB],
             component_types=components,
-            msg="No SolventComponent or ProteinMembraneComponent found"
+            msg="No SolventComponent or ProteinMembraneComponent found",
         )
 
     @staticmethod
