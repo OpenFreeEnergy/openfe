@@ -102,6 +102,7 @@ exclude_patterns = [
 ]
 
 autodoc_mock_imports = [
+    "cinnabar",
     "MDAnalysis",
     "matplotlib",
     "mdtraj",
@@ -113,6 +114,7 @@ autodoc_mock_imports = [
     "openmmforcefields",
     "psutil",
     "py3Dmol",
+    "zstandard",
 ]
 
 # Extensions for the myst parser
@@ -190,7 +192,7 @@ try:
     else:
         repo = git.Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch="2025.10.2",
+            branch="2025.12.04",
             to_path=example_notebooks_path,
         )
 except Exception as e:

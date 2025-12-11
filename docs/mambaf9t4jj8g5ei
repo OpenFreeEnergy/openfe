@@ -1,0 +1,5 @@
+git+https://github.com/OpenFreeEnergy/gufe@main
+git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.3.1
+git+https://github.com/OpenFreeEnergy/kartograf@main
+git+https://github.com/OpenFreeEnergy/konnektor@main
+git+https://github.com/OpenFreeEnergy/lomap@main
