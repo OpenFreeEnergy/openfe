@@ -19,7 +19,14 @@ from numpy.testing import assert_allclose
 from openff.toolkit import Molecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
-from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce, XmlSerializer, app
+from openmm import (
+    CustomNonbondedForce,
+    MonteCarloBarostat,
+    MonteCarloMembraneBarostat,
+    NonbondedForce,
+    XmlSerializer,
+    app,
+)
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openmmtools.multistate.multistatesampler import MultiStateSampler
@@ -952,6 +959,123 @@ def test_dry_run_complex(
         # Check we have the right number of atoms in the PDB
         pdb = mdt.load_pdb("hybrid_system.pdb")
         assert pdb.n_atoms == 2629
+
+
+def test_dry_run_membrane_complex(
+    a2a_protein_membrane_component,
+    a2a_ligands,
+    tmpdir,
+):
+    ligA = next(c for c in a2a_ligands if c.name == "4g")
+    ligB = next(c for c in a2a_ligands if c.name == "4h")
+
+    mapping = openfe.LigandAtomMapping(
+        componentA=ligA,
+        componentB=ligB,
+        componentA_to_componentB={
+            21: 21,
+            22: 22,
+            23: 23,
+            24: 24,
+            25: 25,
+            26: 26,
+            27: 27,
+            28: 28,
+            29: 29,
+            30: 30,
+            31: 31,
+            32: 32,
+            33: 33,
+            34: 34,
+            35: 35,
+            0: 0,
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+            10: 10,
+            11: 11,
+            12: 12,
+            13: 13,
+            14: 14,
+            15: 15,
+            16: 16,
+            17: 17,
+            18: 18,
+            19: 19,
+            20: 20,
+        },
+    )
+
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.protocol_repeats = 1
+    settings.thermo_settings.membrane = True
+    settings.engine_settings.compute_platform = "cpu"
+    settings.forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",
+        "amber/tip3p_standard.xml",
+        "amber/tip3p_HFE_multivalent.xml",
+        "amber/lipid17_merged.xml",
+        "amber/phosaa10.xml",
+    ]
+    settings.output_settings.output_indices = "protein or resname  UNK"
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=settings,
+    )
+
+    systemA = openfe.ChemicalSystem(
+        {"ligand": mapping.componentA, "protein": a2a_protein_membrane_component},
+        name=f"{mapping.componentA.name}_{a2a_protein_membrane_component.name}",
+    )
+    systemB = openfe.ChemicalSystem(
+        {"ligand": mapping.componentB, "protein": a2a_protein_membrane_component},
+        name=f"{mapping.componentB.name}_{a2a_protein_membrane_component.name}",
+    )
+    dag = protocol.create(
+        stateA=systemA,
+        stateB=systemB,
+        mapping=mapping,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+
+        assert isinstance(sampler, MultiStateSampler)
+        assert sampler.is_periodic
+        assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloMembraneBarostat)
+        assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
+
+        # Check we have the right number of atoms in the PDB
+        pdb = mdt.load_pdb("hybrid_system.pdb")
+        assert pdb.n_atoms == 4667
+        box = sampler._thermodynamic_states[0].system.getDefaultPeriodicBoxVectors()
+        vectors = from_openmm(box)  # convert to a Quantity array
+
+        # Extract box lengths in nanometers
+        width_x, width_y, width_z = [v[i].to("nanometer").m for i, v in enumerate(vectors)]
+
+        # Expected orthogonal box (axis-aligned)
+        expected_vectors = (
+            np.array(
+                [
+                    [width_x, 0, 0],
+                    [0, width_y, 0],
+                    [0, 0, width_z],
+                ]
+            )
+            * unit.nanometer
+        )
+
+        assert_allclose(
+            vectors, expected_vectors, atol=1e-5, err_msg=f"Box is not orthogonal:\n{vectors}"
+        )
 
 
 def test_lambda_schedule_default():

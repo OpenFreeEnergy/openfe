@@ -10,6 +10,7 @@ import click
 import gufe
 import pandas as pd
 
+from openfe import ProteinMembraneComponent
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
@@ -235,10 +236,10 @@ def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     component_types = [
         x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
     ]
+    if "gufe.components.proteincomponent" in component_types:
+        return "complex"
     if "gufe.components.solventcomponent" not in component_types:
         return "vacuum"
-    elif "gufe.components.proteincomponent" in component_types:
-        return "complex"
     else:
         return "solvent"
 
@@ -485,7 +486,7 @@ def _generate_raw(legs: dict, allow_partial=True) -> pd.DataFrame:
 
 def _check_legs_have_sufficient_repeats(legs):
     """Throw an error if all legs do not have 2 or more simulation repeat results"""
-
+    
     for leg in legs.values():
         for run_type, sim_results in leg.items():
             if len(sim_results) < 2:
