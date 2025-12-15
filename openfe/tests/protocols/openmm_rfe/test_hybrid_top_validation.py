@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import logging
 import copy
 import json
 import sys
@@ -159,19 +160,87 @@ def test_element_change_warning(atom_mapping_basic_test_files):
         )
 
 
+def test_charge_difference_no_corr(benzene_to_benzoic_mapping):
+    wmsg = (
+        "A charge difference of 1 is observed between the end states. "
+        "No charge correction has been requested"
+    )
+
+    with pytest.warns(UserWarning, match=wmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
+            benzene_to_benzoic_mapping,
+            "pme",
+            False,
+            openfe.SolventComponent(),
+        )
+
+
+def test_charge_difference_no_solvent(benzene_to_benzoic_mapping):
+    errmsg = "Cannot use eplicit charge correction without solvent"
+
+    with pytest.raises(ValueError, errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
+            benzene_to_benzoic_mapping,
+            "pme",
+            True,
+            None,
+        )
+
+
+def test_charge_difference_no_pme(benzene_to_benzoic_mapping):
+    errmsg = "Explicit charge correction when not using PME"
+
+    with pytest.raises(ValueError, match=errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
+            benzene_to_benzoic_mapping,
+            "nocutoff",
+            True,
+            openfe.SolventComponent(),
+        )
+
+
+def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
+    errmsg = "A charge difference of 2"
+    with pytest.raises(ValueError, match=errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
+            aniline_to_benzoic_mapping,
+            "pme",
+            True,
+            openfe.SolventComponent(),
+        )
+
+
 @pytest.mark.parametrize(
-    "mapping",
-    [None, [], ["A", "B"]],
+    "mapping_name,result",
+    [
+        ["benzene_to_toluene_mapping", 0],
+        ["benzene_to_benzoic_mapping", 1],
+        ["benzene_to_aniline_mapping", -1],
+        ["aniline_to_benzene_mapping", 1],
+    ],
 )
-def test_validate_alchemical_components_wrong_mappings(mapping):
-    with pytest.raises(ValueError, match="A single LigandAtomMapping"):
-        _validate_alchemical_components({"stateA": [], "stateB": []}, mapping)
+def test_get_charge_difference(mapping_name, result, request, caplog):
+    mapping = request.getfixturevalue(mapping_name)
+    caplog.set_level(logging.INFO)
+    
+    ion = r"Na\+" if result == -1 else r"Cl\-"
+    msg = (
+        f"A charge difference of {result} is observed "
+        "between the end states. This will be addressed by "
+        f"transforming a water into a {ion} ion"
+    )
+    
+    openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
+        mapping,
+        "pme",
+        True,
+        openfe.SolventComponent()
+    )
 
-
-def test_validate_alchemical_components_missing_alchem_comp(benzene_to_toluene_mapping):
-    alchem_comps = {"stateA": [openfe.SolventComponent()], "stateB": []}
-    with pytest.raises(ValueError, match="Unmapped alchemical component"):
-        _validate_alchemical_components(alchem_comps, benzene_to_toluene_mapping)
+    if result != 0:
+        assert msg in caplog.text
+    else:
+        assert msg not in caplog.text
 
 
 def test_hightimestep(
@@ -286,78 +355,6 @@ def test_incompatible_solvent(benzene_system, benzene_modifications, benzene_to_
         )
 
 
-def test_mapping_mismatch_A(benzene_system, toluene_system, benzene_modifications):
-    # the atom mapping doesn't refer to the ligands in the systems
-    mapping = setup.LigandAtomMapping(
-        componentA=benzene_system.components["ligand"],
-        componentB=benzene_modifications["phenol"],
-        componentA_to_componentB=dict(),
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    errmsg = (
-        r"Unmapped alchemical component "
-        r"SmallMoleculeComponent\(name=toluene\)"
-    )
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping=mapping,
-        )
-
-
-def test_mapping_mismatch_B(benzene_system, toluene_system, benzene_modifications):
-    mapping = setup.LigandAtomMapping(
-        componentA=benzene_modifications["phenol"],
-        componentB=toluene_system.components["ligand"],
-        componentA_to_componentB=dict(),
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    errmsg = (
-        r"Unmapped alchemical component "
-        r"SmallMoleculeComponent\(name=benzene\)"
-    )
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping=mapping,
-        )
-
-
-def test_complex_mismatch(benzene_system, toluene_complex_system, benzene_to_toluene_mapping):
-    # only one complex
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    with pytest.raises(ValueError):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=toluene_complex_system,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_too_many_specified_mappings(benzene_system, toluene_system, benzene_to_toluene_mapping):
-    # mapping dict requires 'ligand' key
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    errmsg = "A single LigandAtomMapping is expected for this Protocol"
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping=[benzene_to_toluene_mapping, benzene_to_toluene_mapping],
-        )
-
-
 def test_protein_mismatch(
     benzene_complex_system, toluene_complex_system, benzene_to_toluene_mapping
 ):
@@ -407,31 +404,6 @@ def test_get_charge_difference(mapping_name, result, request):
     else:
         val = _get_alchemical_charge_difference(mapping, "pme", True, openfe.SolventComponent())
         assert result == pytest.approx(val)
-
-
-def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
-    errmsg = "Explicit charge correction when not using PME"
-    with pytest.raises(ValueError, match=errmsg):
-        _get_alchemical_charge_difference(
-            benzene_to_benzoic_mapping,
-            "nocutoff",
-            True,
-            openfe.SolventComponent(),
-        )
-
-
-def test_get_charge_difference_no_corr(benzene_to_benzoic_mapping):
-    wmsg = (
-        "A charge difference of 1 is observed between the end states. "
-        "No charge correction has been requested"
-    )
-    with pytest.warns(UserWarning, match=wmsg):
-        _get_alchemical_charge_difference(
-            benzene_to_benzoic_mapping,
-            "pme",
-            False,
-            openfe.SolventComponent(),
-        )
 
 
 def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):

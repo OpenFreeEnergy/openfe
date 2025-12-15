@@ -608,6 +608,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             warnings.warn(wmsg)
             return
 
+        if solvent_component is None:
+            errmsg = "Cannot use eplicit charge correction without solvent"
+            raise ValueError(errmsg)
+
         # We implicitly check earlier that we have to have pme for a solvated
         # system, so we only need to check the nonbonded method here
         if nonbonded_method.lower() != "pme":
