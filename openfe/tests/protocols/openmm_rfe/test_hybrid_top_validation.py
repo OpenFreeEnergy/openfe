@@ -61,6 +61,51 @@ def test_invalid_protocol_repeats():
         settings.protocol_repeats = -1
 
 
+@pytest.mark.parametrize('state', ['A', 'B'])
+def test_endstate_two_alchemcomp_stateA(state, benzene_modifications):
+    first_state = openfe.ChemicalSystem({
+        'ligandA': benzene_modifications['benzene'],
+        'ligandB': benzene_modifications['toluene'],
+        'solvent': openfe.SolventComponent(),
+    })
+    other_state = openfe.ChemicalSystem({
+        'ligandC': benzene_modifications['phenol'],
+        'solvent': openfe.SolventComponent(),
+    })
+
+    if state == 'A':
+        args = (first_state, other_state)
+    else:
+        args = (other_state, first_state)
+
+    with pytest.raises(ValueError, match="Only one alchemical component"):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_endstates(
+            *args
+        )
+
+@pytest.mark.parametrize('state', ['A', 'B'])
+def test_endstates_not_smc(state, benzene_modifications):
+    first_state = openfe.ChemicalSystem({
+        'ligand': benzene_modifications['benzene'],
+        'foo': openfe.SolventComponent(),
+    })
+    other_state = openfe.ChemicalSystem({
+        'ligand': benzene_modifications['benzene'],
+        'foo': benzene_modifications['toluene'],
+    })
+
+    if state == 'A':
+        args = (first_state, other_state)
+    else:
+        args = (other_state, first_state)
+
+    errmsg = "only SmallMoleculeComponents transformations"
+    with pytest.raises(ValueError, match=errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_endstates(
+            *args
+        )
+
+
 @pytest.mark.parametrize(
     "mapping",
     [None, [], ["A", "B"]],
