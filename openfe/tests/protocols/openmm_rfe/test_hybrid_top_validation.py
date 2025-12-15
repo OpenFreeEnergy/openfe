@@ -106,6 +106,59 @@ def test_endstates_not_smc(state, benzene_modifications):
         )
 
 
+def test_validate_mapping_none_mapping():
+    errmsg = "A single LigandAtomMapping is expected"
+    with pytest.raises(ValueError, match=errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_mapping(None, None)
+
+
+def test_validate_mapping_multi_mapping(benzene_to_toluene_mapping):
+    errmsg = "A single LigandAtomMapping is expected"
+    with pytest.raises(ValueError, match=errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_mapping(
+            [benzene_to_toluene_mapping] * 2,
+            None
+        )
+
+
+@pytest.mark.parametrize('state', ['A', 'B'])
+def test_validate_mapping_alchem_not_in(state, benzene_to_toluene_mapping):
+    errmsg = f"not in alchemical components of state{state}"
+
+    if state == "A":
+        alchem_comps = {"stateA": [], "stateB": [benzene_to_toluene_mapping.componentB]}
+    else:
+        alchem_comps = {"stateA": [benzene_to_toluene_mapping.componentA], "stateB": []}
+
+    with pytest.raises(ValueError, match=errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_mapping(
+            [benzene_to_toluene_mapping],
+            alchem_comps,
+        )
+
+
+def test_element_change_warning(atom_mapping_basic_test_files):
+    # check a mapping with element change gets rejected early
+    l1 = atom_mapping_basic_test_files["2-methylnaphthalene"]
+    l2 = atom_mapping_basic_test_files["2-naftanol"]
+
+    # We use the 'old' lomap defaults because the
+    # basic test files inputs we use aren't fully aligned
+    mapper = setup.LomapAtomMapper(
+        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
+    )
+
+    mapping = next(mapper.suggest_mappings(l1, l2))
+
+    alchem_comps = {"stateA": [l1], "stateB": [l2]}
+
+    with pytest.warns(UserWarning, match="Element change"):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_mapping(
+            [mapping],
+            alchem_comps,
+        )
+
+
 @pytest.mark.parametrize(
     "mapping",
     [None, [], ["A", "B"]],
@@ -327,37 +380,6 @@ def test_protein_mismatch(
             stateA=benzene_complex_system,
             stateB=alt_toluene_complex_system,
             mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_element_change_warning(atom_mapping_basic_test_files):
-    # check a mapping with element change gets rejected early
-    l1 = atom_mapping_basic_test_files["2-methylnaphthalene"]
-    l2 = atom_mapping_basic_test_files["2-naftanol"]
-
-    # We use the 'old' lomap defaults because the
-    # basic test files inputs we use aren't fully aligned
-    mapper = setup.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
-    )
-
-    mapping = next(mapper.suggest_mappings(l1, l2))
-
-    sys1 = openfe.ChemicalSystem(
-        {"ligand": l1, "solvent": openfe.SolventComponent()},
-    )
-    sys2 = openfe.ChemicalSystem(
-        {"ligand": l2, "solvent": openfe.SolventComponent()},
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    with pytest.warns(UserWarning, match="Element change"):
-        _ = p.create(
-            stateA=sys1,
-            stateB=sys2,
-            mapping=mapping,
         )
 
 
