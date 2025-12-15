@@ -9,9 +9,6 @@ We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as fa
 - OpenMM 8.0, 8.1.2, 8.2.0 - **we do not yet support OpenMM v8.3.0**
 - ``OpenEye Toolkits`` is not yet compatible with Python 3.13, so **openfe** cannot use openeye functionality with Python 3.13.
 
-Note that following SPEC0 means that Python 3.10 support is no longer actively maintained as of ``openfe 1.6.0``.
-Additionally, if you want to use NAGL to assign partial charges, you must use ``python >= 3.11``.
-
 When you install **openfe** through any of the methods described below, you will install both the core library and the command line interface (CLI).
 
 Installation with ``micromamba`` (recommended)

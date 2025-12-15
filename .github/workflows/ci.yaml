@@ -36,17 +36,14 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
+        openeye: ["no"]
         python-version:
           - "3.11"
           - "3.12"
           - "3.13"
-        openeye: ["no"]
-        include: # NOTE: openeye does not yet support 3.13.
+        include:
           - os: "ubuntu-latest"
-            python-version: "3.11"
-            openeye: "yes"
-          - os: "macos-latest"
-            python-version: "3.12"
+            python-version: "3.13"
             openeye: "yes"
 
     env:

@@ -1971,6 +1971,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             omm_system_AB,
             atom_indices_AB_A,
             atom_indices_AB_B,
+            settings["alchemical_settings"],
         )
 
         # 10. Apply Restraints
@@ -2254,6 +2255,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
             omm_system_AB,
             atom_indices_AB_A,
             atom_indices_AB_B,
+            settings["alchemical_settings"],
         )
 
         # 8. Apply Restraints
