@@ -11,7 +11,7 @@
 # {GUFE_VERSION}
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem.AllChem import Compute2DCoords
 
 from openfe import LigandAtomMapping, LigandNetwork, SmallMoleculeComponent
 
@@ -27,7 +27,7 @@ writer.close()
 
 def mol_from_smiles(smiles: str) -> Chem.Mol:
     m = Chem.MolFromSmiles(smiles)
-    AllChem.Compute2DCoords(m)
+    Compute2DCoords(m)
 
     return m
 
