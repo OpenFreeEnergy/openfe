@@ -42,7 +42,7 @@ include-package-data = true
 find = { namespaces = false }
 
 [tool.setuptools.package-data]
-openfe = [ '"./openfe/tests/data/lomap_basic/toluene.mol2"' ]
+openfe = [ '"./src/openfe/tests/data/lomap_basic/toluene.mol2"' ]
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0"
@@ -71,9 +71,9 @@ lint.isort.known-first-party = [ "openfe" ]
 
 [tool.coverage.run]
 omit = [
-  "openfe/due.py",
-  "*/tests/dev/*py",
-  "*/tests/protocols/test_openmm_rfe_slow.py",
+  "src/openfe/due.py",
+  "src/*/tests/dev/*py",
+  "src/*/tests/protocols/test_openmm_rfe_slow.py",
 ]
 
 [tool.coverage.report]
