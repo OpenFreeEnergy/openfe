@@ -30,7 +30,7 @@ def mapper_args():
 
 
 @pytest.fixture
-def mols(molA_args, molB_args):
+def mols_AB(molA_args, molB_args):
     return MOL.get(molA_args[1]), MOL.get(molB_args[1])
 
 
@@ -89,8 +89,8 @@ def test_atommapping_missing_mapper(molA_args, molB_args):
 
 
 @pytest.mark.parametrize("n_mappings", [0, 1, 2])
-def test_generate_mapping(n_mappings, mols):
-    molA, molB = mols
+def test_generate_mapping(n_mappings, mols_AB):
+    molA, molB = mols_AB
     mappings = [
         LigandAtomMapping(molA, molB, {i: i for i in range(7)}),
         LigandAtomMapping(molA, molB, {i: (i + 1) % 7 for i in range(7)}),
@@ -104,8 +104,8 @@ def test_generate_mapping(n_mappings, mols):
             generate_mapping(mapper, molA, molB)
 
 
-def test_atommapping_print_dict_main(capsys, mols):
-    molA, molB = mols
+def test_atommapping_print_dict_main(capsys, mols_AB):
+    molA, molB = mols_AB
     mapper = LomapAtomMapper
     mapping = LigandAtomMapping(molA, molB, {i: i for i in range(7)})
     with mock.patch("openfecli.commands.atommapping.generate_mapping", mock.Mock(return_value=mapping)):  # fmt: skip
@@ -114,14 +114,14 @@ def test_atommapping_print_dict_main(capsys, mols):
         assert captured.out == str(mapping.componentA_to_componentB) + "\n"
 
 
-def test_atommapping_visualize_main(mols, tmpdir):
-    molA, molB = mols
+def test_atommapping_visualize_main(mols_AB, tmpdir):
+    molA, molB = mols_AB
     mapper = LomapAtomMapper
     pytest.skip()  # TODO: probably with a smoke test
 
 
-def test_atommapping_visualize_main_bad_extension(mols, tmpdir):
-    molA, molB = mols
+def test_atommapping_visualize_main_bad_extension(mols_AB, tmpdir):
+    molA, molB = mols_AB
     mapper = LomapAtomMapper
     mapping = LigandAtomMapping(molA, molB, {i: i for i in range(7)})
     with mock.patch("openfecli.commands.atommapping.generate_mapping", mock.Mock(return_value=mapping)):  # fmt: skip
