@@ -38,8 +38,9 @@ scripts.openfe = "openfecli.cli:main"
 zip-safe = false
 include-package-data = true
 
-[tool.setuptools.packages]
-find = { namespaces = false }
+[tool.setuptools.packages.find]
+where = [ "src" ]
+namespaces = false
 
 [tool.setuptools.package-data]
 openfe = [ '"./src/openfe/tests/data/lomap_basic/toluene.mol2"' ]
