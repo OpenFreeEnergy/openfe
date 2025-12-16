@@ -486,7 +486,7 @@ def _generate_raw(legs: dict, allow_partial=True) -> pd.DataFrame:
 
 def _check_legs_have_sufficient_repeats(legs):
     """Throw an error if all legs do not have 2 or more simulation repeat results"""
-    
+
     for leg in legs.values():
         for run_type, sim_results in leg.items():
             if len(sim_results) < 2:
