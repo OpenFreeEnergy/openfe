@@ -21,7 +21,7 @@ import nbformat
 import nbsphinx
 from packaging.version import parse
 
-sys.path.insert(0, os.path.abspath("../src/"))
+sys.path.insert(0, os.path.abspath("../"))
 
 
 os.environ["SPHINX"] = "True"
