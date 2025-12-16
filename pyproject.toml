@@ -86,6 +86,6 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-files = "openfe"
+files = "src/openfe"          # TODO: add src/openfecli
 ignore_missing_imports = true
 warn_unused_ignores = true
