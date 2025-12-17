@@ -25,6 +25,8 @@ class WarehouseStores(TypedDict):
     ----------
     setup : ExternalStorage
         Storage location for setup-related objects and configurations.
+    result : ExternalStorage
+        Storage location for result-related object.
 
     Notes
     -----
