@@ -32,7 +32,7 @@ class WarehouseStores(TypedDict):
     """
 
     setup: ExternalStorage
-    # We will add a result and task store here in the future.
+    result: ExternalStorage
 
 
 class WarehouseBaseClass:
@@ -63,7 +63,7 @@ class WarehouseBaseClass:
         # probably should include repr of external store, too
         return f"{self.__class__.__name__}({self.stores})"
 
-    def delete(self, store_name: Literal["setup"], location: str):
+    def delete(self, store_name: Literal["setup", "result"], location: str):
         """Delete an object from a specific store.
 
         Parameters
@@ -93,6 +93,31 @@ class WarehouseBaseClass:
 
     def load_setup_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
         """Load a GufeTokenizable object from the setup store.
+
+        Parameters
+        ----------
+        obj : GufeKey
+            The key of the object to load.
+
+        Returns
+        -------
+        GufeTokenizable
+            The loaded object.
+        """
+        return self._load_gufe_tokenizable(gufe_key=obj)
+
+    def store_result_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
+        """Store a GufeTokenizable object from the result store.
+
+        Parameters
+        ----------
+        obj : GufeKey
+            The key of the object to store.
+        """
+        return self._store_gufe_tokenizable("result", obj)
+
+    def load_result_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
+        """Load a GufeTokenizable object from the result store.
 
         Parameters
         ----------
@@ -144,15 +169,15 @@ class WarehouseBaseClass:
                 return self.stores[name]
         raise ValueError(f"GufeKey {key} is not stored")
 
-    def _store_gufe_tokenizable(self, store_name: Literal["setup"], obj: GufeTokenizable):
+    def _store_gufe_tokenizable(self, store_name: Literal["setup", "result"], obj: GufeTokenizable):
         """Store a GufeTokenizable object with deduplication.
 
-        Parameters
-        ----------
-        store_name : Literal["setup"]
-            Name of the store to store the object in.
-        obj : GufeTokenizable
-            The object to store.
+            Parameters
+            ----------
+            store_name : Literal["setup"]
+                Name of the store to store the object in.
+            obj : GufeTokenizable
+                The object to store.
 
         Notes
         -----
@@ -276,7 +301,6 @@ class FileSystemWarehouse(WarehouseBaseClass):
 
     def __init__(self, root_dir: str = "warehouse"):
         setup_store = FileStorage(f"{root_dir}/setup")
-        # When we add a result store it will look like this
-        # result_store = FileStorage(f"{root_dir}/results")
-        stores = WarehouseStores(setup=setup_store)
+        result_store = FileStorage(f"{root_dir}/result")
+        stores = WarehouseStores(setup=setup_store, result=result_store)
         super().__init__(stores)
