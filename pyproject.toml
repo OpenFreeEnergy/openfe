@@ -89,6 +89,7 @@ exclude_lines = [
 files = "openfe"
 ignore_missing_imports = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [ "rdkit" ]
 disable_error_code = [ "attr-defined" ]
-# [[tool.mypy.overrides]]
-# module = "rdkit.Chem.AllChem.*"
