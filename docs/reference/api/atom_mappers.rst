@@ -21,6 +21,7 @@ Tools for mapping atoms in one molecule to those in another. Used to generate ef
     :nosignatures:
     :toctree: generated/
 
+    KartografAtomMapper
     LomapAtomMapper
     PersesAtomMapper
 
