@@ -18,7 +18,7 @@ from openff.toolkit import ForceField
 from openff.units import unit as offunit
 from openmm import unit as ommunit
 from rdkit import Chem
-from rdkit.Chem.AllChem import Compute2DCoords
+from rdkit.Chem import AllChem
 
 import openfe
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
@@ -117,7 +117,7 @@ def pytest_configure(config):
 
 def mol_from_smiles(smiles: str) -> Chem.Mol:
     m = Chem.MolFromSmiles(smiles)
-    Compute2DCoords(m)
+    AllChem.Compute2DCoords(m)
 
     return m
 
