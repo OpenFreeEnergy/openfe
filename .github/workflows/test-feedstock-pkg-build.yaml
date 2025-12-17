@@ -46,7 +46,7 @@ jobs:
 
       # TODO just checkout the repo where we need it?
       - name: Copy source code to recipe folder
-        run: cp -r openfe/src openfe-feedstock/recipe/openfe_source
+        run: cp -r openfe openfe-feedstock/recipe/openfe_source
       
       - name: Modify feedstock to use local path
         run: |
