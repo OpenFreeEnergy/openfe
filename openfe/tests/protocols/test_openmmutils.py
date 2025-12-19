@@ -961,6 +961,19 @@ class TestOFFPartialCharge:
             rtol=1e-4,
         )
 
+    @pytest.mark.skipif(not HAS_OPENEYE, reason="OEToolkit is not available")
+    def test_nagl_oetoolkit_not_openeye_error(self):
+        errmsg = "OEToolkit is installed but not used as the toolkit registry."
+        with pytest.raises(ValueError, match=errmsg):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method="nagl",
+                toolkit_backend="rdkit",
+                generate_n_conformers=None,
+                nagl_model=None,
+            )
+
     def test_nagl_import_error(self, monkeypatch, uncharged_mol):
         monkeypatch.setattr(
             sys.modules["openfe.protocols.openmm_utils.charge_generation"],
