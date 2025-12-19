@@ -273,14 +273,25 @@ class WarehouseBaseClass:
 
     @property
     def setup_store(self):
-        """Get the setup store.
+        """Get the setup store
 
         Returns
         -------
         ExternalStorage
-            The setup storage location.
+            The setup storage location
         """
         return self.stores["setup"]
+
+    @property
+    def result_store(self):
+        """Get the result store.
+
+        Returns
+        -------
+        ExternalStorage
+            The result storage location
+        """
+        return self.stores["result"]
 
 
 class FileSystemWarehouse(WarehouseBaseClass):
