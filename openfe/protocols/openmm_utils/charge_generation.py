@@ -197,11 +197,14 @@ def assign_offmol_am1bcc_charges(
     # to avoid issues like:
     # https://github.com/openforcefield/openff-nagl/issues/69
     with toolkit_registry_manager(toolkit_registry):
-        offmol.assign_partial_charges(
-            partial_charge_method=partial_charge_method,
-            use_conformers=offmol.conformers,
-            toolkit_registry=toolkit_registry,
-        )
+        with warnings.catch_warnings():
+            supp_msg = "`NAGLToolkitWrapper.assign_partial_charges` was passed optional argument `use_conformers`"
+            warnings.filterwarnings("ignore", message=supp_msg)
+            offmol.assign_partial_charges(
+                partial_charge_method=partial_charge_method,
+                use_conformers=offmol.conformers,
+                toolkit_registry=toolkit_registry,
+            )
 
 
 def _generate_offmol_conformers(
