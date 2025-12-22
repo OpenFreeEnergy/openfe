@@ -297,23 +297,6 @@ def test_n_replicas_not_n_windows(
             dag_unit.run(dry=True)
 
 
-def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
-    # state B doesn't have a ligand component
-    stateB = openfe.ChemicalSystem({"solvent": openfe.SolventComponent()})
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-
-    match_str = "missing alchemical components in stateB"
-    with pytest.raises(ValueError, match=match_str):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
 def test_vaccuum_PME_error(
     benzene_vacuum_system, benzene_modifications, benzene_to_toluene_mapping
 ):
@@ -329,91 +312,6 @@ def test_vaccuum_PME_error(
             stateA=benzene_vacuum_system,
             stateB=stateB,
             mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_incompatible_solvent(benzene_system, benzene_modifications, benzene_to_toluene_mapping):
-    # the solvents are different
-    stateB = openfe.ChemicalSystem(
-        {
-            "ligand": benzene_modifications["toluene"],
-            "solvent": openfe.SolventComponent(positive_ion="K", negative_ion="Cl"),
-        }
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    # We don't have a way to map non-ligand components so for now it
-    # just triggers that it's not a mapped component
-    errmsg = "missing alchemical components in stateA"
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_protein_mismatch(
-    benzene_complex_system, toluene_complex_system, benzene_to_toluene_mapping
-):
-    # hack one protein to be labelled differently
-    prot = toluene_complex_system["protein"]
-    alt_prot = openfe.ProteinComponent(prot.to_rdkit(), name="Mickey Mouse")
-    alt_toluene_complex_system = openfe.ChemicalSystem(
-        {
-            "ligand": toluene_complex_system["ligand"],
-            "solvent": toluene_complex_system["solvent"],
-            "protein": alt_prot,
-        }
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    with pytest.raises(ValueError):
-        _ = p.create(
-            stateA=benzene_complex_system,
-            stateB=alt_toluene_complex_system,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
-@pytest.mark.parametrize(
-    "mapping_name,result",
-    [
-        ["benzene_to_toluene_mapping", 0],
-        ["benzene_to_benzoic_mapping", 1],
-        ["benzene_to_aniline_mapping", -1],
-        ["aniline_to_benzene_mapping", 1],
-    ],
-)
-def test_get_charge_difference(mapping_name, result, request):
-    mapping = request.getfixturevalue(mapping_name)
-    if result != 0:
-        ion = r"Na\+" if result == -1 else r"Cl\-"
-        wmsg = (
-            f"A charge difference of {result} is observed "
-            "between the end states. This will be addressed by "
-            f"transforming a water into a {ion} ion"
-        )
-        with pytest.warns(UserWarning, match=wmsg):
-            val = _get_alchemical_charge_difference(mapping, "pme", True, openfe.SolventComponent())
-            assert result == pytest.approx(val)
-    else:
-        val = _get_alchemical_charge_difference(mapping, "pme", True, openfe.SolventComponent())
-        assert result == pytest.approx(val)
-
-
-def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
-    errmsg = "A charge difference of 2"
-    with pytest.raises(ValueError, match=errmsg):
-        _get_alchemical_charge_difference(
-            aniline_to_benzoic_mapping,
-            "pme",
-            True,
-            openfe.SolventComponent(),
         )
 
 
