@@ -1601,7 +1601,7 @@ def tyk2_xml(tmp_path_factory):
 
     dryrun = pu.run(dry=True, shared_basepath=tmp)
 
-    system = dryrun["debug"]["sampler"]._hybrid_factory.hybrid_system
+    system = dryrun["debug"]["sampler"]._hybrid_system
 
     return ET.fromstring(XmlSerializer.serialize(system))
 
@@ -2225,8 +2225,8 @@ def test_dry_run_complex_alchemwater_totcharge(
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)["debug"]["sampler"]
-        htf = sampler._factory
+        debug = unit.run(dry=True)["debug"]
+        htf = debug["hybrid_factory"]
         _assert_total_charge(htf.hybrid_system, htf._atom_classes, chgA, chgB)
 
         assert len(htf._atom_classes["core_atoms"]) == core_atoms
