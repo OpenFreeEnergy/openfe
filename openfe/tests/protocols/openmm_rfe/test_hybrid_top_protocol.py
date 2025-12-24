@@ -2156,8 +2156,8 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, 
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)["debug"]["sampler"]
-        htf = sampler._factory
+        debug = unit.run(dry=True)["debug"]
+        htf = debug["hybrid_factory"]
         _assert_total_charge(htf.hybrid_system, htf._atom_classes, 0, 0)
 
         assert len(htf._atom_classes["core_atoms"]) == 14
