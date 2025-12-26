@@ -18,7 +18,7 @@ from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
 from openff.toolkit import Molecule
-from openff.units import unit
+from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce, XmlSerializer, app
 from openmm import unit as omm_unit
@@ -138,6 +138,169 @@ def test_validate_mapping_alchem_not_in(state, benzene_to_toluene_mapping):
         )
 
 
+def test_vaccuum_PME_error(
+    benzene_vacuum_system,
+    toluene_vacuum_system,
+    benzene_to_toluene_mapping,
+    solv_settings
+):
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+
+    errmsg = "PME cannot be used for vacuum transform"
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+        )
+
+
+def test_solvent_nocutoff_error(
+    benzene_system,
+    toluene_system,
+    benzene_to_toluene_mapping,
+    vac_settings,
+):
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    errmsg = "nocutoff cannot be used for solvent transformation"
+
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_system,
+            stateB=toluene_system,
+            mapping=benzene_to_toluene_mapping,
+        )
+
+
+def test_nonwater_solvent_error(
+    benzene_modifications,
+    benzene_to_toluene_mapping,
+    solv_settings,
+):
+    solvent = openfe.SolventComponent(smiles='C')
+    stateA = openfe.ChemicalSystem(
+        {
+            'ligand': benzene_modifications['benzene'],
+            'solvent': solvent,
+        }
+    )
+
+    stateB = openfe.ChemicalSystem(
+        {
+            'ligand': benzene_modifications['toluene'],
+            'solvent': solvent
+        }
+    )
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+
+    errmsg = "Non water solvent is not currently supported"
+
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=benzene_to_toluene_mapping,
+        )
+
+
+def test_too_many_solv_comps_error(
+    benzene_modifications,
+    benzene_to_toluene_mapping,
+    solv_settings,
+):
+    stateA = openfe.ChemicalSystem(
+        {
+            'ligand': benzene_modifications['benzene'],
+            'solvent!': openfe.SolventComponent(neutralize=True),
+            'solvent2': openfe.SolventComponent(neutralize=False),
+        }
+    )
+
+    stateB = openfe.ChemicalSystem(
+        {
+            'ligand': benzene_modifications['toluene'],
+            'solvent!': openfe.SolventComponent(neutralize=True),
+            'solvent2': openfe.SolventComponent(neutralize=False),
+        }
+    )
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+
+    errmsg = "Multiple SolventComponent found, only one is supported"
+
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=benzene_to_toluene_mapping,
+        )
+
+
+def test_bad_solv_settings(
+    benzene_system,
+    toluene_system,
+    benzene_to_toluene_mapping,
+    solv_settings,
+):
+    """
+    Test a case where the solvent settings would be wrong.
+    Not doing every cases since those are covered under
+    ``test_openmmutils.py``.
+    """
+    solv_settings.solvation_settings.solvent_padding = 1.2 * offunit.nanometer
+    solv_settings.solvation_settings.number_of_solvent_molecules = 20
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+
+    errmsg = "Only one of solvent_padding, number_of_solvent_molecules,"
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_system,
+            stateB=toluene_system,
+            mapping=benzene_to_toluene_mapping
+        )
+
+
+def test_too_many_prot_comps_error(
+    benzene_modifications,
+    benzene_to_toluene_mapping,
+    T4_protein_component,
+    eg5_protein,
+    solv_settings,
+):
+
+    stateA = openfe.ChemicalSystem(
+        {
+            'ligand': benzene_modifications['benzene'],
+            'solvent': openfe.SolventComponent(),
+            'protein1': T4_protein_component,
+            'protein2': eg5_protein,
+        }
+    )
+
+    stateB = openfe.ChemicalSystem(
+        {
+            'ligand': benzene_modifications['toluene'],
+            'solvent': openfe.SolventComponent(),
+            'protein1': T4_protein_component,
+            'protein2': eg5_protein,
+        }
+    )
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+
+    errmsg = "Multiple ProteinComponent found, only one is supported"
+
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=benzene_to_toluene_mapping,
+        )
+
+
 def test_element_change_warning(atom_mapping_basic_test_files):
     # check a mapping with element change gets rejected early
     l1 = atom_mapping_basic_test_files["2-methylnaphthalene"]
@@ -248,26 +411,164 @@ def test_hightimestep(
     toluene_vacuum_system,
     benzene_to_toluene_mapping,
     vac_settings,
-    tmpdir,
 ):
     vac_settings.forcefield_settings.hydrogen_mass = 1.0
 
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=vac_settings,
-    )
-
-    dag = p.create(
-        stateA=benzene_vacuum_system,
-        stateB=toluene_vacuum_system,
-        mapping=benzene_to_toluene_mapping,
-    )
-    dag_unit = list(dag.protocol_units)[0]
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
 
     errmsg = "too large for hydrogen mass"
-    with tmpdir.as_cwd():
-        with pytest.raises(ValueError, match=errmsg):
-            dag_unit.run(dry=True)
 
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+            extends=None
+        )
+
+
+def test_time_per_iteration_divmod(
+    benzene_vacuum_system,
+    toluene_vacuum_system,
+    benzene_to_toluene_mapping,
+    vac_settings,
+):
+    vac_settings.simulation_settings.time_per_iteration = 10 * offunit.ps
+    vac_settings.integrator_settings.timestep = 4 * offunit.ps
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    errmsg = "does not evenly divide by the timestep"
+
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+            extends=None
+        )
+
+
+@pytest.mark.parametrize(
+    "attribute", ["equilibration_length", "production_length"]
+)
+def test_simsteps_not_timestep_divisible(
+    attribute,
+    benzene_vacuum_system,
+    toluene_vacuum_system,
+    benzene_to_toluene_mapping,
+    vac_settings,
+):
+    setattr(vac_settings.simulation_settings, attribute, 102 * offunit.fs)
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    errmsg = "Simulation time not divisible by timestep"
+
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+            extends=None
+        )
+
+
+@pytest.mark.parametrize(
+    "attribute", ["equilibration_length", "production_length"]
+)
+def test_simsteps_not_mcstep_divisible(
+    attribute,
+    benzene_vacuum_system,
+    toluene_vacuum_system,
+    benzene_to_toluene_mapping,
+    vac_settings,
+):
+    setattr(vac_settings.simulation_settings, attribute, 102 * offunit.ps)
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    errmsg = (
+        "should contain a number of steps divisible by the number of "
+        "integrator timesteps"
+    )
+
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+            extends=None
+        )
+
+
+def test_checkpoint_interval_not_divisible_time_per_iter(
+    benzene_vacuum_system,
+    toluene_vacuum_system,
+    benzene_to_toluene_mapping,
+    vac_settings,
+):
+    vac_settings.output_settings.checkpoint_interval = 4 * offunit.ps
+    vac_settings.simulation_settings.time_per_iteration = 2.5 * offunit.ps
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    errmsg = "does not evenly divide by the amount of time per state MCMC"
+
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+            extends=None
+        )
+
+
+@pytest.mark.parametrize(
+    "attribute",
+    ["positions_write_frequency", "velocities_write_frequency"]
+)
+def test_pos_vel_write_frequency_not_divisible(
+    benzene_vacuum_system,
+    toluene_vacuum_system,
+    benzene_to_toluene_mapping,
+    attribute,
+    vac_settings,
+):
+    setattr(vac_settings.output_settings, attribute, 100.1 * offunit.picosecond)
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    errmsg = f"The output settings' {attribute}"
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+            extends=None
+        )
+
+
+@pytest.mark.parametrize(
+    "attribute",
+    ["real_time_analysis_interval", "real_time_analysis_interval"]
+)
+def test_pos_vel_write_frequency_not_divisible(
+    benzene_vacuum_system,
+    toluene_vacuum_system,
+    benzene_to_toluene_mapping,
+    attribute,
+    vac_settings,
+):
+    setattr(vac_settings.simulation_settings, attribute, 100.1 * offunit.picosecond)
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    errmsg = f"The {attribute}"
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+            extends=None
+        )
 
 def test_n_replicas_not_n_windows(
     benzene_vacuum_system,
@@ -278,51 +579,15 @@ def test_n_replicas_not_n_windows(
 ):
     # For PR #125 we pin such that the number of lambda windows
     # equals the numbers of replicas used - TODO: remove limitation
-    # default lambda windows is 11
     vac_settings.simulation_settings.n_replicas = 13
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
 
-    errmsg = "Number of replicas 13 does not equal the number of lambda windows 11"
+    errmsg = "Number of replicas in ``simulation_settings``:"
 
-    with tmpdir.as_cwd():
-        with pytest.raises(ValueError, match=errmsg):
-            p = openmm_rfe.RelativeHybridTopologyProtocol(
-                settings=vac_settings,
-            )
-            dag = p.create(
-                stateA=benzene_vacuum_system,
-                stateB=toluene_vacuum_system,
-                mapping=benzene_to_toluene_mapping,
-            )
-            dag_unit = list(dag.protocol_units)[0]
-            dag_unit.run(dry=True)
-
-
-def test_vaccuum_PME_error(
-    benzene_vacuum_system, benzene_modifications, benzene_to_toluene_mapping
-):
-    # state B doesn't have a solvent component (i.e. its vacuum)
-    stateB = openfe.ChemicalSystem({"ligand": benzene_modifications["toluene"]})
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    errmsg = "PME cannot be used for vacuum transform"
     with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
+        p.validate(
             stateA=benzene_vacuum_system,
-            stateB=stateB,
+            stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_get_alchemical_waters_no_waters(
-    benzene_solvent_openmm_system,
-):
-    system, topology, positions = benzene_solvent_openmm_system
-
-    errmsg = "There are no waters"
-
-    with pytest.raises(ValueError, match=errmsg):
-        topologyhelpers.get_alchemical_waters(
-            topology, positions, charge_difference=1, distance_cutoff=3.0 * unit.nanometer
+            extends=None
         )

@@ -948,63 +948,6 @@ def test_lambda_schedule(windows):
     assert len(lambdas.lambda_schedule) == windows
 
 
-def test_hightimestep(
-    benzene_vacuum_system,
-    toluene_vacuum_system,
-    benzene_to_toluene_mapping,
-    vac_settings,
-    tmpdir,
-):
-    vac_settings.forcefield_settings.hydrogen_mass = 1.0
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=vac_settings,
-    )
-
-    dag = p.create(
-        stateA=benzene_vacuum_system,
-        stateB=toluene_vacuum_system,
-        mapping=benzene_to_toluene_mapping,
-    )
-    dag_unit = list(dag.protocol_units)[0]
-
-    errmsg = "too large for hydrogen mass"
-    with tmpdir.as_cwd():
-        with pytest.raises(ValueError, match=errmsg):
-            dag_unit.run(dry=True)
-
-
-def test_element_change_warning(atom_mapping_basic_test_files):
-    # check a mapping with element change gets rejected early
-    l1 = atom_mapping_basic_test_files["2-methylnaphthalene"]
-    l2 = atom_mapping_basic_test_files["2-naftanol"]
-
-    # We use the 'old' lomap defaults because the
-    # basic test files inputs we use aren't fully aligned
-    mapper = setup.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
-    )
-
-    mapping = next(mapper.suggest_mappings(l1, l2))
-
-    sys1 = openfe.ChemicalSystem(
-        {"ligand": l1, "solvent": openfe.SolventComponent()},
-    )
-    sys2 = openfe.ChemicalSystem(
-        {"ligand": l2, "solvent": openfe.SolventComponent()},
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    with pytest.warns(UserWarning, match="Element change"):
-        _ = p.create(
-            stateA=sys1,
-            stateB=sys2,
-            mapping=mapping,
-        )
-
-
 def test_ligand_overlap_warning(
     benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmpdir
 ):
@@ -2023,40 +1966,3 @@ def test_dry_run_vacuum_write_frequency(
             assert reporter.velocity_interval == velocities_write_frequency.m
         else:
             assert reporter.velocity_interval == 0
-
-
-@pytest.mark.parametrize(
-    "positions_write_frequency,velocities_write_frequency",
-    [
-        [100.1 * unit.picosecond, 100 * unit.picosecond],
-        [100 * unit.picosecond, 100.1 * unit.picosecond],
-    ],
-)
-def test_pos_write_frequency_not_divisible(
-    benzene_vacuum_system,
-    toluene_vacuum_system,
-    benzene_to_toluene_mapping,
-    positions_write_frequency,
-    velocities_write_frequency,
-    tmpdir,
-    vac_settings,
-):
-    vac_settings.output_settings.positions_write_frequency = positions_write_frequency
-    vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
-
-    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=vac_settings,
-    )
-
-    # create DAG from protocol and take first (and only) work unit from within
-    dag = protocol.create(
-        stateA=benzene_vacuum_system,
-        stateB=toluene_vacuum_system,
-        mapping=benzene_to_toluene_mapping,
-    )
-    dag_unit = list(dag.protocol_units)[0]
-
-    with tmpdir.as_cwd():
-        errmsg = "The output settings' "
-        with pytest.raises(ValueError, match=errmsg):
-            dag_unit.run(dry=True)["debug"]["sampler"]

@@ -690,7 +690,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             _ = settings_validation.divmod_time_and_check(
                 numerator=output_settings.positions_write_frequency,
                 denominator=simulation_settings.time_per_iteration,
-                numerator_name="output settings' position_write_frequency",
+                numerator_name="output settings' positions_write_frequency",
                 denominator_name="sampler settings' time_per_iteration",
             )
 
@@ -698,7 +698,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             _ = settings_validation.divmod_time_and_check(
                 numerator=output_settings.velocities_write_frequency,
                 denominator=simulation_settings.time_per_iteration,
-                numerator_name="output settings' velocity_write_frequency",
+                numerator_name="output settings' velocities_write_frequency",
                 denominator_name="sampler settings' time_per_iteration",
             )
 
@@ -768,8 +768,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # PR #125 temporarily pin lambda schedule spacing to n_replicas
         if self.settings.simulation_settings.n_replicas != self.settings.lambda_settings.lambda_windows:
             errmsg = (
-                "Number of replicas in simulation_settings must equal "
-                "number of lambda windows in lambda_settings."
+                "Number of replicas in ``simulation_settings``: "
+                f"{self.settings.simulation_settings.n_replicas} must equal "
+                "the number of lambda windows in lambda_settings: "
+                f"{self.settings.lambda_settings.lambda_windows}."
             )
             raise ValueError(errmsg)
 
