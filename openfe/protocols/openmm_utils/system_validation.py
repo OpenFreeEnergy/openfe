@@ -95,23 +95,24 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         `nocutoff`.
       * If the SolventComponent solvent is not water.
     """
-    solv = [comp for comp in state.values() if isinstance(comp, SolventComponent)]
+    solv_comps = state.get_components_of_type(SolventComponent)
 
-    if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
-        errmsg = "nocutoff cannot be used for solvent transformations"
-        raise ValueError(errmsg)
+    if len(solv_comps) > 0:
+        if nonbonded_method.lower() == "nocutoff":
+            errmsg = "nocutoff cannot be used for solvent transformations"
+            raise ValueError(errmsg)
 
-    if len(solv) == 0 and nonbonded_method.lower() == "pme":
-        errmsg = "PME cannot be used for vacuum transform"
-        raise ValueError(errmsg)
+        if len(solv_comps) > 1:
+            errmsg = "Multiple SolventComponent found, only one is supported"
+            raise ValueError(errmsg)
 
-    if len(solv) > 1:
-        errmsg = "Multiple SolventComponent found, only one is supported"
-        raise ValueError(errmsg)
-
-    if len(solv) > 0 and solv[0].smiles != "O":
-        errmsg = "Non water solvent is not currently supported"
-        raise ValueError(errmsg)
+        if solv_comps[0].smiles != "O":
+            errmsg = "Non water solvent is not currently supported"
+            raise ValueError(errmsg)
+    else:
+        if nonbonded_method.lower() == "pme":
+            errmsg = "PME cannot be used for vacuum transform"
+            raise ValueError(errmsg)
 
 
 def validate_protein(state: ChemicalSystem):
@@ -129,9 +130,9 @@ def validate_protein(state: ChemicalSystem):
     ValueError
       If there are multiple ProteinComponent in the ChemicalSystem.
     """
-    nprot = sum(1 for comp in state.values() if isinstance(comp, ProteinComponent))
+    prot_comps = state.get_components_of_type(ProteinComponent)
 
-    if nprot > 1:
+    if len(prot_comps) > 1:
         errmsg = "Multiple ProteinComponent found, only one is supported"
         raise ValueError(errmsg)
 
