@@ -641,10 +641,28 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
     @staticmethod
     def _validate_simulation_settings(
-        simulation_settings,
-        integrator_settings,
-        output_settings,
+        simulation_settings: MultiStateSimulationSettings,
+        integrator_settings: IntegratorSettings,
+        output_settings: MultiStateOutputSettings,
     ):
+        """
+        Validate various simulation settings, including but not limited to
+        timestep conversions, and output file write frequencies.
+
+        Parameters
+        ----------
+        simulation_settings : MultiStateSimulationSettings
+          The sampler simulation settings.
+        integrator_settings : IntegratorSettings
+          Settings defining the behaviour of the integrator.
+        output_settings : MultiStateOutputSettings
+          Settings defining the simulation file writing behaviour.
+
+        Raises
+        ------
+        ValueError
+          * If the 
+        """
 
         steps_per_iteration = settings_validation.convert_steps_per_iteration(
             simulation_settings=simulation_settings,
@@ -671,7 +689,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         if output_settings.positions_write_frequency is not None:
             _ = settings_validation.divmod_time_and_check(
                 numerator=output_settings.positions_write_frequency,
-                denominator=sampler_settings.time_per_iteration,
+                denominator=simulation_settings.time_per_iteration,
                 numerator_name="output settings' position_write_frequency",
                 denominator_name="sampler settings' time_per_iteration",
             )
@@ -679,13 +697,13 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         if output_settings.velocities_write_frequency is not None:
             _ = settings_validation.divmod_time_and_check(
                 numerator=output_settings.velocities_write_frequency,
-                denominator=sampler_settings.time_per_iteration,
+                denominator=simulation_settings.time_per_iteration,
                 numerator_name="output settings' velocity_write_frequency",
                 denominator_name="sampler settings' time_per_iteration",
             )
 
         _, _ = settings_validation.convert_real_time_analysis_iterations(
-            simulation_settings=sampler_settings,
+            simulation_settings=simulation_settings,
         )
 
     def _validate(
