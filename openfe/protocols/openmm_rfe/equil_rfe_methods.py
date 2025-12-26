@@ -53,7 +53,6 @@ from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity, unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmmtools import multistate
-from rdkit import Chem
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_utils.omm_settings import (

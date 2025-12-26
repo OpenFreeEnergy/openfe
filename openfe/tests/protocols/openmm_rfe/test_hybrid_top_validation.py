@@ -1,42 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import logging
-import copy
-import json
-import sys
-import xml.etree.ElementTree as ET
-from importlib import resources
-from math import sqrt
-from pathlib import Path
-from unittest import mock
 
-import gufe
-import mdtraj as mdt
-import numpy as np
 import pytest
-from kartograf import KartografAtomMapper
-from kartograf.atom_aligner import align_mol_shape
-from numpy.testing import assert_allclose
-from openff.toolkit import Molecule
 from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
-from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce, XmlSerializer, app
-from openmm import unit as omm_unit
-from openmmforcefields.generators import SMIRNOFFTemplateGenerator
-from openmmtools.multistate.multistatesampler import MultiStateSampler
-from rdkit import Chem
-from rdkit.Geometry import Point3D
 
 import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
-from openfe.protocols.openmm_rfe._rfe_utils import topologyhelpers
-from openfe.protocols.openmm_utils import omm_compute, system_creation
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_ESPALOMA_CHARGE,
-    HAS_NAGL,
-    HAS_OPENEYE,
-)
 
 
 @pytest.fixture()
