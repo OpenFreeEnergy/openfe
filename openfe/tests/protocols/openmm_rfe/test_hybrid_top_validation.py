@@ -178,7 +178,7 @@ def test_charge_difference_no_corr(benzene_to_benzoic_mapping):
 def test_charge_difference_no_solvent(benzene_to_benzoic_mapping):
     errmsg = "Cannot use eplicit charge correction without solvent"
 
-    with pytest.raises(ValueError, errmsg):
+    with pytest.raises(ValueError, match=errmsg):
         openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
             benzene_to_benzoic_mapping,
             "pme",
@@ -223,7 +223,7 @@ def test_get_charge_difference(mapping_name, result, request, caplog):
     mapping = request.getfixturevalue(mapping_name)
     caplog.set_level(logging.INFO)
     
-    ion = r"Na\+" if result == -1 else r"Cl\-"
+    ion = r"Na+" if result == -1 else r"Cl-"
     msg = (
         f"A charge difference of {result} is observed "
         "between the end states. This will be addressed by "
