@@ -126,6 +126,69 @@ def test_vaccuum_PME_error(
         )
 
 
+@pytest.mark.parametrize('charge', [None, 'gasteiger'])
+def test_smcs_same_charge_passes(
+    charge,
+    benzene_modifications
+):
+    benzene = benzene_modifications['benzene']
+    if charge is None:
+        smc = benzene
+    else:
+        offmol = benzene.to_openff()
+        offmol.assign_partial_charges(partial_charge_method='gasteiger')
+        smc = openfe.SmallMoleculeComponent.from_openff(offmol)
+
+    # Just pass the same thing twice
+    state = openfe.ChemicalSystem({'l': smc})
+    openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(state, state)
+
+
+def test_smcs_different_charges_none_not_none(
+    benzene_modifications
+):
+    # smcA has no charges
+    smcA = benzene_modifications['benzene']
+
+    # smcB has charges
+    offmol = smcA.to_openff()
+    offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    smcB = openfe.SmallMoleculeComponent.from_openff(offmol)
+
+    stateA = openfe.ChemicalSystem({'l': smcA})
+    stateB = openfe.ChemicalSystem({'l': smcB})
+
+    errmsg = "isomorphic but with different charges"
+    with pytest.raises(ValueError, match=errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(
+            stateA, stateB
+        )
+
+
+def test_smcs_different_charges_all(
+    benzene_modifications
+):
+    # For this test, we will assign both A and B to both states
+    # It wouldn't happen in real life, but it tests that within a state
+    # you can pick up isomorphic molecules with different charges
+    # create an offmol with gasteiger charges
+    offmol = benzene_modifications['benzene'].to_openff()
+    offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    smcA = openfe.SmallMoleculeComponent.from_openff(offmol)
+
+    # now alter the offmol charges, scaling by 0.1
+    offmol.partial_charges *= 0.1
+    smcB = openfe.SmallMoleculeComponent.from_openff(offmol)
+
+    state = openfe.ChemicalSystem({'l1': smcA, 'l2': smcB})
+
+    errmsg = "isomorphic but with different charges"
+    with pytest.raises(ValueError, match=errmsg):
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(
+            state, state
+        )
+
+
 def test_solvent_nocutoff_error(
     benzene_system,
     toluene_system,
