@@ -111,25 +111,132 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             generation=generation,
         )
 
+    def _prepare(
+        self,
+        verbose: bool,
+        scratch_basepath: pathlib.Path | None,
+        shared_basepath: pathlib.Path | None,
+    ):
+        """
+        Set basepaths and do some initial logging.
+
+        Parameters
+        ----------
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided at the
+          INFO level logging.
+        scratch_basepath : pathlib.Path | None
+          Optional scratch base path to write scratch files to.
+        shared_basepath : pathlib.Path | None
+          Optional shared base path to write shared files to.
+        """
+        self.verbose = verbose
+
+        if self.verbose:
+            self.logger.info("Setting up the hybrid topology simulation")
+
+        # set basepaths
+        def _set_optional_path(basepath):
+            if basepath is None:
+                return pathlib.Path(".")
+            return basepath
+
+        self.scratch_basepath = _set_optional_path(scratch_basepath)
+        self.shared_basepath = _set_optional_path(shared_basepath)
+
+    @staticmethod
+    def _get_settings(
+        settings: RelativeHybridTopologyProtocolSettings
+    ) -> dict[str, SettingsBaseModel]:
+        """
+        Get a dictionary of Protocol settings.
+
+        Returns
+        -------
+        protocol_settings : dict[str, SettingsBaseModel]
+
+        Notes
+        -----
+        We return a dict so that we can duck type behaviour between phases.
+        For example subclasses may contain both `solvent` and `complex`
+        settings, using this approach we can extract the relevant entry
+        to the same key and pass it to other methods in a seamless manner.
+        """
+        protocol_settings: dict[str, SettingsBaseModel] = {}
+        protocol_settings["forcefield_settings"] = settings.forcefield_settings
+        protocol_settings["thermo_settings"] = settings.thermo_settings
+        protocol_settings["alchemical_settings"] = settings.alchemical_settings
+        protocol_settings["lambda_settings"] = settings.lambda_settings
+        protocol_settings["charge_settings"] = settings.partial_charge_settings
+        protocol_settings["solvation_settings"] = settings.solvation_settings
+        protocol_settings["simulation_settings"] = settings.simulation_settings
+        protocol_settings["output_settings"] = settings.output_settings
+        protocol_settings["integrator_settings"] = settings.integrator_settings
+        protocol_settings["engine_settings"] = settings.engine_settings
+        return protocol_settings
+
+    @staticmethod
+    def _get_components(
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem
+        ) -> tuple[
+            dict[str, Component],
+            SolventComponent,
+            ProteinComponent,
+            dict[SmallMoleculeComponent, OFFMolecule]
+        ]:
+        """
+        Get the components from the ChemicalSystem inputs.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+          ChemicalSystem defining the state A components.
+        stateB : CHemicalSystem
+          ChemicalSystem defining the state B components.
+
+        Returns
+        -------
+        alchem_comps : dict[str, Component]
+            Dictionary of alchemical components.
+        solv_comp : SolventComponent
+            The solvent component.
+        protein_comp : ProteinComponent
+            The protein component.
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+            Dictionary of small molecule components paired
+            with their OpenFF Molecule.
+        """
+        alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
+
+        solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
+        _, _, smcs_B = system_validation.get_components(stateB)
+
+        small_mols = {
+            m: m.to_openff()
+            for m in set(smcs_A).union(set(smcs_B))
+        }
+
+        return alchem_comps, solvent_comp, protein_comp, small_mols
+
     @staticmethod
     def _assign_partial_charges(
         charge_settings: OpenFFPartialChargeSettings,
-        off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]],
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
-        Assign partial charges to SMCs.
+        Assign partial charges to the OpenFF Molecules associated with all
+        the SmallMoleculeComponents in the transformation.
 
         Parameters
         ----------
         charge_settings : OpenFFPartialChargeSettings
           Settings for controlling how the partial charges are assigned.
-        off_small_mols : dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]]
-          Dictionary of dictionary of OpenFF Molecules to add, keyed by
-          state and SmallMoleculeComponent.
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          their associated SmallMoleculeComponent.
         """
-        for smc, mol in chain(
-            off_small_mols["stateA"], off_small_mols["stateB"], off_small_mols["both"]
-        ):
+        for smc, mol in small_mols.items():
             charge_generation.assign_offmol_partial_charges(
                 offmol=mol,
                 overwrite=False,
@@ -138,6 +245,129 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 generate_n_conformers=charge_settings.number_of_conformers,
                 nagl_model=charge_settings.nagl_model,
             )
+
+    @staticmethod
+    def _get_system_generator(
+        shared_basepath: pathlib.Path,
+        settings: dict[str, SettingsBaseModel],
+        solvent_comp: SolventComponent | None,
+        openff_molecules: list[OFFMolecule] | None,
+    ) -> SystemGenerator:
+        """
+        Get an OpenMM SystemGenerator.
+
+        Parameters
+        ----------
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of protocol settings.
+        solvent_comp : SolventComponent | None
+          The solvent component of the system, if any.
+        openff_molecules : list[openff.Toolkit] | None
+          A list of openff molecules to generate templates for, if any.
+        
+        Returns
+        -------
+        system_generator : openmmtools.SystemGenerator
+          The SystemGenerator for the protocol.
+        """
+        ffcache = settings["output_settings"].forcefield_cachea
+
+        if ffcache is not None:
+            ffcache = shared_basepath / ffcache
+
+        # Block out oechem backend in system_generator calls to avoid
+        # any issues with smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system_generator = system_creation.get_system_generator(
+                forcefield_settings=settings["forcefield_settings"],
+                integrator_settings=settings["integrator_settings"],
+                thermo_settings=settings["thermo_settings"],
+                cache=ffcache,
+                has_solvent=solvent_comp is not None,
+            )
+
+            # Handle openff Molecule templates
+            # TODO: revisit this once the SystemGenerator update happens
+            # and we start loading the whole protein into OpenFF Topologies
+            
+            # First deduplicate isomoprhic molecules
+            unique_offmols = []
+            for mol in openff_molecules:
+                unique = all(
+                    [
+                        not mol.is_isomorphic_with(umol)
+                        for umol in unique_offmols
+                    ]
+                )
+                if unique:
+                    unique_offmols.append(mol)
+
+            # register all the templates
+            system_generator.add_molecules(unique_offmols)
+        
+        return system_generator
+
+    def _get_omm_objects(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: LigandAtomMapping,
+        settings: dict[str, SettingsBaseModel],
+        protein_component: ProteinComponent | None,
+        solvent_component: SolventComponent | None,
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule]
+    ):
+        """
+        Get OpenMM objects for both end states A and B.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+          ChemicalSystem defining end state A.
+        stateB : ChmiecalSysstem
+          ChemicalSystem defining end state B.
+        mapping : LigandAtomMapping
+          The mapping for alchemical components between state A and B.
+        settings : dict[str, SettingsBaseModel]
+          Settings for the transformation.
+        protein_component : ProteinComponent | None
+          The common ProteinComponent between the end states, if there is is one.
+        solvent_component : SolventComponent | None
+          The common SolventComponent between the end states, if there is one.
+        small_mols : dict[SmallMoleculeCOmponent, openff.toolkit.Molecule]
+          The small molecules for both end states.
+
+        Returns
+        -------
+        stateA_system : openmm.System
+          OpenMM System for state A.
+        stateA_topology : openmm.app.Topology
+          OpenMM Topology for the state A System.
+        stateA_positions : openmm.unit.Quantity
+          Positions of partials for state A System.
+        stateB_system : openmm.System
+          OpenMM System for state B.
+        stateB_topology : openmm.app.Topology
+          OpenMM Topology for the state B System.
+        stateB_positions : openmm.unit.Quantity
+          Positions of partials for state B System.
+        system_mapping : dict[str, dict[int, int]]
+          Dictionary of mappings defining the correspondance between
+          the two state Systems.
+        """
+        if self.verbose:
+            self.logger.info("Parameterizing systems")
+
+        # Get the system generator with all the templates registered
+        system_generator = self._get_system_generator(
+            shared_basepath=self.shared_basepath,
+            settings=settings,
+            solv_comp=solvent_component,
+            openff_molecules=list(small_mols.values())
+        )
+
+        ....
+
 
     def run(
         self, *, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
@@ -169,36 +399,26 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         error
           Exception if anything failed
         """
-        if verbose:
-            self.logger.info("Preparing the hybrid topology simulation")
-        if scratch_basepath is None:
-            scratch_basepath = pathlib.Path(".")
-        if shared_basepath is None:
-            # use cwd
-            shared_basepath = pathlib.Path(".")
+        # Prepare paths & verbosity
+        self._prepare(verbose, scratch_basepath, shared_basepath)
 
-        # 0. General setup and settings dependency resolution step
+        # Get settings
+        settings = self._get_settings(self._inputs["protocol"].settings)
 
-        # Extract relevant settings
-        protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs[
-            "protocol"
-        ].settings
+        # Get components
         stateA = self._inputs["stateA"]
         stateB = self._inputs["stateB"]
         mapping = self._inputs["ligandmapping"]
-
-        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = (
-            protocol_settings.forcefield_settings
+        alchem_comps, solvent_comp, protein_comp, small_mols = self._get_components(
+            stateA, stateB
         )
-        thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
-        alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
-        lambda_settings: LambdaSettings = protocol_settings.lambda_settings
-        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
-        solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
-        sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
-        output_settings: MultiStateOutputSettings = protocol_settings.output_settings
-        integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
 
+        # Assign partial charges now to avoid any discrepancies later
+        self._assign_partial_charges(charge_settings, small_mols)
+
+
+
+        # TODO: move these down, not needed until we get to the sampler
         # TODO: Also validate various conversions?
         # Convert various time based inputs to steps/iterations
         steps_per_iteration = settings_validation.convert_steps_per_iteration(
@@ -217,33 +437,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             mc_steps=steps_per_iteration,
         )
 
-        solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
-
         # Get the change difference between the end states
         # and check if the charge correction used is appropriate
         charge_difference = mapping.get_alchemical_charge_difference()
 
         # 1. Create stateA system
         self.logger.info("Parameterizing molecules")
-
-        # a. create offmol dictionaries and assign partial charges
-        # workaround for conformer generation failures
-        # see openfe issue #576
-        # calculate partial charges manually if not already given
-        # convert to OpenFF here,
-        # and keep the molecule around to maintain the partial charges
-        off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]]
-        off_small_mols = {
-            "stateA": [(mapping.componentA, mapping.componentA.to_openff())],
-            "stateB": [(mapping.componentB, mapping.componentB.to_openff())],
-            "both": [
-                (m, m.to_openff())
-                for m in small_mols
-                if (m != mapping.componentA and m != mapping.componentB)
-            ],
-        }
-
-        self._assign_partial_charges(charge_settings, off_small_mols)
 
         # b. get a system generator
         if output_settings.forcefield_cache is not None:
