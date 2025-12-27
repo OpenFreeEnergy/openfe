@@ -521,7 +521,7 @@ def test_pos_vel_write_frequency_not_divisible(
     "attribute",
     ["real_time_analysis_interval", "real_time_analysis_interval"]
 )
-def test_pos_vel_write_frequency_not_divisible(
+def test_real_time_analysis_not_divisible(
     benzene_vacuum_system,
     toluene_vacuum_system,
     benzene_to_toluene_mapping,
