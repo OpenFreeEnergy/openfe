@@ -16,6 +16,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
+import numpy as np
 
 import gufe
 from gufe import (
