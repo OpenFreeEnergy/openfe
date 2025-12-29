@@ -826,7 +826,10 @@ class TestOFFPartialCharge:
         # but the charges should have
         assert not np.allclose(charges, lig.partial_charges)
 
-    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    @pytest.mark.skipif(
+        not HAS_NAGL or HAS_OPENEYE,
+        reason="NAGL is not available or oechem is installed"
+    )
     def test_latest_production_nagl(self, uncharged_mol):
         """We expect to find a NAGL model and be able to generate partial charges with it."""
         charge_generation.assign_offmol_partial_charges(
@@ -839,7 +842,10 @@ class TestOFFPartialCharge:
         )
         assert uncharged_mol.partial_charges.units == "elementary_charge"
 
-    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    @pytest.mark.skipif(
+        not HAS_NAGL or HAS_OPENEYE,
+        reason="NAGL is not available or oechem is installed"
+    )
     def test_no_production_nagl(self, uncharged_mol):
         """Cleanly handle the case where a NAGL model isn't found."""
         with mock.patch(
@@ -887,8 +893,8 @@ class TestOFFPartialCharge:
                 "nagl",
                 None,
                 marks=pytest.mark.skipif(
-                    not HAS_NAGL or sys.platform.startswith("darwin"),
-                    reason="needs NAGL and/or on macos",
+                    not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
+                    reason="needs NAGL (without oechem) and/or on macos",
                 ),
             ),
             pytest.param(
@@ -897,8 +903,8 @@ class TestOFFPartialCharge:
                 "nagl",
                 None,
                 marks=pytest.mark.skipif(
-                    not HAS_NAGL or sys.platform.startswith("darwin"),
-                    reason="needs NAGL and/or on macos",
+                    not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
+                    reason="needs NAGL (without oechem) and/or on macos",
                 ),
             ),
             pytest.param(
@@ -962,8 +968,8 @@ class TestOFFPartialCharge:
         )
 
     @pytest.mark.skipif(not HAS_OPENEYE, reason="OEToolkit is not available")
-    def test_nagl_oetoolkit_not_openeye_error(self):
-        errmsg = "OEToolkit is installed but not used as the toolkit registry."
+    def test_nagl_oechem_not_openeye_error(self, uncharged_mol):
+        errmsg = "OpenEye toolkit is installed but not used in the OpenFF toolkit registry."
         with pytest.raises(ValueError, match=errmsg):
             charge_generation.assign_offmol_partial_charges(
                 uncharged_mol,
@@ -974,6 +980,10 @@ class TestOFFPartialCharge:
                 nagl_model=None,
             )
 
+    @pytest.mark.skipif(
+        HAS_OPENEYE,
+        reason="NAGL does not work with OpenEye when using the rdkit backend"
+    )
     def test_nagl_import_error(self, monkeypatch, uncharged_mol):
         monkeypatch.setattr(
             sys.modules["openfe.protocols.openmm_utils.charge_generation"],

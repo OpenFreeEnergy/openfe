@@ -406,7 +406,7 @@ def assign_offmol_partial_charges(
     # Issue 1760
     if HAS_OPENEYE and method.lower () == "nagl":
         if toolkit_backend.lower() != "openeye":
-            errmsg = "OEToolkit is installed but not used as the toolkit registry. This is not possible with NAGL charges."
+            errmsg = "OpenEye toolkit is installed but not used in the OpenFF toolkit registry backend. This is not possible with NAGL charges."
             raise ValueError(errmsg)
 
     toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]])
