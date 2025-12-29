@@ -301,6 +301,58 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                     warnings.warn(wmsg)
 
     @staticmethod
+    def _validate_smcs(
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+    ) -> None:
+        """
+        Validates the SmallMoleculeComponents.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+          The chemical system of end state A.
+        stateB : ChemicalSystem
+          The chemical system of end state B.
+
+        Raises
+        ------
+        ValueError
+          * If there are isomorphic SmallMoleculeComponents with
+            different charges.
+        """
+        smcs_A = stateA.get_components_of_type(SmallMoleculeComponent)
+        smcs_B = stateB.get_components_of_type(SmallMoleculeComponent)
+        smcs_all = list(set(smcs_A).union(set(smcs_B)))
+        offmols = [m.to_openff() for m in smcs_all]
+
+        def _equal_charges(moli, molj):
+            # Base case, both molecules don't have charges
+            if (moli.partial_charges is None) & (molj.partial_charges is None):
+                return True
+            # If either is None but not the other
+            if (moli.partial_charges is None) ^ (molj.partial_charges is None):
+                return False
+            # Check if the charges are close to each other
+            return np.allclose(moli.partial_charges, molj.partial_charges)
+
+        clashes = []
+
+        for i, moli in enumerate(offmols):
+            for molj in offmols:
+                if moli.is_isomorphic_with(molj):
+                    if not _equal_charges(moli, molj):
+                        clashes.append(smcs_all[i])
+
+        if len(clashes) > 0:
+            errmsg = (
+                "Found SmallMoleculeComponents are are isomorphic "
+                "but with different charges, this is not currently allowed. "
+                f"Affected components: {clashes}"
+            )
+            raise ValueError(errmsg)
+
+    @staticmethod
     def _validate_charge_difference(
         mapping: LigandAtomMapping,
         nonbonded_method: str,
@@ -465,6 +517,9 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Valildate the mapping
         alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
         self._validate_mapping(mapping, alchem_comps)
+
+        # Validate the small molecule components
+        self._validate_smcs(stateA, stateB)
 
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
