@@ -10,6 +10,7 @@ from openff.units import unit
 
 import openfe
 from openfe.protocols import openmm_rfe
+from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEYE
 
 
 @pytest.mark.slow
@@ -110,6 +111,11 @@ def test_openmm_run_engine(
 
 @pytest.mark.integration  # takes ~7 minutes to run
 @pytest.mark.flaky(reruns=3)
+@pytest.mark.skipif(not HAS_NAGL, reason="need NAGL")
+@pytest.mark.skipif(
+    HAS_OPENEYE and HAS_NAGL,
+    reason="NAGL/openeye incompatibility. See https://github.com/openforcefield/openff-nagl/issues/177",
+)
 def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     # this runs a very short eg5 complex leg
     # different to previous test:
@@ -121,6 +127,9 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     s.simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.simulation_settings.production_length = 0.1 * unit.picosecond
     s.simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    s.forcefield_settings.nonbonded_cutoff = 0.8 * offunit.nanometer
+    s.partial_charge_settings.partial_charge_method = "nagl"
+    s.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.3.pt"
     s.protocol_repeats = 1
     s.output_settings.checkpoint_interval = 20 * unit.femtosecond
 
