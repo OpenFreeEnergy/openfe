@@ -3,7 +3,7 @@
 """Equilibrium Relative Free Energy Protocol using OpenMM and OpenMMTools in a
 Perses-like manner.
 
-This module implements the necessary methodology toolking to run calculate the
+This module implements the necessary tooling to run calculate the
 relative free energy of a ligand transformation using OpenMM tools and one of
 the following methods:
     - Hamiltonian Replica Exchange

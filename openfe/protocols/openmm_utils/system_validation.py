@@ -162,24 +162,24 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
     small_mols : list[SmallMoleculeComponent]
     """
 
-    def _get_single_comps(comp_list, comptype):
-        ret_comps = [comp for comp in comp_list if isinstance(comp, comptype)]
-        if ret_comps:
+    def _get_single_comps(state, comptype):
+        comps = state.get_components_of_type(comptype)
+
+        if len(ret_comps) > 0:
             return ret_comps[0]
         else:
             return None
 
     solvent_comp: Optional[SolventComponent] = _get_single_comps(
-        list(state.values()), SolventComponent
+        state,
+        SolventComponent
     )
 
     protein_comp: Optional[ProteinComponent] = _get_single_comps(
-        list(state.values()), ProteinComponent
+        state,
+        ProteinComponent
     )
 
-    small_mols = []
-    for comp in state.components.values():
-        if isinstance(comp, SmallMoleculeComponent):
-            small_mols.append(comp)
+    small_mols = state.get_components_of_type(SmallMoleculeComponent)
 
     return solvent_comp, protein_comp, small_mols
