@@ -1230,6 +1230,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 del integrator, sampler
 
         if not dry:  # pragma: no-cover
+            nc = self.shared_basepath / settings["output_settings"].output_filename
+            chk = settings["output_settings"].checkpoint_storage_filename
             unit_results_dict["nc"] = nc
             unit_results_dict["last_checkpoint"] = chk
             unit_results_dict["selection_indices"] = selection_indices
