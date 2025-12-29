@@ -165,8 +165,8 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
     def _get_single_comps(state, comptype):
         comps = state.get_components_of_type(comptype)
 
-        if len(ret_comps) > 0:
-            return ret_comps[0]
+        if len(comps) > 0:
+            return comps[0]
         else:
             return None
 
