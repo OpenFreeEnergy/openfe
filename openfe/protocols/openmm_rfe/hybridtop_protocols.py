@@ -320,7 +320,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         ------
         ValueError
           * If there are isomorphic SmallMoleculeComponents with
-            different charges.
+            different charges within a given ChemicalSystem.
         """
         smcs_A = stateA.get_components_of_type(SmallMoleculeComponent)
         smcs_B = stateB.get_components_of_type(SmallMoleculeComponent)
@@ -339,11 +339,13 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         clashes = []
 
-        for i, moli in enumerate(offmols):
-            for molj in offmols:
-                if moli.is_isomorphic_with(molj):
-                    if not _equal_charges(moli, molj):
-                        clashes.append(smcs_all[i])
+        for smcs in [smcs_A, smcs_B]:
+            offmols = [m.to_openff() for m in smcs]
+            for i, moli in enumerate(offmols):
+                for molj in offmols:
+                    if moli.is_isomorphic_with(molj):
+                        if not _equal_charges(moli, molj):
+                            clashes.append(smcs[i])
 
         if len(clashes) > 0:
             errmsg = (
