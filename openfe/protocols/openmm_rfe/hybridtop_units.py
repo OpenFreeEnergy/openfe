@@ -1245,39 +1245,60 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             }
 
     @staticmethod
-    def structural_analysis(scratch, shared) -> dict:
-        # don't put energy analysis in here, it uses the open file reporter
-        # whereas structural stuff requires that the file handle is closed
-        # TODO: we should just make openfe_analysis write an npz instead!
-        analysis_out = scratch / "structural_analysis.json"
+    def structural_analysis(
+        scratch: pathlib.Path,
+        shared: pathlib.Path,
+        pdb_filename: str,
+        trj_filename: str,
+    ) -> dict[str, str]:
+        """
+        Run structural analysis using ``openfe-analysis``.
 
-        ret = subprocess.run(
-            [
-                "openfe_analysis",  # CLI entry point
-                "RFE_analysis",  # CLI option
-                str(shared),  # Where the simulation.nc fille
-                str(analysis_out),  # Where the analysis json file is written
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if ret.returncode:
-            return {"structural_analysis_error": ret.stderr}
+        Parameters
+        ----------
+        scratch : pathlib.path
+          Path to the scratch directory.
+        shared : pathlib.path
+          Path to the shared directory.
+        pdb_filename : str
+          The PDB file name.
+        trj_filename : str
+          The trajectory file name.
 
-        with open(analysis_out, "rb") as f:
-            data = json.load(f)
+        Returns
+        -------
+        dict[str, str]
+          Dictionary containing either the path to the NPZ
+          file with the structural data, or the analysis error.
 
-        savedir = pathlib.Path(shared)
+        Notes
+        -----
+        Don't put energy analysis here, it uses the open file reporter
+        whereas structural stuff requires the file handle to be closed.
+        """
+        import json
+        from openfe_analysis import rmsd
+
+        # TODO: fix these so that it works with any user defined name
+        pdb_file = shared / "hybrid_system.pdb"
+        trj_file = shared / "simulation.nc"
+
+        try:
+            data = rmsd.gather_rms_data(pdb_file, trj_file)
+        # TODO: change this to more specific exception types
+        except Exception as e:
+            return {"structural_analysis_error": str(e)}
+
         if d := data["protein_2D_RMSD"]:
             fig = plotting.plot_2D_rmsd(d)
-            fig.savefig(savedir / "protein_2D_RMSD.png")
+            fig.savefig(shared / "protein_2D_RMSD.png")
             plt.close(fig)
             f2 = plotting.plot_ligand_COM_drift(data["time(ps)"], data["ligand_wander"])
-            f2.savefig(savedir / "ligand_COM_drift.png")
+            f2.savefig(shared / "ligand_COM_drift.png")
             plt.close(f2)
 
         f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
-        f3.savefig(savedir / "ligand_RMSD.png")
+        f3.savefig(shared / "ligand_RMSD.png")
         plt.close(f3)
 
         # Save to numpy compressed format (~ 6x more space efficient than JSON)
@@ -1301,7 +1322,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
 
-        structural_analysis_outputs = self.structural_analysis(ctx.scratch, ctx.shared)
+        structural_analysis_outputs = self.structural_analysis(
+            scratch=ctx.scratch,
+            shared=ctx.shared,
+            pdb_filename=self._inputs["protocol"].settings.output_settings.output_structure,
+            trj_filename=self._inputs["protocol"].settings.output_settings.output_filename,
+        )
 
         return {
             "repeat_id": self._inputs["repeat_id"],

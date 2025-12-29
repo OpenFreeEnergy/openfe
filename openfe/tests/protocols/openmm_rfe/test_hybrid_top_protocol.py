@@ -1916,7 +1916,10 @@ def test_dry_run_complex_alchemwater_totcharge(
 def test_structural_analysis_error(tmpdir):
     with tmpdir.as_cwd():
         ret = openmm_rfe.RelativeHybridTopologyProtocolUnit.structural_analysis(
-            Path("."), Path(".")
+            Path("."),
+            Path("."),
+            'foo',
+            'bar'
         )
 
     assert "structural_analysis_error" in ret
