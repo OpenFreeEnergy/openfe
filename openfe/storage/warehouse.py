@@ -108,7 +108,7 @@ class WarehouseBaseClass:
         """
         return self._load_gufe_tokenizable(gufe_key=obj)
 
-    def store_result_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
+    def store_result_tokenizable(self, obj: GufeTokenizable):
         """Store a GufeTokenizable object from the result store.
 
         Parameters
