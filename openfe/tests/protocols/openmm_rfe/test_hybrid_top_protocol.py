@@ -652,8 +652,8 @@ def test_dry_run_ligand_system_cutoff(
             "rdkit",
             "nagl",
             marks=pytest.mark.skipif(
-                not HAS_NAGL or sys.platform.startswith("darwin"),
-                reason="needs NAGL and/or on macos",
+                not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
+                reason="needs NAGL (without oechem) and/or on macos",
             ),
         ),
         pytest.param(
