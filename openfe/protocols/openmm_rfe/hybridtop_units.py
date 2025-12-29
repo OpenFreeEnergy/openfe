@@ -373,11 +373,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Note: roundtrip positions to remove vec3 issues
         positions = to_openmm(from_openmm(modeller.getPositions()))
 
-        with without_oechem_backend():
-            system = system_generator.create_system(
-                modeller.topology,
-                molecules=list(small_mols.values()),
-            )
+        system = system_generator.create_system(
+            modeller.topology,
+            molecules=list(small_mols.values()),
+        )
 
         return system, topology, positions, comp_resids
 
@@ -422,11 +421,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             exclude_resids=exclude_resids,
         )
 
-        with without_oechem_backend():
-            system = system_generator.create_system(
-                topology,
-                molecules=list(small_mols.values()),
-            )
+        system = system_generator.create_system(
+            topology,
+            molecules=list(small_mols.values()),
+        )
 
         return system, topology, alchem_resids
 
@@ -536,49 +534,49 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         if self.verbose:
             self.logger.info("Parameterizing systems")
 
-        # TODO: get two generators, one for state A and one for stateB
-        # See issue #1120
-        # Get the system generator with all the templates registered
-        system_generator = self._get_system_generator(
-            shared_basepath=self.shared_basepath,
-            settings=settings,
-            solvent_comp=solvent_component,
-            openff_molecules=list(small_mols.values())
-        )
+        def _filter_small_mols(smols, state):
+            return {
+                smc: offmol
+                for smc, offmol in smols.items()
+                if state.contains(smc)
+            }
 
-        # Create the state A system
-        small_mols_stateA = {
-            smc: offmol
-            for smc, offmol in small_mols.items()
-            if stateA.contains(smc)
-        }
+        small_mols_stateA = _filter_small_mols(small_mols, stateA)
+        small_mols_stateB = _filter_small_mols(small_mols, stateB)
 
-        stateA_system, stateA_topology, stateA_positions, comp_resids = self._create_stateA_system(
-            small_mols=small_mols_stateA,
-            protein_component=protein_component,
-            solvent_component=solvent_component,
-            system_generator=system_generator,
-            solvation_settings=settings["solvation_settings"]
-        )
+        # Everything involving systemgenerator handling has a risk of
+        # oechem <-> rdkit smiles conversion clashes, cautiously ban it.
+        with without_oechem_backend():
+            # TODO: get two generators, one for state A and one for stateB
+            # See issue #1120
+            # Get the system generator with all the templates registered
+            system_generator = self._get_system_generator(
+                shared_basepath=self.shared_basepath,
+                settings=settings,
+                solvent_comp=solvent_component,
+                openff_molecules=list(small_mols.values())
+            )
 
-        # State B system creation
-        small_mols_stateB = {
-            smc: offmol
-            for smc, offmol in small_mols.items()
-            if stateB.contains(smc)
-        }
+            (
+                stateA_system, stateA_topology, stateA_positions,
+                comp_resids
+            ) = self._create_stateA_system(
+                small_mols=small_mols_stateA,
+                protein_component=protein_component,
+                solvent_component=solvent_component,
+                system_generator=system_generator,
+                solvation_settings=settings["solvation_settings"]
+            )
 
-        (
-            stateB_system,
-            stateB_topology,
-            stateB_alchem_resids
-        ) = self._create_stateB_system(
-            small_mols=small_mols_stateB,
-            mapping=mapping,
-            stateA_topology=stateA_topology,
-            exclude_resids=comp_resids[mapping.componentA],
-            system_generator=system_generator,
-        )
+            (
+                stateB_system, stateB_topology, stateB_alchem_resids
+            ) = self._create_stateB_system(
+                small_mols=small_mols_stateB,
+                mapping=mapping,
+                stateA_topology=stateA_topology,
+                exclude_resids=comp_resids[mapping.componentA],
+                system_generator=system_generator,
+            )
 
         # Get the mapping between the two systems
         system_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
