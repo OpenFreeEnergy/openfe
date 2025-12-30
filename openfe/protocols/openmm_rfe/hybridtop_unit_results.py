@@ -34,7 +34,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
     def compute_mean_estimate(dGs: list[Quantity]) -> Quantity:
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
-        # this would avoid a screwy case where each value was in different units
+        # this would avoid an edge case where each value was in different units
         vals = np.asarray([dG.to(u).m for dG in dGs])
 
         return np.average(vals) * u
@@ -200,9 +200,9 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         replica_states = []
 
         for pus in self.data.values():
-            nc = is_file(pus[0].outputs["nc"])
+            nc = is_file(pus[0].outputs["trajectory"])
             dir_path = nc.parents[0]
-            chk = is_file(dir_path / pus[0].outputs["last_checkpoint"]).name
+            chk = is_file(dir_path / pus[0].outputs["checkpoint"]).name
             reporter = multistate.MultiStateReporter(
                 storage=nc, checkpoint_storage=chk, open_mode="r"
             )
@@ -235,6 +235,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         -------
         production_lengths : list[float]
         """
-        production_lengths = [pus[0].outputs["production_iterations"] for pus in self.data.values()]
+        production_lengths = [
+            pus[0].outputs["production_iterations"] for pus in self.data.values()
+        ]
 
         return production_lengths

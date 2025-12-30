@@ -646,8 +646,9 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         unsorted_repeats = defaultdict(list)
         for d in protocol_dag_results:
             pu: gufe.ProtocolUnitResult
-            for pu in d.protocol_unit_results:
-                if not pu.ok():
+            for pu in d.protocol_unit_results:a
+                # We only need the analysis units that are ok
+                if ("Analysis" not in pu.name) or (not pu.ok()):
                     continue
 
                 unsorted_repeats[pu.outputs["repeat_id"]].append(pu)

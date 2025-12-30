@@ -1575,5 +1575,10 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            # We include paths to various files here also to make
+            # life easier when gathering results.
+            "pdb_structure": pdb_file,
+            "trajectory": trajectory,
+            "checkpoint": checkpoint,
             **outputs,
         }
