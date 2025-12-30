@@ -59,6 +59,10 @@ from ..openmm_utils import (
     system_creation,
     system_validation,
 )
+from ..openmm_utils.serialization import (
+    serialize,
+    deserialize,
+)
 from . import _rfe_utils
 from ._rfe_utils.relative import HybridTopologyFactory
 from .equil_rfe_settings import (
