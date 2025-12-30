@@ -76,54 +76,7 @@ from .equil_rfe_settings import (
 logger = logging.getLogger(__name__)
 
 
-class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
-    """
-    Calculates the relative free energy of an alchemical ligand transformation.
-    """
-    def __init__(
-        self,
-        *,
-        protocol: gufe.Protocol,
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-        ligandmapping: LigandAtomMapping,
-        generation: int,
-        repeat_id: int,
-        name: Optional[str] = None,
-    ):
-        """
-        Parameters
-        ----------
-        protocol : RelativeHybridTopologyProtocol
-          protocol used to create this Unit. Contains key information such
-          as the settings.
-        stateA, stateB : ChemicalSystem
-          the two ligand SmallMoleculeComponents to transform between.  The
-          transformation will go from ligandA to ligandB.
-        ligandmapping : LigandAtomMapping
-          the mapping of atoms between the two ligand components
-        repeat_id : int
-          identifier for which repeat (aka replica/clone) this Unit is
-        generation : int
-          counter for how many times this repeat has been extended
-        name : str, optional
-          human-readable identifier for this Unit
-
-        Notes
-        -----
-        The mapping used must not involve any elemental changes.  A check for
-        this is done on class creation.
-        """
-        super().__init__(
-            name=name,
-            protocol=protocol,
-            stateA=stateA,
-            stateB=stateB,
-            ligandmapping=ligandmapping,
-            repeat_id=repeat_id,
-            generation=generation,
-        )
-
+class HybridTopologyUnitMixin:
     def _prepare(
         self,
         verbose: bool,
@@ -187,6 +140,55 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         protocol_settings["integrator_settings"] = settings.integrator_settings
         protocol_settings["engine_settings"] = settings.engine_settings
         return protocol_settings
+
+
+class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+    """
+    Calculates the relative free energy of an alchemical ligand transformation.
+    """
+    def __init__(
+        self,
+        *,
+        protocol: gufe.Protocol,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        ligandmapping: LigandAtomMapping,
+        generation: int,
+        repeat_id: int,
+        name: Optional[str] = None,
+    ):
+        """
+        Parameters
+        ----------
+        protocol : RelativeHybridTopologyProtocol
+          protocol used to create this Unit. Contains key information such
+          as the settings.
+        stateA, stateB : ChemicalSystem
+          the two ligand SmallMoleculeComponents to transform between.  The
+          transformation will go from ligandA to ligandB.
+        ligandmapping : LigandAtomMapping
+          the mapping of atoms between the two ligand components
+        repeat_id : int
+          identifier for which repeat (aka replica/clone) this Unit is
+        generation : int
+          counter for how many times this repeat has been extended
+        name : str, optional
+          human-readable identifier for this Unit
+
+        Notes
+        -----
+        The mapping used must not involve any elemental changes.  A check for
+        this is done on class creation.
+        """
+        super().__init__(
+            name=name,
+            protocol=protocol,
+            stateA=stateA,
+            stateB=stateB,
+            ligandmapping=ligandmapping,
+            repeat_id=repeat_id,
+            generation=generation,
+        )
 
     @staticmethod
     def _get_components(
@@ -747,6 +749,138 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         return selection_indices
 
+    def run(
+        self, *, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
+    ) -> dict[str, Any]:
+        """Run the relative free energy calculation.
+
+        Parameters
+        ----------
+        dry : bool
+          Do a dry run of the calculation, creating all necessary hybrid
+          system components (topology, system, sampler, etc...) but without
+          running the simulation.
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        scratch_basepath: Pathlike, optional
+          Where to store temporary files, defaults to current working directory
+        shared_basepath : Pathlike, optional
+          Where to run the calculation, defaults to current working directory
+
+        Returns
+        -------
+        dict
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
+
+        Raises
+        ------
+        error
+          Exception if anything failed
+        """
+        # Prepare paths & verbosity
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        # Get settings
+        settings = self._get_settings(self._inputs["protocol"].settings)
+
+        # Get components
+        stateA = self._inputs["stateA"]
+        stateB = self._inputs["stateB"]
+        mapping = self._inputs["ligandmapping"]
+        alchem_comps, solvent_comp, protein_comp, small_mols = self._get_components(
+            stateA, stateB
+        )
+
+        # Assign partial charges now to avoid any discrepancies later
+        self._assign_partial_charges(settings["charge_settings"], small_mols)
+
+        (
+            stateA_system, stateA_topology, stateA_positions,
+            stateB_system, stateB_topology, stateB_positions,
+            system_mappings
+        ) = self._get_omm_objects(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=mapping,
+            settings=settings,
+            protein_component=protein_comp,
+            solvent_component=solvent_comp,
+            small_mols=small_mols
+        )
+
+        # Get the hybrid factory & system
+        hybrid_factory, hybrid_system = self._get_alchemical_system(
+            stateA_system=stateA_system,
+            stateA_positions=stateA_positions,
+            stateA_topology=stateA_topology,
+            stateB_system=stateB_system,
+            stateB_positions=stateB_positions,
+            stateB_topology=stateB_topology,
+            system_mappings=system_mappings,
+            alchemical_settings=settings["alchemical_settings"],
+        )
+
+        # Subselect system based on user inputs & write initial PDB
+        selection_indices = self._subsample_topology(
+            hybrid_topology=hybrid_factory.hybrid_topology,
+            hybrid_positions=hybrid_factory.hybrid_positions,
+            output_selection=settings["output_settings"].output_indices,
+            output_filename=settings["output_settings"].output_structure,
+            atom_classes=hybrid_factory._atom_classes,
+        )
+
+        # Serialize things
+        # OpenMM System
+        system_outfile = self.shared_basepath / "hybrid_system.xml.bz2"
+        serialize(hybrid_system, system_outfile)
+
+        # Positions
+        positions_outfile = self.shared_basepath / "hybrid_positions.npz"
+        npy_positions = from_openmm(hybrid_factory.hybrid_positions).to("nanometer").m
+        np.savez(positions_outfile, npy_positions)
+
+        uni_results_dict = {
+            "system": system_outfile,
+            "positions": positions_outfile,
+            "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
+            "selection_indices": selection_indices,
+        }
+
+        if dry:
+            unit_results_dict |= {
+                "hybrid_factory": hybrid_factory,
+                "hybrid_system": hybrid_system,
+            }
+
+        return unit_results_dict
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+
+        structural_analysis_outputs = self.structural_analysis(
+            scratch=ctx.scratch,
+            shared=ctx.shared,
+            pdb_filename=self._inputs["protocol"].settings.output_settings.output_structure,
+            trj_filename=self._inputs["protocol"].settings.output_settings.output_filename,
+        )
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            **outputs,
+            **structural_analysis_outputs,
+        }
+
+
+class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     def _get_reporter(
         self,
         selection_indices: npt.NDArray,
@@ -904,7 +1038,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
             simulation_settings=simulation_settings,
         )
-    
+
         # convert early_termination_target_error from kcal/mol to kT
         early_termination_target_error = (
             settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
@@ -943,7 +1077,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=rta_min_its,
             )
-
 
         else:
             raise AttributeError(f"Unknown sampler {simulation_settings.sampler_method}")
@@ -1045,21 +1178,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
             if self.verbose:
                 self.logger.info("production phase complete")
-
-            if self.verbose:
-                self.logger.info("post-simulation result analysis")
-
-            # calculate relevant analysis of the free energies & sampling
-            analyzer = multistate_analysis.MultistateEquilFEAnalysis(
-                reporter,
-                sampling_method=simulation_settings.sampler_method.lower(),
-                result_units=offunit.kilocalorie_per_mole,
-            )
-            analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
-            analyzer.close()
-
-            return analyzer.unit_results_dict
-
         else:
             # We ran a dry simulation
             # close reporter when you're done, prevent file handle clashes
@@ -1075,176 +1193,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 os.remove(fn)
 
             return None
-
-    def run(
-        self, *, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
-    ) -> dict[str, Any]:
-        """Run the relative free energy calculation.
-
-        Parameters
-        ----------
-        dry : bool
-          Do a dry run of the calculation, creating all necessary hybrid
-          system components (topology, system, sampler, etc...) but without
-          running the simulation.
-        verbose : bool
-          Verbose output of the simulation progress. Output is provided via
-          INFO level logging.
-        scratch_basepath: Pathlike, optional
-          Where to store temporary files, defaults to current working directory
-        shared_basepath : Pathlike, optional
-          Where to run the calculation, defaults to current working directory
-
-        Returns
-        -------
-        dict
-          Outputs created in the basepath directory or the debug objects
-          (i.e. sampler) if ``dry==True``.
-
-        Raises
-        ------
-        error
-          Exception if anything failed
-        """
-        # Prepare paths & verbosity
-        self._prepare(verbose, scratch_basepath, shared_basepath)
-
-        # Get settings
-        settings = self._get_settings(self._inputs["protocol"].settings)
-
-        # Get components
-        stateA = self._inputs["stateA"]
-        stateB = self._inputs["stateB"]
-        mapping = self._inputs["ligandmapping"]
-        alchem_comps, solvent_comp, protein_comp, small_mols = self._get_components(
-            stateA, stateB
-        )
-
-        # Assign partial charges now to avoid any discrepancies later
-        self._assign_partial_charges(settings["charge_settings"], small_mols)
-
-        (
-            stateA_system, stateA_topology, stateA_positions,
-            stateB_system, stateB_topology, stateB_positions,
-            system_mappings
-        ) = self._get_omm_objects(
-            stateA=stateA,
-            stateB=stateB,
-            mapping=mapping,
-            settings=settings,
-            protein_component=protein_comp,
-            solvent_component=solvent_comp,
-            small_mols=small_mols
-        )
-
-        # Get the hybrid factory & system
-        hybrid_factory, hybrid_system = self._get_alchemical_system(
-            stateA_system=stateA_system,
-            stateA_positions=stateA_positions,
-            stateA_topology=stateA_topology,
-            stateB_system=stateB_system,
-            stateB_positions=stateB_positions,
-            stateB_topology=stateB_topology,
-            system_mappings=system_mappings,
-            alchemical_settings=settings["alchemical_settings"],
-        )
-
-        # Subselect system based on user inputs & write initial PDB
-        selection_indices = self._subsample_topology(
-            hybrid_topology=hybrid_factory.hybrid_topology,
-            hybrid_positions=hybrid_factory.hybrid_positions,
-            output_selection=settings["output_settings"].output_indices,
-            output_filename=settings["output_settings"].output_structure,
-            atom_classes=hybrid_factory._atom_classes,
-        )
-
-        # Get the lambda schedule
-        # TODO - this should be better exposed to users
-        lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
-            functions=settings["lambda_settings"].lambda_functions,
-            windows=settings["lambda_settings"].lambda_windows
-        )
-
-        # Get the reporter
-        reporter = self._get_reporter(
-            selection_indices=selection_indices,
-            output_settings=settings["output_settings"],
-            simulation_settings=settings["simulation_settings"],
-        )
-
-        # Get the compute platform
-        restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
-        platform = omm_compute.get_openmm_platform(
-            platform_name=settings["engine_settings"].compute_platform,
-            gpu_device_index=settings["engine_settings"].gpu_device_index,
-            restrict_cpu_count=restrict_cpu,
-        )
-
-        # Get the integrator
-        integrator = self._get_integrator(
-            integrator_settings=settings["integrator_settings"],
-            simulation_settings=settings["simulation_settings"],
-            system=hybrid_system
-        )
-
-        try:
-            # Get sampler
-            sampler = self._get_sampler(
-                system=hybrid_system,
-                positions=hybrid_factory.hybrid_positions,
-                lambdas=lambdas,
-                integrator=integrator,
-                reporter=reporter,
-                simulation_settings=settings["simulation_settings"],
-                thermo_settings=settings["thermo_settings"],
-                alchem_settings=settings["alchemical_settings"],
-                platform=platform,
-                dry=dry
-            )
-
-            unit_results_dict = self._run_simulation(
-                sampler=sampler,
-                reporter=reporter,
-                simulation_settings=settings["simulation_settings"],
-                integrator_settings=settings["integrator_settings"],
-                output_settings=settings["output_settings"],
-                dry=dry,
-            )
-        finally:
-            # close reporter when you're done, prevent
-            # file handle clashes
-            reporter.close()
-
-            # clear GPU contexts
-            # TODO: use cache.empty() calls when openmmtools #690 is resolved
-            # replace with above
-            for context in list(sampler.energy_context_cache._lru._data.keys()):
-                del sampler.energy_context_cache._lru._data[context]
-            for context in list(sampler.sampler_context_cache._lru._data.keys()):
-                del sampler.sampler_context_cache._lru._data[context]
-            # cautiously clear out the global context cache too
-            for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
-                del openmmtools.cache.global_context_cache._lru._data[context]
-
-            del sampler.sampler_context_cache, sampler.energy_context_cache
-
-            if not dry:
-                del integrator, sampler
-
-        if not dry:  # pragma: no-cover
-            nc = self.shared_basepath / settings["output_settings"].output_filename
-            chk = settings["output_settings"].checkpoint_storage_filename
-            unit_results_dict["nc"] = nc
-            unit_results_dict["last_checkpoint"] = chk
-            unit_results_dict["selection_indices"] = selection_indices
-            return unit_results_dict
-        else:
-            return {"debug": 
-                {
-                    "sampler": sampler,
-                    "hybrid_factory": hybrid_factory,
-                }
-            }
 
     @staticmethod
     def structural_analysis(
@@ -1315,25 +1263,106 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         return {"structural_analysis": shared / "structural_analysis.npz"}
 
-    def _execute(
+    def run(
         self,
-        ctx: gufe.Context,
-        **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
+        *,
+        dry=False,
+        verbose=True,
+        scratch_basepath=None,
+        shared_basepath=None
+    ):
+        # Get the relevant outputs from the setup unit
+        system = deserialize(self._inputs["setup_results"]["system"])
+        positions = to_openmm(
+            np.load(self._inputs["setup_results"]["positions"] * offunit.nm
+        )
+        selection_indices = self._inputs["setup_results"]["selection_indices"]
 
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+        # Get the settings
+        settings = self._get_settings(self._inputs["protocol"].settings)
 
-        structural_analysis_outputs = self.structural_analysis(
-            scratch=ctx.scratch,
-            shared=ctx.shared,
-            pdb_filename=self._inputs["protocol"].settings.output_settings.output_structure,
-            trj_filename=self._inputs["protocol"].settings.output_settings.output_filename,
+        # Get the lambda schedule
+        # TODO - this should be better exposed to users
+        lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
+            functions=settings["lambda_settings"].lambda_functions,
+            windows=settings["lambda_settings"].lambda_windows
         )
 
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            **outputs,
-            **structural_analysis_outputs,
-        }
+        # Get the reporter
+        reporter = self._get_reporter(
+            selection_indices=selection_indices,
+            output_settings=settings["output_settings"],
+            simulation_settings=settings["simulation_settings"],
+        )
+
+        # Get the compute platform
+        restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
+        platform = omm_compute.get_openmm_platform(
+            platform_name=settings["engine_settings"].compute_platform,
+            gpu_device_index=settings["engine_settings"].gpu_device_index,
+            restrict_cpu_count=restrict_cpu,
+        )
+
+        # Get the integrator
+        integrator = self._get_integrator(
+            integrator_settings=settings["integrator_settings"],
+            simulation_settings=settings["simulation_settings"],
+            system=hybrid_system
+        )
+
+        try:
+            # Get sampler
+            sampler = self._get_sampler(
+                system=hybrid_system,
+                positions=hybrid_factory.hybrid_positions,
+                lambdas=lambdas,
+                integrator=integrator,
+                reporter=reporter,
+                simulation_settings=settings["simulation_settings"],
+                thermo_settings=settings["thermo_settings"],
+                alchem_settings=settings["alchemical_settings"],
+                platform=platform,
+                dry=dry
+            )
+
+            self._run_simulation(
+                sampler=sampler,
+                reporter=reporter,
+                simulation_settings=settings["simulation_settings"],
+                integrator_settings=settings["integrator_settings"],
+                output_settings=settings["output_settings"],
+                dry=dry,
+            )
+        finally:
+            # close reporter when you're done, prevent
+            # file handle clashes
+            reporter.close()
+
+            # clear GPU contexts
+            # TODO: use cache.empty() calls when openmmtools #690 is resolved
+            # replace with above
+            for context in list(sampler.energy_context_cache._lru._data.keys()):
+                del sampler.energy_context_cache._lru._data[context]
+            for context in list(sampler.sampler_context_cache._lru._data.keys()):
+                del sampler.sampler_context_cache._lru._data[context]
+            # cautiously clear out the global context cache too
+            for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
+                del openmmtools.cache.global_context_cache._lru._data[context]
+
+            del sampler.sampler_context_cache, sampler.energy_context_cache
+
+            if not dry:
+                del integrator, sampler
+
+        if not dry:  # pragma: no-cover
+            return {
+                "nc": self.shared_basepath / settings["output_settings"].output_filename,
+                "checkpoint": self.shared_basepath / self.shared_basepath / settings["output_settings"].output_filename,
+            }
+        else:
+            return {"debug":
+                {
+                    "sampler": sampler,
+                    "hybrid_factory": hybrid_factory,
+                }
+
