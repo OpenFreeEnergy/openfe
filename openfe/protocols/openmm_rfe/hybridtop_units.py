@@ -1279,9 +1279,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         import json
         from openfe_analysis import rmsd
 
-        # TODO: fix these so that it works with any user defined name
-        pdb_file = shared / "hybrid_system.pdb"
-        trj_file = shared / "simulation.nc"
+        pdb_file = shared / pdb_filename
+        trj_file = shared / trj_filename
 
         try:
             data = rmsd.gather_rms_data(pdb_file, trj_file)
@@ -1289,6 +1288,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         except Exception as e:
             return {"structural_analysis_error": str(e)}
 
+        # Generate plots
         if d := data["protein_2D_RMSD"]:
             fig = plotting.plot_2D_rmsd(d)
             fig.savefig(shared / "protein_2D_RMSD.png")
@@ -1301,7 +1301,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         f3.savefig(shared / "ligand_RMSD.png")
         plt.close(f3)
 
-        # Save to numpy compressed format (~ 6x more space efficient than JSON)
+        # Write out NPZ with the analyzed data
         np.savez_compressed(
             shared / "structural_analysis.npz",
             protein_RMSD=np.asarray(data["protein_RMSD"], dtype=np.float32),
