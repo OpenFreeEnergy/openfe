@@ -146,50 +146,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
     Calculates the relative free energy of an alchemical ligand transformation.
     """
-    def __init__(
-        self,
-        *,
-        protocol: gufe.Protocol,
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-        ligandmapping: LigandAtomMapping,
-        generation: int,
-        repeat_id: int,
-        name: str | None = None,
-    ):
-        """
-        Parameters
-        ----------
-        protocol : RelativeHybridTopologyProtocol
-          protocol used to create this Unit. Contains key information such
-          as the settings.
-        stateA, stateB : ChemicalSystem
-          the two ligand SmallMoleculeComponents to transform between.  The
-          transformation will go from ligandA to ligandB.
-        ligandmapping : LigandAtomMapping
-          the mapping of atoms between the two ligand components
-        repeat_id : int
-          identifier for which repeat (aka replica/clone) this Unit is
-        generation : int
-          counter for how many times this repeat has been extended
-        name : str, optional
-          human-readable identifier for this Unit
-
-        Notes
-        -----
-        The mapping used must not involve any elemental changes.  A check for
-        this is done on class creation.
-        """
-        super().__init__(
-            name=name,
-            protocol=protocol,
-            stateA=stateA,
-            stateB=stateB,
-            ligandmapping=ligandmapping,
-            repeat_id=repeat_id,
-            generation=generation,
-        )
-
     @staticmethod
     def _get_components(
         stateA: ChemicalSystem,
@@ -860,7 +816,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     def _execute(
         self,
         ctx: gufe.Context,
-        *,
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
@@ -1323,6 +1278,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                     "sampler": sampler,
                     "hybrid_factory": hybrid_factory,
                 }
+            }
 
     def _execute(
         self,
