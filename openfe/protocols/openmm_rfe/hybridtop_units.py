@@ -1295,7 +1295,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
         # Get the relevant inputs
         system = deserialize(setup_results.outputs["system"])
-        positions = to_openmm(np.load(setup_results.outputs["positions"] * offunit.nm))
+        positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nm)
         selection_indices = setup_results.outputs["selection_indices"]
 
         # Run the unit
