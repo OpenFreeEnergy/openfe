@@ -1360,11 +1360,13 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
 class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
+    @staticmethod
     def _analyze_multistate_energies(
         trajectory: pathlib.Path,
         checkpoint: str,
         sampler_method: str,
         output_directory: pathlib.Path,
+        dry: bool,
     ):
         """
         Analyze multistate energies and generate plots.
@@ -1380,6 +1382,8 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
           The multistate sampler method used.
         output_directory : pathlib.Path
           The path to where plots will be written.
+        dry : bool
+          Whether or not we are running a dry run.
         """
         reporter = multistate.MultiStateReporter(
             storage=trajectory,
@@ -1392,7 +1396,11 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             sampling_method=settings["simulation_settings"].sampler_method.lower(),
             result_units=offunit.kilocalorie_per_mole,
         )
-        analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
+
+        # Only create plots when not doing a dry run
+        if not dry:
+            analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
+
         analyzer.close()
         reporter.close()
         return analyzer.unit_results_dict
@@ -1402,6 +1410,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         pdb_file: pathlib.Path,
         trj_file: pathlib.Path,
         output_directory : pathlib.Path,
+        dry: bool,
     ) -> dict[str, str | pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
@@ -1415,6 +1424,8 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         output_directory : pathlib.Path
           The output directory where plots and the data NPZ file
           will be stored.
+        dry : bool
+          Whether or not we are running a dry run.
 
         Returns
         -------
@@ -1435,18 +1446,22 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         except Exception as e:
             return {"structural_analysis_error": str(e)}
 
-        # Generate relevant plots
-        if d := data["protein_2D_RMSD"]:
-            fig = plotting.plot_2D_rmsd(d)
-            fig.savefig(output_directory / "protein_2D_RMSD.png")
-            plt.close(fig)
-            f2 = plotting.plot_ligand_COM_drift(data["time(ps)"], data["ligand_wander"])
-            f2.savefig(output_directory / "ligand_COM_drift.png")
-            plt.close(f2)
-
-        f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
-        f3.savefig(output_directory / "ligand_RMSD.png")
-        plt.close(f3)
+        # Generate relevant plots if not a dry run
+        if not dry:
+            if d := data["protein_2D_RMSD"]:
+                fig = plotting.plot_2D_rmsd(d)
+                fig.savefig(output_directory / "protein_2D_RMSD.png")
+                plt.close(fig)
+                f2 = plotting.plot_ligand_COM_drift(
+                    data["time(ps)"],
+                    data["ligand_wander"]
+                )
+                f2.savefig(output_directory / "ligand_COM_drift.png")
+                plt.close(f2)
+    
+            f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
+            f3.savefig(output_directory / "ligand_RMSD.png")
+            plt.close(f3)
 
         # Write out an NPZ with all the relevant analysis data
         npz_file = output_directory / "structural_analysis.npz"
@@ -1513,18 +1528,26 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         settings = self._get_settings(self._inputs["protocol"].settings)
 
         # Energies analysis
+        if verbose:
+            self.logger.info("Analyzing energies")
+
         energy_analysis = self._analyze_energies(
             trajectory=trajectory,
             checkpoint=checkpoint,
             sampler_method=settings["simulation_settings"].sampler_method.lower(),
             output_directory=self.shared_basepath,
+            dry=dry,
         )
 
         # Structural analysis
+        if verbose:
+            self.logger.info("Analyzing structural outputs")
+
         structural_analysis = self.structural_analysis(
             pdb_file=pdb_file,
             trj_file=trajectory,
             output_directory=self.shared_basepath,
+            dry=dry,
         )
 
         # Return relevant things
