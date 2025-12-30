@@ -811,8 +811,11 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
         if dry:
             unit_results_dict |= {
+                # Adding unserialized objects so we can directly use them
+                # to chain units in tests
                 "hybrid_factory": hybrid_factory,
                 "hybrid_system": hybrid_system,
+                "hybrid_positions": hybrid_factory.hybrid_positions,
             }
 
         return unit_results_dict
@@ -1277,12 +1280,10 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 "checkpoint": self.shared_basepath / settings["output_settings"].checkpoint_storage_filename,
             }
         else:
-            return {"debug":
-                {
+            return {
                     "sampler": sampler,
                     "integrator": integrator,
                 }
-            }
 
     def _execute(
         self,
