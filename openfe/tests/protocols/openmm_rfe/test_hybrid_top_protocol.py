@@ -1053,10 +1053,7 @@ def test_setup_dodecahdron_ligand_box(
         stateB=toluene_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_setup_unit = [
-        pu for pu in dag.protocol_units
-        if isinstance(pu, HybridTopologySetupUnit)
-    ][0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     with tmpdir.as_cwd():
         hs = dag_setup_unit.run(dry=True)["hybrid_system"]
@@ -1097,10 +1094,18 @@ def test_dry_run_complex(
         stateB=toluene_complex_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        setup_results = dag_setup_unit.run(dry=True)
+        sim_results = dag_sim_unit.run(
+                system=setup_results["hybrid_system"],
+                positions=setup_results["hybrid_positions"],
+                selection_indices=setup_results["selection_indices"],
+                dry=True
+        )
+        sampler = sim_results["sampler"]
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
         assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
@@ -1595,13 +1600,13 @@ def tyk2_xml(tmp_path_factory):
         stateB=openfe.ChemicalSystem({"ligand": lig55}),
         mapping=mapping,
     )
-    pu = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     tmp = tmp_path_factory.mktemp("xml_reg")
 
-    dryrun = pu.run(dry=True, shared_basepath=tmp)
+    setup_results = dag_setup_unit.run(dry=True, shared_basepath=tmp)
 
-    system = dryrun["debug"]["sampler"]._hybrid_system
+    system = setup_results["hybrid_system"]
 
     return ET.fromstring(XmlSerializer.serialize(system))
 
@@ -2117,7 +2122,7 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, 
         ["benzoic_to_benzene_mapping", 0, 1, False, 11, 1, 3],
     ],
 )
-def test_dry_run_complex_alchemwater_totcharge(
+def test_setup_complex_alchemwater_totcharge(
     mapping_name,
     chgA,
     chgB,
@@ -2161,11 +2166,11 @@ def test_dry_run_complex_alchemwater_totcharge(
         stateB=stateB_system,
         mapping=mapping,
     )
-    unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     with tmpdir.as_cwd():
-        debug = unit.run(dry=True)["debug"]
-        htf = debug["hybrid_factory"]
+        setup_results = dag_setup_unit.run(dry=True)
+        htf = setup_results["hybrid_factory"]
         _assert_total_charge(htf.hybrid_system, htf._atom_classes, chgA, chgB)
 
         assert len(htf._atom_classes["core_atoms"]) == core_atoms
