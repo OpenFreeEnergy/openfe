@@ -1355,7 +1355,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
 
         # Only create plots when not doing a dry run
         if not dry:
-            analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
+            analyzer.plot(filepath=output_directory, filename_prefix="")
 
         analyzer.close()
         reporter.close()
