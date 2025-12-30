@@ -1222,14 +1222,14 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         integrator = self._get_integrator(
             integrator_settings=settings["integrator_settings"],
             simulation_settings=settings["simulation_settings"],
-            system=hybrid_system
+            system=system
         )
 
         try:
             # Get sampler
             sampler = self._get_sampler(
-                system=hybrid_system,
-                positions=hybrid_factory.hybrid_positions,
+                system=system,
+                positions=positions,
                 lambdas=lambdas,
                 integrator=integrator,
                 reporter=reporter,
@@ -1280,7 +1280,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             return {"debug":
                 {
                     "sampler": sampler,
-                    "hybrid_factory": hybrid_factory,
+                    "integrator": integrator,
                 }
             }
 
