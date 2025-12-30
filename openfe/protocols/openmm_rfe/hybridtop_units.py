@@ -1507,7 +1507,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         )
 
         # Return relevant things
-        outputs = energy_analysis | structural_analysisa
+        outputs = energy_analysis | structural_analysis
         return outputs
 
     def _execute(
