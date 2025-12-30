@@ -49,7 +49,11 @@ from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings,
 )
 from .hybridtop_unit_results import RelativeHybridTopologyProtocolResult
-from .hybridtop_units import RelativeHybridTopologyProtocolUnit
+from .hybridtop_units import (
+    HybridTopologySetupUnit,
+    HybridTopologyMultiStateSimulationUnit,
+    HybridTopologyMultiStateAnalysisUnit,
+)
 
 
 logger = logging.getLogger(__name__)
