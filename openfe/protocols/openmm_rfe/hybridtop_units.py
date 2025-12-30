@@ -798,9 +798,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         serialize(hybrid_system, system_outfile)
 
         # Positions
-        positions_outfile = self.shared_basepath / "hybrid_positions.npz"
+        positions_outfile = self.shared_basepath / "hybrid_positions.npy"
         npy_positions = from_openmm(hybrid_factory.hybrid_positions).to("nanometer").m
-        np.savez(positions_outfile, npy_positions)
+        np.save(positions_outfile, npy_positions)
 
         unit_results_dict = {
             "system": system_outfile,
