@@ -61,27 +61,37 @@ def test_openmm_run_engine(
     r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
 
     assert r.ok()
+
+    # Get the path to the simulation unit shared
+    for pur in r.protocol_unit_results:
+        if "Simulation" in pur.name:
+            sim_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+            assert sim_shared.exists()
+            assert pathlib.Path(sim_shared).is_dir()
+
     for pur in r.protocol_unit_results:
         if "Analysis" not in pur.name:
             continue
 
-        unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
-        assert unit_shared.exists()
-        assert pathlib.Path(unit_shared).is_dir()
+        analysis_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+        assert analysis_shared.exists()
+        assert pathlib.Path(analysis_shared).is_dir()
 
         # Check the checkpoint file exists
         checkpoint = pur.outputs["checkpoint"]
-        assert checkpoint == "checkpoint.chk"
-        assert (unit_shared / checkpoint).exists()
+        assert checkpoint.name == "checkpoint.chk"
+        assert checkpoint == sim_shared / "checkpoint.chk"
+        assert checkpoint.exists()
 
         # Check the nc simulation file exists
         # TODO: assert the number of frames
         nc = pur.outputs["trajectory"]
-        assert nc == unit_shared / "simulation.nc"
+        assert nc.name == "simulation.nc"
+        assert nc == sim_shared / "simulation.nc"
         assert nc.exists()
 
         # Check structural analysis contents
-        structural_analysis_file = unit_shared / "structural_analysis.npz"
+        structural_analysis_file = analysis_shared / "structural_analysis.npz"
         assert (structural_analysis_file).exists()
         assert pur.outputs["structural_analysis"] == structural_analysis_file
 
