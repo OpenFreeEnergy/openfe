@@ -1347,7 +1347,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             open_mode="r",
         )
 
-        analyzer = multistate_analysis.MultiStateEquilFEAnalysis(
+        analyzer = multistate_analysis.MultistateEquilFEAnalysis(
             reporter=reporter,
             sampling_method=settings["simulation_settings"].sampler_method.lower(),
             result_units=offunit.kilocalorie_per_mole,
