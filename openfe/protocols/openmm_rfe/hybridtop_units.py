@@ -802,7 +802,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         npy_positions = from_openmm(hybrid_factory.hybrid_positions).to("nanometer").m
         np.savez(positions_outfile, npy_positions)
 
-        uni_results_dict = {
+        unit_results_dict = {
             "system": system_outfile,
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
