@@ -1487,7 +1487,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         if verbose:
             self.logger.info("Analyzing energies")
 
-        energy_analysis = self._analyze_energies(
+        energy_analysis = self._analyze_multistate_energies(
             trajectory=trajectory,
             checkpoint=checkpoint,
             sampler_method=settings["simulation_settings"].sampler_method.lower(),
@@ -1499,7 +1499,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         if verbose:
             self.logger.info("Analyzing structural outputs")
 
-        structural_analysis = self.structural_analysis(
+        structural_analysis = self._structural_analysis(
             pdb_file=pdb_file,
             trj_file=trajectory,
             output_directory=self.shared_basepath,
