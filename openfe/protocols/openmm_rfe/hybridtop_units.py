@@ -1514,8 +1514,8 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         self,
         ctx: gufe.Context,
         *,
-        setup_result,
-        simulation_result,
+        setup_results,
+        simulation_results,
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])

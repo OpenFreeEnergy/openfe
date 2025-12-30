@@ -619,7 +619,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
             simulation = HybridTopologyMultiStateSimulationUnit(
                 protocol=self,
-                setup_result=setup,
+                setup_results=setup,
                 generation=0,
                 repeat_id=repeat_id,
                 name=(
@@ -630,8 +630,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
             analysis = HybridTopologyMultiStateAnalysisUnit(
                 protocol=self,
-                setup_result=setup,
-                simulation_result=simulation,
+                setup_results=setup,
+                simulation_results=simulation,
                 repeat_id=repeat_id,
                 name=(
                     f"HybridTopology Analysis: {Anames} to {Bnames} "
