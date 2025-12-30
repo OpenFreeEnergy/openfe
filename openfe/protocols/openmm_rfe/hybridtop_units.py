@@ -16,7 +16,7 @@ import os
 import pathlib
 import subprocess
 from itertools import chain
-from typing import Any, Optional
+from typing import Any
 
 import matplotlib.pyplot as plt
 import mdtraj
@@ -155,7 +155,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         ligandmapping: LigandAtomMapping,
         generation: int,
         repeat_id: int,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         """
         Parameters
@@ -750,9 +750,14 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         return selection_indices
 
     def run(
-        self, *, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
+        self,
+        *,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None
     ) -> dict[str, Any]:
-        """Run the relative free energy calculation.
+        """Setup a hybrid topology system.
 
         Parameters
         ----------
@@ -763,16 +768,16 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
-        scratch_basepath: Pathlike, optional
+        scratch_basepath: pathlib.Path | None
           Where to store temporary files, defaults to current working directory
-        shared_basepath : Pathlike, optional
+        shared_basepath : pathlib.Path | None
           Where to run the calculation, defaults to current working directory
 
         Returns
         -------
         dict
-          Outputs created in the basepath directory or the debug objects
-          (i.e. sampler) if ``dry==True``.
+          Outputs created by the setup unit or the debug objects
+          (e.g. HybridTopologyFactory) if ``dry==True``.
 
         Raises
         ------
@@ -859,24 +864,16 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     def _execute(
         self,
         ctx: gufe.Context,
-        **kwargs,
+        *,
+        **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-
         outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
-
-        structural_analysis_outputs = self.structural_analysis(
-            scratch=ctx.scratch,
-            shared=ctx.shared,
-            pdb_filename=self._inputs["protocol"].settings.output_settings.output_structure,
-            trj_filename=self._inputs["protocol"].settings.output_settings.output_filename,
-        )
 
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
             **outputs,
-            **structural_analysis_outputs,
         }
 
 
@@ -1194,89 +1191,52 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
             return None
 
-    @staticmethod
-    def structural_analysis(
-        scratch: pathlib.Path,
-        shared: pathlib.Path,
-        pdb_filename: str,
-        trj_filename: str,
-    ) -> dict[str, str]:
-        """
-        Run structural analysis using ``openfe-analysis``.
-
-        Parameters
-        ----------
-        scratch : pathlib.path
-          Path to the scratch directory.
-        shared : pathlib.path
-          Path to the shared directory.
-        pdb_filename : str
-          The PDB file name.
-        trj_filename : str
-          The trajectory file name.
-
-        Returns
-        -------
-        dict[str, str]
-          Dictionary containing either the path to the NPZ
-          file with the structural data, or the analysis error.
-
-        Notes
-        -----
-        Don't put energy analysis here, it uses the open file reporter
-        whereas structural stuff requires the file handle to be closed.
-        """
-        import json
-        from openfe_analysis import rmsd
-
-        # TODO: fix these so that it works with any user defined name
-        pdb_file = shared / "hybrid_system.pdb"
-        trj_file = shared / "simulation.nc"
-
-        try:
-            data = rmsd.gather_rms_data(pdb_file, trj_file)
-        # TODO: change this to more specific exception types
-        except Exception as e:
-            return {"structural_analysis_error": str(e)}
-
-        if d := data["protein_2D_RMSD"]:
-            fig = plotting.plot_2D_rmsd(d)
-            fig.savefig(shared / "protein_2D_RMSD.png")
-            plt.close(fig)
-            f2 = plotting.plot_ligand_COM_drift(data["time(ps)"], data["ligand_wander"])
-            f2.savefig(shared / "ligand_COM_drift.png")
-            plt.close(f2)
-
-        f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
-        f3.savefig(shared / "ligand_RMSD.png")
-        plt.close(f3)
-
-        # Save to numpy compressed format (~ 6x more space efficient than JSON)
-        np.savez_compressed(
-            shared / "structural_analysis.npz",
-            protein_RMSD=np.asarray(data["protein_RMSD"], dtype=np.float32),
-            ligand_RMSD=np.asarray(data["ligand_RMSD"], dtype=np.float32),
-            ligand_COM_drift=np.asarray(data["ligand_wander"], dtype=np.float32),
-            protein_2D_RMSD=np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
-            time_ps=np.asarray(data["time(ps)"], dtype=np.float32),
-        )
-
-        return {"structural_analysis": shared / "structural_analysis.npz"}
-
     def run(
         self,
         *,
-        dry=False,
-        verbose=True,
-        scratch_basepath=None,
-        shared_basepath=None
-    ):
-        # Get the relevant outputs from the setup unit
-        system = deserialize(self._inputs["setup_results"]["system"])
-        positions = to_openmm(
-            np.load(self._inputs["setup_results"]["positions"] * offunit.nm
-        )
-        selection_indices = self._inputs["setup_results"]["selection_indices"]
+        system: openmm.System,
+        positions: openmm.unit.Quantity,
+        selection_indices: npt.NDArray,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None
+    ) -> dict[str, Any]:
+        """Run the free energy calculation using a multistate sampler.
+
+        Parameters
+        ----------
+        system : openmm.System
+          The System to simulate.
+        positions : openmm.unit.Quantity
+          The positions of the System.
+        selection_indices : npt.NDArray
+          Indices of the System particles to write to file.
+        dry : bool
+          Do a dry run of the calculation, creating all necessary hybrid
+          system components (topology, system, sampler, etc...) but without
+          running the simulation.
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        scratch_basepath: pathlib.Path | None
+          Where to store temporary files, defaults to current working directory
+        shared_basepath : pathlib.Path | None
+          Where to run the calculation, defaults to current working directory
+
+        Returns
+        -------
+        dict
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
+
+        Raises
+        ------
+        error
+          Exception if anything failed
+        """
+        # Prepare paths & verbosity
+        self._prepare(verbose, scratch_basepath, shared_basepath)
 
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
@@ -1357,7 +1317,9 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         if not dry:  # pragma: no-cover
             return {
                 "nc": self.shared_basepath / settings["output_settings"].output_filename,
-                "checkpoint": self.shared_basepath / self.shared_basepath / settings["output_settings"].output_filename,
+                # TODO: historically checkpoint was provided as just the file
+                # Maybe we should switch to the full path?
+                "checkpoint": settings["output_settings"].checkpoint_storage_filename,
             }
         else:
             return {"debug":
@@ -1366,3 +1328,233 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                     "hybrid_factory": hybrid_factory,
                 }
 
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        *,
+        setup_results,
+        **inputs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        # Get the relevant inputs
+        system = deserialize(setup_results.outputs["system"])
+        positions = to_openmm(np.load(setup_results.outputs["positions"] * offunit.nm))
+        selection_indices = setup_results.outputs["selection_indices"]
+
+        # Run the unit
+        outputs = self.run(
+            system=system,
+            positions=positions,
+            selection_indices=selection_indices,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared
+        )
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            **outputs,
+        }
+
+
+class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+
+    def _analyze_multistate_energies(
+        trajectory: pathlib.Path,
+        checkpoint: str,
+        sampler_method: str,
+        output_directory: pathlib.Path,
+    ):
+        """
+        Analyze multistate energies and generate plots.
+
+        Parameters
+        ----------
+        trajectory : pathlib.Path
+          Path to the NetCDF trajectory file.
+        checkpoint : str
+          The name of the checkpoint file. Note this is
+          relative in path to the trajectory file.
+        sampler_method : str
+          The multistate sampler method used.
+        output_directory : pathlib.Path
+          The path to where plots will be written.
+        """
+        reporter = multistate.MultiStateReporter(
+            storage=trajectory,
+            checkpoint_storage=checkpoint,
+            open_mode="r",
+        )
+
+        analyzer = multistate_analysis.MultiStateEquilFEAnalysis(
+            reporter=reporter,
+            sampling_method=settings["simulation_settings"].sampler_method.lower(),
+            result_units=offunit.kilocalorie_per_mole,
+        )
+        analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
+        analyzer.close()
+        reporter.close()
+        return analyzer.unit_results_dict
+
+    @staticmethod
+    def _structural_analysis(
+        pdb_file: pathlib.Path,
+        trj_file: pathlib.Path,
+        output_directory : pathlib.Path,
+    ) -> dict[str, str | pathlib.Path]:
+        """
+        Run structural analysis using ``openfe-analysis``.
+
+        Parameters
+        ----------
+        pdb_file : pathlib.Path
+          Path to the PDB file.
+        trj_filen : pathlib.Path
+          Path to the trajectory file.
+        output_directory : pathlib.Path
+          The output directory where plots and the data NPZ file
+          will be stored.
+
+        Returns
+        -------
+        dict[str, str]
+          Dictionary containing either the path to the NPZ
+          file with the structural data, or the analysis error.
+
+        Notes
+        -----
+        Don't put energy analysis here as it uses the MultiStateReporter,
+        the structural analysis requires the file handle to be closed.
+        """
+        from openfe_analysis import rmsd
+
+        try:
+            data = rmsd.gather_rms_data(pdb_file, trj_file)
+        # TODO: eventually change this to more specific exception types
+        except Exception as e:
+            return {"structural_analysis_error": str(e)}
+
+        # Generate relevant plots
+        if d := data["protein_2D_RMSD"]:
+            fig = plotting.plot_2D_rmsd(d)
+            fig.savefig(output_directory / "protein_2D_RMSD.png")
+            plt.close(fig)
+            f2 = plotting.plot_ligand_COM_drift(data["time(ps)"], data["ligand_wander"])
+            f2.savefig(output_directory / "ligand_COM_drift.png")
+            plt.close(f2)
+
+        f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
+        f3.savefig(output_directory / "ligand_RMSD.png")
+        plt.close(f3)
+
+        # Write out an NPZ with all the relevant analysis data
+        npz_file = output_directory / "structural_analysis.npz"
+        np.savez_compressed(
+            npz_file,
+            protein_RMSD=np.asarray(data["protein_RMSD"], dtype=np.float32),
+            ligand_RMSD=np.asarray(data["ligand_RMSD"], dtype=np.float32),
+            ligand_COM_drift=np.asarray(data["ligand_wander"], dtype=np.float32),
+            protein_2D_RMSD=np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
+            time_ps=np.asarray(data["time(ps)"], dtype=np.float32),
+        )
+
+        return {"structural_analysis": npz_file}
+
+    def run(
+        self,
+        *,
+        pdb_file: pathlib.Path,
+        trajectory: pathlib.Path,
+        checkpoint: str,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
+    ) -> dict[str, Any]:
+
+        """Analyze the multistate simulation.
+
+        Parameters
+        ----------
+        pdb_file : pathlib.Path
+          Path to the PDB file representing the subsampled structure.
+        trajectory : pathlib.Path
+          Path to the MultiStateReporter generated NetCDF file.
+        checkpoint : str
+          Name of the checkpoint file generated by MultiStateReporter.
+        dry : bool
+          Do a dry run of the calculation, creating all necessary hybrid
+          system components (topology, system, sampler, etc...) but without
+          running the simulation.
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        scratch_basepath: pathlib.Path | None
+          Where to store temporary files, defaults to current working directory
+        shared_basepath : pathlib.Path | None
+          Where to run the calculation, defaults to current working directory
+
+        Returns
+        -------
+        dict
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
+
+        Raises
+        ------
+        error
+          Exception if anything failed
+        """
+        # Prepare paths & verbosity
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        # Get the settings
+        settings = self._get_settings(self._inputs["protocol"].settings)
+
+        # Energies analysis
+        energy_analysis = self._analyze_energies(
+            trajectory=trajectory,
+            checkpoint=checkpoint,
+            sampler_method=settings["simulation_settings"].sampler_method.lower(),
+            output_directory=self.shared_basepath,
+        )
+
+        # Structural analysis
+        structural_analysis = self.structural_analysis(
+            pdb_file=pdb_file,
+            trj_file=trajectory,
+            output_directory=self.shared_basepath,
+        )
+
+        # Return relevant things
+        outputs = energy_analysis | structural_analysisa
+        return outputs
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        *,
+        setup_result,
+        simulation_result,
+        **inputs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        pdb_file = setup_result.outputs["pdb_structure"]
+        trajectory = simulation_result.outputs["nc"]
+        checkpoint = simulation_result.outputs["checkpoint"]
+
+        outputs = self.run(
+            pdb_file=pdb_file,
+            trajectory=trajectory,
+            checkpoint=checkpoint,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared
+        )
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            **outputs,
+        }
