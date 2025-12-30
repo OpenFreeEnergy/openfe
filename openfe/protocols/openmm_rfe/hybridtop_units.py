@@ -1520,9 +1520,9 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        pdb_file = setup_result.outputs["pdb_structure"]
-        trajectory = simulation_result.outputs["nc"]
-        checkpoint = simulation_result.outputs["checkpoint"]
+        pdb_file = setup_results.outputs["pdb_structure"]
+        trajectory = simulation_results.outputs["nc"]
+        checkpoint = simulation_results.outputs["checkpoint"]
 
         outputs = self.run(
             pdb_file=pdb_file,
