@@ -202,7 +202,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         for pus in self.data.values():
             nc = is_file(pus[0].outputs["trajectory"])
             dir_path = nc.parents[0]
-            chk = is_file(dir_path / pus[0].outputs["checkpoint"]).name
+            chk = is_file(pus[0].outputs["checkpoint"]).name
             reporter = multistate.MultiStateReporter(
                 storage=nc, checkpoint_storage=chk, open_mode="r"
             )
