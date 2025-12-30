@@ -62,6 +62,9 @@ def test_openmm_run_engine(
 
     assert r.ok()
     for pur in r.protocol_unit_results:
+        if "Analysis" not in pur.name:
+            continue
+
         unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
