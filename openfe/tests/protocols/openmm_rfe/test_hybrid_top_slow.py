@@ -67,13 +67,13 @@ def test_openmm_run_engine(
         assert pathlib.Path(unit_shared).is_dir()
 
         # Check the checkpoint file exists
-        checkpoint = pur.outputs["last_checkpoint"]
+        checkpoint = pur.outputs["checkpoint"]
         assert checkpoint == "checkpoint.chk"
         assert (unit_shared / checkpoint).exists()
 
         # Check the nc simulation file exists
         # TODO: assert the number of frames
-        nc = pur.outputs["nc"]
+        nc = pur.outputs["trajectory"]
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
 
