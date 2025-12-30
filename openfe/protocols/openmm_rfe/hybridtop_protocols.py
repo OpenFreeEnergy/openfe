@@ -590,23 +590,55 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Anames = ",".join(c.name for c in alchem_comps["stateA"])
         Bnames = ",".join(c.name for c in alchem_comps["stateB"])
 
-        # our DAG has no dependencies, so just list units
-        n_repeats = self.settings.protocol_repeats
+        # DAG dependency is setup -> simulation -> analysis
+        #                     |--------------------->
+        setup_units = []
+        simulation_units = []
+        analysis_units = []
 
-        units = [
-            RelativeHybridTopologyProtocolUnit(
+        for i in range(self.settings.protocol_repeats):
+            repeat_id = int(uuid.uuid4())
+
+            setup = HybridTopologySetupUnit(
                 protocol=self,
                 stateA=stateA,
                 stateB=stateB,
                 ligandmapping=ligandmapping,
+                alchemical_components=alchem_comps,
                 generation=0,
-                repeat_id=int(uuid.uuid4()),
-                name=f"{Anames} to {Bnames} repeat {i} generation 0",
+                repeat_id=repeat_id,
+                name=(
+                    f"HybridTopology Setup: {Anames} to {Bnames} "
+                    f"repeat {i} generation 0"
+                )
             )
-            for i in range(n_repeats)
-        ]
 
-        return units
+            simulation = HybridTopologyMultiStateSimulationUnit(
+                protocol=self,
+                setup_result=setup,
+                generation=0,
+                repeat_id=repeat_id,
+                name=(
+                    f"HybridTopology Simulation: {Anames} to {Bnames} "
+                    f"repeat {i} generation 0"
+                )
+            )
+
+            analysis = HybridTopologyMultiStateAnalysisUnit(
+                protocol=self,
+                setup_result=setup,
+                simulation_result=simulation,
+                repeat_id=repeat_id,
+                name=(
+                    f"HybridTopology Analysis: {Anames} to {Bnames} "
+                    f"repeat {i} generation 0"
+                )
+            )
+            setup_units.append(setup)
+            simulation_units.append(simulation)
+            analysis_units.append(analysis)
+
+        return [*setup_units, *simulation_units, *analysis_units]
 
     def _gather(self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]) -> dict[str, Any]:
         # result units will have a repeat_id and generations within this repeat_id

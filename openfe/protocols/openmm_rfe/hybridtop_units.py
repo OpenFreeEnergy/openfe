@@ -195,7 +195,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         stateA: ChemicalSystem,
         stateB: ChemicalSystem
         ) -> tuple[
-            dict[str, Component],
             SolventComponent,
             ProteinComponent,
             dict[SmallMoleculeComponent, OFFMolecule]
@@ -212,8 +211,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
         Returns
         -------
-        alchem_comps : dict[str, Component]
-            Dictionary of alchemical components.
         solv_comp : SolventComponent
             The solvent component.
         protein_comp : ProteinComponent
@@ -222,8 +219,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             Dictionary of small molecule components paired
             with their OpenFF Molecule.
         """
-        alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-
         solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
         _, _, smcs_B = system_validation.get_components(stateB)
 
@@ -232,7 +227,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             for m in set(smcs_A).union(set(smcs_B))
         }
 
-        return alchem_comps, solvent_comp, protein_comp, small_mols
+        return solvent_comp, protein_comp, small_mols
 
     @staticmethod
     def _assign_partial_charges(
@@ -794,7 +789,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         stateA = self._inputs["stateA"]
         stateB = self._inputs["stateB"]
         mapping = self._inputs["ligandmapping"]
-        alchem_comps, solvent_comp, protein_comp, small_mols = self._get_components(
+        alchem_comps = self._inputs["alchemical_components"]
+        solvent_comp, protein_comp, small_mols = self._get_components(
             stateA, stateB
         )
 
