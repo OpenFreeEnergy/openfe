@@ -103,6 +103,7 @@ def execute_and_serialize(
     logger.info(f"running {simname}")
     with tempfile.TemporaryDirectory() as tmpdir:
         workdir = pathlib.Path(tmpdir)
+        workdir = pathlib.Path('.')
         dagres = gufe.protocols.execute_DAG(
             dag,
             shared_basedir=workdir,
@@ -237,6 +238,7 @@ def generate_rfe_settings():
     settings = RelativeHybridTopologyProtocol.default_settings()
     settings.simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.simulation_settings.production_length = 250 * unit.picosecond
+    settings.output_settings.checkpoint_interval = 10 * unit.picosecond
     settings.forcefield_settings.nonbonded_method = "nocutoff"
 
     return settings
