@@ -992,8 +992,21 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         sampler : multistate.MultiStateSampler
           The requested sampler.
         """
+        # Get the real time analysis values to use
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
             simulation_settings=simulation_settings,
+        )
+
+        # Get the number of production iterations to run for
+        steps_per_iteration = integrator.n_steps
+        timestep = from_openmm(integrator.timestep)
+        # TODO: this is bugged!
+        number_of_iterations = int(
+            settings_validation.get_simsteps(
+                sim_length=simulation_settings.production_length,
+                timestep=timestep,
+                mc_steps=steps_per_iteration,
+            ) / steps_per_iteration
         )
 
         # convert early_termination_target_error from kcal/mol to kT
@@ -1012,6 +1025,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 online_analysis_interval=rta_its,
                 online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=rta_min_its,
+                number_of_iterations=number_of_iterations,
             )
 
         elif simulation_settings.sampler_method.lower() == "sams":
@@ -1023,6 +1037,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 online_analysis_minimum_iterations=rta_min_its,
                 flatness_criteria=simulation_settings.sams_flatness_criteria,
                 gamma0=simulation_settings.sams_gamma0,
+                number_of_iterations=number_of_iterations,
             )
 
         elif simulation_settings.sampler_method.lower() == "independent":
@@ -1033,6 +1048,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 online_analysis_interval=rta_its,
                 online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=rta_min_its,
+                number_of_iterations=number_of_iterations,
             )
 
         else:
@@ -1115,23 +1131,25 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         )
 
         if not dry:  # pragma: no-cover
-            # minimize
-            if self.verbose:
-                self.logger.info("minimizing systems")
+            # No productions steps have been taken, so start from scratch
+            if sampler._iteration == 0:
+                # minimize
+                if self.verbose:
+                    self.logger.info("minimizing systems")
 
-            sampler.minimize(max_iterations=simulation_settings.minimization_steps)
+                sampler.minimize(max_iterations=simulation_settings.minimization_steps)
 
-            # equilibrate
-            if self.verbose:
-                self.logger.info("equilibrating systems")
+                # equilibrate
+                if self.verbose:
+                    self.logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps / mc_steps))
+                sampler.equilibrate(int(equil_steps / mc_steps))
 
-            # production
+            # At this point we are ready for production
             if self.verbose:
                 self.logger.info("running production phase")
 
-            sampler.extend(int(prod_steps / mc_steps))
+            sampler.run()
 
             if self.verbose:
                 self.logger.info("production phase complete")
