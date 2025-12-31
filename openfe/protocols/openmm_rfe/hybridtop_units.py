@@ -923,7 +923,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
     @staticmethod
     def _get_reporter(
-        storage_path: pathlib.path,
+        storage_path: pathlib.Path,
         selection_indices: npt.NDArray,
         output_settings: MultiStateOutputSettings,
         simulation_settings: MultiStateSimulationSettings,
@@ -1262,7 +1262,10 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         settings = self._get_settings(self._inputs["protocol"].settings)
 
         # Check for a restart
-        self.restart = self._check_restart(settings, shared_basepath)
+        self.restart = self._check_restart(
+            settings=settings,
+            shared_path=self.shared_basepath
+        )
 
         # Get the lambda schedule
         # TODO - this should be better exposed to users
