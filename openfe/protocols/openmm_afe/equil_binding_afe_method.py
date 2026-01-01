@@ -533,7 +533,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # Similarly we don't need to check prot_comp
         return alchem_comps, solv_comp, prot_comp, off_comps
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a complex transformation.
 
@@ -716,7 +716,6 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
     ) -> tuple[
-        GlobalParameterState,
         Quantity,
         System,
         geometry.HostGuestRestraintGeometry,
@@ -750,9 +749,6 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
 
         Returns
         -------
-        restraint_parameter_state : RestraintParameterState
-          A RestraintParameterState object that defines the control
-          parameter for the restraint.
         correction : openff.units.Quantity
           The standard state correction for the restraint.
         system : openmm.System
@@ -835,10 +831,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             rest_geom,
         )
 
-        # Get the GlobalParameterState for the restraint
-        restraint_parameter_state = omm_restraints.RestraintParameterState(lambda_restraints=1.0)
         return (
-            restraint_parameter_state,
             correction,
             # Remove the thermostat, otherwise you'll get an
             # Andersen thermostat by default!
@@ -881,7 +874,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         # Similarly we don't need to check prot_comp just return None
         return alchem_comps, solv_comp, None, off_comps
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a solvent transformation.
 

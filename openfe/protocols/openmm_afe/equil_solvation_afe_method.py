@@ -545,7 +545,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         # (of stateA since we enforce only one disappearing ligand)
         return alchem_comps, None, prot_comp, off_comps
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a vacuum transformation.
 
@@ -620,7 +620,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         # disallowed on create
         return alchem_comps, solv_comp, prot_comp, off_comps
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a solvent transformation.
 

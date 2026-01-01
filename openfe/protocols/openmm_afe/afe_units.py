@@ -76,8 +76,14 @@ from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
     SettingsBaseModel,
 )
+from openfe.protocols.openmm_utils.serialization import (
+    serialize,
+    deserialize,
+)
 from openfe.protocols.restraint_utils import geometry
+from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.utils import log_system_probe, without_oechem_backend
+
 
 logger = logging.getLogger(__name__)
 
@@ -402,13 +408,12 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         return system_generator
 
+    @staticmethod
     def _get_modeller(
-        self,
         protein_component: Optional[ProteinComponent],
         solvent_component: Optional[SolventComponent],
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
-        partial_charge_settings: BasePartialChargeSettings,
         solvation_settings: BaseSolvationSettings,
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
         """
@@ -426,9 +431,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
           SmallMoleculeComponent.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
-        partial_charge_settings : BasePartialChargeSettings
-          Settings detailing how to assign partial charges to the
-          SMCs of the system.
         solvation_settings : BaseSolvationSettings
           Settings detailing how to solvate the system.
 
@@ -440,30 +442,14 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         comp_resids : dict[Component, npt.NDArray]
           Dictionary of residue indices for each component in system.
         """
-        if self.verbose:
-            self.logger.info("Parameterizing molecules")
-
-        # Assign partial charges to smcs
-        self._assign_partial_charges(partial_charge_settings, smc_components)
-
-        # TODO: guard the following from non-RDKit backends
-        # force the creation of parameters for the small molecules
-        # this is necessary because we need to have the FF generated ahead
-        # of solvating the system.
-        # Block out oechem backend to avoid any issues with
-        # smiles roundtripping between rdkit and oechem
-        with without_oechem_backend():
-            for mol in smc_components.values():
-                system_generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
-
-            # get OpenMM modeller + dictionary of resids for each component
-            system_modeller, comp_resids = system_creation.get_omm_modeller(
-                protein_comp=protein_component,
-                solvent_comp=solvent_component,
-                small_mols=smc_components,
-                omm_forcefield=system_generator.forcefield,
-                solvent_settings=solvation_settings,
-            )
+        # get OpenMM modeller + dictionary of resids for each component
+        system_modeller, comp_resids = system_creation.get_omm_modeller(
+            protein_comp=protein_component,
+            solvent_comp=solvent_component,
+            small_mols=smc_components,
+            omm_forcefield=system_generator.forcefield,
+            solvent_settings=solvation_settings,
+        )
 
         return system_modeller, comp_resids
 
@@ -510,7 +496,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         with without_oechem_backend():
             system_generator = self._get_system_generator(
-                settings=settings, solvent_comp=solvent_component
+                settings=settings,
+                solvent_comp=solvent_component
             )
     
             modeller, comp_resids = self._get_modeller(
@@ -518,22 +505,19 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
                 solvent_component=solvent_component,
                 smc_components=smc_components,
                 system_generator=system_generator,
-                partial_charge_settings=settings["charge_settings"],
                 solvation_settings=settings["solvation_settings"],
+            )
+
+            system = system_generator.create_system(
+                topology=modeller.topology,
+                molecules=list(smc_components.values()),
             )
 
         topology = modeller.getTopology()
         # roundtrip positions to remove vec3 issues
         positions = to_openmm(from_openmm(modeller.getPositions()))
 
-        # Block out oechem backend to avoid any issues with
-        # smiles roundtripping between rdkit and oechem
-        with without_oechem_backend():
-            system = system_generator.create_system(
-                topology=modeller.topology,
-                molecules=list(smc_components.values()),
-            )
-
+        # TODO: move this to when we create the Integrator or sampler
         # Check and fail early on the presence of virtual sites
         # and multistate sampler not using velocity restart
         if not settings["integrator_settings"].reassign_velocities:
@@ -588,7 +572,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
     ) -> tuple[
-        Optional[GlobalParameterState],
         Optional[Quantity],
         Optional[openmm.System],
         Optional[geometry.BaseRestraintGeometry],
@@ -664,6 +647,46 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         return alchemical_factory, alchemical_system, alchemical_indices
 
+    @staticmethod
+    def _subsample_topology(
+        topology: openmm.app.Topology,
+        positions: openmm.unit.Quantity,
+        output_selection: str,
+        output_file: pathlib.Path,
+    ) -> npt.NDArray:
+        """
+        Subsample the system based on user-selected output selection
+        and write the subsampled topology to a PDB file.
+
+        Parameters
+        ----------
+        topology : openmm.app.Topology
+          The system topology to subsample.
+        positions : openmm.unit.Quantity
+          The system positions.
+        output_selection : str
+          An MDTraj selection string to subsample the topology with.
+        output_file : pathlib.Path
+          Path to the file to write the PDB to.
+
+        Returns
+        -------
+        selection_indices : npt.NDArray
+          The indices of the subselected system.
+        """
+        mdt_top = mdt.Topology.from_openmm(topology)
+        selection_indices = mdt_top.select(output_settings.output_indices)
+
+        # Write out the subselected structure to PDB if not empty
+        if len(selection_indices) > 0:
+            traj = mdt.Trajectory(
+                positions[selection_indices, :],
+                mdt_top.subset(selection_indices),
+            )
+            traj.save_pdb(output_file)
+
+        return selection_indices
+
     def _get_states(
         self,
         alchemical_system: openmm.System,
@@ -671,8 +694,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         box_vectors: openmm.unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         lambdas: dict[str, list[float]],
-        solvent_comp: Optional[SolventComponent],
-        restraint_state: Optional[GlobalParameterState],
+        solvent_component: Optional[SolventComponent],
+        alchemically_restrained: bool,
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
         Get a list of sampler and thermodynmic states from an
@@ -690,10 +713,11 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
           A dictionary of settings for the protocol unit.
         lambdas : dict[str, list[float]]
           A dictionary of lambda scales.
-        solvent_comp : Optional[SolventComponent]
+        solvent_component : Optional[SolventComponent]
           The solvent component of the system, if there is one.
-        restraint_state : Optional[GlobalParameterState]
-          The restraint parameter control state, if there is one.
+        alchemically_restrained : bool
+          Whether or not the system requires a control parameter
+          for any alchemical restraints.
 
         Returns
         -------
@@ -711,14 +735,17 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         constants = dict()
         constants["temperature"] = ensure_quantity(temperature, "openmm")
 
-        if solvent_comp is not None:
+        if solvent_component is not None:
             constants["pressure"] = ensure_quantity(pressure, "openmm")
 
         # Get the thermodynamic parameter protocol
         param_protocol = copy.deepcopy(lambdas)
 
         # Get the composable states
-        if restraint_state is not None:
+        if alchemically_restrained:
+            restraint_state = omm_restraints.RestraintParameterState(
+                lambda_restraints=1.0
+            )
             composable_states = [alchemical_state, restraint_state]
         else:
             composable_states = [alchemical_state]
@@ -744,8 +771,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
     def _get_reporter(
         self,
-        topology: app.Topology,
         positions: openmm.unit.Quantity,
+        selection_indices : npt.NDArray,
         simulation_settings: MultiStateSimulationSettings,
         output_settings: MultiStateOutputSettings,
     ) -> multistate.MultiStateReporter:
@@ -754,10 +781,10 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         Parameters
         ----------
-        topology : app.Topology
-          A Topology of the system being created.
         positions : openmm.unit.Quantity
           Positions of the pre-alchemical simulation system.
+        selection_indices : npt.NDArray
+          Array of system particle indices to subsample the system by.
         simulation_settings : MultiStateSimulationSettings
           Multistate simulation control settings, specifically containing
           the amount of time per state sampling iteration.
@@ -769,12 +796,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         reporter : multistate.MultiStateReporter
           The reporter for the simulation.
         """
-        mdt_top = mdt.Topology.from_openmm(topology)
-
-        # Store the selection indices in self to use later
-        # when storing them in the unit results
-        self.selection_indices = mdt_top.select(output_settings.output_indices)
-
         nc = self.shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
         chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
@@ -804,20 +825,12 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
-            analysis_particle_indices=self.selection_indices,
+            analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
             position_interval=pos_interval,
             velocity_interval=vel_interval,
         )
-
-        # Write out the structure's PDB whilst we're here
-        if len(self.selection_indices) > 0:
-            traj = mdt.Trajectory(
-                positions[self.selection_indices, :],
-                mdt_top.subset(self.selection_indices),
-            )
-            traj.save_pdb(self.shared_basepath / output_settings.output_structure)
 
         return reporter
 
@@ -1103,16 +1116,19 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
           Outputs created in the basepath directory or the debug objects
           (i.e. sampler) if ``dry==True``.
         """
-        # 0. Generaly preparation tasks
+        # General preparation tasks
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
-        # 1. Get components
-        alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+        # Get components
+        alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
 
-        # 2. Get settings
-        settings = self._handle_settings()
+        # Get settings
+        settings = self._get_settings()
 
-        # 3. Get OpenMM topology, positions, system, and comp_resids
+        # Assign partial charges now to avoid any discrepancies later
+        self._assign_partial_charges(settings["charge_settings"], smc_components)
+
+        # Get OpenMM topology, positions, system, and comp_resids
         omm_topology, omm_system, positions, comp_resids = self._get_omm_objects(
             settings=settings,
             protein_component=prot_comp,
@@ -1120,18 +1136,14 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             smc_components=smc_comps,
         )
 
-        # 4. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
+        # Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         positions, box_vectors = self._pre_equilibrate(
             omm_system, omm_topology, positions, settings, dry
         )
 
-        # 5. Get lambdas
-        lambdas = self._get_lambda_schedule(settings)
-
-        # 6. Add restraints
+        # Add restraints
         # Note: when no restraint is applied, restrained_omm_system == omm_system
         (
-            restraint_parameter_state,
             standard_state_corr,
             restrained_omm_system,
             restraint_geometry,
@@ -1144,7 +1156,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             settings,
         )
 
-        # 7. Get alchemical system
+        # Get alchemical system
         alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
             topology=omm_topology,
             system=restrained_omm_system,
@@ -1152,6 +1164,70 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             alchem_comps=alchem_comps,
             alchemical_settings=settings["alchemical_settings"],
         )
+
+        # Subselect system based on user inputs & write initial PDB
+        selection_indices = self._subsample_topology(
+            topology=omm_topology,
+            positions=positions,
+            output_selection=settings["output_settings"].output_indices,
+            output_file=self.shared_basepath / settings["output_settings"].output_structure,
+        )
+
+        # Serialize relevant outputs
+        system_outfile = self.shared_basepath / "alchemical_system.xml.bz2"
+        serialize(alchem_system, system_outfile)
+
+        positions_outfile = self.shared_basepath / "system_positions.npy"
+        npy_positions = from_openmm(positions).to("nanometer").m
+        np.save(positions_outfile, npy_positions)
+
+        unit_results_dics = {
+            "system": system_outfile,
+            "positions": positions_outfile,
+            "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
+            "selection_indices": selection_indices,
+        }
+
+        if standard_state_corr is not None:
+            unit_results_dict["standard_state_corr"] = standard_state_corr.to(
+                "kilocalorie_per_mole"
+            )
+        else:
+            unit_results_dict["standard_state_corr" = 0 * offunit.kilocalorie_per_mole
+
+        if restraint_geometry is not None:
+            unit_results_dict["restraint_geometry"] = restraint_geometry.model_dump()
+
+        if dry:
+            unit_results_dict |= {
+                "restrained_system": restrained_omm_system,
+                "alchem_system": alchem_system,
+                "alchem_indices": alchem_indices,
+                "alchem_factory": alchem_factory,
+                "positions": positions,
+            }
+        return unit_results_dict
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": self.simtype,
+            **outputs,
+        }
+
+### Break unit here
+
+        # 5. Get lambdas
+        lambdas = self._get_lambda_schedule(settings)
 
         # 8. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
@@ -1166,8 +1242,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         # 9. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
-            omm_topology,
             positions,
+            selection_indices,
             settings["simulation_settings"],
             settings["output_settings"],
         )
