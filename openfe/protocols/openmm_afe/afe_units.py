@@ -30,7 +30,12 @@ import numpy as np
 import numpy.typing as npt
 import openmm
 import openmmtools
-from gufe import ChemicalSystem, ProteinComponent, SmallMoleculeComponent, SolventComponent
+from gufe import (
+    ChemicalSystem,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+)
 from gufe.components import Component
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity, unit

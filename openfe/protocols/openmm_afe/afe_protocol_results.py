@@ -36,10 +36,13 @@ from typing import Optional, Union
 import gufe
 import numpy as np
 import numpy.typing as npt
+from openff.units import unit as offunit
 from openff.units import Quantity
 from openmmtools import multistate
 
-from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
+from openfe.protocols.restraint_utils.geometry.boresch import (
+    BoreschRestraintGeometry
+)
 
 
 logger = logging.getLogger(__name__)
