@@ -349,7 +349,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
     def _get_system_generator(
         self,
         settings: dict[str, SettingsBaseModel],
-        solvent_comp: Optional[SolventComponent],
+        solvent_component: SolventComponent | None,
+        openff_molecules: list[OFFMolecule],
+        ffcache: pathlib.Path | None,
     ) -> SystemGenerator:
         """
         Get a system generator through the system creation
