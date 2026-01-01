@@ -14,9 +14,6 @@ TODO
   as settings.
 * Allow for a more flexible setting of Lambda regions.
 """
-
-from __future__ import annotations
-
 import abc
 import copy
 import logging
@@ -85,54 +82,70 @@ from openfe.utils import log_system_probe, without_oechem_backend
 logger = logging.getLogger(__name__)
 
 
-class BaseAbsoluteUnit(gufe.ProtocolUnit):
-    """
-    Base class for ligand absolute free energy transformations.
-    """
-
-    def __init__(
+class AbsoluteUnitsMixin:
+    def _prepare(
         self,
-        *,
-        protocol: gufe.Protocol,
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-        alchemical_components: dict[str, list[Component]],
-        generation: int = 0,
-        repeat_id: int = 0,
-        name: Optional[str] = None,
+        verbose: bool,
+        scratch_basepath: Optional[pathlib.Path],
+        shared_basepath: Optional[pathlib.Path],
     ):
         """
+        Set basepaths and do some initial logging.
+
         Parameters
         ----------
-        protocol : gufe.Protocol
-          protocol used to create this Unit. Contains key information such
-          as the settings.
-        stateA : ChemicalSystem
-          ChemicalSystem containing the components defining the state at
-          lambda 0.
-        stateB : ChemicalSystem
-          ChemicalSystem containing the components defining the state at
-          lambda 1.
-        alchemical_components : dict[str, Component]
-          the alchemical components for each state in this Unit
-        name : str, optional
-          Human-readable identifier for this Unit
-        repeat_id : int, optional
-          Identifier for which repeat (aka replica/clone) this Unit is,
-          default 0
-        generation : int, optional
-          Generation counter which keeps track of how many times this repeat
-          has been extended, default 0.
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        basepath : Optional[pathlib.Path]
+          Optional base path to write files to.
         """
-        super().__init__(
-            name=name,
-            protocol=protocol,
-            stateA=stateA,
-            stateB=stateB,
-            alchemical_components=alchemical_components,
-            repeat_id=repeat_id,
-            generation=generation,
-        )
+        self.verbose = verbose
+
+        if self.verbose:
+            self.logger.info("setting up alchemical system")
+
+        # set basepaths
+        def _set_optional_path(basepath):
+            if basepath is None:
+                return pathlib.Path(".")
+            return basepath
+
+        self.scratch_basepath = _set_optional_path(scratch_basepath)
+        self.shared_basepath = _set_optional_path(shared_basepath)
+
+    @abc.abstractmethod
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
+        """
+        Get a dictionary with the following entries:
+          * forcefield_settings : OpenMMSystemGeneratorFFSettings
+          * thermo_settings : ThermoSettings
+          * solvation_settings : BaseSolvationSettings
+          * alchemical_settings : AlchemicalSettings
+          * lambda_settings : LambdaSettings
+          * engine_settings : OpenMMEngineSettings
+          * integrator_settings : IntegratorSettings
+          * equil_simulation_settings : MDSimulationSettings
+          * equil_output_settings : MDOutputSettings
+          * simulation_settings : MultiStateSimulationSettings
+          * output_settings : MultiStateOutputSettings
+
+        Settings may change depending on what type of simulation you are
+        running. Cherry pick them and return them to be available later on.
+
+        This method should also add various validation checks as necessary.
+
+        Note
+        ----
+        Must be implemented in the child class.
+        """
+        ...
+
+
+class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
+    """
+    Base class for setting up absolute free energy transformations.
+    """
 
     @staticmethod
     def _get_alchemical_indices(
@@ -287,37 +300,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return equilibrated_positions, box
 
-    def _prepare(
-        self,
-        verbose: bool,
-        scratch_basepath: Optional[pathlib.Path],
-        shared_basepath: Optional[pathlib.Path],
-    ):
-        """
-        Set basepaths and do some initial logging.
-
-        Parameters
-        ----------
-        verbose : bool
-          Verbose output of the simulation progress. Output is provided via
-          INFO level logging.
-        basepath : Optional[pathlib.Path]
-          Optional base path to write files to.
-        """
-        self.verbose = verbose
-
-        if self.verbose:
-            self.logger.info("setting up alchemical system")
-
-        # set basepaths
-        def _set_optional_path(basepath):
-            if basepath is None:
-                return pathlib.Path(".")
-            return basepath
-
-        self.scratch_basepath = _set_optional_path(scratch_basepath)
-        self.shared_basepath = _set_optional_path(shared_basepath)
-
     @abc.abstractmethod
     def _get_components(
         self,
@@ -336,35 +318,38 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         ...
 
-    @abc.abstractmethod
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+    @staticmethod
+    def _assign_partial_charges(
+        partial_charge_settings: OpenFFPartialChargeSettings,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> None:
         """
-        Get a dictionary with the following entries:
-          * forcefield_settings : OpenMMSystemGeneratorFFSettings
-          * thermo_settings : ThermoSettings
-          * solvation_settings : BaseSolvationSettings
-          * alchemical_settings : AlchemicalSettings
-          * lambda_settings : LambdaSettings
-          * engine_settings : OpenMMEngineSettings
-          * integrator_settings : IntegratorSettings
-          * equil_simulation_settings : MDSimulationSettings
-          * equil_output_settings : MDOutputSettings
-          * simulation_settings : MultiStateSimulationSettings
-          * output_settings : MultiStateOutputSettings
+        Assign partial charges to the OpenFF Molecules associated with
+        all the SmallMoleculeComponents in the transformation.
 
-        Settings may change depending on what type of simulation you are
-        running. Cherry pick them and return them to be available later on.
-
-        This method should also add various validation checks as necessary.
-
-        Note
-        ----
-        Must be implemented in the child class.
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by their
+          associated SmallMoleculeComponent.
         """
-        ...
+        for mol in smc_components.values():
+            charge_generation.assign_offmol_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=partial_charge_settings.partial_charge_method,
+                toolkit_backend=partial_charge_settings.off_toolkit_backend,
+                generate_n_conformers=partial_charge_settings.number_of_conformers,
+                nagl_model=partial_charge_settings.nagl_model,
+            )
 
+    @staticmethod
     def _get_system_generator(
-        self, settings: dict[str, SettingsBaseModel], solvent_comp: Optional[SolventComponent]
+        self,
+        settings: dict[str, SettingsBaseModel],
+        solvent_comp: Optional[SolventComponent],
     ) -> SystemGenerator:
         """
         Get a system generator through the system creation
@@ -386,43 +371,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if ffcache is not None:
             ffcache = self.shared_basepath / ffcache
 
-        # Block out oechem backend to avoid any issues with
-        # smiles roundtripping between rdkit and oechem
-        with without_oechem_backend():
-            system_generator = system_creation.get_system_generator(
-                forcefield_settings=settings["forcefield_settings"],
-                integrator_settings=settings["integrator_settings"],
-                thermo_settings=settings["thermo_settings"],
-                cache=ffcache,
-                has_solvent=solvent_comp is not None,
-            )
+        system_generator = system_creation.get_system_generator(
+            forcefield_settings=settings["forcefield_settings"],
+            integrator_settings=settings["integrator_settings"],
+            thermo_settings=settings["thermo_settings"],
+            cache=ffcache,
+            has_solvent=solvent_comp is not None,
+        )
         return system_generator
-
-    @staticmethod
-    def _assign_partial_charges(
-        partial_charge_settings: OpenFFPartialChargeSettings,
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
-    ) -> None:
-        """
-        Assign partial charges to SMCs.
-
-        Parameters
-        ----------
-        charge_settings : OpenFFPartialChargeSettings
-          Settings for controlling how the partial charges are assigned.
-        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
-          Dictionary of OpenFF Molecules to add, keyed by
-          SmallMoleculeComponent.
-        """
-        for mol in smc_components.values():
-            charge_generation.assign_offmol_partial_charges(
-                offmol=mol,
-                overwrite=False,
-                method=partial_charge_settings.partial_charge_method,
-                toolkit_backend=partial_charge_settings.off_toolkit_backend,
-                generate_n_conformers=partial_charge_settings.number_of_conformers,
-                nagl_model=partial_charge_settings.nagl_model,
-            )
 
     def _get_modeller(
         self,
@@ -530,18 +486,19 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if self.verbose:
             self.logger.info("Parameterizing system")
 
-        system_generator = self._get_system_generator(
-            settings=settings, solvent_comp=solvent_component
-        )
-
-        modeller, comp_resids = self._get_modeller(
-            protein_component=protein_component,
-            solvent_component=solvent_component,
-            smc_components=smc_components,
-            system_generator=system_generator,
-            partial_charge_settings=settings["charge_settings"],
-            solvation_settings=settings["solvation_settings"],
-        )
+        with without_oechem_backend():
+            system_generator = self._get_system_generator(
+                settings=settings, solvent_comp=solvent_component
+            )
+    
+            modeller, comp_resids = self._get_modeller(
+                protein_component=protein_component,
+                solvent_component=solvent_component,
+                smc_components=smc_components,
+                system_generator=system_generator,
+                partial_charge_settings=settings["charge_settings"],
+                solvation_settings=settings["solvation_settings"],
+            )
 
         topology = modeller.getTopology()
         # roundtrip positions to remove vec3 issues
