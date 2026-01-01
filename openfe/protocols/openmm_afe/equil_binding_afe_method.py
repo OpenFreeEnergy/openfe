@@ -74,7 +74,8 @@ from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGe
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 
-from .base import BaseAbsoluteUnit
+from .afe_units import BaseAbsoluteUnit
+from .afe_protocol_results import AbsoluteBindingProtocolResult
 
 due.cite(
     Doi("10.5281/zenodo.596504"),

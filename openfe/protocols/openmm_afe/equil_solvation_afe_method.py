@@ -64,7 +64,9 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 
 from ..openmm_utils import settings_validation, system_validation
-from .base import BaseAbsoluteUnit
+from .afe_units import BaseAbsoluteUnit
+from .afe_protocol_results import AbsoluteSolvationProtocolResult
+
 
 due.cite(
     Doi("10.5281/zenodo.596504"),

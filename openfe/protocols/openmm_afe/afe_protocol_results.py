@@ -27,9 +27,6 @@ Acknowledgements
   `espaloma_charge <https://github.com/choderalab/espaloma_charge>`_
 
 """
-
-from __future__ import annotations
-
 import itertools
 import logging
 import pathlib
