@@ -232,8 +232,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
           A dictionary of protocol settings.
         solvent_component : SolventComponent | None
           The solvent component of the system, if any.
-        openff_molecules : list[openff.Toolkit] 
-          A list of openff molecules to generate templates for.
+        openff_molecules : list[openff.toolkit.Molecule] | None 
+          A list of openff molecules to generate templates for, if any.
         ffcache : pathlib.Path | None
           Path to the force field parameter cache.
         
