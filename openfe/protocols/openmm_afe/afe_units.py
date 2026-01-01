@@ -363,16 +363,16 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
           A dictionary of settings object for the unit.
         solvent_comp : Optional[SolventComponent]
           The solvent component of this system, if there is one.
+        openff_molecules : list[openff.toolkit.Molecule] | None
+          A list of OpenFF Molecules to generate templates for, if any.
+        ffcache : pathlib.Path | None
+          Path to the force field parameter cache.
 
         Returns
         -------
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
         """
-        ffcache = settings["output_settings"].forcefield_cache
-        if ffcache is not None:
-            ffcache = self.shared_basepath / ffcache
-
         system_generator = system_creation.get_system_generator(
             forcefield_settings=settings["forcefield_settings"],
             integrator_settings=settings["integrator_settings"],
@@ -380,6 +380,26 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             cache=ffcache,
             has_solvent=solvent_comp is not None,
         )
+
+        # Handle openff Molecule templates
+        # TODO: revisit this once the SystemGenerator update happens
+        if openff_molecules is None:
+            return system_generator
+
+        unique_offmols = []
+        for mol in openff_molecules:
+            unique = all(
+                [
+                    not mol.is_isomorphic_with(umol)
+                    for umol in unique_offmols
+                ]
+            )
+            if unique:
+                unique_offmol.append(mol)
+
+        # register all the templates
+        system_generator.add_molecules(unique_offmols)
+
         return system_generator
 
     def _get_modeller(
