@@ -1,31 +1,15 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""OpenMM Equilibrium Solvation AFE Protocol --- :mod:`openfe.protocols.openmm_afe.equil_solvation_afe_method`
-===============================================================================================================
+"""
+Result classes for the Absolute Free Energy Protocols
+=====================================================
 
-This module implements the necessary methodology tooling to run calculate an
-absolute solvation free energy using OpenMM tools and one of the following
-alchemical sampling methods:
+This module implements :class:`gufe.ProtocolResult` classes for the absolute
+free energy Protocols.
 
-* Hamiltonian Replica Exchange
-* Self-adjusted mixture sampling
-* Independent window sampling
-
-Current limitations
--------------------
-* Alchemical species with a net charge are not currently supported.
-* Disapearing molecules are only allowed in state A. Support for
-  appearing molecules will be added in due course.
-* Only small molecules are allowed to act as alchemical molecules.
-  Alchemically changing protein or solvent components would induce
-  perturbations which are too large to be handled by this Protocol.
-
-
-Acknowledgements
-----------------
-* Originally based on hydration.py in
-  `espaloma_charge <https://github.com/choderalab/espaloma_charge>`_
-
+Specifically it implements:
+  * AbsoluteBindingProtocolResult
+  * AbsoluteSolvationProtocolResult
 """
 import itertools
 import logging
