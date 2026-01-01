@@ -232,8 +232,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
           A dictionary of protocol settings.
         solvent_component : SolventComponent | None
           The solvent component of the system, if any.
-        openff_molecules : list[openff.Toolkit] | None
-          A list of openff molecules to generate templates for, if any.
+        openff_molecules : list[openff.Toolkit] 
+          A list of openff molecules to generate templates for.
         ffcache : pathlib.Path | None
           Path to the force field parameter cache.
         
@@ -253,6 +253,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # Handle openff Molecule templates
         # TODO: revisit this once the SystemGenerator update happens
         # and we start loading the whole protein into OpenFF Topologies
+        if openff_molecules is None:
+            return system_generator
         
         # First deduplicate isomoprhic molecules
         unique_offmols = []
