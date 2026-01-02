@@ -1545,12 +1545,12 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
         pdb_file = setup_results.outputs["pdb_structure"]
-        trajectory = simulation_results.outputs["nc"]
-        checkpoint = simulation_results.outputs["checkpoint"]
         selection_indices = setup_results.outputs["selection_indices"]
         restraint_geometry = setup_results.outputs["restraint_geometry"]
         standard_state_corr = setup_results.outputs["standard_state_correction"]
-
+        trajectory = simulation_results.outputs["nc"]
+        checkpoint = simulation_results.outputs["checkpoint"]
+  
         outputs = self.run(
             pdb_file=pdb_file,
             trajectory=trajectory,
