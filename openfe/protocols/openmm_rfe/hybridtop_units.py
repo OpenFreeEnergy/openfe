@@ -1282,14 +1282,16 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             restrict_cpu_count=restrict_cpu,
         )
 
-        # Get the integrator
-        integrator = self._get_integrator(
-            integrator_settings=settings["integrator_settings"],
-            simulation_settings=settings["simulation_settings"],
-            system=system
-        )
 
         try:
+            # Get the integrator
+            integrator = self._get_integrator(
+                integrator_settings=settings["integrator_settings"],
+                simulation_settings=settings["simulation_settings"],
+                system=system
+            )
+
+            # Get the reporter
             reporter = self._get_reporter(
                 storage_path=self.shared_basepath,
                 selection_indices=selection_indices,
@@ -1297,6 +1299,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 simulation_settings=settings["simulation_settings"],
             )
 
+            # Get the sampler
             sampler = self._get_sampler(
                 system=system,
                 positions=positions,
@@ -1311,6 +1314,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 dry=dry
             )
 
+            # Run the simulation
             self._run_simulation(
                 sampler=sampler,
                 reporter=reporter,
