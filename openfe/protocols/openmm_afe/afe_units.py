@@ -148,6 +148,12 @@ class AbsoluteUnitsMixin:
         """
         ...
 
+
+class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
+    """
+    Base class for setting up absolute free energy transformations.
+    """
+
     @abc.abstractmethod
     def _get_components(
         self,
@@ -165,12 +171,6 @@ class AbsoluteUnitsMixin:
         Must be implemented in the child class.
         """
         ...
-
-
-class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
-    """
-    Base class for setting up absolute free energy transformations.
-    """
 
     @staticmethod
     def _get_alchemical_indices(
@@ -754,7 +754,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
             "selection_indices": selection_indices,
-            "box_dimensions": from_openmm(box_vectors)
+            "box_vectors": from_openmm(box_vectors)
         }
 
         if standard_state_corr is not None:
@@ -766,6 +766,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         if restraint_geometry is not None:
             unit_results_dict["restraint_geometry"] = restraint_geometry.model_dump()
+        else:
+            unit_results_dict["restraint_geometry"] = None
 
         if dry:
             unit_results_dict |= {
@@ -795,6 +797,24 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
 
 class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
+    @abc.abstractmethod
+    def _get_components(
+        self,
+    ) -> tuple[
+        dict[str, list[Component]],
+        Optional[gufe.SolventComponent],
+        Optional[gufe.ProteinComponent],
+        dict[SmallMoleculeComponent, OFFMolecule],
+    ]:
+        """
+        Get the relevant components to create the alchemical system with.
+
+        Note
+        ----
+        Must be implemented in the child class.
+        """
+        ...
+
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
     ) -> dict[str, list[float]]:
@@ -1347,15 +1367,15 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
 
             # clear GPU context
             # Note: use cache.empty() when openmmtools #690 is resolved
-            for context in list(energy_ctx_cache._lru._data.keys()):
-                del energy_ctx_cache._lru._data[context]
-            for context in list(sampler_ctx_cache._lru._data.keys()):
-                del sampler_ctx_cache._lru._data[context]
+            for context in list(sampler.energy_ctx_cache._lru._data.keys()):
+                del sampler.energy_ctx_cache._lru._data[context]
+            for context in list(sampler.sampler_ctx_cache._lru._data.keys()):
+                del sampler.sampler_ctx_cache._lru._data[context]
             # cautiously clear out the global context cache too
             for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
                 del openmmtools.cache.global_context_cache._lru._data[context]
 
-            del sampler_ctx_cache, energy_ctx_cache
+            del sampler.sampler_ctx_cache, sampler.energy_ctx_cache
 
             # Keep these around in a dry run so we can inspect things
             if not dry:
@@ -1363,27 +1383,15 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
 
         if not dry:
             nc = self.shared_basepath / settings["output_settings"].output_filename
-            chk = settings["output_settings"].checkpoint_storage_filename
-            unit_result_dict["nc"] = nc
-            unit_result_dict["last_checkpoint"] = chk
-            unit_result_dict["selection_indices"] = self.selection_indices
-
-            if restraint_geometry is not None:
-                unit_result_dict["restraint_geometry"] = restraint_geometry.model_dump()
-
-            return unit_result_dict
+            chk = self.shared_basepath / settings["output_settings"].checkpoint_storage_filename
+            return {
+                "trajectory": nc,
+                "checkpoint": chk,
+            }
         else:
             return {
-                # Add in various objects we can used to test the system
-                "debug": {
-                    "sampler": sampler,
-                    "system": omm_system,
-                    "restrained_system": restrained_omm_system,
-                    "alchem_system": alchem_system,
-                    "alchem_indices": alchem_indices,
-                    "alchem_factory": alchem_factory,
-                    "positions": positions,
-                }
+                "sampler": sampler,
+                "integrator": integrator,
             }
 
     def _execute(
@@ -1393,7 +1401,25 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+        system = deserialize(setup_results.outputs["system"])
+        positions = to_openmm(np.load(setup_results.outputs["positions"] * offunit.nanometer))
+        selection_indices = setup_results.outputs["selection_indices"]
+        box_vectors = setup_results.outputs["box_vectors"]
+
+        if setup_results.outputs["restraint_geometry"] is not None:
+            alchemical_restraints=True
+        else:
+            alcehmical_restraints=False
+
+        outputs = self.run(
+            system=system,
+            positions=positions,
+            box_vectors=box_vectors,
+            selection_indices=selection_indices,
+            alchemical_restraints=alchemical_restraints,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared
+        )
 
         return {
             "repeat_id": self._inputs["repeat_id"],
@@ -1401,3 +1427,65 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             "simtype": self.simtype,
             **outputs,
         }
+
+
+class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
+
+    @staticmethod
+    def _analyze_multistate_energies(
+        trajectory: pathlib.Path,
+        checkpoint: pathlib.Path,
+        sampler_method: str,
+        output_directory: pathlib.Path,
+        dry: bool,
+    ):
+        """
+        Analyze multistate energies and generate plots.
+
+        Parameters
+        ----------
+        trajectory : pathlib.Path
+          Path to the NetCDF trajectory file.
+        checkpoint : pathlib.Path
+          The name of the checkpoint file. Note this is
+          relative in path to the trajectory file.
+        sampler_method : str
+          The multistate sampler method used.
+        output_directory : pathlib.Path
+          The path to where plots will be written.
+        dry : bool
+          Whether or not we are running a dry run.
+        """
+        reporter = multistate.MultiStateReporter(
+            storage=trajectory,
+            # Note: openmmtools only wants the name of the checkpoint
+            # file, it assumes it to be in the same place as the trajectory
+            checkpoint_storage=checkpoint.name,
+            open_mode="r",
+        )
+
+        analyzer = multistate_analysis.MultistateEquilFEAnalysis(
+            reporter=reporter,
+            sampling_method=sampler_method,
+            result_units=offunit.kilocalorie_per_mole,
+        )
+
+        # Only create plots when not doing a dry run
+        if not dry:
+            analyzer.plot(filepath=output_directory, filename_prefix="")
+
+        analyzer.close()
+        reporter.close()
+        return analyzer.unit_results_dict
+
+    def run(
+        self,
+        *,
+        trajectory: pathlib.Path,
+        checkpoint: pathlib.Path,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
+    ) -> dict[str, Any]:
+
