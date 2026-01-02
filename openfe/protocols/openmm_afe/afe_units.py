@@ -1074,11 +1074,12 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         integrator: openmmtools.mcmc.LangevinDynamicsMove,
         reporter: openmmtools.multistate.MultiStateReporter,
         simulation_settings: MultiStateSimulationSettings,
-        thermo_settings: ThermoSettings,
-        cmp_states: list[ThermodynamicState],
+        thermodynamic_settings: ThermoSettings,
+        compound_states: list[ThermodynamicState],
         sampler_states: list[SamplerState],
         energy_context_cache: openmmtools.cache.ContextCache,
         sampler_context_cache: openmmtools.cache.ContextCache,
+        platform: openmm.Platform,
     ) -> multistate.MultiStateSampler:
         """
         Get a sampler based on the equilibrium sampling method requested.
@@ -1091,16 +1092,14 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
           The reporter to hook up to the sampler.
         simulation_settings : MultiStateSimulationSettings
           Settings for the alchemical sampler.
-        thermo_settings : ThermoSettings
+        thermodynamic_settings : ThermoSettings
           Thermodynamic settings
-        cmp_states : list[ThermodynamicState]
+        compound_states : list[ThermodynamicState]
           A list of thermodynamic states to sample.
         sampler_states : list[SamplerState]
           A list of sampler states.
-        energy_context_cache : openmmtools.cache.ContextCache
-          Context cache for the energy states.
-        sampler_context_cache : openmmtool.cache.ContextCache
-          Context cache for the sampler states.
+        platform : openmm.Platform
+          The compute platform to use.
 
         Returns
         -------
@@ -1144,8 +1143,16 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             thermodynamic_states=cmp_states, sampler_states=sampler_states, storage=reporter
         )
 
-        sampler.energy_context_cache = energy_context_cache
-        sampler.sampler_context_cache = sampler_context_cache
+        sampler.energy_context_cache = openmmtools.cache.ContextCache(
+            capacity=None,
+            time_to_live=None,
+            platform=platform,
+        )
+        sampler.sampler_context_cache = openmmtools.cache.ContextCache(
+            capacity=None,
+            time_to_live=None,
+            platform=platform,
+        )
 
         return sampler
 
@@ -1172,12 +1179,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
           The standard state correction, if available.
         dry : bool
           Whether or not to dry run the simulation
-
-        Returns
-        -------
-        unit_results_dict : Optional[dict]
-          A dictionary containing all the free energy results,
-          if not a dry run.
         """
         # Get the relevant simulation steps
         mc_steps = settings_validation.convert_steps_per_iteration(
@@ -1217,26 +1218,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             if self.verbose:
                 self.logger.info("production phase complete")
 
-            if self.verbose:
-                self.logger.info("post-simulation result analysis")
-
-            analyzer = multistate_analysis.MultistateEquilFEAnalysis(
-                reporter,
-                sampling_method=settings["simulation_settings"].sampler_method.lower(),
-                result_units=unit.kilocalorie_per_mole,
-            )
-            analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
-            analyzer.close()
-
-            return_dict = analyzer.unit_results_dict
-
-            if standard_state_corr is not None:
-                return_dict["standard_state_correction"] = standard_state_corr.to(
-                    "kilocalorie_per_mole"
-                )
-
-            return return_dict
-
         else:
             # close reporter when you're done, prevent file handle clashes
             reporter.close()
@@ -1248,8 +1229,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             ]
             for fn in fns:
                 os.remove(fn)
-
-            return None
 
     def run(
         self,
@@ -1348,18 +1327,17 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
 
             # 12. Get sampler
             sampler = self._get_sampler(
-                integrator,
-                reporter,
-                settings["simulation_settings"],
-                settings["thermo_settings"],
-                cmp_states,
-                sampler_states,
-                energy_ctx_cache,
-                sampler_ctx_cache,
+                integrator=integrator,
+                reporter=reporter,
+                simulation_settings=settings["simulation_settings"],
+                thermodynamic_settings=settings["thermo_settings"],
+                compound_states=cmp_states,
+                sampler_states=sampler_states,
+                platform=platform,
             )
 
             # 13. Run simulation
-            unit_result_dict = self._run_simulation(
+            self._run_simulation(
                 sampler, reporter, settings, standard_state_corr, dry
             )
 
