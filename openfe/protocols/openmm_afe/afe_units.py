@@ -79,6 +79,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.openmm_utils.serialization import (
     serialize,
     deserialize,
+    make_vec3_box,
 )
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
@@ -140,6 +141,24 @@ class AbsoluteUnitsMixin:
         running. Cherry pick them and return them to be available later on.
 
         This method should also add various validation checks as necessary.
+
+        Note
+        ----
+        Must be implemented in the child class.
+        """
+        ...
+
+    @abc.abstractmethod
+    def _get_components(
+        self,
+    ) -> tuple[
+        dict[str, list[Component]],
+        Optional[gufe.SolventComponent],
+        Optional[gufe.ProteinComponent],
+        dict[SmallMoleculeComponent, OFFMolecule],
+    ]:
+        """
+        Get the relevant components to create the alchemical system with.
 
         Note
         ----
@@ -305,24 +324,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         del simulation.context, integrator
 
         return equilibrated_positions, box
-
-    @abc.abstractmethod
-    def _get_components(
-        self,
-    ) -> tuple[
-        dict[str, list[Component]],
-        Optional[gufe.SolventComponent],
-        Optional[gufe.ProteinComponent],
-        dict[SmallMoleculeComponent, OFFMolecule],
-    ]:
-        """
-        Get the relevant components to create the alchemical system with.
-
-        Note
-        ----
-        Must be implemented in the child class.
-        """
-        ...
 
     @staticmethod
     def _assign_partial_charges(
@@ -528,41 +529,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         return topology, system, positions, comp_resids
 
-    def _get_lambda_schedule(
-        self, settings: dict[str, SettingsBaseModel]
-    ) -> dict[str, list[float]]:
-        """
-        Create the lambda schedule
-
-        Parameters
-        ----------
-        settings : dict[str, SettingsBaseModel]
-          Settings for the unit.
-
-        Returns
-        -------
-        lambdas : dict[str, list[float]]
-
-        TODO
-        ----
-        * Augment this by using something akin to the RFE protocol's
-          LambdaProtocol
-        """
-        lambdas = dict()
-
-        lambda_elec = settings["lambda_settings"].lambda_elec
-        lambda_vdw = settings["lambda_settings"].lambda_vdw
-        lambda_rest = settings["lambda_settings"].lambda_restraints
-
-        # Reverse lambda schedule for vdw, elect, and restraints
-        # since in AbsoluteAlchemicalFactory 1 means fully
-        # interacting (which would be non-interacting for us)
-        lambdas["lambda_electrostatics"] = [1 - x for x in lambda_elec]
-        lambdas["lambda_sterics"] = [1 - x for x in lambda_vdw]
-        lambdas["lambda_restraints"] = [x for x in lambda_rest]
-
-        return lambdas
-
     def _add_restraints(
         self,
         system: openmm.System,
@@ -687,12 +653,189 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         return selection_indices
 
+    def run(
+        self,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
+    ) -> dict[str, Any]:
+        """Run the absolute free energy calculation.
+
+        Parameters
+        ----------
+        dry : bool
+          Do a dry run of the calculation, creating all necessary alchemical
+          system components (topology, system, etc...) but without
+          running the simulation, default False
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging, default True
+        scratch_basepath : pathlib.Path | None
+          Path to the scratch (temporary) directory space. Defaults to the
+          current working directory if ``None``.
+        shared_basepath : pathlib.Path | None
+          Path to the shared (persistent) directory space. Defaults to the
+          current working directory if ``None``.
+
+        Returns
+        -------
+        dict
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
+        """
+        # General preparation tasks
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        # Get components
+        alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
+
+        # Get settings
+        settings = self._get_settings()
+
+        # Assign partial charges now to avoid any discrepancies later
+        self._assign_partial_charges(settings["charge_settings"], smc_components)
+
+        # Get OpenMM topology, positions, system, and comp_resids
+        omm_topology, omm_system, positions, comp_resids = self._get_omm_objects(
+            settings=settings,
+            protein_component=prot_comp,
+            solvent_component=solv_comp,
+            smc_components=smc_comps,
+        )
+
+        # Pre-equilbrate System (Test + Avoid NaNs + get stable system)
+        positions, box_vectors = self._pre_equilibrate(
+            omm_system, omm_topology, positions, settings, dry
+        )
+
+        # Add restraints
+        # Note: when no restraint is applied, restrained_omm_system == omm_system
+        (
+            standard_state_corr,
+            restrained_omm_system,
+            restraint_geometry,
+        ) = self._add_restraints(
+            omm_system,
+            omm_topology,
+            positions,
+            alchem_comps,
+            comp_resids,
+            settings,
+        )
+
+        # Get alchemical system
+        alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
+            topology=omm_topology,
+            system=restrained_omm_system,
+            comp_resids=comp_resids,
+            alchem_comps=alchem_comps,
+            alchemical_settings=settings["alchemical_settings"],
+        )
+
+        # Subselect system based on user inputs & write initial PDB
+        selection_indices = self._subsample_topology(
+            topology=omm_topology,
+            positions=positions,
+            output_selection=settings["output_settings"].output_indices,
+            output_file=self.shared_basepath / settings["output_settings"].output_structure,
+        )
+
+        # Serialize relevant outputs
+        system_outfile = self.shared_basepath / "alchemical_system.xml.bz2"
+        serialize(alchem_system, system_outfile)
+
+        positions_outfile = self.shared_basepath / "system_positions.npy"
+        npy_positions = from_openmm(positions).to("nanometer").m
+        np.save(positions_outfile, npy_positions)
+
+        unit_results_dics = {
+            "system": system_outfile,
+            "positions": positions_outfile,
+            "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
+            "selection_indices": selection_indices,
+            "box_dimensions": from_openmm(box_vectors)
+        }
+
+        if standard_state_corr is not None:
+            unit_results_dict["standard_state_corr"] = standard_state_corr.to(
+                "kilocalorie_per_mole"
+            )
+        else:
+            unit_results_dict["standard_state_corr" = 0 * offunit.kilocalorie_per_mole
+
+        if restraint_geometry is not None:
+            unit_results_dict["restraint_geometry"] = restraint_geometry.model_dump()
+
+        if dry:
+            unit_results_dict |= {
+                "restrained_system": restrained_omm_system,
+                "alchem_system": alchem_system,
+                "alchem_indices": alchem_indices,
+                "alchem_factory": alchem_factory,
+                "positions": positions,
+            }
+        return unit_results_dict
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": self.simtype,
+            **outputs,
+        }
+
+
+class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
+    def _get_lambda_schedule(
+        self, settings: dict[str, SettingsBaseModel]
+    ) -> dict[str, list[float]]:
+        """
+        Create the lambda schedule
+
+        Parameters
+        ----------
+        settings : dict[str, SettingsBaseModel]
+          Settings for the unit.
+
+        Returns
+        -------
+        lambdas : dict[str, list[float]]
+
+        TODO
+        ----
+        * Augment this by using something akin to the RFE protocol's
+          LambdaProtocol
+        """
+        lambdas = dict()
+
+        lambda_elec = settings["lambda_settings"].lambda_elec
+        lambda_vdw = settings["lambda_settings"].lambda_vdw
+        lambda_rest = settings["lambda_settings"].lambda_restraints
+
+        # Reverse lambda schedule for vdw, elect, and restraints
+        # since in AbsoluteAlchemicalFactory 1 means fully
+        # interacting (which would be non-interacting for us)
+        lambdas["lambda_electrostatics"] = [1 - x for x in lambda_elec]
+        lambdas["lambda_sterics"] = [1 - x for x in lambda_vdw]
+        lambdas["lambda_restraints"] = [x for x in lambda_rest]
+
+        return lambdas
+
     def _get_states(
         self,
         alchemical_system: openmm.System,
         positions: openmm.unit.Quantity,
         box_vectors: openmm.unit.Quantity,
-        settings: dict[str, SettingsBaseModel],
+        thermodynamic_settings: ThermoSettings,
         lambdas: dict[str, list[float]],
         solvent_component: Optional[SolventComponent],
         alchemically_restrained: bool,
@@ -709,8 +852,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
           Positions of the alchemical system.
         box_vectors :  openmm.unit.Quantity
           Box vectors of the alchemical system.
-        settings : dict[str, SettingsBaseModel]
-          A dictionary of settings for the protocol unit.
+        thermodynamic_settings : ThermoSettings
+          Settings controlling the thermodynamic parameters.
         lambdas : dict[str, list[float]]
           A dictionary of lambda scales.
         solvent_component : Optional[SolventComponent]
@@ -730,8 +873,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         alchemical_state = AlchemicalState.from_system(alchemical_system)
 
         # Set up the system constants
-        temperature = settings["thermo_settings"].temperature
-        pressure = settings["thermo_settings"].pressure
+        temperature = thermodynamic_settings.temperature
+        pressure = thermodynamic_settings.pressure
         constants = dict()
         constants["temperature"] = ensure_quantity(temperature, "openmm")
 
@@ -769,9 +912,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         return sampler_states, cmp_states
 
+    @staticmethod
     def _get_reporter(
-        self,
-        positions: openmm.unit.Quantity,
+        storage_path: pathlib.Path,
         selection_indices : npt.NDArray,
         simulation_settings: MultiStateSimulationSettings,
         output_settings: MultiStateOutputSettings,
@@ -781,8 +924,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         Parameters
         ----------
-        positions : openmm.unit.Quantity
-          Positions of the pre-alchemical simulation system.
+        storage_path : pathlib.Path
+          Path to the directory where files should be written.
         selection_indices : npt.NDArray
           Array of system particle indices to subsample the system by.
         simulation_settings : MultiStateSimulationSettings
@@ -796,12 +939,10 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         reporter : multistate.MultiStateReporter
           The reporter for the simulation.
         """
-        nc = self.shared_basepath / output_settings.output_filename
+        nc = storage_path / output_settings.output_filename
+        # The checkpoint file in openmmtools is taken as a file relative
+        # to the location of the nc file, so you only want the filename
         chk = output_settings.checkpoint_storage_filename
-        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
-            checkpoint_interval=output_settings.checkpoint_interval,
-            time_per_iteration=simulation_settings.time_per_iteration,
-        )
 
         if output_settings.positions_write_frequency is not None:
             pos_interval = settings_validation.divmod_time_and_check(
@@ -822,6 +963,11 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             )
         else:
             vel_interval = 0
+
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
@@ -854,15 +1000,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         sampler_context_cache : openmmtools.cache.ContextCache
           The sampler state context cache.
         """
-        # Get the compute platform
-        # Set the number of CPUs to 1 if running a vacuum simulation
-        restrict_cpu = forcefield_settings.nonbonded_method.lower() == "nocutoff"
-        platform = omm_compute.get_openmm_platform(
-            platform_name=engine_settings.compute_platform,
-            gpu_device_index=engine_settings.gpu_device_index,
-            restrict_cpu_count=restrict_cpu,
-        )
-
         energy_context_cache = openmmtools.cache.ContextCache(
             capacity=None,
             time_to_live=None,
@@ -879,7 +1016,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_integrator(
-        integrator_settings: IntegratorSettings, simulation_settings: MultiStateSimulationSettings
+        integrator_settings: IntegratorSettings,
+        simulation_settings: MultiStateSimulationSettings,
+        system: openmm.System,
     ) -> openmmtools.mcmc.LangevinDynamicsMove:
         """
         Return a LangevinDynamicsMove integrator
@@ -887,12 +1026,22 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         Parameters
         ----------
         integrator_settings : IntegratorSettings
+          Settings controlling the Langevin integrator
         simulation_settings : MultiStateSimulationSettings
+          Settings controlling the simulation.
+        system : openmm.System
+          The OpenMM System.
 
         Returns
         -------
         integrator : openmmtools.mcmc.LangevinDynamicsMove
           A configured integrator object.
+
+        Raises
+        ------
+        ValueError
+          If there are virtual sites in the system, but
+          velocities are not being reassigned after every MCMC move.
         """
         steps_per_iteration = settings_validation.convert_steps_per_iteration(
             simulation_settings, integrator_settings
@@ -906,6 +1055,17 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
         )
+
+        # Validate for known issue when dealing with virtual sites
+        # and mutltistate simulations
+        if not integrator_settings.reassign_velocities:
+            for particle_idx in range(system.getNumParticles()):
+                if system.isVirtualSite(particle_idx):
+                    errmsg = (
+                        "Simulations with virtual sites without velocity "
+                        "reassignments are unstable with MCMC integrators."
+                    )
+                    raise ValueError(errmsg)
 
         return integrator
 
@@ -1092,173 +1252,98 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             return None
 
     def run(
-        self, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
+        self,
+        *,
+        system: openmm.System,
+        positions: openmm.unit.Quantity,
+        box_vectors: Quantity,
+        selection_indices: npt.NDArray,
+        alchemical_restraints: bool,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None,
+        shared_basepath: pathlib.Path | None,
     ) -> dict[str, Any]:
-        """Run the absolute free energy calculation.
+        """
+        Run the free energy calculation using a multistate sampler.
 
         Parameters
         ----------
-        dry : bool
-          Do a dry run of the calculation, creating all necessary alchemical
-          system components (topology, system, sampler, etc...) but without
-          running the simulation, default False
+        system : openmm.System
+          The System to simulate.
+        positions : openmm.unit.Quantity
+          The positions of the System.
+        box_vectors : openff.units.Quantity
+          The box vectors of the System.
+        selection_indices : npt.NDArray
+          Indices of the System particles to write to file.
+        alchemical_restraints: bool,
+          Whether or not the system has alchemical restraints.
+        dry: bool
+          Do a dry run of the calculation, creating all the necessary
+          components, but without running the simulation.
         verbose : bool
-          Verbose output of the simulation progress. Output is provided via
-          INFO level logging, default True
-        scratch_basepath : pathlib.Path
-          Path to the scratch (temporary) directory space.
-        shared_basepath : pathlib.Path
-          Path to the shared (persistent) directory space.
+          Verbose output of the simulation progress. Output is provided at
+          the INFO logging level.
+        scratch_basepath : pathlib.Path | None
+          Where to store temporary files, defaults to the current working
+          directory if ``None``.
+        shared_basepath : pathlib.Path | None
+          Where to store calculation outputs, defaults to the current working
+          directory if ``None``.
 
         Returns
         -------
         dict
-          Outputs created in the basepath directory or the debug objects
-          (i.e. sampler) if ``dry==True``.
+          Outputs created by the unit, including the debug objects
+          (i.e. sampler) if ``dry==True``
         """
-        # General preparation tasks
+        # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
-        # Get components
-        alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
-
-        # Get settings
+        # Get the settings
         settings = self._get_settings()
 
-        # Assign partial charges now to avoid any discrepancies later
-        self._assign_partial_charges(settings["charge_settings"], smc_components)
+        # Get the components
+        alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
 
-        # Get OpenMM topology, positions, system, and comp_resids
-        omm_topology, omm_system, positions, comp_resids = self._get_omm_objects(
-            settings=settings,
-            protein_component=prot_comp,
-            solvent_component=solv_comp,
-            smc_components=smc_comps,
-        )
-
-        # Pre-equilbrate System (Test + Avoid NaNs + get stable system)
-        positions, box_vectors = self._pre_equilibrate(
-            omm_system, omm_topology, positions, settings, dry
-        )
-
-        # Add restraints
-        # Note: when no restraint is applied, restrained_omm_system == omm_system
-        (
-            standard_state_corr,
-            restrained_omm_system,
-            restraint_geometry,
-        ) = self._add_restraints(
-            omm_system,
-            omm_topology,
-            positions,
-            alchem_comps,
-            comp_resids,
-            settings,
-        )
-
-        # Get alchemical system
-        alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
-            topology=omm_topology,
-            system=restrained_omm_system,
-            comp_resids=comp_resids,
-            alchem_comps=alchem_comps,
-            alchemical_settings=settings["alchemical_settings"],
-        )
-
-        # Subselect system based on user inputs & write initial PDB
-        selection_indices = self._subsample_topology(
-            topology=omm_topology,
-            positions=positions,
-            output_selection=settings["output_settings"].output_indices,
-            output_file=self.shared_basepath / settings["output_settings"].output_structure,
-        )
-
-        # Serialize relevant outputs
-        system_outfile = self.shared_basepath / "alchemical_system.xml.bz2"
-        serialize(alchem_system, system_outfile)
-
-        positions_outfile = self.shared_basepath / "system_positions.npy"
-        npy_positions = from_openmm(positions).to("nanometer").m
-        np.save(positions_outfile, npy_positions)
-
-        unit_results_dics = {
-            "system": system_outfile,
-            "positions": positions_outfile,
-            "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
-            "selection_indices": selection_indices,
-        }
-
-        if standard_state_corr is not None:
-            unit_results_dict["standard_state_corr"] = standard_state_corr.to(
-                "kilocalorie_per_mole"
-            )
-        else:
-            unit_results_dict["standard_state_corr" = 0 * offunit.kilocalorie_per_mole
-
-        if restraint_geometry is not None:
-            unit_results_dict["restraint_geometry"] = restraint_geometry.model_dump()
-
-        if dry:
-            unit_results_dict |= {
-                "restrained_system": restrained_omm_system,
-                "alchem_system": alchem_system,
-                "alchem_indices": alchem_indices,
-                "alchem_factory": alchem_factory,
-                "positions": positions,
-            }
-        return unit_results_dict
-
-    def _execute(
-        self,
-        ctx: gufe.Context,
-        **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
-
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            "simtype": self.simtype,
-            **outputs,
-        }
-
-### Break unit here
-
-        # 5. Get lambdas
+        # Get the lambda schedule
         lambdas = self._get_lambda_schedule(settings)
 
-        # 8. Get compound and sampler states
+        # Get the compute platform
+        restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
+        platform = omm_compute.get_openmm_platform(
+            platform_name=settings["engine_settings"].compute_platform,
+            gpu_device_index=settings["engine_settings"].gpu_device_index,
+            restrict_cpu_count=restrict_cpu,
+        )
+
+        # Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
-            alchem_system,
-            positions,
-            box_vectors,
-            settings,
-            lambdas,
-            solv_comp,
-            restraint_parameter_state,
+            alchemical_system=system,
+            position=positions,
+            # convert the box vectors to vec3 from openff
+            box_vectors=make_vec3_box(box_vectors),
+            thermodynamic_settings=settings["thermo_settings"],
+            lambdas=lambdas,
+            solvent_component=solv_comp,
+            alchemically_restrained=alchemical_restraints,
         )
 
-        # 9. Create the multistate reporter & create PDB
-        reporter = self._get_reporter(
-            positions,
-            selection_indices,
-            settings["simulation_settings"],
-            settings["output_settings"],
-        )
-
-        # Wrap in try/finally to avoid memory leak issues
         try:
-            # 10. Get context caches
-            energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
-                settings["forcefield_settings"], settings["engine_settings"]
+            # Get the integrator
+            integrator = self._get_integrator(
+                integrator_settings=settings["integrator_settings"],
+                simulation_settings=settings["simulation_settings"],
+                system=system,
             )
 
-            # 11. Get integrator
-            integrator = self._get_integrator(
-                settings["integrator_settings"],
-                settings["simulation_settings"],
+            # Create or get the multistate reporter
+            reporter = self._get_reporter(
+                positions=positions,
+                selection_indices=selection_indices,
+                simulation_settings=settings["simulation_settings"],
+                output_settings=settings["output_settings"],
             )
 
             # 12. Get sampler
