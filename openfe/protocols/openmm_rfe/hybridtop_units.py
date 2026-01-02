@@ -232,7 +232,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
           A dictionary of protocol settings.
         solvent_component : SolventComponent | None
           The solvent component of the system, if any.
-        openff_molecules : list[openff.Toolkit] | None
+        openff_molecules : list[openff.toolkit.Molecule] | None 
           A list of openff molecules to generate templates for, if any.
         ffcache : pathlib.Path | None
           Path to the force field parameter cache.
@@ -242,35 +242,34 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         system_generator : openmmtools.SystemGenerator
           The SystemGenerator for the protocol.
         """
-        # Block out oechem backend in system_generator calls to avoid
-        # any issues with smiles roundtripping between rdkit and oechem
-        with without_oechem_backend():
-            system_generator = system_creation.get_system_generator(
-                forcefield_settings=settings["forcefield_settings"],
-                integrator_settings=settings["integrator_settings"],
-                thermo_settings=settings["thermo_settings"],
-                cache=ffcache,
-                has_solvent=solvent_component is not None,
+        system_generator = system_creation.get_system_generator(
+            forcefield_settings=settings["forcefield_settings"],
+            integrator_settings=settings["integrator_settings"],
+            thermo_settings=settings["thermo_settings"],
+            cache=ffcache,
+            has_solvent=solvent_component is not None,
+        )
+
+        # Handle openff Molecule templates
+        # TODO: revisit this once the SystemGenerator update happens
+        # and we start loading the whole protein into OpenFF Topologies
+        if openff_molecules is None:
+            return system_generator
+        
+        # First deduplicate isomoprhic molecules
+        unique_offmols = []
+        for mol in openff_molecules:
+            unique = all(
+                [
+                    not mol.is_isomorphic_with(umol)
+                    for umol in unique_offmols
+                ]
             )
+            if unique:
+                unique_offmols.append(mol)
 
-            # Handle openff Molecule templates
-            # TODO: revisit this once the SystemGenerator update happens
-            # and we start loading the whole protein into OpenFF Topologies
-            
-            # First deduplicate isomoprhic molecules
-            unique_offmols = []
-            for mol in openff_molecules:
-                unique = all(
-                    [
-                        not mol.is_isomorphic_with(umol)
-                        for umol in unique_offmols
-                    ]
-                )
-                if unique:
-                    unique_offmols.append(mol)
-
-            # register all the templates
-            system_generator.add_molecules(unique_offmols)
+        # register all the templates
+        system_generator.add_molecules(unique_offmols)
         
         return system_generator
 
@@ -1145,12 +1144,6 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
           Simulation output control settings.
         dry : bool
           Whether or not to dry run the simulation.
-
-        Returns
-        -------
-        unit_results_dict : dict | None
-          A dictionary containing the free energy results to report.
-          ``None`` if it is a dry run.
         """
         # Get the relevant simulation steps
         mc_steps = settings_validation.convert_steps_per_iteration(
@@ -1208,8 +1201,6 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             ]
             for fn in fns:
                 os.remove(fn)
-
-            return None
 
     def run(
         self,
