@@ -1089,12 +1089,6 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
           Simulation output control settings.
         dry : bool
           Whether or not to dry run the simulation.
-
-        Returns
-        -------
-        unit_results_dict : dict | None
-          A dictionary containing the free energy results to report.
-          ``None`` if it is a dry run.
         """
         # Get the relevant simulation steps
         mc_steps = settings_validation.convert_steps_per_iteration(
@@ -1147,8 +1141,6 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             ]
             for fn in fns:
                 os.remove(fn)
-
-            return None
 
     def run(
         self,
