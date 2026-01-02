@@ -1507,7 +1507,6 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         scratch_basepath: pathlib.Path | None = None,
         shared_basepath: pathlib.Path | None = None,
     ) -> dict[str, Any]:
-
         """Analyze the multistate simulation.
 
         Parameters
