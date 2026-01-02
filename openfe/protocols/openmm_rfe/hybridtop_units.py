@@ -1514,6 +1514,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
         pdb_file = setup_results.outputs["pdb_structure"]
+        selection_indices = setup_results.outputs["selection_indices"]
         trajectory = simulation_results.outputs["nc"]
         checkpoint = simulation_results.outputs["checkpoint"]
 
@@ -1528,10 +1529,11 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
-            # We include paths to various files here also to make
-            # life easier when gathering results.
+            # We include various other outputs here to make
+            # things easier when gathering.
             "pdb_structure": pdb_file,
             "trajectory": trajectory,
             "checkpoint": checkpoint,
+            "selection_indices": selection_indices,
             **outputs,
         }
