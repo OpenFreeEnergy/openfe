@@ -446,36 +446,58 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Get the name of the alchemical species
         alchname = alchem_comps["stateA"][0].name
 
-        # Create list units for vacuum and solvent transforms
-        solvent_units = [
-            AbsoluteSolvationSolventUnit(
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                generation=0,
-                repeat_id=int(uuid.uuid4()),
-                name=(f"Absolute Solvation, {alchname} solvent leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
+        unit_classes = {
+            'solvent': {
+                'setup': AHFESolventSetupUnit,
+                'simulation': AHFESolventSimUnit,
+                'analysis': AHFESolventAnalysisUnit,
+            },
+           'vacuum': {
+                'setup': AHFEVacuumSetupUnit,
+                'simulation': AHFEVacuumSimUnit,
+                'analysis': AHFEVacuumAnalysisUnit,
+            }
+        }
 
-        vacuum_units = [
-            AbsoluteSolvationVacuumUnit(
-                # These don't really reflect the actual transform
-                # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                generation=0,
-                repeat_id=int(uuid.uuid4()),
-                name=(f"Absolute Solvation, {alchname} vacuum leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
+        protocol_units = {'solvent': [], 'complex': []}
 
-        return solvent_units + vacuum_units
+        for phase in ['solvent', 'vacuum']:
+            for i in range(self.settings.protocol_repeats):
+                repeat_id = int(uuid.uuid4())
+
+                setup = unit_classes[phase]['setup'](
+                    protocol=self,
+                    stateA=stateA,
+                    stateB=stateB,
+                    alchemical_components=alchem_comps,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"Absolute Hydration Setup: {alchname} solvent leg: repeat {i} generation 0",
+                )
+
+                simulation = unit_classes[phase]['simulation'](
+                    protocol=self,
+                    # only need state A & alchem comps
+                    stateA=stateA,
+                    alchemical_components=alchem_comps,
+                    setup_results=setup,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"Absolute Hydration Simulation: {alchname} solvent leg: repeat {i} generation 0",
+                )
+
+                analysis = unit_classes[phase]['analysis'](
+                    protocol=self,
+                    setup_results=setup,
+                    simulation_results=simulation,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"Absolute Hydration Analysis: {alchname} solvent leg, repeat {i} generation 0",
+                )
+
+                protocol_units[phase] += [setup, simulation, analysis]
+
+        return protocol_units["solvent"] + protocol_units["vacuum"]
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
@@ -487,7 +509,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         for d in protocol_dag_results:
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
-                if not pu.ok():
+                if ("Analysis" not in pu.name) or (not pu.ok()):
                     continue
                 if pu.outputs["simtype"] == "solvent":
                     unsorted_solvent_repeats[pu.outputs["repeat_id"]].append(pu)
@@ -506,13 +528,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         return repeats
 
 
-class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
-    """
-    Protocol Unit for the vacuum phase of an absolute solvation free energy
-    """
-
-    simtype = "vacuum"
-
+class VacuumComponentsMixin:
     def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
@@ -545,6 +561,8 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         # (of stateA since we enforce only one disappearing ligand)
         return alchem_comps, None, prot_comp, off_comps
 
+
+class VacuumSettingsMixin:
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a vacuum transformation.
@@ -585,13 +603,34 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         return settings
 
 
-class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
+class AHFEVacuumSetupUnit(
+    BaseAbsoluteSetupUnit, VacuumComponentsMixin, VacuumSettingsMixin
+):
     """
-    Protocol Unit for the solvent phase of an absolute solvation free energy
+    ProtocolUnit for the vacuum setup phase of an absolute hydration free energy
     """
+    simtype = "vacuum"
 
-    simtype = "solvent"
 
+class AHFEVacuumSimUnit(
+    BaseAbsoluteMultiStateSimulationUnit, VaccumComponentsMixin, VacuumSettingsMixin
+):
+    """
+    ProtocolUnit for the vacuum simulation phase of an absolute hydration free energy
+    """
+    simtype = "vacuum"
+
+
+class AHFEVacuumAnalysisUnit(
+    BaseAbsoluteMultiStateAnalysisUnit, VacuumSettingsMixin
+):
+    """
+    ProtocolUnit for the vacuum analysis phase of an absolute hydration free energy
+    """
+    simtype = "vacuum"
+
+
+class SolventComponentsMixin:
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
@@ -620,6 +659,8 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         # disallowed on create
         return alchem_comps, solv_comp, prot_comp, off_comps
 
+
+class SolventSettingMixin:
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a solvent transformation.
@@ -658,3 +699,32 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings["output_settings"] = prot_settings.solvent_output_settings
 
         return settings
+
+
+class AHFESolventSetupUnit(
+    BaseAbsoluteSetupUnit, SolventComponentsMixin, SolventSettingsMixin
+):
+    """
+    ProtocolUnit for the solvent setup phase of an absolute hydration free energy
+    """
+    simtype = "solvent"
+
+
+class AHFESolventSimUnit(
+    BaseAbsoluteMultiStateSimulationUnit, SolventComponentsMixin, SolventSettingsMixin
+):
+    """
+    ProtocolUnit for the solvent simulation phase of an absolute hydration free energy
+    """
+    simtype = "solvent"
+
+
+class AHFESolventAnalysisUnit(
+    BaseAbsoluteMultiStateAnalysisUnit, SolventSettingsMixin
+):
+    """
+    ProtocolUnit for the solvent analysis phase of an absolute hydration free energy
+    """
+    simtype = "solvent"
+
+
