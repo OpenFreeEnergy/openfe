@@ -7,9 +7,9 @@ from openff.units import unit
 
 from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe.hybridtop_units import (
-    HybridTopologySetupUnit,
-    HybridTopologyMultiStateSimulationUnit,
     HybridTopologyMultiStateAnalysisUnit,
+    HybridTopologyMultiStateSimulationUnit,
+    HybridTopologySetupUnit,
 )
 
 """
@@ -36,12 +36,7 @@ def rfe_protocol_other_input_units():
 
 
 @pytest.fixture
-def protocol_units(
-    rfe_protocol,
-    benzene_system,
-    toluene_system,
-    benzene_to_toluene_mapping
-):
+def protocol_units(rfe_protocol, benzene_system, toluene_system, benzene_to_toluene_mapping):
     pus = rfe_protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
@@ -51,27 +46,21 @@ def protocol_units(
 
 
 @pytest.fixture
-def protocol_setup_unit(
-    protocol_units
-):
+def protocol_setup_unit(protocol_units):
     for pu in protocol_units:
         if isinstance(pu, HybridTopologySetupUnit):
             return pu
 
 
 @pytest.fixture
-def protocol_simulation_unit(
-    protocol_units
-):
+def protocol_simulation_unit(protocol_units):
     for pu in protocol_units:
         if isinstance(pu, HybridTopologyMultiStateSimulationUnit):
             return pu
 
 
 @pytest.fixture
-def protocol_analysis_unit(
-    protocol_units
-):
+def protocol_analysis_unit(protocol_units):
     for pu in protocol_units:
         if isinstance(pu, HybridTopologyMultiStateAnalysisUnit):
             return pu

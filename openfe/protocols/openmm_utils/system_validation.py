@@ -170,15 +170,9 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
         else:
             return None
 
-    solvent_comp: Optional[SolventComponent] = _get_single_comps(
-        state,
-        SolventComponent
-    )
+    solvent_comp: Optional[SolventComponent] = _get_single_comps(state, SolventComponent)
 
-    protein_comp: Optional[ProteinComponent] = _get_single_comps(
-        state,
-        ProteinComponent
-    )
+    protein_comp: Optional[ProteinComponent] = _get_single_comps(state, ProteinComponent)
 
     small_mols = state.get_components_of_type(SmallMoleculeComponent)
 
