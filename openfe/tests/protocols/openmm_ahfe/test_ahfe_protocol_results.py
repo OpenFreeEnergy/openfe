@@ -1,6 +1,5 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import gzip
 import itertools
 import json
 from pathlib import Path
@@ -12,15 +11,38 @@ import pytest
 from openff.units import unit as offunit
 
 import openfe
+from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
-from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 
 
-def test_gather(benzene_complex_dag, tmpdir):
+@pytest.fixture()
+def protocol_dry_settings():
+    settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    settings.vacuum_engine_settings.compute_platform = None
+    settings.solvent_engine_settings.compute_platform = None
+    settings.protocol_repeats = 1
+    return settings
+
+
+@pytest.fixture
+def benzene_solvation_dag(benzene_system, protocol_dry_settings):
+    protocol_dry_settings.protocol_repeats = 3
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+        settings=protocol_dry_settings
+    )
+
+    stateA = benzene_system
+
+    stateB = ChemicalSystem({"solvent": SolventComponent()})
+
+    return protocol.create(stateA=stateA, stateB=stateB, mapping=None)
+
+
+def test_gather(benzene_solvation_dag, tmpdir):
     # check that .gather behaves as expected
     with (
         mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFESolventSetupUnit.run",
+            "openfe.protocols.openmm_afe.ahfe_units.AHFESolventSetupUnit.run",
             return_value={
                 "system": Path("system.xml.bz2"),
                 "positions": Path("positions.npy"),
@@ -32,7 +54,7 @@ def test_gather(benzene_complex_dag, tmpdir):
             },
         ),
         mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexSetupUnit.run",
+            "openfe.protocols.openmm_afe.ahfe_units.AHFEVacuumSetupUnit.run",
             return_value={
                 "system": Path("system.xml.bz2"),
                 "positions": Path("positions.npy"),
@@ -40,7 +62,7 @@ def test_gather(benzene_complex_dag, tmpdir):
                 "selection_indices": np.zeros(100),
                 "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
                 "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
-                "restraint_geometry": True,
+                "restraint_geometry": None,
             },
         ),
         mock.patch(
@@ -52,60 +74,61 @@ def test_gather(benzene_complex_dag, tmpdir):
             return_value="foo",
         ),
         mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexSimUnit.run",
+            "openfe.protocols.openmm_afe.ahfe_units.AHFESolventSimUnit.run",
             return_value={
                 "trajectory": Path("file.nc"),
                 "checkpoint": Path("chk.chk"),
             },
         ),
         mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFESolventSimUnit.run",
+            "openfe.protocols.openmm_afe.ahfe_units.AHFEVacuumSimUnit.run",
             return_value={
                 "trajectory": Path("file.nc"),
                 "checkpoint": Path("chk.chk"),
             },
         ),
         mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexAnalysisUnit.run",
+            "openfe.protocols.openmm_afe.ahfe_units.AHFESolventAnalysisUnit.run",
             return_value={
                 "foo": "bar"
             },
         ),
         mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFESolventAnalysisUnit.run",
+            "openfe.protocols.openmm_afe.ahfe_units.AHFEVacuumAnalysisUnit.run",
             return_value={
                 "foo": "bar"
             },
         ),
     ):
         dagres = gufe.protocols.execute_DAG(
-            benzene_complex_dag,
+            benzene_solvation_dag,
             shared_basedir=tmpdir,
             scratch_basedir=tmpdir,
             keep_shared=True,
         )
 
-    protocol = openmm_afe.AbsoluteBindingProtocol(
-        settings=openmm_afe.AbsoluteBindingProtocol.default_settings(),
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+        settings=openmm_afe.AbsoluteSolvationProtocol.default_settings(),
     )
 
     res = protocol.gather([dagres])
 
-    assert isinstance(res, openmm_afe.AbsoluteBindingProtocolResult)
+    assert isinstance(res, openmm_afe.AbsoluteSolvationProtocolResult)
 
 
 class TestProtocolResult:
     @pytest.fixture()
-    def protocolresult(self, abfe_transformation_json_path):
-        with gzip.open(abfe_transformation_json_path) as f:
-            pr = openfe.ProtocolResult.from_json(f)
+    def protocolresult(self, afe_solv_transformation_json):
+        d = json.loads(afe_solv_transformation_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+        pr = openfe.ProtocolResult.from_dict(d["protocol_result"])
 
         return pr
 
     def test_reload_protocol_result(self, afe_solv_transformation_json):
         d = json.loads(afe_solv_transformation_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
 
-        pr = openmm_afe.AbsoluteBindingProtocolResult.from_dict(d["protocol_result"])
+        pr = openmm_afe.AbsoluteSolvationProtocolResult.from_dict(d["protocol_result"])
 
         assert pr
 
@@ -113,7 +136,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-21.71, abs=0.01)
+        assert est.m == pytest.approx(-2.47, abs=0.5)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -121,7 +144,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.73, abs=0.01)
+        assert est.m == pytest.approx(0.2, abs=0.2)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -130,36 +153,28 @@ class TestProtocolResult:
 
         assert isinstance(inds, dict)
         assert isinstance(inds["solvent"], list)
-        assert isinstance(inds["complex"], list)
-        assert len(inds["solvent"]) == len(inds["complex"]) == 3
-        for e, u in itertools.chain(inds["solvent"], inds["complex"]):
+        assert isinstance(inds["vacuum"], list)
+        assert len(inds["solvent"]) == len(inds["vacuum"]) == 3
+        for e, u in itertools.chain(inds["solvent"], inds["vacuum"]):
             assert e.is_compatible_with(offunit.kilojoule_per_mole)
             assert u.is_compatible_with(offunit.kilojoule_per_mole)
 
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
+    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
     def test_get_forwards_etc(self, key, protocolresult):
         far = protocolresult.get_forward_and_reverse_energy_analysis()
 
         assert isinstance(far, dict)
         assert isinstance(far[key], list)
+        far1 = far[key][0]
+        assert isinstance(far1, dict)
 
-        for f in far[key]:
-            if f is not None:
-                assert isinstance(f, dict)
+        for k in ["fractions", "forward_DGs", "forward_dDGs", "reverse_DGs", "reverse_dDGs"]:
+            assert k in far1
 
-                for k in [
-                    "fractions",
-                    "forward_DGs",
-                    "forward_dDGs",
-                    "reverse_DGs",
-                    "reverse_dDGs",
-                ]:
-                    assert k in f
+            if k == "fractions":
+                assert isinstance(far1[k], np.ndarray)
 
-                    if k == "fractions":
-                        assert isinstance(f[k], np.ndarray)
-
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
+    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
     def test_get_frwd_reverse_none_return(self, key, protocolresult):
         # fetch the first result of type key
         data = [i for i in protocolresult.data[key].values()][0][0]
@@ -171,8 +186,8 @@ class TestProtocolResult:
         with pytest.warns(UserWarning, match=wmsg):
             protocolresult.get_forward_and_reverse_energy_analysis()
 
-    @pytest.mark.parametrize("key, n_rep", [("solvent", 14), ("complex", 30)])
-    def test_get_overlap_matrices(self, key, n_rep, protocolresult):
+    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
+    def test_get_overlap_matrices(self, key, protocolresult):
         ovp = protocolresult.get_overlap_matrices()
 
         assert isinstance(ovp, dict)
@@ -181,10 +196,10 @@ class TestProtocolResult:
 
         ovp1 = ovp[key][0]
         assert isinstance(ovp1["matrix"], np.ndarray)
-        assert ovp1["matrix"].shape == (n_rep, n_rep)
+        assert ovp1["matrix"].shape == (14, 14)
 
-    @pytest.mark.parametrize("key, n_rep", [("solvent", 14), ("complex", 30)])
-    def test_get_replica_transition_statistics(self, n_rep, key, protocolresult):
+    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
+    def test_get_replica_transition_statistics(self, key, protocolresult):
         rpx = protocolresult.get_replica_transition_statistics()
 
         assert isinstance(rpx, dict)
@@ -193,10 +208,10 @@ class TestProtocolResult:
         rpx1 = rpx[key][0]
         assert "eigenvalues" in rpx1
         assert "matrix" in rpx1
-        assert rpx1["eigenvalues"].shape == (n_rep,)
-        assert rpx1["matrix"].shape == (n_rep, n_rep)
+        assert rpx1["eigenvalues"].shape == (14,)
+        assert rpx1["matrix"].shape == (14, 14)
 
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
+    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
     def test_equilibration_iterations(self, key, protocolresult):
         eq = protocolresult.equilibration_iterations()
 
@@ -205,7 +220,7 @@ class TestProtocolResult:
         assert len(eq[key]) == 3
         assert all(isinstance(v, float) for v in eq[key])
 
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
+    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
     def test_production_iterations(self, key, protocolresult):
         prod = protocolresult.production_iterations()
 
@@ -213,42 +228,6 @@ class TestProtocolResult:
         assert isinstance(prod[key], list)
         assert len(prod[key]) == 3
         assert all(isinstance(v, float) for v in prod[key])
-
-    def test_filenotfound_replica_states(self, protocolresult):
-        errmsg = "File could not be found"
-
-        with pytest.raises(ValueError, match=errmsg):
-            protocolresult.get_replica_states()
-
-    def test_restraint_geometry(self, protocolresult):
-        geom = protocolresult.restraint_geometries()
-        assert isinstance(geom, list)
-        assert len(geom) == 3
-        assert isinstance(geom[0], BoreschRestraintGeometry)
-        assert geom[0].guest_atoms == [1779, 1778, 1777]
-        assert geom[0].host_atoms == [880, 865, 864]
-        assert pytest.approx(geom[0].r_aA0) == 1.083558 * offunit.nanometer
-        assert pytest.approx(geom[0].theta_A0) == 0.6786444 * offunit.radian
-        assert pytest.approx(geom[0].theta_B0) == 1.649905 * offunit.radian
-        assert pytest.approx(geom[0].phi_A0) == -0.3640583 * offunit.radian
-        assert pytest.approx(geom[0].phi_B0) == 1.892376 * offunit.radian
-        assert pytest.approx(geom[0].phi_C0) == -0.6106747 * offunit.radian
-
-    @pytest.mark.parametrize(
-        "key, expected_size",
-        [
-            ["solvent", 41],
-            ["complex", 1828],
-        ],
-    )
-    def test_selection_indices(self, key, protocolresult, expected_size):
-        indices = protocolresult.selection_indices()
-
-        assert isinstance(indices, dict)
-        assert isinstance(indices[key], list)
-        for inds in indices[key]:
-            assert isinstance(inds, np.ndarray)
-            assert len(inds) == expected_size
 
     def test_filenotfound_replica_states(self, protocolresult):
         errmsg = "File could not be found"

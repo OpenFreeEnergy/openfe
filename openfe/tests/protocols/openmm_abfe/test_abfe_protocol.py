@@ -1,6 +1,5 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from importlib import resources
 from math import sqrt
 from unittest import mock
 
@@ -23,9 +22,7 @@ from openmm import (
 )
 from openmm import unit as ommunit
 from openmmtools.alchemy import (
-    AbsoluteAlchemicalFactory,
     AlchemicalRegion,
-    AlchemicalState,
 )
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 from openmmtools.tests.test_alchemy import (
@@ -38,11 +35,8 @@ import openfe
 from openfe import ChemicalSystem, SmallMoleculeComponent, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
-    AbsoluteBindingComplexUnit,
     AbsoluteBindingProtocol,
-    AbsoluteBindingSolventUnit,
 )
-from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 
 
 @pytest.fixture()
