@@ -173,7 +173,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_alchemical_indices(
-        omm_top: openmm.Topology,
+        omm_top: openmm.app.Topology,
         comp_resids: dict[Component, npt.NDArray],
         alchem_comps: dict[str, list[Component]],
     ) -> list[int]:
