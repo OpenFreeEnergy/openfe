@@ -26,14 +26,15 @@ from .lambdaprotocol import RelativeAlchemicalState
 logger = logging.getLogger(__name__)
 
 
-class HybridCompatibilityMixin(object):
+class HybridCompatibilityMixin:
     """
     Mixin that allows the MultistateSampler to accommodate the situation where
     unsampled endpoints have a different number of degrees of freedom.
     """
 
-    def __init__(self, *args, hybrid_factory=None, **kwargs):
-        self._hybrid_factory = hybrid_factory
+    def __init__(self, *args, hybrid_system, hybrid_positions, **kwargs):
+        self._hybrid_system = hybrid_system
+        self._hybrid_positions = hybrid_positions
         super(HybridCompatibilityMixin, self).__init__(*args, **kwargs)
 
     def setup(self, reporter, lambda_protocol,
@@ -73,15 +74,17 @@ class HybridCompatibilityMixin(object):
         """
         n_states = len(lambda_protocol.lambda_schedule)
 
-        hybrid_system = self._factory.hybrid_system
+        lambda_zero_state = RelativeAlchemicalState.from_system(self._hybrid_system)
 
-        lambda_zero_state = RelativeAlchemicalState.from_system(hybrid_system)
+        thermostate = ThermodynamicState(
+            self._hybrid_system,
+            temperature=temperature
+        )
 
-        thermostate = ThermodynamicState(hybrid_system,
-                                         temperature=temperature)
         compound_thermostate = CompoundThermodynamicState(
-                                   thermostate,
-                                   composable_states=[lambda_zero_state])
+            thermostate,
+            composable_states=[lambda_zero_state]
+        )
 
         # create lists for storing thermostates and sampler states
         thermodynamic_state_list = []
@@ -105,16 +108,20 @@ class HybridCompatibilityMixin(object):
             raise ValueError(errmsg)
 
         # starting with the hybrid factory positions
-        box = hybrid_system.getDefaultPeriodicBoxVectors()
-        sampler_state = SamplerState(self._factory.hybrid_positions,
-                                     box_vectors=box)
+        box = self._hybrid_system.getDefaultPeriodicBoxVectors()
+        sampler_state = SamplerState(
+            self._hybrid_positions,
+            box_vectors=box
+        )
 
         # Loop over the lambdas and create & store a compound thermostate at
         # that lambda value
         for lambda_val in lambda_schedule:
             compound_thermostate_copy = copy.deepcopy(compound_thermostate)
             compound_thermostate_copy.set_alchemical_parameters(
-                                          lambda_val, lambda_protocol)
+                lambda_val,
+                lambda_protocol
+            )
             thermodynamic_state_list.append(compound_thermostate_copy)
 
             # now generating a sampler_state for each thermodyanmic state,
@@ -143,7 +150,8 @@ class HybridCompatibilityMixin(object):
             # generating unsampled endstates
             unsampled_dispersion_endstates = create_endstates(
                 copy.deepcopy(thermodynamic_state_list[0]),
-                copy.deepcopy(thermodynamic_state_list[-1]))
+                copy.deepcopy(thermodynamic_state_list[-1])
+            )
             self.create(thermodynamic_states=thermodynamic_state_list,
                         sampler_states=sampler_state_list, storage=reporter,
                         unsampled_thermodynamic_states=unsampled_dispersion_endstates)
@@ -159,10 +167,13 @@ class HybridRepexSampler(HybridCompatibilityMixin,
     number of positions
     """
 
-    def __init__(self, *args, hybrid_factory=None, **kwargs):
+    def __init__(self, *args, hybrid_system, hybrid_positions, **kwargs):
         super(HybridRepexSampler, self).__init__(
-            *args, hybrid_factory=hybrid_factory, **kwargs)
-        self._factory = hybrid_factory
+            *args,
+            hybrid_system=hybrid_system,
+            hybrid_positions=hybrid_positions,
+            **kwargs
+        )
 
 
 class HybridSAMSSampler(HybridCompatibilityMixin, sams.SAMSSampler):
@@ -171,11 +182,13 @@ class HybridSAMSSampler(HybridCompatibilityMixin, sams.SAMSSampler):
     of positions
     """
 
-    def __init__(self, *args, hybrid_factory=None, **kwargs):
+    def __init__(self, *args, hybrid_system, hybrid_positions, **kwargs):
         super(HybridSAMSSampler, self).__init__(
-                *args, hybrid_factory=hybrid_factory, **kwargs
+            *args,
+            hybrid_system=hybrid_system,
+            hybrid_positions=hybrid_positions,
+            **kwargs
         )
-        self._factory = hybrid_factory
 
 
 class HybridMultiStateSampler(HybridCompatibilityMixin,
@@ -184,11 +197,13 @@ class HybridMultiStateSampler(HybridCompatibilityMixin,
     MultiStateSampler that supports unsample end states with a different
     number of positions
     """
-    def __init__(self, *args, hybrid_factory=None, **kwargs):
+    def __init__(self, *args, hybrid_system, hybrid_positions, **kwargs):
         super(HybridMultiStateSampler, self).__init__(
-                *args, hybrid_factory=hybrid_factory, **kwargs
+            *args,
+            hybrid_system=hybrid_system,
+            hybrid_positions=hybrid_positions,
+            **kwargs
         )
-        self._factory = hybrid_factory
 
 
 def create_endstates(first_thermostate, last_thermostate):
