@@ -193,10 +193,6 @@ def test_repeat_units(benzene_system, toluene_system, benzene_to_toluene_mapping
     assert len(pus) == 9
 
     # Aggregate some info for each repeat
-    setup = []
-    simulation = []
-    analysis = []
-
     setup = _get_units(pus, HybridTopologySetupUnit)
     simulation = _get_units(pus, HybridTopologyMultiStateSimulationUnit)
     analysis = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)
