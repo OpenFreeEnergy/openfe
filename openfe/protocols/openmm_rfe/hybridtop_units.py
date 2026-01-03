@@ -18,31 +18,30 @@ import subprocess
 from itertools import chain
 from typing import Any, Optional
 
+import gufe
 import matplotlib.pyplot as plt
 import mdtraj
 import numpy as np
 import numpy.typing as npt
 import openmm
 import openmmtools
-from openmmforcefields.generators import SystemGenerator
-
-import gufe
+from gufe import (
+    ChemicalSystem,
+    Component,
+    LigandAtomMapping,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+)
 from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
 )
-from gufe import (
-    ChemicalSystem,
-    LigandAtomMapping,
-    Component,
-    SolventComponent,
-    ProteinComponent,
-    SmallMoleculeComponent,
-)
 from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import unit as offunit
 from openff.units import Quantity
+from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
+from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
 
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -68,8 +67,8 @@ from .equil_rfe_settings import (
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
-    OpenMMSolvationSettings,
     OpenMMEngineSettings,
+    OpenMMSolvationSettings,
     RelativeHybridTopologyProtocolSettings,
 )
 
@@ -80,6 +79,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     """
     Calculates the relative free energy of an alchemical ligand transformation.
     """
+
     def __init__(
         self,
         *,
@@ -159,7 +159,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_settings(
-        settings: RelativeHybridTopologyProtocolSettings
+        settings: RelativeHybridTopologyProtocolSettings,
     ) -> dict[str, SettingsBaseModel]:
         """
         Get a dictionary of Protocol settings.
@@ -190,14 +190,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_components(
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem
-        ) -> tuple[
-            dict[str, Component],
-            SolventComponent,
-            ProteinComponent,
-            dict[SmallMoleculeComponent, OFFMolecule]
-        ]:
+        stateA: ChemicalSystem, stateB: ChemicalSystem
+    ) -> tuple[
+        dict[str, Component],
+        SolventComponent,
+        ProteinComponent,
+        dict[SmallMoleculeComponent, OFFMolecule],
+    ]:
         """
         Get the components from the ChemicalSystem inputs.
 
@@ -225,10 +224,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
         _, _, smcs_B = system_validation.get_components(stateB)
 
-        small_mols = {
-            m: m.to_openff()
-            for m in set(smcs_A).union(set(smcs_B))
-        }
+        small_mols = {m: m.to_openff() for m in set(smcs_A).union(set(smcs_B))}
 
         return alchem_comps, solvent_comp, protein_comp, small_mols
 
@@ -277,7 +273,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
           The solvent component of the system, if any.
         openff_molecules : list[openff.Toolkit] | None
           A list of openff molecules to generate templates for, if any.
-        
+
         Returns
         -------
         system_generator : openmmtools.SystemGenerator
@@ -302,22 +298,17 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # Handle openff Molecule templates
             # TODO: revisit this once the SystemGenerator update happens
             # and we start loading the whole protein into OpenFF Topologies
-            
+
             # First deduplicate isomoprhic molecules
             unique_offmols = []
             for mol in openff_molecules:
-                unique = all(
-                    [
-                        not mol.is_isomorphic_with(umol)
-                        for umol in unique_offmols
-                    ]
-                )
+                unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
                 if unique:
                     unique_offmols.append(mol)
 
             # register all the templates
             system_generator.add_molecules(unique_offmols)
-        
+
         return system_generator
 
     @staticmethod
@@ -328,10 +319,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         system_generator: SystemGenerator,
         solvation_settings: OpenMMSolvationSettings,
     ) -> tuple[
-        openmm.System,
-        openmm.app.Topology,
-        openmm.unit.Quantity,
-        dict[Component, npt.NDArray]
+        openmm.System, openmm.app.Topology, openmm.unit.Quantity, dict[Component, npt.NDArray]
     ]:
         """
         Create an OpenMM System for state A.
@@ -483,7 +471,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         settings: dict[str, SettingsBaseModel],
         protein_component: ProteinComponent | None,
         solvent_component: SolventComponent | None,
-        small_mols: dict[SmallMoleculeComponent, OFFMolecule]
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> tuple[
         openmm.System,
         openmm.app.Topology,
@@ -535,11 +523,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             self.logger.info("Parameterizing systems")
 
         def _filter_small_mols(smols, state):
-            return {
-                smc: offmol
-                for smc, offmol in smols.items()
-                if state.contains(smc)
-            }
+            return {smc: offmol for smc, offmol in smols.items() if state.contains(smc)}
 
         small_mols_stateA = _filter_small_mols(small_mols, stateA)
         small_mols_stateB = _filter_small_mols(small_mols, stateB)
@@ -554,23 +538,20 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 shared_basepath=self.shared_basepath,
                 settings=settings,
                 solvent_comp=solvent_component,
-                openff_molecules=list(small_mols.values())
+                openff_molecules=list(small_mols.values()),
             )
 
-            (
-                stateA_system, stateA_topology, stateA_positions,
-                comp_resids
-            ) = self._create_stateA_system(
-                small_mols=small_mols_stateA,
-                protein_component=protein_component,
-                solvent_component=solvent_component,
-                system_generator=system_generator,
-                solvation_settings=settings["solvation_settings"]
+            (stateA_system, stateA_topology, stateA_positions, comp_resids) = (
+                self._create_stateA_system(
+                    small_mols=small_mols_stateA,
+                    protein_component=protein_component,
+                    solvent_component=solvent_component,
+                    system_generator=system_generator,
+                    solvation_settings=settings["solvation_settings"],
+                )
             )
 
-            (
-                stateB_system, stateB_topology, stateB_alchem_resids
-            ) = self._create_stateB_system(
+            (stateB_system, stateB_topology, stateB_alchem_resids) = self._create_stateB_system(
                 small_mols=small_mols_stateB,
                 mapping=mapping,
                 stateA_topology=stateA_topology,
@@ -617,9 +598,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         return (
-            stateA_system, stateA_topology, stateA_positions,
-            stateB_system, stateB_topology, stateB_positions,
-            system_mappings
+            stateA_system,
+            stateA_topology,
+            stateA_positions,
+            stateB_system,
+            stateB_topology,
+            stateB_positions,
+            system_mappings,
         )
 
     @staticmethod
@@ -730,9 +715,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # bfactor of 0.5 is core atoms
         # bfactor of 0.75 is unique new atoms
         bfactors = np.zeros_like(selection_indices, dtype=float)
-        bfactors[np.isin(selection_indices, list(atom_classes['unique_old_atoms']))] = 0.25
-        bfactors[np.isin(selection_indices, list(atom_classes['core_atoms']))] = 0.50
-        bfactors[np.isin(selection_indices, list(atom_classes['unique_new_atoms']))] = 0.75
+        bfactors[np.isin(selection_indices, list(atom_classes["unique_old_atoms"]))] = 0.25
+        bfactors[np.isin(selection_indices, list(atom_classes["core_atoms"]))] = 0.50
+        bfactors[np.isin(selection_indices, list(atom_classes["unique_new_atoms"]))] = 0.75
 
         if len(selection_indices) > 0:
             traj = mdtraj.Trajectory(
@@ -804,7 +789,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _get_integrator(
         integrator_settings: IntegratorSettings,
         simulation_settings: MultiStateSimulationSettings,
-        system: openmm.System
+        system: openmm.System,
     ) -> openmmtools.mcmc.LangevinDynamicsMove:
         """
         Get and validate the integrator
@@ -902,7 +887,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
             simulation_settings=simulation_settings,
         )
-    
+
         # convert early_termination_target_error from kcal/mol to kT
         early_termination_target_error = (
             settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
@@ -942,7 +927,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 online_analysis_minimum_iterations=rta_min_its,
             )
 
-
         else:
             raise AttributeError(f"Unknown sampler {simulation_settings.sampler_method}")
 
@@ -976,9 +960,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         self,
         sampler: multistate.MultiStateSampler,
         reporter: multistate.MultiStateReporter,
-        simulation_settings : MultiStateSimulationSettings,
-        integrator_settings : IntegratorSettings,
-        output_settings : MultiStateOutputSettings,
+        simulation_settings: MultiStateSimulationSettings,
+        integrator_settings: IntegratorSettings,
+        output_settings: MultiStateOutputSettings,
         dry: bool,
     ):
         """
@@ -1114,17 +1098,19 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         stateA = self._inputs["stateA"]
         stateB = self._inputs["stateB"]
         mapping = self._inputs["ligandmapping"]
-        alchem_comps, solvent_comp, protein_comp, small_mols = self._get_components(
-            stateA, stateB
-        )
+        alchem_comps, solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
 
         # Assign partial charges now to avoid any discrepancies later
         self._assign_partial_charges(settings["charge_settings"], small_mols)
 
         (
-            stateA_system, stateA_topology, stateA_positions,
-            stateB_system, stateB_topology, stateB_positions,
-            system_mappings
+            stateA_system,
+            stateA_topology,
+            stateA_positions,
+            stateB_system,
+            stateB_topology,
+            stateB_positions,
+            system_mappings,
         ) = self._get_omm_objects(
             stateA=stateA,
             stateB=stateB,
@@ -1132,7 +1118,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             settings=settings,
             protein_component=protein_comp,
             solvent_component=solvent_comp,
-            small_mols=small_mols
+            small_mols=small_mols,
         )
 
         # Get the hybrid factory & system
@@ -1160,7 +1146,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # TODO - this should be better exposed to users
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
             functions=settings["lambda_settings"].lambda_functions,
-            windows=settings["lambda_settings"].lambda_windows
+            windows=settings["lambda_settings"].lambda_windows,
         )
 
         # Get the reporter
@@ -1182,7 +1168,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         integrator = self._get_integrator(
             integrator_settings=settings["integrator_settings"],
             simulation_settings=settings["simulation_settings"],
-            system=hybrid_system
+            system=hybrid_system,
         )
 
         try:
@@ -1197,7 +1183,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 thermo_settings=settings["thermo_settings"],
                 alchem_settings=settings["alchemical_settings"],
                 platform=platform,
-                dry=dry
+                dry=dry,
             )
 
             unit_results_dict = self._run_simulation(
@@ -1237,8 +1223,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             unit_results_dict["selection_indices"] = selection_indices
             return unit_results_dict
         else:
-            return {"debug": 
-                {
+            return {
+                "debug": {
                     "sampler": sampler,
                     "hybrid_factory": hybrid_factory,
                 }
