@@ -835,63 +835,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
 
 class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
-    def _get_reporter(
-        self,
-        selection_indices: npt.NDArray,
-        output_settings: MultiStateOutputSettings,
-        simulation_settings: MultiStateSimulationSettings,
-    ) -> multistate.MultiStateReporter:
-        """
-        Get the multistate reporter.
-
-        Parameters
-        ----------
-        selection_indices : npt.NDArray
-          The set of system indices to report positions & velocities for.
-        output_settings : MultiStateOutputSettings
-          Settings defining how outputs should be written.
-        simulation_settings : MultiStateSimulationSettings
-          Settings defining out the simulation should be run.
-        """
-        nc = self.shared_basepath / output_settings.output_filename
-        # The checkpoint file in openmmtools is taken as a file relative
-        # to the location of the nc file, so you only want the filename
-        chk = output_settings.checkpoint_storage_filename
-
-        if output_settings.positions_write_frequency is not None:
-            pos_interval = settings_validation.divmod_time_and_check(
-                numerator=output_settings.positions_write_frequency,
-                denominator=simulation_settings.time_per_iteration,
-                numerator_name="output settings' position_write_frequency",
-                denominator_name="simulation settings' time_per_iteration",
-            )
-        else:
-            pos_interval = 0
-
-        if output_settings.velocities_write_frequency is not None:
-            vel_interval = settings_validation.divmod_time_and_check(
-                numerator=output_settings.velocities_write_frequency,
-                denominator=simulation_settings.time_per_iteration,
-                numerator_name="output settings' velocity_write_frequency",
-                denominator_name="sampler settings' time_per_iteration",
-            )
-        else:
-            vel_interval = 0
-
-        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
-            checkpoint_interval=output_settings.checkpoint_interval,
-            time_per_iteration=simulation_settings.time_per_iteration,
-        )
-
-        return multistate.MultiStateReporter(
-            storage=nc,
-            analysis_particle_indices=selection_indices,
-            checkpoint_interval=chk_intervals,
-            checkpoint_storage=chk,
-            position_interval=pos_interval,
-            velocity_interval=vel_interval,
-        )
-
     @staticmethod
     def _get_integrator(
         integrator_settings: IntegratorSettings,
@@ -946,6 +889,66 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                     raise ValueError(errmsg)
 
         return integrator
+
+    @staticmethod
+    def _get_reporter(
+        storage_path: pathlib.Path,
+        selection_indices: npt.NDArray,
+        output_settings: MultiStateOutputSettings,
+        simulation_settings: MultiStateSimulationSettings,
+    ) -> multistate.MultiStateReporter:
+        """
+        Get the multistate reporter.
+
+        Parameters
+        ----------
+        storage_path : pathlib.Path
+          Path to the directory where files should be written.
+        selection_indices : npt.NDArray
+          The set of system indices to report positions & velocities for.
+        output_settings : MultiStateOutputSettings
+          Settings defining how outputs should be written.
+        simulation_settings : MultiStateSimulationSettings
+          Settings defining out the simulation should be run.
+        """
+        nc = self.shared_basepath / output_settings.output_filename
+        # The checkpoint file in openmmtools is taken as a file relative
+        # to the location of the nc file, so you only want the filename
+        chk = output_settings.checkpoint_storage_filename
+
+        if output_settings.positions_write_frequency is not None:
+            pos_interval = settings_validation.divmod_time_and_check(
+                numerator=output_settings.positions_write_frequency,
+                denominator=simulation_settings.time_per_iteration,
+                numerator_name="output settings' position_write_frequency",
+                denominator_name="simulation settings' time_per_iteration",
+            )
+        else:
+            pos_interval = 0
+
+        if output_settings.velocities_write_frequency is not None:
+            vel_interval = settings_validation.divmod_time_and_check(
+                numerator=output_settings.velocities_write_frequency,
+                denominator=simulation_settings.time_per_iteration,
+                numerator_name="output settings' velocity_write_frequency",
+                denominator_name="sampler settings' time_per_iteration",
+            )
+        else:
+            vel_interval = 0
+
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
+
+        return multistate.MultiStateReporter(
+            storage=nc,
+            analysis_particle_indices=selection_indices,
+            checkpoint_interval=chk_intervals,
+            checkpoint_storage=chk,
+            position_interval=pos_interval,
+            velocity_interval=vel_interval,
+        )
 
     @staticmethod
     def _get_sampler(
@@ -1199,13 +1202,6 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             windows=settings["lambda_settings"].lambda_windows
         )
 
-        # Get the reporter
-        reporter = self._get_reporter(
-            selection_indices=selection_indices,
-            output_settings=settings["output_settings"],
-            simulation_settings=settings["simulation_settings"],
-        )
-
         # Get the compute platform
         restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
         platform = omm_compute.get_openmm_platform(
@@ -1214,14 +1210,22 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             restrict_cpu_count=restrict_cpu,
         )
 
-        # Get the integrator
-        integrator = self._get_integrator(
-            integrator_settings=settings["integrator_settings"],
-            simulation_settings=settings["simulation_settings"],
-            system=system
-        )
-
         try:
+            # Get the integrator
+            integrator = self._get_integrator(
+                integrator_settings=settings["integrator_settings"],
+                simulation_settings=settings["simulation_settings"],
+                system=system
+            )
+    
+            # Get the reporter
+            reporter = self._get_reporter(
+                storage_path=self.shared_basepath,
+                selection_indices=selection_indices,
+                output_settings=settings["output_settings"],
+                simulation_settings=settings["simulation_settings"],
+            )
+
             # Get sampler
             sampler = self._get_sampler(
                 system=system,
