@@ -33,49 +33,54 @@ def test_invalid_protocol_repeats():
         settings.protocol_repeats = -1
 
 
-@pytest.mark.parametrize('state', ['A', 'B'])
+@pytest.mark.parametrize("state", ["A", "B"])
 def test_endstate_two_alchemcomp_stateA(state, benzene_modifications):
-    first_state = openfe.ChemicalSystem({
-        'ligandA': benzene_modifications['benzene'],
-        'ligandB': benzene_modifications['toluene'],
-        'solvent': openfe.SolventComponent(),
-    })
-    other_state = openfe.ChemicalSystem({
-        'ligandC': benzene_modifications['phenol'],
-        'solvent': openfe.SolventComponent(),
-    })
+    first_state = openfe.ChemicalSystem(
+        {
+            "ligandA": benzene_modifications["benzene"],
+            "ligandB": benzene_modifications["toluene"],
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+    other_state = openfe.ChemicalSystem(
+        {
+            "ligandC": benzene_modifications["phenol"],
+            "solvent": openfe.SolventComponent(),
+        }
+    )
 
-    if state == 'A':
+    if state == "A":
         args = (first_state, other_state)
     else:
         args = (other_state, first_state)
 
     with pytest.raises(ValueError, match="Only one alchemical component"):
-        openmm_rfe.RelativeHybridTopologyProtocol._validate_endstates(
-            *args
-        )
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_endstates(*args)
 
-@pytest.mark.parametrize('state', ['A', 'B'])
+
+@pytest.mark.parametrize("state", ["A", "B"])
 def test_endstates_not_smc(state, benzene_modifications):
-    first_state = openfe.ChemicalSystem({
-        'ligand': benzene_modifications['benzene'],
-        'foo': openfe.SolventComponent(),
-    })
-    other_state = openfe.ChemicalSystem({
-        'ligand': benzene_modifications['benzene'],
-        'foo': benzene_modifications['toluene'],
-    })
+    first_state = openfe.ChemicalSystem(
+        {
+            "ligand": benzene_modifications["benzene"],
+            "foo": openfe.SolventComponent(),
+        }
+    )
+    other_state = openfe.ChemicalSystem(
+        {
+            "ligand": benzene_modifications["benzene"],
+            "foo": benzene_modifications["toluene"],
+        }
+    )
 
-    if state == 'A':
+    if state == "A":
         args = (first_state, other_state)
     else:
         args = (other_state, first_state)
 
     errmsg = "only SmallMoleculeComponents transformations"
     with pytest.raises(ValueError, match=errmsg):
-        openmm_rfe.RelativeHybridTopologyProtocol._validate_endstates(
-            *args
-        )
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_endstates(*args)
 
 
 def test_validate_mapping_none_mapping():
@@ -88,12 +93,11 @@ def test_validate_mapping_multi_mapping(benzene_to_toluene_mapping):
     errmsg = "A single LigandAtomMapping is expected"
     with pytest.raises(ValueError, match=errmsg):
         openmm_rfe.RelativeHybridTopologyProtocol._validate_mapping(
-            [benzene_to_toluene_mapping] * 2,
-            None
+            [benzene_to_toluene_mapping] * 2, None
         )
 
 
-@pytest.mark.parametrize('state', ['A', 'B'])
+@pytest.mark.parametrize("state", ["A", "B"])
 def test_validate_mapping_alchem_not_in(state, benzene_to_toluene_mapping):
     errmsg = f"not in alchemical components of state{state}"
 
@@ -110,10 +114,7 @@ def test_validate_mapping_alchem_not_in(state, benzene_to_toluene_mapping):
 
 
 def test_vaccuum_PME_error(
-    benzene_vacuum_system,
-    toluene_vacuum_system,
-    benzene_to_toluene_mapping,
-    solv_settings
+    benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, solv_settings
 ):
     p = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
 
@@ -126,67 +127,56 @@ def test_vaccuum_PME_error(
         )
 
 
-@pytest.mark.parametrize('charge', [None, 'gasteiger'])
-def test_smcs_same_charge_passes(
-    charge,
-    benzene_modifications
-):
-    benzene = benzene_modifications['benzene']
+@pytest.mark.parametrize("charge", [None, "gasteiger"])
+def test_smcs_same_charge_passes(charge, benzene_modifications):
+    benzene = benzene_modifications["benzene"]
     if charge is None:
         smc = benzene
     else:
         offmol = benzene.to_openff()
-        offmol.assign_partial_charges(partial_charge_method='gasteiger')
+        offmol.assign_partial_charges(partial_charge_method="gasteiger")
         smc = openfe.SmallMoleculeComponent.from_openff(offmol)
 
     # Just pass the same thing twice
-    state = openfe.ChemicalSystem({'l': smc})
+    state = openfe.ChemicalSystem({"l": smc})
     openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(state, state)
 
 
-def test_smcs_different_charges_none_not_none(
-    benzene_modifications
-):
+def test_smcs_different_charges_none_not_none(benzene_modifications):
     # smcA has no charges
-    smcA = benzene_modifications['benzene']
+    smcA = benzene_modifications["benzene"]
 
     # smcB has charges
     offmol = smcA.to_openff()
-    offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    offmol.assign_partial_charges(partial_charge_method="gasteiger")
     smcB = openfe.SmallMoleculeComponent.from_openff(offmol)
 
-    stateA = openfe.ChemicalSystem({'l': smcA})
-    stateB = openfe.ChemicalSystem({'l': smcB})
+    stateA = openfe.ChemicalSystem({"l": smcA})
+    stateB = openfe.ChemicalSystem({"l": smcB})
 
     errmsg = "isomorphic but with different charges"
     with pytest.raises(ValueError, match=errmsg):
-        openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(
-            stateA, stateB
-        )
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(stateA, stateB)
 
 
-def test_smcs_different_charges_all(
-    benzene_modifications
-):
+def test_smcs_different_charges_all(benzene_modifications):
     # For this test, we will assign both A and B to both states
     # It wouldn't happen in real life, but it tests that within a state
     # you can pick up isomorphic molecules with different charges
     # create an offmol with gasteiger charges
-    offmol = benzene_modifications['benzene'].to_openff()
-    offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    offmol = benzene_modifications["benzene"].to_openff()
+    offmol.assign_partial_charges(partial_charge_method="gasteiger")
     smcA = openfe.SmallMoleculeComponent.from_openff(offmol)
 
     # now alter the offmol charges, scaling by 0.1
     offmol.partial_charges *= 0.1
     smcB = openfe.SmallMoleculeComponent.from_openff(offmol)
 
-    state = openfe.ChemicalSystem({'l1': smcA, 'l2': smcB})
+    state = openfe.ChemicalSystem({"l1": smcA, "l2": smcB})
 
     errmsg = "isomorphic but with different charges"
     with pytest.raises(ValueError, match=errmsg):
-        openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(
-            state, state
-        )
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(state, state)
 
 
 def test_solvent_nocutoff_error(
@@ -212,20 +202,15 @@ def test_nonwater_solvent_error(
     benzene_to_toluene_mapping,
     solv_settings,
 ):
-    solvent = openfe.SolventComponent(smiles='C')
+    solvent = openfe.SolventComponent(smiles="C")
     stateA = openfe.ChemicalSystem(
         {
-            'ligand': benzene_modifications['benzene'],
-            'solvent': solvent,
+            "ligand": benzene_modifications["benzene"],
+            "solvent": solvent,
         }
     )
 
-    stateB = openfe.ChemicalSystem(
-        {
-            'ligand': benzene_modifications['toluene'],
-            'solvent': solvent
-        }
-    )
+    stateB = openfe.ChemicalSystem({"ligand": benzene_modifications["toluene"], "solvent": solvent})
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
 
@@ -246,17 +231,17 @@ def test_too_many_solv_comps_error(
 ):
     stateA = openfe.ChemicalSystem(
         {
-            'ligand': benzene_modifications['benzene'],
-            'solvent!': openfe.SolventComponent(neutralize=True),
-            'solvent2': openfe.SolventComponent(neutralize=False),
+            "ligand": benzene_modifications["benzene"],
+            "solvent!": openfe.SolventComponent(neutralize=True),
+            "solvent2": openfe.SolventComponent(neutralize=False),
         }
     )
 
     stateB = openfe.ChemicalSystem(
         {
-            'ligand': benzene_modifications['toluene'],
-            'solvent!': openfe.SolventComponent(neutralize=True),
-            'solvent2': openfe.SolventComponent(neutralize=False),
+            "ligand": benzene_modifications["toluene"],
+            "solvent!": openfe.SolventComponent(neutralize=True),
+            "solvent2": openfe.SolventComponent(neutralize=False),
         }
     )
 
@@ -290,11 +275,7 @@ def test_bad_solv_settings(
 
     errmsg = "Only one of solvent_padding, number_of_solvent_molecules,"
     with pytest.raises(ValueError, match=errmsg):
-        p.validate(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping=benzene_to_toluene_mapping
-        )
+        p.validate(stateA=benzene_system, stateB=toluene_system, mapping=benzene_to_toluene_mapping)
 
 
 def test_too_many_prot_comps_error(
@@ -304,22 +285,21 @@ def test_too_many_prot_comps_error(
     eg5_protein,
     solv_settings,
 ):
-
     stateA = openfe.ChemicalSystem(
         {
-            'ligand': benzene_modifications['benzene'],
-            'solvent': openfe.SolventComponent(),
-            'protein1': T4_protein_component,
-            'protein2': eg5_protein,
+            "ligand": benzene_modifications["benzene"],
+            "solvent": openfe.SolventComponent(),
+            "protein1": T4_protein_component,
+            "protein2": eg5_protein,
         }
     )
 
     stateB = openfe.ChemicalSystem(
         {
-            'ligand': benzene_modifications['toluene'],
-            'solvent': openfe.SolventComponent(),
-            'protein1': T4_protein_component,
-            'protein2': eg5_protein,
+            "ligand": benzene_modifications["toluene"],
+            "solvent": openfe.SolventComponent(),
+            "protein1": T4_protein_component,
+            "protein2": eg5_protein,
         }
     )
 
@@ -419,19 +399,16 @@ def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
 def test_get_charge_difference(mapping_name, result, request, caplog):
     mapping = request.getfixturevalue(mapping_name)
     caplog.set_level(logging.INFO)
-    
+
     ion = r"Na+" if result == -1 else r"Cl-"
     msg = (
         f"A charge difference of {result} is observed "
         "between the end states. This will be addressed by "
         f"transforming a water into a {ion} ion"
     )
-    
+
     openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
-        mapping,
-        "pme",
-        True,
-        openfe.SolventComponent()
+        mapping, "pme", True, openfe.SolventComponent()
     )
 
     if result != 0:
@@ -457,7 +434,7 @@ def test_hightimestep(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-            extends=None
+            extends=None,
         )
 
 
@@ -479,13 +456,11 @@ def test_time_per_iteration_divmod(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-            extends=None
+            extends=None,
         )
 
 
-@pytest.mark.parametrize(
-    "attribute", ["equilibration_length", "production_length"]
-)
+@pytest.mark.parametrize("attribute", ["equilibration_length", "production_length"])
 def test_simsteps_not_timestep_divisible(
     attribute,
     benzene_vacuum_system,
@@ -503,13 +478,11 @@ def test_simsteps_not_timestep_divisible(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-            extends=None
+            extends=None,
         )
 
 
-@pytest.mark.parametrize(
-    "attribute", ["equilibration_length", "production_length"]
-)
+@pytest.mark.parametrize("attribute", ["equilibration_length", "production_length"])
 def test_simsteps_not_mcstep_divisible(
     attribute,
     benzene_vacuum_system,
@@ -520,17 +493,14 @@ def test_simsteps_not_mcstep_divisible(
     setattr(vac_settings.simulation_settings, attribute, 102 * offunit.ps)
     p = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
 
-    errmsg = (
-        "should contain a number of steps divisible by the number of "
-        "integrator timesteps"
-    )
+    errmsg = "should contain a number of steps divisible by the number of integrator timesteps"
 
     with pytest.raises(ValueError, match=errmsg):
         p.validate(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-            extends=None
+            extends=None,
         )
 
 
@@ -551,14 +521,11 @@ def test_checkpoint_interval_not_divisible_time_per_iter(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-            extends=None
+            extends=None,
         )
 
 
-@pytest.mark.parametrize(
-    "attribute",
-    ["positions_write_frequency", "velocities_write_frequency"]
-)
+@pytest.mark.parametrize("attribute", ["positions_write_frequency", "velocities_write_frequency"])
 def test_pos_vel_write_frequency_not_divisible(
     benzene_vacuum_system,
     toluene_vacuum_system,
@@ -576,13 +543,12 @@ def test_pos_vel_write_frequency_not_divisible(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-            extends=None
+            extends=None,
         )
 
 
 @pytest.mark.parametrize(
-    "attribute",
-    ["real_time_analysis_interval", "real_time_analysis_interval"]
+    "attribute", ["real_time_analysis_interval", "real_time_analysis_interval"]
 )
 def test_real_time_analysis_not_divisible(
     benzene_vacuum_system,
@@ -601,8 +567,9 @@ def test_real_time_analysis_not_divisible(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-            extends=None
+            extends=None,
         )
+
 
 def test_n_replicas_not_n_windows(
     benzene_vacuum_system,
@@ -623,5 +590,5 @@ def test_n_replicas_not_n_windows(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
-            extends=None
+            extends=None,
         )

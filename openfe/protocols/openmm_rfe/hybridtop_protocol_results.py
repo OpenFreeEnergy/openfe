@@ -16,7 +16,6 @@ import numpy.typing as npt
 from openff.units import Quantity
 from openmmtools import multistate
 
-
 logger = logging.getLogger(__name__)
 
 
