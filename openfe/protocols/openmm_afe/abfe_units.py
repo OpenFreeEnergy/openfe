@@ -116,7 +116,7 @@ class ComplexSettingsMixin:
 
 
 class ABFEComplexSetupUnit(
-    BaseAbsoluteSetupUnit, ComplexComponentsMixin, ComplexSettingsMixin,
+    ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteSetupUnit
 ):
     """
     Protocol Unit for the complex phase of an absolute binding free energy
@@ -391,7 +391,7 @@ class ABFEComplexSetupUnit(
 
 
 class ABFEComplexSimUnit(
-    BaseAbsoluteMultiStateSimulationUnit, ComplexComponentsMixin, ComplexSettingsMixin
+    ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
 ):
     """
     ProtocolUnit for the vacuum simulation phase of an absolute hydration free energy
@@ -400,7 +400,7 @@ class ABFEComplexSimUnit(
 
 
 class ABFEComplexAnalysisUnit(
-    BaseAbsoluteMultiStateAnalysisUnit, ComplexSettingsMixin
+    ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
 ):
     """
     ProtocolUnit for the vacuum analysis phase of an absolute hydration free energy
@@ -479,7 +479,7 @@ class SolventSettingsMixin:
 
 
 class ABFESolventSetupUnit(
-    BaseAbsoluteSetupUnit, SolventComponentsMixin, SolventSettingsMixin
+    SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit
 ):
     """
     ProtocolUnit for the solvent setup phase of an absolute binding free energy
@@ -488,7 +488,7 @@ class ABFESolventSetupUnit(
 
 
 class ABFESolventSimUnit(
-    BaseAbsoluteMultiStateSimulationUnit, SolventComponentsMixin, SolventSettingsMixin
+    SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
 ):
     """
     ProtocolUnit for the solvent simulation phase of an absolute binding free energy
@@ -497,7 +497,7 @@ class ABFESolventSimUnit(
 
 
 class ABFESolventAnalysisUnit(
-    BaseAbsoluteMultiStateAnalysisUnit, SolventSettingsMixin
+    SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
 ):
     """
     ProtocolUnit for the solvent analysis phase of an absolute binding free energy

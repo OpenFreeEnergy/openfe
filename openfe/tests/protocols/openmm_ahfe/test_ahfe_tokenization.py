@@ -4,7 +4,7 @@ import json
 
 import gufe
 import pytest
-from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+from ..conftest import ModGufeTokenizableTestsMixin
 
 import openfe
 from openfe.protocols import openmm_afe
@@ -77,15 +77,6 @@ def protocol_result(afe_solv_transformation_json):
     return pr
 
 
-class ModGufeTokenizableTestsMixin(GufeTokenizableTestsMixin):
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)
-
-
 class TestAbsoluteSolvationProtocol(ModGufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocol
     key = None
@@ -98,7 +89,7 @@ class TestAbsoluteSolvationProtocol(ModGufeTokenizableTestsMixin):
 
 class TestAHFESolventSetupUnit(ModGufeTokenizableTestsMixin):
     cls = AHFESolventSetupUnit
-    repr = "AHFESolventSetupUnit(Absolute Hydration Setup: benzene solvent leg"
+    repr = "AHFESolventSetupUnit(AHFE Setup: benzene solvent leg"
     key = None
 
     @pytest.fixture()
@@ -108,7 +99,7 @@ class TestAHFESolventSetupUnit(ModGufeTokenizableTestsMixin):
 
 class TestAHFESolventSimUnit(ModGufeTokenizableTestsMixin):
     cls = AHFESolventSimUnit
-    repr = "AHFESolventSimUnit(Absolute Hydration Simulation: benzene solvent leg"
+    repr = "AHFESolventSimUnit(AHFE Simulation: benzene solvent leg"
     key = None
 
     @pytest.fixture()
@@ -118,7 +109,7 @@ class TestAHFESolventSimUnit(ModGufeTokenizableTestsMixin):
 
 class TestAHFESolventAnalysisUnit(ModGufeTokenizableTestsMixin):
     cls = AHFESolventAnalysisUnit
-    repr = "AHFESolventAnalysisUnit(Absolute Hydration Analysis: benzene solvent leg"
+    repr = "AHFESolventAnalysisUnit(AHFE Analysis: benzene solvent leg"
     key = None
 
     @pytest.fixture()
@@ -128,7 +119,7 @@ class TestAHFESolventAnalysisUnit(ModGufeTokenizableTestsMixin):
 
 class TestAHFEVacuumSetupUnit(ModGufeTokenizableTestsMixin):
     cls = AHFEVacuumSetupUnit
-    repr = "AHFEVacuumSetupUnit(Absolute Hydration Setup: benzene solvent leg"
+    repr = "AHFEVacuumSetupUnit(AHFE Setup: benzene solvent leg"
     key = None
 
     @pytest.fixture()
@@ -138,7 +129,7 @@ class TestAHFEVacuumSetupUnit(ModGufeTokenizableTestsMixin):
 
 class TestAHFEVacuumSimUnit(ModGufeTokenizableTestsMixin):
     cls = AHFEVacuumSimUnit
-    repr = "AHFEVacuumSimUnit(Absolute Hydration Simulation: benzene solvent leg"
+    repr = "AHFEVacuumSimUnit(AHFE Simulation: benzene solvent leg"
     key = None
 
     @pytest.fixture()
@@ -148,7 +139,7 @@ class TestAHFEVacuumSimUnit(ModGufeTokenizableTestsMixin):
 
 class TestAHFEVacuumAnalysisUnit(ModGufeTokenizableTestsMixin):
     cls = AHFEVacuumAnalysisUnit
-    repr = "AHFEVacuumAnalysisUnit(Absolute Hydration Analysis: benzene solvent leg"
+    repr = "AHFEVacuumAnalysisUnit(AHFE Analysis: benzene solvent leg"
     key = None
 
     @pytest.fixture()

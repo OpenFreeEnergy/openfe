@@ -3,14 +3,18 @@
 import gzip
 
 import pytest
-from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+from ..conftest import ModGufeTokenizableTestsMixin
 
 import openfe
 from openfe.protocols.openmm_afe import (
-    AbsoluteBindingComplexUnit,
     AbsoluteBindingProtocol,
     AbsoluteBindingProtocolResult,
-    AbsoluteBindingSolventUnit,
+    ABFEComplexSetupUnit,
+    ABFEComplexSimUnit,
+    ABFEComplexAnalysisUnit,
+    ABFESolventSetupUnit,
+    ABFESolventSimUnit,
+    ABFESolventAnalysisUnit,
 )
 
 
@@ -33,18 +37,40 @@ def protocol_units(protocol, benzene_complex_system, T4_protein_component):
     return list(pus.protocol_units)
 
 
-@pytest.fixture
-def solvent_protocol_unit(protocol_units):
-    for pu in protocol_units:
-        if isinstance(pu, AbsoluteBindingSolventUnit):
+def _filter_units(pus, classtype):
+    for pu in pus:
+        if isinstance(pu, classtype):
             return pu
 
 
 @pytest.fixture
-def complex_protocol_unit(protocol_units):
-    for pu in protocol_units:
-        if isinstance(pu, AbsoluteBindingComplexUnit):
-            return pu
+def complex_protocol_setup_unit(protocol_units):
+    return _filter_units(protocol_units, ABFEComplexSetupUnit)
+
+
+@pytest.fixture
+def complex_protocol_sim_unit(protocol_units):
+    return _filter_units(protocol_units, ABFEComplexSimUnit)
+
+
+@pytest.fixture
+def complex_protocol_analysis_unit(protocol_units):
+    return _filter_units(protocol_units, ABFEComplexAnalysisUnit)
+
+
+@pytest.fixture
+def solvent_protocol_setup_unit(protocol_units):
+    return _filter_units(protocol_units, ABFESolventSetupUnit)
+
+
+@pytest.fixture
+def solvent_protocol_sim_unit(protocol_units):
+    return _filter_units(protocol_units, ABFESolventSimUnit)
+
+
+@pytest.fixture
+def solvent_protocol_analysis_unit(protocol_units):
+    return _filter_units(protocol_units, ABFESolventAnalysisUnit)
 
 
 @pytest.fixture
@@ -54,7 +80,7 @@ def protocol_result(abfe_transformation_json_path):
     return pr
 
 
-class TestAbsoluteBindingProtocol(GufeTokenizableTestsMixin):
+class TestAbsoluteBindingProtocol(ModGufeTokenizableTestsMixin):
     cls = AbsoluteBindingProtocol
     key = None
     repr = "AbsoluteBindingProtocol-"
@@ -63,49 +89,68 @@ class TestAbsoluteBindingProtocol(GufeTokenizableTestsMixin):
     def instance(self, protocol):
         return protocol
 
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)
 
-
-class TestAbsoluteBindingSolventUnit(GufeTokenizableTestsMixin):
-    cls = AbsoluteBindingSolventUnit
-    repr = "AbsoluteBindingSolventUnit(Absolute Binding, benzene solvent leg"
+class TestABFESolventSetupUnit(ModGufeTokenizableTestsMixin):
+    cls = ABFESolventSetupUnit
+    repr = "ABFESolventSetupUnit(ABFE Setup: benzene solvent leg"
     key = None
 
     @pytest.fixture()
-    def instance(self, solvent_protocol_unit):
-        return solvent_protocol_unit
-
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)
+    def instance(self, solvent_protocol_setup_unit):
+        return solvent_protocol_setup_unit
 
 
-class TestAbsoluteBindingComplexUnit(GufeTokenizableTestsMixin):
-    cls = AbsoluteBindingComplexUnit
-    repr = "AbsoluteBindingComplexUnit(Absolute Binding, benzene complex leg"
+class TestABFESolventSimUnit(ModGufeTokenizableTestsMixin):
+    cls = ABFESolventSimUnit
+    repr = "ABFESolventSimUnit(ABFE Simulation: benzene solvent leg"
     key = None
 
     @pytest.fixture()
-    def instance(self, complex_protocol_unit):
-        return complex_protocol_unit
-
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)
+    def instance(self, solvent_protocol_sim_unit):
+        return solvent_protocol_sim_unit
 
 
-class TestAbsoluteBindingProtocolResult(GufeTokenizableTestsMixin):
+class TestABFESolventAnalysisUnit(ModGufeTokenizableTestsMixin):
+    cls = ABFESolventAnalysisUnit
+    repr = "ABFESolventAnalysisUnit(ABFE Analysis: benzene solvent leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, solvent_protocol_analysis_unit):
+        return solvent_protocol_analysis_unit
+
+
+class TestABFEComplexSetupUnit(ModGufeTokenizableTestsMixin):
+    cls = ABFEComplexSetupUnit
+    repr = "ABFEComplexSetupUnit(ABFE Setup: benzene complex leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, complex_protocol_setup_unit):
+        return complex_protocol_setup_unit
+
+
+class TestABFEComplexSimUnit(ModGufeTokenizableTestsMixin):
+    cls = ABFEComplexSimUnit
+    repr = "ABFEComplexSimUnit(ABFE Simulation: benzene complex leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, complex_protocol_sim_unit):
+        return complex_protocol_sim_unit
+
+
+class TestABFEComplexAnalysisUnit(ModGufeTokenizableTestsMixin):
+    cls = ABFEComplexAnalysisUnit
+    repr = "ABFEComplexAnalysisUnit(ABFE Analysis: benzene complex leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, complex_protocol_analysis_unit):
+        return complex_protocol_analysis_unit
+
+
+class TestAbsoluteBindingProtocolResult(ModGufeTokenizableTestsMixin):
     cls = AbsoluteBindingProtocolResult
     key = None
     repr = "AbsoluteBindingProtocolResult-"
@@ -113,10 +158,3 @@ class TestAbsoluteBindingProtocolResult(GufeTokenizableTestsMixin):
     @pytest.fixture()
     def instance(self, protocol_result):
         return protocol_result
-
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)

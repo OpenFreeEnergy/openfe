@@ -457,7 +457,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     alchemical_components=alchem_comps,
                     generation=0,
                     repeat_id=repeat_id,
-                    name=f"Absolute Hydration Setup: {alchname} solvent leg: repeat {i} generation 0",
+                    name=f"ABFE Setup: {alchname} {phase} leg: repeat {i} generation 0",
                 )
 
                 simulation = unit_classes[phase]['simulation'](
@@ -468,7 +468,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     setup_results=setup,
                     generation=0,
                     repeat_id=repeat_id,
-                    name=f"Absolute Hydration Simulation: {alchname} solvent leg: repeat {i} generation 0",
+                    name=f"ABFE Simulation: {alchname} {phase} leg: repeat {i} generation 0",
                 )
 
                 analysis = unit_classes[phase]['analysis'](
@@ -477,7 +477,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     simulation_results=simulation,
                     generation=0,
                     repeat_id=repeat_id,
-                    name=f"Absolute Hydration Analysis: {alchname} solvent leg, repeat {i} generation 0",
+                    name=f"ABFE Analysis: {alchname} {phase} leg, repeat {i} generation 0",
                 )
 
                 protocol_units[phase] += [setup, simulation, analysis]

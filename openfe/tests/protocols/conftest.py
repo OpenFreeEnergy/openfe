@@ -12,6 +12,7 @@ from openff.units.openmm import from_openmm
 from openmm import Platform
 from rdkit import Chem
 from rdkit.Geometry import Point3D
+from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 
 import openfe
 
@@ -324,6 +325,19 @@ def get_available_openmm_platforms() -> set[str]:
             del system, integrator
 
     return working_platforms
+
+
+class ModGufeTokenizableTestsMixin(GufeTokenizableTestsMixin):
+    """
+    A modified gufe tokenizable tests mixin which allows
+    for repr to be lazily evaluated.
+    """
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
 
 
 def compute_energy(
