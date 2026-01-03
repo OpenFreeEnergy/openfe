@@ -28,14 +28,14 @@ import numpy.typing as npt
 import openmm
 import openmmtools
 from gufe import (
-    ChemicalSystem,
     ProteinComponent,
     SmallMoleculeComponent,
     SolventComponent,
 )
 from gufe.components import Component
 from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import Quantity, unit
+from openff.units import Quantity
+from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import app
 from openmm import unit as ommunit
@@ -73,7 +73,6 @@ from openfe.protocols.openmm_utils import (
     system_creation,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    BasePartialChargeSettings,
     SettingsBaseModel,
 )
 from openfe.protocols.openmm_utils.serialization import (
@@ -762,7 +761,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
                 "kilocalorie_per_mole"
             )
         else:
-            unit_results_dict["standard_state_corr" = 0 * offunit.kilocalorie_per_mole
+            unit_results_dict["standard_state_corr"] = 0 * offunit.kilocalorie_per_mole
 
         if restraint_geometry is not None:
             unit_results_dict["restraint_geometry"] = restraint_geometry.model_dump()
