@@ -5,6 +5,10 @@ Run absolute free energy calculations using OpenMM and OpenMMTools.
 
 """
 
+from .afe_protocol_results import (
+    AbsoluteBindingProtocolResult,
+    AbsoluteSolvationProtocolResult,
+)
 from .equil_binding_afe_method import (
     AbsoluteBindingComplexUnit,
     AbsoluteBindingProtocol,
@@ -16,10 +20,6 @@ from .equil_solvation_afe_method import (
     AbsoluteSolvationSettings,
     AbsoluteSolvationSolventUnit,
     AbsoluteSolvationVacuumUnit,
-)
-from .afe_protocol_results import (
-    AbsoluteBindingProtocolResult,
-    AbsoluteSolvationProtocolResult,
 )
 
 __all__ = [

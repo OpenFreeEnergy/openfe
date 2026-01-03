@@ -7,6 +7,7 @@
 This module defines the ProtocolUnits for the
 :class:`AbsoluteSolvationProtocol`.
 """
+
 import logging
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
@@ -15,7 +16,6 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 
 from ..openmm_utils import system_validation
 from .base_afe_units import BaseAbsoluteUnit
-
 
 logger = logging.getLogger(__name__)
 

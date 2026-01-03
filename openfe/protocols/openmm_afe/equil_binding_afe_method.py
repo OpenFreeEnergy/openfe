@@ -23,6 +23,7 @@ Acknowledgements
   `Yank <https://github.com/choderalab/yank>`_.
 
 """
+
 import logging
 import uuid
 import warnings
@@ -54,13 +55,10 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
 )
-from openfe.protocols.openmm_utils import (
-    settings_validation,
-    system_validation
-)
+from openfe.protocols.openmm_utils import settings_validation, system_validation
 
-from .afe_protocol_results import AbsoluteBindingProtocolResult
 from .abfe_units import AbsoluteBindingComplexUnit, AbsoluteBindingSolventUnit
+from .afe_protocol_results import AbsoluteBindingProtocolResult
 
 due.cite(
     Doi("10.5281/zenodo.596504"),

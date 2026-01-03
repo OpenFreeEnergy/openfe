@@ -27,6 +27,7 @@ Acknowledgements
   `espaloma_charge <https://github.com/choderalab/espaloma_charge>`_
 
 """
+
 import logging
 import uuid
 import warnings
@@ -60,12 +61,11 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 
 from ..openmm_utils import settings_validation, system_validation
+from .afe_protocol_results import AbsoluteSolvationProtocolResult
 from .ahfe_units import (
     AbsoluteSolvationSolventUnit,
     AbsoluteSolvationVacuumUnit,
 )
-from .afe_protocol_results import AbsoluteSolvationProtocolResult
-
 
 due.cite(
     Doi("10.5281/zenodo.596504"),
