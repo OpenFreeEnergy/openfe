@@ -99,7 +99,7 @@ class VacuumSettingsMixin:
 
 
 class AHFEVacuumSetupUnit(
-    BaseAbsoluteSetupUnit, VacuumComponentsMixin, VacuumSettingsMixin
+    VacuumComponentsMixin, VacuumSettingsMixin, BaseAbsoluteSetupUnit
 ):
     """
     ProtocolUnit for the vacuum setup phase of an absolute hydration free energy
@@ -108,7 +108,7 @@ class AHFEVacuumSetupUnit(
 
 
 class AHFEVacuumSimUnit(
-    BaseAbsoluteMultiStateSimulationUnit, VaccumComponentsMixin, VacuumSettingsMixin
+    VacuumComponentsMixin, VacuumSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
 ):
     """
     ProtocolUnit for the vacuum simulation phase of an absolute hydration free energy
@@ -117,7 +117,7 @@ class AHFEVacuumSimUnit(
 
 
 class AHFEVacuumAnalysisUnit(
-    BaseAbsoluteMultiStateAnalysisUnit, VacuumSettingsMixin
+    VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
 ):
     """
     ProtocolUnit for the vacuum analysis phase of an absolute hydration free energy
@@ -155,7 +155,7 @@ class SolventComponentsMixin:
         return alchem_comps, solv_comp, prot_comp, off_comps
 
 
-class SolventSettingMixin:
+class SolventSettingsMixin:
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a solvent transformation.
@@ -197,7 +197,7 @@ class SolventSettingMixin:
 
 
 class AHFESolventSetupUnit(
-    BaseAbsoluteSetupUnit, SolventComponentsMixin, SolventSettingsMixin
+    SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit
 ):
     """
     ProtocolUnit for the solvent setup phase of an absolute hydration free energy
@@ -206,7 +206,7 @@ class AHFESolventSetupUnit(
 
 
 class AHFESolventSimUnit(
-    BaseAbsoluteMultiStateSimulationUnit, SolventComponentsMixin, SolventSettingsMixin
+    SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
 ):
     """
     ProtocolUnit for the solvent simulation phase of an absolute hydration free energy
@@ -215,7 +215,7 @@ class AHFESolventSimUnit(
 
 
 class AHFESolventAnalysisUnit(
-    BaseAbsoluteMultiStateAnalysisUnit, SolventSettingsMixin
+    SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
 ):
     """
     ProtocolUnit for the solvent analysis phase of an absolute hydration free energy

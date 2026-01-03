@@ -8,6 +8,14 @@ from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 
 import openfe
 from openfe.protocols import openmm_afe
+from openfe.protocols.openmm_afe import (
+    AHFESolventSetupUnit,
+    AHFESolventSimUnit,
+    AHFESolventAnalysisUnit,
+    AHFEVacuumSetupUnit,
+    AHFEVacuumSimUnit,
+    AHFEVacuumAnalysisUnit,
+)
 
 
 @pytest.fixture
@@ -27,18 +35,39 @@ def protocol_units(protocol, benzene_system):
     return list(pus.protocol_units)
 
 
-@pytest.fixture
-def solvent_protocol_unit(protocol_units):
-    for pu in protocol_units:
-        if isinstance(pu, openmm_afe.AbsoluteSolvationSolventUnit):
+def _filter_units(pus, classtype):
+    for pu in pus:
+        if isinstance(pu, classtype):
             return pu
+
+@pytest.fixture
+def solvent_protocol_setup_unit(protocol_units):
+    return _filter_units(protocol_units, AHFESolventSetupUnit)
 
 
 @pytest.fixture
-def vacuum_protocol_unit(protocol_units):
-    for pu in protocol_units:
-        if isinstance(pu, openmm_afe.AbsoluteSolvationVacuumUnit):
-            return pu
+def solvent_protocol_sim_unit(protocol_units):
+    return _filter_units(protocol_units, AHFESolventSimUnit)
+
+
+@pytest.fixture
+def solvent_protocol_analysis_unit(protocol_units):
+    return _filter_units(protocol_units, AHFESolventAnalysisUnit)
+
+
+@pytest.fixture
+def vacuum_protocol_setup_unit(protocol_units):
+    return _filter_units(protocol_units, AHFEVacuumSetupUnit)
+
+
+@pytest.fixture
+def vacuum_protocol_sim_unit(protocol_units):
+    return _filter_units(protocol_units, AHFEVacuumSimUnit)
+
+
+@pytest.fixture
+def vacuum_protocol_analysis_unit(protocol_units):
+    return _filter_units(protocol_units, AHFEVacuumAnalysisUnit)
 
 
 @pytest.fixture
@@ -48,7 +77,16 @@ def protocol_result(afe_solv_transformation_json):
     return pr
 
 
-class TestAbsoluteSolvationProtocol(GufeTokenizableTestsMixin):
+class ModGufeTokenizableTestsMixin(GufeTokenizableTestsMixin):
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
+
+
+class TestAbsoluteSolvationProtocol(ModGufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocol
     key = None
     repr = "AbsoluteSolvationProtocol-"
@@ -57,49 +95,68 @@ class TestAbsoluteSolvationProtocol(GufeTokenizableTestsMixin):
     def instance(self, protocol):
         return protocol
 
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)
 
-
-class TestAbsoluteSolvationSolventUnit(GufeTokenizableTestsMixin):
-    cls = openmm_afe.AbsoluteSolvationSolventUnit
-    repr = "AbsoluteSolvationSolventUnit(Absolute Solvation, benzene solvent leg"
+class TestAHFESolventSetupUnit(ModGufeTokenizableTestsMixin):
+    cls = AHFESolventSetupUnit
+    repr = "AHFESolventSetupUnit(Absolute Hydration Setup: benzene solvent leg"
     key = None
 
     @pytest.fixture()
-    def instance(self, solvent_protocol_unit):
-        return solvent_protocol_unit
-
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)
+    def instance(self, solvent_protocol_setup_unit):
+        return solvent_protocol_setup_unit
 
 
-class TestAbsoluteSolvationVacuumUnit(GufeTokenizableTestsMixin):
-    cls = openmm_afe.AbsoluteSolvationVacuumUnit
-    repr = "AbsoluteSolvationVacuumUnit(Absolute Solvation, benzene vacuum leg"
+class TestAHFESolventSimUnit(ModGufeTokenizableTestsMixin):
+    cls = AHFESolventSimUnit
+    repr = "AHFESolventSimUnit(Absolute Hydration Simulation: benzene solvent leg"
     key = None
 
     @pytest.fixture()
-    def instance(self, vacuum_protocol_unit):
-        return vacuum_protocol_unit
-
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)
+    def instance(self, solvent_protocol_sim_unit):
+        return solvent_protocol_sim_unit
 
 
-class TestAbsoluteSolvationProtocolResult(GufeTokenizableTestsMixin):
+class TestAHFESolventAnalysisUnit(ModGufeTokenizableTestsMixin):
+    cls = AHFESolventAnalysisUnit
+    repr = "AHFESolventAnalysisUnit(Absolute Hydration Analysis: benzene solvent leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, solvent_protocol_analysis_unit):
+        return solvent_protocol_analysis_unit
+
+
+class TestAHFEVacuumSetupUnit(ModGufeTokenizableTestsMixin):
+    cls = AHFEVacuumSetupUnit
+    repr = "AHFEVacuumSetupUnit(Absolute Hydration Setup: benzene solvent leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, vacuum_protocol_setup_unit):
+        return vacuum_protocol_setup_unit
+
+
+class TestAHFEVacuumSimUnit(ModGufeTokenizableTestsMixin):
+    cls = AHFEVacuumSimUnit
+    repr = "AHFEVacuumSimUnit(Absolute Hydration Simulation: benzene solvent leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, vacuum_protocol_sim_unit):
+        return vacuum_protocol_sim_unit
+
+
+class TestAHFEVacuumAnalysisUnit(ModGufeTokenizableTestsMixin):
+    cls = AHFEVacuumAnalysisUnit
+    repr = "AHFEVacuumAnalysisUnit(Absolute Hydration Analysis: benzene solvent leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, vacuum_protocol_analysis_unit):
+        return vacuum_protocol_analysis_unit
+
+
+class TestAbsoluteSolvationProtocolResult(ModGufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocolResult
     key = None
     repr = "AbsoluteSolvationProtocolResult-"
@@ -107,10 +164,3 @@ class TestAbsoluteSolvationProtocolResult(GufeTokenizableTestsMixin):
     @pytest.fixture()
     def instance(self, protocol_result):
         return protocol_result
-
-    def test_repr(self, instance):
-        """
-        Overwrites the base `test_repr` call.
-        """
-        assert isinstance(repr(instance), str)
-        assert self.repr in repr(instance)

@@ -66,7 +66,7 @@ from .ahfe_units import (
     AHFESolventAnalysisUnit,
     AHFEVacuumSetupUnit,
     AHFEVacuumSimUnit,
-    AHFEVacuumAnalysisUnit
+    AHFEVacuumAnalysisUnit,
 )
 from .afe_protocol_results import AbsoluteSolvationProtocolResult
 
