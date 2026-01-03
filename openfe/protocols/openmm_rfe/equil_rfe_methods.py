@@ -1249,12 +1249,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         if not dry:  # pragma: no-cover
             return {"nc": nc, "last_checkpoint": chk, **analyzer.unit_results_dict}
         else:
-            return {"debug": 
-                {
-                    "sampler": sampler,
-                    "hybrid_factory": hybrid_factory
-                }
-            }
+            return {"debug": {"sampler": sampler, "hybrid_factory": hybrid_factory}}
 
     @staticmethod
     def structural_analysis(scratch, shared) -> dict:
