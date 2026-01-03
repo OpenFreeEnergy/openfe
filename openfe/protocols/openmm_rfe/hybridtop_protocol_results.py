@@ -16,7 +16,6 @@ import numpy.typing as npt
 from openff.units import Quantity
 from openmmtools import multistate
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -235,8 +234,6 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         -------
         production_lengths : list[float]
         """
-        production_lengths = [
-            pus[0].outputs["production_iterations"] for pus in self.data.values()
-        ]
+        production_lengths = [pus[0].outputs["production_iterations"] for pus in self.data.values()]
 
         return production_lengths

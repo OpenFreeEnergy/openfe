@@ -18,31 +18,30 @@ import subprocess
 from itertools import chain
 from typing import Any
 
+import gufe
 import matplotlib.pyplot as plt
 import mdtraj
 import numpy as np
 import numpy.typing as npt
 import openmm
 import openmmtools
-from openmmforcefields.generators import SystemGenerator
-
-import gufe
+from gufe import (
+    ChemicalSystem,
+    Component,
+    LigandAtomMapping,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+)
 from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
 )
-from gufe import (
-    ChemicalSystem,
-    LigandAtomMapping,
-    Component,
-    SolventComponent,
-    ProteinComponent,
-    SmallMoleculeComponent,
-)
 from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import unit as offunit
 from openff.units import Quantity
+from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
+from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
 
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -60,8 +59,8 @@ from ..openmm_utils import (
     system_validation,
 )
 from ..openmm_utils.serialization import (
-    serialize,
     deserialize,
+    serialize,
 )
 from . import _rfe_utils
 from ._rfe_utils.relative import HybridTopologyFactory
@@ -72,8 +71,8 @@ from .equil_rfe_settings import (
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
-    OpenMMSolvationSettings,
     OpenMMEngineSettings,
+    OpenMMSolvationSettings,
     RelativeHybridTopologyProtocolSettings,
 )
 
@@ -116,7 +115,7 @@ class HybridTopologyUnitMixin:
 
     @staticmethod
     def _get_settings(
-        settings: RelativeHybridTopologyProtocolSettings
+        settings: RelativeHybridTopologyProtocolSettings,
     ) -> dict[str, SettingsBaseModel]:
         """
         Get a dictionary of Protocol settings.
@@ -150,15 +149,11 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
     Calculates the relative free energy of an alchemical ligand transformation.
     """
+
     @staticmethod
     def _get_components(
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem
-        ) -> tuple[
-            SolventComponent,
-            ProteinComponent,
-            dict[SmallMoleculeComponent, OFFMolecule]
-        ]:
+        stateA: ChemicalSystem, stateB: ChemicalSystem
+    ) -> tuple[SolventComponent, ProteinComponent, dict[SmallMoleculeComponent, OFFMolecule]]:
         """
         Get the components from the ChemicalSystem inputs.
 
@@ -182,10 +177,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
         _, _, smcs_B = system_validation.get_components(stateB)
 
-        small_mols = {
-            m: m.to_openff()
-            for m in set(smcs_A).union(set(smcs_B))
-        }
+        small_mols = {m: m.to_openff() for m in set(smcs_A).union(set(smcs_B))}
 
         return solvent_comp, protein_comp, small_mols
 
@@ -221,7 +213,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         settings: dict[str, SettingsBaseModel],
         solvent_component: SolventComponent | None,
         openff_molecules: list[OFFMolecule] | None,
-        ffcache: pathlib.Path | None
+        ffcache: pathlib.Path | None,
     ) -> SystemGenerator:
         """
         Get an OpenMM SystemGenerator.
@@ -232,11 +224,11 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
           A dictionary of protocol settings.
         solvent_component : SolventComponent | None
           The solvent component of the system, if any.
-        openff_molecules : list[openff.toolkit.Molecule] | None 
+        openff_molecules : list[openff.toolkit.Molecule] | None
           A list of openff molecules to generate templates for, if any.
         ffcache : pathlib.Path | None
           Path to the force field parameter cache.
-        
+
         Returns
         -------
         system_generator : openmmtools.SystemGenerator
@@ -255,22 +247,17 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # and we start loading the whole protein into OpenFF Topologies
         if openff_molecules is None:
             return system_generator
-        
+
         # First deduplicate isomoprhic molecules
         unique_offmols = []
         for mol in openff_molecules:
-            unique = all(
-                [
-                    not mol.is_isomorphic_with(umol)
-                    for umol in unique_offmols
-                ]
-            )
+            unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
             if unique:
                 unique_offmols.append(mol)
 
         # register all the templates
         system_generator.add_molecules(unique_offmols)
-        
+
         return system_generator
 
     @staticmethod
@@ -281,10 +268,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         system_generator: SystemGenerator,
         solvation_settings: OpenMMSolvationSettings,
     ) -> tuple[
-        openmm.System,
-        openmm.app.Topology,
-        openmm.unit.Quantity,
-        dict[Component, npt.NDArray]
+        openmm.System, openmm.app.Topology, openmm.unit.Quantity, dict[Component, npt.NDArray]
     ]:
         """
         Create an OpenMM System for state A.
@@ -436,7 +420,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         settings: dict[str, SettingsBaseModel],
         protein_component: ProteinComponent | None,
         solvent_component: SolventComponent | None,
-        small_mols: dict[SmallMoleculeComponent, OFFMolecule]
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> tuple[
         openmm.System,
         openmm.app.Topology,
@@ -488,52 +472,45 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             self.logger.info("Parameterizing systems")
 
         def _filter_mols(smols, state):
-            return {
-                smc: offmol
-                for smc, offmol in smols.items()
-                if state.contains(smc)
-            }
+            return {smc: offmol for smc, offmol in smols.items() if state.contains(smc)}
 
         states_inputs = {
-            'A': {'state': stateA, 'mols': _filter_mols(small_mols, stateA)},
-            'B': {'state': stateB, 'mols': _filter_mols(small_mols, stateB)},
+            "A": {"state": stateA, "mols": _filter_mols(small_mols, stateA)},
+            "B": {"state": stateB, "mols": _filter_mols(small_mols, stateB)},
         }
 
         # Everything involving systemgenerator handling has a risk of
         # oechem <-> rdkit smiles conversion clashes, cautiously ban it.
         with without_oechem_backend():
             # Get the system generators with all the templates registered
-            for state in ['A', 'B']:
+            for state in ["A", "B"]:
                 ffcache = settings["output_settings"].forcefield_cache
                 if ffcache is not None:
                     ffcache = self.shared_basepath / (f"{state}_" + ffcache)
 
-                states_inputs[state]['generator'] = self._get_system_generator(
+                states_inputs[state]["generator"] = self._get_system_generator(
                     settings=settings,
                     solvent_component=solvent_component,
-                    openff_molecules=list(states_inputs[state]['mols'].values()),
+                    openff_molecules=list(states_inputs[state]["mols"].values()),
                     ffcache=ffcache,
                 )
 
-            (
-                stateA_system, stateA_topology, stateA_positions,
-                comp_resids
-            ) = self._create_stateA_system(
-                small_mols=states_inputs['A']['mols'],
-                protein_component=protein_component,
-                solvent_component=solvent_component,
-                system_generator=states_inputs['A']['generator'],
-                solvation_settings=settings["solvation_settings"]
+            (stateA_system, stateA_topology, stateA_positions, comp_resids) = (
+                self._create_stateA_system(
+                    small_mols=states_inputs["A"]["mols"],
+                    protein_component=protein_component,
+                    solvent_component=solvent_component,
+                    system_generator=states_inputs["A"]["generator"],
+                    solvation_settings=settings["solvation_settings"],
+                )
             )
 
-            (
-                stateB_system, stateB_topology, stateB_alchem_resids
-            ) = self._create_stateB_system(
-                small_mols=states_inputs['B']['mols'],
+            (stateB_system, stateB_topology, stateB_alchem_resids) = self._create_stateB_system(
+                small_mols=states_inputs["B"]["mols"],
                 mapping=mapping,
                 stateA_topology=stateA_topology,
                 exclude_resids=comp_resids[mapping.componentA],
-                system_generator=states_inputs['B']['generator'],
+                system_generator=states_inputs["B"]["generator"],
             )
 
         # Get the mapping between the two systems
@@ -575,9 +552,13 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         )
 
         return (
-            stateA_system, stateA_topology, stateA_positions,
-            stateB_system, stateB_topology, stateB_positions,
-            system_mappings
+            stateA_system,
+            stateA_topology,
+            stateA_positions,
+            stateB_system,
+            stateB_topology,
+            stateB_positions,
+            system_mappings,
         )
 
     @staticmethod
@@ -688,9 +669,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # bfactor of 0.5 is core atoms
         # bfactor of 0.75 is unique new atoms
         bfactors = np.zeros_like(selection_indices, dtype=float)
-        bfactors[np.isin(selection_indices, list(atom_classes['unique_old_atoms']))] = 0.25
-        bfactors[np.isin(selection_indices, list(atom_classes['core_atoms']))] = 0.50
-        bfactors[np.isin(selection_indices, list(atom_classes['unique_new_atoms']))] = 0.75
+        bfactors[np.isin(selection_indices, list(atom_classes["unique_old_atoms"]))] = 0.25
+        bfactors[np.isin(selection_indices, list(atom_classes["core_atoms"]))] = 0.50
+        bfactors[np.isin(selection_indices, list(atom_classes["unique_new_atoms"]))] = 0.75
 
         if len(selection_indices) > 0:
             traj = mdtraj.Trajectory(
@@ -709,7 +690,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
-        shared_basepath: pathlib.Path | None = None
+        shared_basepath: pathlib.Path | None = None,
     ) -> dict[str, Any]:
         """Setup a hybrid topology system.
 
@@ -749,17 +730,19 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         stateB = self._inputs["stateB"]
         mapping = self._inputs["ligandmapping"]
         alchem_comps = self._inputs["alchemical_components"]
-        solvent_comp, protein_comp, small_mols = self._get_components(
-            stateA, stateB
-        )
+        solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
 
         # Assign partial charges now to avoid any discrepancies later
         self._assign_partial_charges(settings["charge_settings"], small_mols)
 
         (
-            stateA_system, stateA_topology, stateA_positions,
-            stateB_system, stateB_topology, stateB_positions,
-            system_mappings
+            stateA_system,
+            stateA_topology,
+            stateA_positions,
+            stateB_system,
+            stateB_topology,
+            stateB_positions,
+            system_mappings,
         ) = self._get_omm_objects(
             stateA=stateA,
             stateB=stateB,
@@ -767,7 +750,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             settings=settings,
             protein_component=protein_comp,
             solvent_component=solvent_comp,
-            small_mols=small_mols
+            small_mols=small_mols,
         )
 
         # Get the hybrid factory & system
@@ -835,12 +818,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
 
 class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
-
     @staticmethod
-    def _check_restart(
-        settings: dict[str, SettingsBaseModel],
-        shared_path: pathlib.Path
-    ):
+    def _check_restart(settings: dict[str, SettingsBaseModel], shared_path: pathlib.Path):
         """
         Check if we are doing a restart.
 
@@ -862,14 +841,14 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
         if trajectory.is_file() and checkpoint.is_file():
             return True
-        
+
         return False
 
     @staticmethod
     def _get_integrator(
         integrator_settings: IntegratorSettings,
         simulation_settings: MultiStateSimulationSettings,
-        system: openmm.System
+        system: openmm.System,
     ) -> openmmtools.mcmc.LangevinDynamicsMove:
         """
         Get and validate the integrator
@@ -1034,7 +1013,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
           The requested sampler.
         """
         _SAMPLERS = {
-            "repex" : _rfe_utils.multistate.HybridRepexSampler,
+            "repex": _rfe_utils.multistate.HybridRepexSampler,
             "sams": _rfe_utils.multistate.HybridSAMSSampler,
             "independent": _rfe_utils.multistate.HybridMultiStateSampler,
         }
@@ -1054,7 +1033,8 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 sim_length=simulation_settings.production_length,
                 timestep=timestep,
                 mc_steps=steps_per_iteration,
-            ) / steps_per_iteration
+            )
+            / steps_per_iteration
         )
 
         # convert early_termination_target_error from kcal/mol to kT
@@ -1082,9 +1062,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             }
 
         if sampler_method == "repex":
-            sampler_kwargs |= {
-                "replica_mixing_scheme": "swap-all"
-            }
+            sampler_kwargs |= {"replica_mixing_scheme": "swap-all"}
 
         # Restarting doesn't need any setup, we just rebuild from storage.
         if restart:
@@ -1122,9 +1100,9 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         self,
         sampler: multistate.MultiStateSampler,
         reporter: multistate.MultiStateReporter,
-        simulation_settings : MultiStateSimulationSettings,
-        integrator_settings : IntegratorSettings,
-        output_settings : MultiStateOutputSettings,
+        simulation_settings: MultiStateSimulationSettings,
+        integrator_settings: IntegratorSettings,
+        output_settings: MultiStateOutputSettings,
         dry: bool,
     ):
         """
@@ -1184,7 +1162,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             # We use `run` so that we're limited by the number of iterations
             # we passed when we built the sampler.
             # TODO: I'm being extra prudent by passing in n_iterations here - remove?
-            sampler.run(n_iterations=int(prod_steps / mc_steps)-sampler._iteration)
+            sampler.run(n_iterations=int(prod_steps / mc_steps) - sampler._iteration)
 
             if self.verbose:
                 self.logger.info("production phase complete")
@@ -1211,7 +1189,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
-        shared_basepath: pathlib.Path | None = None
+        shared_basepath: pathlib.Path | None = None,
     ) -> dict[str, Any]:
         """Run the free energy calculation using a multistate sampler.
 
@@ -1253,16 +1231,13 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         settings = self._get_settings(self._inputs["protocol"].settings)
 
         # Check for a restart
-        self.restart = self._check_restart(
-            settings=settings,
-            shared_path=self.shared_basepath
-        )
+        self.restart = self._check_restart(settings=settings, shared_path=self.shared_basepath)
 
         # Get the lambda schedule
         # TODO - this should be better exposed to users
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
             functions=settings["lambda_settings"].lambda_functions,
-            windows=settings["lambda_settings"].lambda_windows
+            windows=settings["lambda_settings"].lambda_windows,
         )
 
         # Get the compute platform
@@ -1273,13 +1248,12 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             restrict_cpu_count=restrict_cpu,
         )
 
-
         try:
             # Get the integrator
             integrator = self._get_integrator(
                 integrator_settings=settings["integrator_settings"],
                 simulation_settings=settings["simulation_settings"],
-                system=system
+                system=system,
             )
 
             # Get the reporter
@@ -1302,7 +1276,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 alchem_settings=settings["alchemical_settings"],
                 platform=platform,
                 restart=self.restart,
-                dry=dry
+                dry=dry,
             )
 
             # Run the simulation
@@ -1338,12 +1312,13 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         if not dry:  # pragma: no-cover
             return {
                 "nc": self.shared_basepath / settings["output_settings"].output_filename,
-                "checkpoint": self.shared_basepath / settings["output_settings"].checkpoint_storage_filename,
+                "checkpoint": self.shared_basepath
+                / settings["output_settings"].checkpoint_storage_filename,
             }
         else:
             return {
-                    "sampler": sampler,
-                    "integrator": integrator,
+                "sampler": sampler,
+                "integrator": integrator,
             }
 
     def _execute(
@@ -1366,7 +1341,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             positions=positions,
             selection_indices=selection_indices,
             scratch_basepath=ctx.scratch,
-            shared_basepath=ctx.shared
+            shared_basepath=ctx.shared,
         )
 
         return {
@@ -1377,7 +1352,6 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
 
 class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
-
     @staticmethod
     def _analyze_multistate_energies(
         trajectory: pathlib.Path,
@@ -1429,7 +1403,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
     def _structural_analysis(
         pdb_file: pathlib.Path,
         trj_file: pathlib.Path,
-        output_directory : pathlib.Path,
+        output_directory: pathlib.Path,
         dry: bool,
     ) -> dict[str, str | pathlib.Path]:
         """
@@ -1472,13 +1446,10 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
                 fig = plotting.plot_2D_rmsd(d)
                 fig.savefig(output_directory / "protein_2D_RMSD.png")
                 plt.close(fig)
-                f2 = plotting.plot_ligand_COM_drift(
-                    data["time(ps)"],
-                    data["ligand_wander"]
-                )
+                f2 = plotting.plot_ligand_COM_drift(data["time(ps)"], data["ligand_wander"])
                 f2.savefig(output_directory / "ligand_COM_drift.png")
                 plt.close(f2)
-    
+
             f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
             f3.savefig(output_directory / "ligand_RMSD.png")
             plt.close(f3)
@@ -1593,7 +1564,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             trajectory=trajectory,
             checkpoint=checkpoint,
             scratch_basepath=ctx.scratch,
-            shared_basepath=ctx.shared
+            shared_basepath=ctx.shared,
         )
 
         return {

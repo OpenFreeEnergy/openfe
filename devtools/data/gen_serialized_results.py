@@ -103,7 +103,7 @@ def execute_and_serialize(
     logger.info(f"running {simname}")
     with tempfile.TemporaryDirectory() as tmpdir:
         workdir = pathlib.Path(tmpdir)
-        workdir = pathlib.Path('.')
+        workdir = pathlib.Path(".")
         dagres = gufe.protocols.execute_DAG(
             dag,
             shared_basedir=workdir,
