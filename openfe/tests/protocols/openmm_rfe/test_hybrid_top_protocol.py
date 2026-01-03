@@ -710,11 +710,7 @@ def test_dry_run_charge_backends(
                 np.testing.assert_allclose(c, ref, rtol=1e-4)
 
 
-def test_dry_run_same_mol_different_charges(
-    benzene_modifications,
-    vac_settings,
-    tmpdir
-):
+def test_dry_run_same_mol_different_charges(benzene_modifications, vac_settings, tmpdir):
     """
     Issue #1120 - make sure we can do an RFE of a system with different
     parameters but the same molecule.
@@ -723,7 +719,7 @@ def test_dry_run_same_mol_different_charges(
 
     benzene_offmol = benzene_modifications["benzene"].to_openff()
     # Give state A some gasteiger charges
-    benzene_offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    benzene_offmol.assign_partial_charges(partial_charge_method="gasteiger")
     stateA_charges = copy.deepcopy(benzene_offmol.partial_charges)
     stateA_mol = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
 

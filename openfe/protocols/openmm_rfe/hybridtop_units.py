@@ -260,7 +260,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         settings: dict[str, SettingsBaseModel],
         solvent_component: SolventComponent | None,
         openff_molecules: list[OFFMolecule] | None,
-        ffcache: pathlib.Path | None
+        ffcache: pathlib.Path | None,
     ) -> SystemGenerator:
         """
         Get an OpenMM SystemGenerator.
@@ -271,11 +271,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
           A dictionary of protocol settings.
         solvent_component : SolventComponent | None
           The solvent component of the system, if any.
-        openff_molecules : list[openff.toolkit.Molecule] | None 
+        openff_molecules : list[openff.toolkit.Molecule] | None
           A list of openff molecules to generate templates for, if any.
         ffcache : pathlib.Path | None
           Path to the force field parameter cache.
-        
+
         Returns
         -------
         system_generator : openmmtools.SystemGenerator
@@ -294,22 +294,17 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # and we start loading the whole protein into OpenFF Topologies
         if openff_molecules is None:
             return system_generator
-        
+
         # First deduplicate isomoprhic molecules
         unique_offmols = []
         for mol in openff_molecules:
-            unique = all(
-                [
-                    not mol.is_isomorphic_with(umol)
-                    for umol in unique_offmols
-                ]
-            )
+            unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
             if unique:
                 unique_offmols.append(mol)
 
         # register all the templates
         system_generator.add_molecules(unique_offmols)
-        
+
         return system_generator
 
     @staticmethod
@@ -527,45 +522,42 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {smc: offmol for smc, offmol in smols.items() if state.contains(smc)}
 
         states_inputs = {
-            'A': {'state': stateA, 'mols': _filter_mols(small_mols, stateA)},
-            'B': {'state': stateB, 'mols': _filter_mols(small_mols, stateB)},
+            "A": {"state": stateA, "mols": _filter_mols(small_mols, stateA)},
+            "B": {"state": stateB, "mols": _filter_mols(small_mols, stateB)},
         }
 
         # Everything involving systemgenerator handling has a risk of
         # oechem <-> rdkit smiles conversion clashes, cautiously ban it.
         with without_oechem_backend():
             # Get the system generators with all the templates registered
-            for state in ['A', 'B']:
+            for state in ["A", "B"]:
                 ffcache = settings["output_settings"].forcefield_cache
                 if ffcache is not None:
                     ffcache = self.shared_basepath / (f"{state}_" + ffcache)
 
-                states_inputs[state]['generator'] = self._get_system_generator(
+                states_inputs[state]["generator"] = self._get_system_generator(
                     settings=settings,
                     solvent_component=solvent_component,
-                    openff_molecules=list(states_inputs[state]['mols'].values()),
+                    openff_molecules=list(states_inputs[state]["mols"].values()),
                     ffcache=ffcache,
                 )
 
-            (
-                stateA_system, stateA_topology, stateA_positions,
-                comp_resids
-            ) = self._create_stateA_system(
-                small_mols=states_inputs['A']['mols'],
-                protein_component=protein_component,
-                solvent_component=solvent_component,
-                system_generator=states_inputs['A']['generator'],
-                solvation_settings=settings["solvation_settings"]
+            (stateA_system, stateA_topology, stateA_positions, comp_resids) = (
+                self._create_stateA_system(
+                    small_mols=states_inputs["A"]["mols"],
+                    protein_component=protein_component,
+                    solvent_component=solvent_component,
+                    system_generator=states_inputs["A"]["generator"],
+                    solvation_settings=settings["solvation_settings"],
+                )
             )
 
-            (
-                stateB_system, stateB_topology, stateB_alchem_resids
-            ) = self._create_stateB_system(
-                small_mols=states_inputs['B']['mols'],
+            (stateB_system, stateB_topology, stateB_alchem_resids) = self._create_stateB_system(
+                small_mols=states_inputs["B"]["mols"],
                 mapping=mapping,
                 stateA_topology=stateA_topology,
                 exclude_resids=comp_resids[mapping.componentA],
-                system_generator=states_inputs['B']['generator'],
+                system_generator=states_inputs["B"]["generator"],
             )
 
         # Get the mapping between the two systems

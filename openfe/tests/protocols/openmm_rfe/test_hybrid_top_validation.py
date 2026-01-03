@@ -151,20 +151,16 @@ def test_smcs_different_charges_none_not_none(benzene_modifications):
     offmol.assign_partial_charges(partial_charge_method="gasteiger")
     smcB = openfe.SmallMoleculeComponent.from_openff(offmol)
 
-    state = openfe.ChemicalSystem({'a': smcA, 'b': smcB})
+    state = openfe.ChemicalSystem({"a": smcA, "b": smcB})
 
     errmsg = "isomorphic but with different charges"
     with pytest.raises(ValueError, match=errmsg):
-        openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(
-            state, state
-        )
+        openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(state, state)
 
 
-def test_smcs_different_charges_all(
-    benzene_modifications
-):
-    offmol = benzene_modifications['benzene'].to_openff()
-    offmol.assign_partial_charges(partial_charge_method='gasteiger')
+def test_smcs_different_charges_all(benzene_modifications):
+    offmol = benzene_modifications["benzene"].to_openff()
+    offmol.assign_partial_charges(partial_charge_method="gasteiger")
     smcA = openfe.SmallMoleculeComponent.from_openff(offmol)
 
     # now alter the offmol charges, scaling by 0.1
@@ -178,21 +174,19 @@ def test_smcs_different_charges_all(
         openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(state, state)
 
 
-def test_smcs_different_charges_different_endstates(
-    benzene_modifications
-):
+def test_smcs_different_charges_different_endstates(benzene_modifications):
     # This should just pass, the charge is different but only
     # in the end states - which is an acceptable transformation.
-    offmol = benzene_modifications['benzene'].to_openff()
-    offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    offmol = benzene_modifications["benzene"].to_openff()
+    offmol.assign_partial_charges(partial_charge_method="gasteiger")
     smcA = openfe.SmallMoleculeComponent.from_openff(offmol)
 
     # now alter the offmol charges, scaling by 0.1
     offmol.partial_charges *= 0.1
     smcB = openfe.SmallMoleculeComponent.from_openff(offmol)
 
-    stateA = openfe.ChemicalSystem({'l': smcA})
-    stateB = openfe.ChemicalSystem({'l': smcB})
+    stateA = openfe.ChemicalSystem({"l": smcA})
+    stateB = openfe.ChemicalSystem({"l": smcB})
 
     openmm_rfe.RelativeHybridTopologyProtocol._validate_smcs(stateA, stateB)
 
