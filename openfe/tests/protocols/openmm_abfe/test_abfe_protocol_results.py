@@ -3,6 +3,7 @@
 import gzip
 import itertools
 import json
+from pathlib import Path
 from unittest import mock
 
 import gufe
@@ -19,12 +20,62 @@ def test_gather(benzene_complex_dag, tmpdir):
     # check that .gather behaves as expected
     with (
         mock.patch(
-            "openfe.protocols.openmm_afe.equil_binding_afe_method.AbsoluteBindingSolventUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
+            "openfe.protocols.openmm_afe.abfe_units.ABFESolventSetupUnit.run",
+            return_value={
+                "system": Path("system.xml.bz2"),
+                "positions": Path("positions.npy"),
+                "pdb_structure": Path("hybrid_system.pdb"),
+                "selection_indices": np.zeros(100),
+                "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
+                "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
+                "restraint_geometry": None,
+            },
         ),
         mock.patch(
-            "openfe.protocols.openmm_afe.equil_binding_afe_method.AbsoluteBindingComplexUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
+            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexSetupUnit.run",
+            return_value={
+                "system": Path("system.xml.bz2"),
+                "positions": Path("positions.npy"),
+                "pdb_structure": Path("hybrid_system.pdb"),
+                "selection_indices": np.zeros(100),
+                "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
+                "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
+                "restraint_geometry": True,
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.base_afe_units.np.load",
+            return_value=np.zeros(100),
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.base_afe_units.deserialize",
+            return_value="foo",
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexSimUnit.run",
+            return_value={
+                "trajectory": Path("file.nc"),
+                "checkpoint": Path("chk.chk"),
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.abfe_units.ABFESolventSimUnit.run",
+            return_value={
+                "trajectory": Path("file.nc"),
+                "checkpoint": Path("chk.chk"),
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexAnalysisUnit.run",
+            return_value={
+                "foo": "bar"
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.abfe_units.ABFESolventAnalysisUnit.run",
+            return_value={
+                "foo": "bar"
+            },
         ),
     ):
         dagres = gufe.protocols.execute_DAG(

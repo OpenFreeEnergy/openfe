@@ -748,7 +748,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         npy_positions = from_openmm(positions).to("nanometer").m
         np.save(positions_outfile, npy_positions)
 
-        unit_results_dics = {
+        unit_results_dict = {
             "system": system_outfile,
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
@@ -757,11 +757,11 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         }
 
         if standard_state_corr is not None:
-            unit_results_dict["standard_state_corr"] = standard_state_corr.to(
+            unit_results_dict["standard_state_correction"] = standard_state_corr.to(
                 "kilocalorie_per_mole"
             )
         else:
-            unit_results_dict["standard_state_corr"] = 0 * offunit.kilocalorie_per_mole
+            unit_results_dict["standard_state_correction"] = 0 * offunit.kilocalorie_per_mole
 
         if restraint_geometry is not None:
             unit_results_dict["restraint_geometry"] = restraint_geometry.model_dump()
@@ -1319,7 +1319,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         # Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
             alchemical_system=system,
-            position=positions,
+            positions=positions,
             # convert the box vectors to vec3 from openff
             box_vectors=make_vec3_box(box_vectors),
             thermodynamic_settings=settings["thermo_settings"],
@@ -1396,19 +1396,21 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
     def _execute(
         self,
         ctx: gufe.Context,
+        *,
+        setup_results,
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
         system = deserialize(setup_results.outputs["system"])
-        positions = to_openmm(np.load(setup_results.outputs["positions"] * offunit.nanometer))
+        positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nanometer)
         selection_indices = setup_results.outputs["selection_indices"]
         box_vectors = setup_results.outputs["box_vectors"]
 
         if setup_results.outputs["restraint_geometry"] is not None:
             alchemical_restraints=True
         else:
-            alcehmical_restraints=False
+            alchemical_restraints=False
 
         outputs = self.run(
             system=system,
@@ -1547,7 +1549,7 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         selection_indices = setup_results.outputs["selection_indices"]
         restraint_geometry = setup_results.outputs["restraint_geometry"]
         standard_state_corr = setup_results.outputs["standard_state_correction"]
-        trajectory = simulation_results.outputs["nc"]
+        trajectory = simulation_results.outputs["trajectory"]
         checkpoint = simulation_results.outputs["checkpoint"]
   
         outputs = self.run(
@@ -1561,6 +1563,7 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            "simtype": self.simtype,
             # We re-include things here also to make
             # life easier when gathering results.
             "pdb_structure": pdb_file,
