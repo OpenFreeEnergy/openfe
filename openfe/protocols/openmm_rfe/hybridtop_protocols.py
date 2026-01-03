@@ -16,9 +16,9 @@ import uuid
 import warnings
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
-import numpy as np
 
 import gufe
+import numpy as np
 from gufe import (
     ChemicalSystem,
     Component,
@@ -50,7 +50,6 @@ from .equil_rfe_settings import (
 )
 from .hybridtop_protocol_results import RelativeHybridTopologyProtocolResult
 from .hybridtop_units import RelativeHybridTopologyProtocolUnit
-
 
 logger = logging.getLogger(__name__)
 
@@ -277,9 +276,13 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # check that the mapping components are in the alchemical components
         for m in mapping:
             if m.componentA not in alchemical_components["stateA"]:
-                raise ValueError(f"Mapping componentA {m.componentA} not in alchemical components of stateA")
+                raise ValueError(
+                    f"Mapping componentA {m.componentA} not in alchemical components of stateA"
+                )
             if m.componentB not in alchemical_components["stateB"]:
-                raise ValueError(f"Mapping componentB {m.componentB} not in alchemical components of stateB")
+                raise ValueError(
+                    f"Mapping componentB {m.componentB} not in alchemical components of stateB"
+                )
 
         # TODO: remove - this is now the default behaviour?
         # Check for element changes in mappings
@@ -421,10 +424,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             )
             raise ValueError(errmsg)
 
-        ion = {
-            -1: solvent_component.positive_ion,
-            1: solvent_component.negative_ion
-        }[difference]
+        ion = {-1: solvent_component.positive_ion, 1: solvent_component.negative_ion}[difference]
 
         wmsg = (
             f"A charge difference of {difference} is observed "
@@ -455,7 +455,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Raises
         ------
         ValueError
-          * If the 
+          * If the
         """
 
         steps_per_iteration = settings_validation.convert_steps_per_iteration(
@@ -563,7 +563,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         # Validate alchemical settings
         # PR #125 temporarily pin lambda schedule spacing to n_replicas
-        if self.settings.simulation_settings.n_replicas != self.settings.lambda_settings.lambda_windows:
+        if (
+            self.settings.simulation_settings.n_replicas
+            != self.settings.lambda_settings.lambda_windows
+        ):
             errmsg = (
                 "Number of replicas in ``simulation_settings``: "
                 f"{self.settings.simulation_settings.n_replicas} must equal "
