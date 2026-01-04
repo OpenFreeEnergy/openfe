@@ -116,6 +116,110 @@ def test_gather(benzene_solvation_dag, tmpdir):
     assert isinstance(res, openmm_afe.AbsoluteSolvationProtocolResult)
 
 
+def test_unit_tagging(benzene_solvation_dag, tmpdir):
+    # test that executing the units includes correct gen and repeat info
+
+    dag_units = benzene_solvation_dag.protocol_units
+
+    with (
+        mock.patch(
+            "openfe.protocols.openmm_afe.ahfe_units.AHFESolventSetupUnit.run",
+            return_value={
+                "system": Path("system.xml.bz2"),
+                "positions": Path("positions.npy"),
+                "pdb_structure": Path("hybrid_system.pdb"),
+                "selection_indices": np.zeros(100),
+                "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
+                "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
+                "restraint_geometry": None,
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.ahfe_units.AHFEVacuumSetupUnit.run",
+            return_value={
+                "system": Path("system.xml.bz2"),
+                "positions": Path("positions.npy"),
+                "pdb_structure": Path("hybrid_system.pdb"),
+                "selection_indices": np.zeros(100),
+                "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
+                "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
+                "restraint_geometry": None,
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.base_afe_units.np.load",
+            return_value=np.zeros(100),
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.base_afe_units.deserialize",
+            return_value="foo",
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.ahfe_units.AHFESolventSimUnit.run",
+            return_value={
+                "trajectory": Path("file.nc"),
+                "checkpoint": Path("chk.chk"),
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.ahfe_units.AHFEVacuumSimUnit.run",
+            return_value={
+                "trajectory": Path("file.nc"),
+                "checkpoint": Path("chk.chk"),
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.ahfe_units.AHFESolventAnalysisUnit.run",
+            return_value={
+                "foo": "bar"
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.ahfe_units.AHFEVacuumAnalysisUnit.run",
+            return_value={
+                "foo": "bar"
+            },
+        ),
+    ):
+        for phase in ["solvent", "vacuum"]:
+            setup_results = {}
+            sim_results = {}
+            analysis_results = {}
+
+            setup_units = _get_units(dag_units, UNIT_TYPES[phase]["setup"])
+            sim_units = _get_units(dag_units, UNIT_TYPES[phase]["sim"])
+            a_units = _get_units(dag_units, UNIT_TYPES[phase]["analysis"])
+
+            for u in setup_units:
+                rid = u.inputs["repeat_id"]
+                setup_results[rid] = u.execute(
+                    context=gufe.Context(tmpdir, tmpdir)
+                )
+
+            for u in sim_units:
+                rid = u.inputs["repeat_id"]
+                sim_results[rid] = u.execute(
+                    context=gufe.Context(tmpdir, tmpdir),
+                    setup_results=setup_results[rid],
+                )
+
+            for u in a_units:
+                rid = u.inputs["repeat_id"]
+                analysis_results[rid] = u.execute(
+                    context=gufe.Context(tmpdir, tmpdir),
+                    setup_results=setup_results[rid],
+                    simulation_results=sim_results[rid],
+                )
+
+            repeats = set()
+            for results in [setup_results, sim_results, analysis_results]:
+                for ret in results.values():
+                    assert isinstance(ret, gufe.ProtocolUnitResult)
+                    assert ret.outputs["generation"] == 0
+
+            assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
+
+
 class TestProtocolResult:
     @pytest.fixture()
     def protocolresult(self, afe_solv_transformation_json):

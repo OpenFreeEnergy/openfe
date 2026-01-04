@@ -1,12 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import itertools
-import json
 import sys
 from math import sqrt
 from unittest import mock
 
-import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
@@ -18,7 +15,6 @@ from openmm import (
     CustomNonbondedForce,
     HarmonicAngleForce,
     HarmonicBondForce,
-    MonteCarloBarostat,
     NonbondedForce,
     PeriodicTorsionForce,
 )
@@ -36,7 +32,6 @@ from openfe.protocols.openmm_afe import (
     AHFESolventAnalysisUnit,
     AHFEVacuumAnalysisUnit,
 )
-from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
@@ -709,39 +704,6 @@ def benzene_solvation_dag(benzene_system, protocol_dry_settings):
     stateB = ChemicalSystem({"solvent": SolventComponent()})
 
     return protocol.create(stateA=stateA, stateB=stateB, mapping=None)
-
-
-def test_unit_tagging(benzene_solvation_dag, tmpdir):
-    # test that executing the units includes correct gen and repeat info
-
-    dag_units = benzene_solvation_dag.protocol_units
-
-    with (
-        mock.patch(
-            "openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationSolventUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationVacuumUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
-        ),
-    ):
-        results = []
-        for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
-            results.append(ret)
-
-    solv_repeats = set()
-    vac_repeats = set()
-    for ret in results:
-        assert isinstance(ret, gufe.ProtocolUnitResult)
-        assert ret.outputs["generation"] == 0
-        if ret.outputs["simtype"] == "vacuum":
-            vac_repeats.add(ret.outputs["repeat_id"])
-        else:
-            solv_repeats.add(ret.outputs["repeat_id"])
-    # Repeat ids are random ints so just check their lengths
-    assert len(vac_repeats) == len(solv_repeats) == 3
 
 
 @pytest.mark.parametrize(
