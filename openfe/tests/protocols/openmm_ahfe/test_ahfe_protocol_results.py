@@ -13,6 +13,7 @@ from openff.units import unit as offunit
 import openfe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
+from .utils import UNIT_TYPES, _get_units
 
 
 @pytest.fixture()
@@ -211,7 +212,6 @@ def test_unit_tagging(benzene_solvation_dag, tmpdir):
                     simulation_results=sim_results[rid],
                 )
 
-            repeats = set()
             for results in [setup_results, sim_results, analysis_results]:
                 for ret in results.values():
                     assert isinstance(ret, gufe.ProtocolUnitResult)

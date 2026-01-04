@@ -37,6 +37,13 @@ from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
 )
+from openfe.protocols.openmm_afe.abfe_units import (
+    ABFEComplexSetupUnit,
+    ABFEComplexSimUnit,
+    ABFESolventSetupUnit,
+    ABFESolventSimUnit,
+)
+from .utils import UNIT_TYPES, _get_units
 
 
 @pytest.fixture()
@@ -69,37 +76,53 @@ def test_serialize_protocol(default_settings):
     assert protocol == ret
 
 
-def test_unit_tagging(benzene_complex_dag, tmpdir):
-    # test that executing the units includes correct gen and repeat info
+def test_repeat_units(benzene_modifications, T4_protein_component):
+    protocol = openmm_afe.AbsoluteBindingProtocol(
+        settings=openmm_afe.AbsoluteBindingProtocol.default_settings()
+    )
 
-    dag_units = benzene_complex_dag.protocol_units
+    stateA = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "benzene": benzene_modifications["benzene"],
+            "solvent": gufe.SolventComponent(),
+        }
+    )
 
-    with (
-        mock.patch(
-            "openfe.protocols.openmm_afe.equil_binding_afe_method.AbsoluteBindingSolventUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.equil_binding_afe_method.AbsoluteBindingComplexUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
-        ),
-    ):
-        results = []
-        for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
-            results.append(ret)
+    stateB = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": gufe.SolventComponent(),
+        }
+    )
 
-    solv_repeats = set()
-    complex_repeats = set()
-    for ret in results:
-        assert isinstance(ret, gufe.ProtocolUnitResult)
-        assert ret.outputs["generation"] == 0
-        if ret.outputs["simtype"] == "complex":
-            complex_repeats.add(ret.outputs["repeat_id"])
-        else:
-            solv_repeats.add(ret.outputs["repeat_id"])
-    # Repeat ids are random ints so just check their lengths
-    assert len(complex_repeats) == len(solv_repeats) == 3
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+
+    # 6 protocol unit, 3 per repeat
+    pus = list(dag.protocol_units)
+    assert len(pus) == 18
+
+    # Check info for each repeat
+    for phase in ['solvent', 'complex']:
+        setup = _get_units(pus, UNIT_TYPES[phase]['setup'])
+        sim = _get_units(pus, UNIT_TYPES[phase]['sim'])
+        analysis = _get_units(pus, UNIT_TYPES[phase]['analysis'])
+
+        # Should be 3 of each set
+        assert len(setup) == len(sim) == len(analysis) == 3
+
+        # Check that the dag chain is correct
+        for analysis_pu in analysis:
+            repeat_id = analysis_pu.inputs["repeat_id"]
+            setup_pu = [s for s in setup if s.inputs["repeat_id"] == repeat_id][0]
+            sim_pu = [s for s in sim if s.inputs["repeat_id"] == repeat_id][0]
+            assert analysis_pu.inputs["setup_results"] == setup_pu
+            assert analysis_pu.inputs["simulation_results"] == sim_pu
+            assert sim_pu.inputs["setup_results"] == setup_pu
 
 
 def test_create_independent_repeat_ids(benzene_modifications, T4_protein_component):
@@ -131,9 +154,12 @@ def test_create_independent_repeat_ids(benzene_modifications, T4_protein_compone
     repeat_ids = set()
 
     for dag in dags:
+        # 3 sets of 6 units
+        assert len(list(dag.protocol_units)) == 18
         for u in dag.protocol_units:
             repeat_ids.add(u.inputs["repeat_id"])
 
+    # squashed by repeat_id, that's 2 sets of 6
     assert len(repeat_ids) == 12
 
 
@@ -184,17 +210,32 @@ class TestT4LysozymeDryRun:
         )
 
     @pytest.fixture(scope="class")
-    def complex_units(self, dag):
-        return [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)]
+    def complex_setup_units(self, dag):
+        return _get_units(dag.protocol_units, UNIT_TYPES['complex']['setup'])
 
     @pytest.fixture(scope="class")
-    def solvent_units(self, dag):
-        return [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingSolventUnit)]
+    def complex_sim_units(self, dag):
+        return _get_units(dag.protocol_units, UNIT_TYPES['complex']['sim'])
 
-    def test_number_of_units(self, dag, complex_units, solvent_units):
-        assert len(list(dag.protocol_units)) == 2
-        assert len(complex_units) == 1
-        assert len(solvent_units) == 1
+    @pytest.fixture(scope="class")
+    def solvent_setup_units(self, dag):
+        return _get_units(dag.protocol_units, UNIT_TYPES['solvent']['setup'])
+
+    @pytest.fixture(scope="class")
+    def solvent_sim_units(self, dag):
+        return _get_units(dag.protocol_units, UNIT_TYPES['solvent']['sim'])
+
+    def test_number_of_units(
+        self,
+        dag,
+        complex_setup_units,
+        complex_sim_units,
+        solvent_setup_units,
+        solvent_sim_units,
+    ):
+        assert len(list(dag.protocol_units)) == 6
+        assert len(complex_setup_units) == len(complex_sim_units) == 1
+        assert len(solvent_setup_units) == len(solvent_sim_units) == 1
 
     def _assert_force_num(self, system, forcetype, number):
         forces = [f for f in system.getForces() if isinstance(f, forcetype)]
@@ -339,83 +380,111 @@ class TestT4LysozymeDryRun:
             positions=positions,
         )
 
-    def test_complex_dry_run(self, complex_units, settings, tmpdir):
+    def test_complex_dry_run(
+        self, complex_setup_units, complex_sim_units, settings, tmpdir
+    ):
         with tmpdir.as_cwd():
-            data = complex_units[0].run(dry=True, verbose=True)["debug"]
+            setup_results = complex_setup_units[0].run(dry=True, verbose=True)
+            sim_results = complex_sim_units[0].run(
+                system=setup_results["alchem_system"],
+                positions=setup_results["debug_positions"],
+                selection_indices=setup_results["selection_indices"],
+                box_vectors=setup_results["box_vectors"],
+                alchemical_restraints=True,
+                dry=True,
+            )
 
             # Check the sampler
-            self._verify_sampler(data["sampler"], complexed=True, settings=settings)
+            self._verify_sampler(
+                sim_results["sampler"], complexed=True, settings=settings
+            )
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
-                data["alchem_system"], complexed=True, settings=settings
+                setup_results["alchem_system"], complexed=True, settings=settings
             )
-            self._test_dodecahedron_vectors(data["alchem_system"])
+            self._test_dodecahedron_vectors(setup_results["alchem_system"])
 
             # Check the alchemical indices
             expected_indices = [i + self.num_complex_atoms for i in range(self.num_solvent_atoms)]
-            assert expected_indices == data["alchem_indices"]
+            assert expected_indices == setup_results["alchem_indices"]
 
             # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(data["system"], settings)
-            self._test_dodecahedron_vectors(data["system"])
+            self._assert_expected_nonalchemical_forces(setup_results["standard_system"], settings)
+            self._test_dodecahedron_vectors(setup_results["standard_system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
-                from_openmm(data["alchem_system"].getDefaultPeriodicBoxVectors()),
-                from_openmm(data["system"].getDefaultPeriodicBoxVectors()),
+                from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
+                from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
             )
 
             # Check the PDB
-            pdb = mdt.load_pdb("alchemical_system.pdb")
+            pdb = mdt.load_pdb(setup_results["pdb_structure"])
             assert pdb.n_atoms == self.num_all_not_water
 
             # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"])
+            alchem_region = AlchemicalRegion(
+                alchemical_atoms=setup_results["alchem_indices"]
+            )
             self._test_energies(
-                reference_system=data["system"],
-                alchemical_system=data["alchem_system"],
+                reference_system=setup_results["standard_system"],
+                alchemical_system=setup_results["alchem_system"],
                 alchemical_regions=alchem_region,
-                positions=data["positions"],
+                positions=setup_results["debug_positions"],
             )
 
-    def test_solvent_dry_run(self, solvent_units, settings, tmpdir):
+    def test_solvent_dry_run(
+            self, solvent_setup_units, solvent_sim_units, settings, tmpdir
+        ):
         with tmpdir.as_cwd():
-            data = solvent_units[0].run(dry=True, verbose=True)["debug"]
+            setup_results = solvent_setup_units[0].run(dry=True, verbose=True)
+            sim_results = solvent_sim_units[0].run(
+                system=setup_results["alchem_system"],
+                positions=setup_results["debug_positions"],
+                selection_indices=setup_results["selection_indices"],
+                box_vectors=setup_results["box_vectors"],
+                alchemical_restraints=False,
+                dry=True,
+            )
 
             # Check the sampler
-            self._verify_sampler(data["sampler"], complexed=False, settings=settings)
+            self._verify_sampler(sim_results["sampler"], complexed=False, settings=settings)
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
-                data["alchem_system"], complexed=False, settings=settings
+                setup_results["alchem_system"], complexed=False, settings=settings
             )
-            self._test_cubic_vectors(data["alchem_system"])
+            self._test_cubic_vectors(setup_results["alchem_system"])
 
             # Check the alchemical indices
             expected_indices = [i for i in range(self.num_solvent_atoms)]
-            assert expected_indices == data["alchem_indices"]
+            assert expected_indices == setup_results["alchem_indices"]
 
             # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(data["system"], settings)
-            self._test_cubic_vectors(data["system"])
+            self._assert_expected_nonalchemical_forces(
+                setup_results["standard_system"], settings
+            )
+            self._test_cubic_vectors(setup_results["standard_system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
-                from_openmm(data["alchem_system"].getDefaultPeriodicBoxVectors()),
-                from_openmm(data["system"].getDefaultPeriodicBoxVectors()),
+                from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
+                from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
             )
 
             # Check the PDB
-            pdb = mdt.load_pdb("alchemical_system.pdb")
+            pdb = mdt.load_pdb(setup_results["pdb_structure"])
             assert pdb.n_atoms == self.num_solvent_atoms
 
             # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"])
+            alchem_region = AlchemicalRegion(
+                alchemical_atoms=setup_results["alchem_indices"]
+            )
 
             self._test_energies(
-                reference_system=data["system"],
-                alchemical_system=data["alchem_system"],
+                reference_system=setup_results["standard_system"],
+                alchemical_system=setup_results["alchem_system"],
                 alchemical_regions=alchem_region,
-                positions=data["positions"],
+                positions=setup_results["debug_positions"],
             )
 
 
@@ -493,15 +562,15 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
 
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 
-    complex_units = [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)]
+    complex_setup_units = _get_units(dag.protocol_units, UNIT_TYPES['complex']['setup'])
 
     with tmpdir.as_cwd():
-        data = complex_units[0].run(dry=True)["debug"]
+        results = complex_setup_units[0].run(dry=True)
 
-        system_nbf = [f for f in data["system"].getForces() if isinstance(f, NonbondedForce)][0]
+        system_nbf = [f for f in results["standard_system"].getForces() if isinstance(f, NonbondedForce)][0]
         alchem_system_nbf = [
             f
-            for f in data["alchem_system"].getForces()
+            for f in results["alchem_system"].getForces()
             if isinstance(f, NonbondedForce)
         ][0]  # fmt: skip
 

@@ -25,39 +25,13 @@ from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteSolvationProtocol,
-    AHFESolventSetupUnit,
-    AHFEVacuumSetupUnit,
-    AHFESolventSimUnit,
-    AHFEVacuumSimUnit,
-    AHFESolventAnalysisUnit,
-    AHFEVacuumAnalysisUnit,
 )
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
     HAS_OPENEYE,
 )
-
-
-UNIT_TYPES = {
-    'solvent': {
-        'setup': AHFESolventSetupUnit,
-        'sim': AHFESolventSimUnit,
-        'analysis': AHFESolventAnalysisUnit,
-    },
-    'vacuum': {
-        'setup': AHFEVacuumSetupUnit,
-        'sim': AHFEVacuumSimUnit,
-        'analysis': AHFEVacuumAnalysisUnit,
-    }
-}
-
-
-def _get_units(protocol_units, unit_type):
-    """
-    Helper method to extract setup units.
-    """
-    return [pu for pu in protocol_units if isinstance(pu, unit_type)]
+from .utils import UNIT_TYPES, _get_units
 
 
 @pytest.fixture()
