@@ -1193,14 +1193,14 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             restrict_cpu_count=restrict_cpu,
         )
 
-        try:
-            # Get the integrator
-            integrator = self._get_integrator(
-                integrator_settings=settings["integrator_settings"],
-                simulation_settings=settings["simulation_settings"],
-                system=system,
-            )
+        # Get the integrator
+        integrator = self._get_integrator(
+            integrator_settings=settings["integrator_settings"],
+            simulation_settings=settings["simulation_settings"],
+            system=system,
+        )
 
+        try:
             # Get the reporter
             reporter = self._get_reporter(
                 storage_path=self.shared_basepath,
