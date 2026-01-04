@@ -30,9 +30,10 @@ import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe._rfe_utils import topologyhelpers
-from openfe.protocols.openmm_rfe.equil_rfe_methods import (
-    _get_alchemical_charge_difference,
-    _validate_alchemical_components,
+from openfe.protocols.openmm_rfe.hybridtop_units import (
+    HybridTopologyMultiStateAnalysisUnit,
+    HybridTopologyMultiStateSimulationUnit,
+    HybridTopologySetupUnit,
 )
 from openfe.protocols.openmm_utils import omm_compute, system_creation
 from openfe.protocols.openmm_utils.charge_generation import (
@@ -40,6 +41,13 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
+
+
+def _get_units(protocol_units, unit_type):
+    """
+    Helper method to extract setup units
+    """
+    return [pu for pu in protocol_units if isinstance(pu, unit_type)]
 
 
 @pytest.fixture()
@@ -167,6 +175,42 @@ def test_serialize_protocol():
     assert protocol == ret
 
 
+def test_repeat_units(benzene_system, toluene_system, benzene_to_toluene_mapping):
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=settings,
+    )
+
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping=benzene_to_toluene_mapping,
+    )
+
+    # 9 protocol units, 3 per repeat
+    pus = list(dag.protocol_units)
+    assert len(pus) == 9
+
+    # Aggregate some info for each repeat
+    setup = _get_units(pus, HybridTopologySetupUnit)
+    simulation = _get_units(pus, HybridTopologyMultiStateSimulationUnit)
+    analysis = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)
+
+    # Should be 3 of everything
+    assert len(setup) == len(simulation) == len(analysis) == 3
+
+    # Check that the dag chain is correct
+    for analysis_pu in analysis:
+        repeat_id = analysis_pu.inputs["repeat_id"]
+        setup_pu = [s for s in setup if s.inputs["repeat_id"] == repeat_id][0]
+        sim_pu = [s for s in simulation if s.inputs["repeat_id"] == repeat_id][0]
+
+        assert analysis_pu.inputs["setup_results"] == setup_pu
+        assert analysis_pu.inputs["simulation_results"] == sim_pu
+        assert sim_pu.inputs["setup_results"] == setup_pu
+
+
 def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_to_toluene_mapping):
     # if we create two dags each with 3 repeats, they should give 6 repeat_ids
     # this allows multiple DAGs in flight for one Transformation that don't clash on gather
@@ -187,7 +231,6 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
     )
 
     repeat_ids = set()
-    u: openmm_rfe.RelativeHybridTopologyProtocolUnit
     for u in dag1.protocol_units:
         repeat_ids.add(u.inputs["repeat_id"])
     for u in dag2.protocol_units:
@@ -196,23 +239,8 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
     assert len(repeat_ids) == 6
 
 
-@pytest.mark.parametrize(
-    "mapping",
-    [None, [], ["A", "B"]],
-)
-def test_validate_alchemical_components_wrong_mappings(mapping):
-    with pytest.raises(ValueError, match="A single LigandAtomMapping"):
-        _validate_alchemical_components({"stateA": [], "stateB": []}, mapping)
-
-
-def test_validate_alchemical_components_missing_alchem_comp(benzene_to_toluene_mapping):
-    alchem_comps = {"stateA": [openfe.SolventComponent()], "stateB": []}
-    with pytest.raises(ValueError, match="Unmapped alchemical component"):
-        _validate_alchemical_components(alchem_comps, benzene_to_toluene_mapping)
-
-
 @pytest.mark.parametrize("method", ["repex", "sams", "independent", "InDePeNdENT"])
-def test_dry_run_default_vacuum(
+def test_setup_dry_sim_default_vacuum(
     benzene_vacuum_system,
     toluene_vacuum_system,
     benzene_to_toluene_mapping,
@@ -233,16 +261,27 @@ def test_dry_run_default_vacuum(
         stateB=toluene_vacuum_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        # Manually run the units
+        setup_results = dag_setup_unit.run(dry=True)
+
+        sim_results = dag_sim_unit.run(
+            system=setup_results["hybrid_system"],
+            positions=setup_results["hybrid_positions"],
+            selection_indices=setup_results["selection_indices"],
+            dry=True,
+        )
+
+        sampler = sim_results["sampler"]
         assert isinstance(sampler, MultiStateSampler)
         assert not sampler.is_periodic
         assert sampler._thermodynamic_states[0].barostat is None
 
         # Check hybrid OMM and MDTtraj Topologies
-        htf = sampler._hybrid_factory
+        htf = setup_results["hybrid_factory"]
         # 16 atoms:
         # 11 common atoms, 1 extra hydrogen in benzene, 4 extra in toluene
         # 12 bonds in benzene + 4 extra toluene bonds
@@ -281,9 +320,13 @@ def test_dry_run_default_vacuum(
         )
 
 
-def test_dry_run_gaff_vacuum(
+def test_setup_gaff_vacuum(
     benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmpdir
 ):
+    """
+    Simple dry run of the setup unit to make sure that parameterisation
+    will work with gaff.
+    """
     vac_settings.forcefield_settings.small_molecule_forcefield = "gaff-2.11"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -296,9 +339,10 @@ def test_dry_run_gaff_vacuum(
         stateB=toluene_vacuum_system,
         mapping=benzene_to_toluene_mapping,
     )
-    unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+
     with tmpdir.as_cwd():
-        _ = unit.run(dry=True)["debug"]["sampler"]
+        _ = dag_setup_unit.run(dry=True)
 
 
 @pytest.mark.slow
@@ -310,7 +354,7 @@ def test_dry_many_molecules_solvent(
     tmpdir,
 ):
     """
-    A basic test flushing "will it work if you pass multiple molecules"
+    A basic setup test flushing "will it work if you pass multiple molecules"
     """
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=solv_settings,
@@ -322,10 +366,10 @@ def test_dry_many_molecules_solvent(
         stateB=toluene_many_solv_system,
         mapping=benzene_to_toluene_mapping,
     )
-    unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)["debug"]["sampler"]
+        _ = dag_setup_unit.run(dry=True)
 
 
 BENZ = """\
@@ -394,7 +438,7 @@ $$$$
 """
 
 
-def test_dry_core_element_change(vac_settings, tmpdir):
+def test_setup_core_element_change(vac_settings, tmpdir):
     benz = openfe.SmallMoleculeComponent(Chem.MolFromMolBlock(BENZ, removeHs=False))
     pyr = openfe.SmallMoleculeComponent(Chem.MolFromMolBlock(PYRIDINE, removeHs=False))
 
@@ -410,11 +454,11 @@ def test_dry_core_element_change(vac_settings, tmpdir):
         mapping=mapping,
     )
 
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
-        system = sampler._hybrid_factory.hybrid_system
+        results = dag_setup_unit.run(dry=True)
+        system = results["hybrid_system"]
         assert system.getNumParticles() == 12
         # Average mass between nitrogen and carbon
         assert system.getParticleMass(1) == 12.0127235 * omm_unit.amu
@@ -443,10 +487,21 @@ def test_dry_run_ligand(
         stateB=toluene_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        # Manually run the units
+        setup_results = dag_setup_unit.run(dry=True)
+
+        sim_results = dag_sim_unit.run(
+            system=setup_results["hybrid_system"],
+            positions=setup_results["hybrid_positions"],
+            selection_indices=setup_results["selection_indices"],
+            dry=True,
+        )
+
+        sampler = sim_results["sampler"]
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
         assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
@@ -507,18 +562,18 @@ def tip4p_hybrid_factory(
         stateB=toluene_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
 
     shared_temp = tmp_path_factory.mktemp("tip4p_shared")
     scratch_temp = tmp_path_factory.mktemp("tip4p_scratch")
 
-    dag_unit_result = dag_unit.run(
+    dag_unit_setup_result = dag_setup_unit.run(
         dry=True,
         scratch_basepath=scratch_temp,
         shared_basepath=shared_temp,
     )
 
-    return dag_unit_result["debug"]["sampler"]._factory
+    return dag_unit_setup_result["hybrid_factory"]
 
 
 def test_tip4p_particle_count(tip4p_hybrid_factory):
@@ -603,7 +658,7 @@ def test_tip4p_check_vsite_parameters(tip4p_hybrid_factory):
         0.9 * unit.nanometer,
     ],
 )
-def test_dry_run_ligand_system_cutoff(
+def test_setup_ligand_system_cutoff(
     cutoff, benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmpdir
 ):
     """
@@ -615,16 +670,17 @@ def test_dry_run_ligand_system_cutoff(
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=solv_settings,
     )
+
     dag = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+
+    dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
-        hs = sampler._factory.hybrid_system
+        hs = dag_setup_unit.run(dry=True)["hybrid_system"]
 
         nbfs = [
             f
@@ -664,7 +720,7 @@ def test_dry_run_ligand_system_cutoff(
         ),
     ],
 )
-def test_dry_run_charge_backends(
+def test_setup_charge_backends(
     CN_molecule, tmpdir, method, backend, ref_key, vac_settings, am1bcc_ref_charges
 ):
     vac_settings.partial_charge_settings.partial_charge_method = method
@@ -688,12 +744,12 @@ def test_dry_run_charge_backends(
 
     dag = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
 
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
-        htf = sampler._factory
-        hybrid_system = htf.hybrid_system
+        results = dag_setup_unit.run(dry=True)
+        htf = results["hybrid_factory"]
+        hybrid_system = results["hybrid_system"]
 
         # get the standard nonbonded force
         nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
@@ -727,8 +783,66 @@ def test_dry_run_charge_backends(
                 np.testing.assert_allclose(c, ref, rtol=1e-4)
 
 
+def test_setup_same_mol_different_charges(benzene_modifications, vac_settings, tmpdir):
+    """
+    Issue #1120 - make sure we can do an RFE of a system with different
+    parameters but the same molecule.
+    """
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    benzene_offmol = benzene_modifications["benzene"].to_openff()
+    # Give state A some gasteiger charges
+    benzene_offmol.assign_partial_charges(partial_charge_method="gasteiger")
+    stateA_charges = copy.deepcopy(benzene_offmol.partial_charges)
+    stateA_mol = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+
+    # Give state B gasteiger charges scaled by 0.9
+    benzene_offmol.partial_charges *= 0.9
+    stateB_charges = copy.deepcopy(benzene_offmol.partial_charges)
+    stateB_mol = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+
+    # Create new mapping
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    mapping = next(mapper.suggest_mappings(stateA_mol, stateB_mol))
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem({"l": stateA_mol}),
+        stateB=openfe.ChemicalSystem({"l": stateB_mol}),
+        mapping=mapping,
+    )
+    dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
+
+    with tmpdir.as_cwd():
+        results = dag_setup_unit.run(dry=True)
+        htf = results["hybrid_factory"]
+        hybrid_system = results["hybrid_system"]
+
+        # get the standard nonbonded force
+        nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
+
+        # get the particle parameters & offsets
+        for i in range(hybrid_system.getNumParticles()):
+            # All particles should be core atoms
+            assert i in htf._atom_classes["core_atoms"]
+
+            # offsets
+            offset = ensure_quantity(nonbond[0].getParticleParameterOffset(i)[2], "openff")
+
+            # parameters
+            c, s, e = nonbond[0].getParticleParameters(i)
+            c = ensure_quantity(c, "openff")
+
+            # check state A charge
+            assert pytest.approx(c) == stateA_charges[i]
+
+            # check state B charge
+            c_diff = stateB_charges[i] - stateA_charges[i]
+            assert pytest.approx(offset) == c_diff
+
+
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
-def test_dry_run_user_charges(benzene_modifications, vac_settings, tmpdir):
+def test_setup_user_charges(benzene_modifications, vac_settings, tmpdir):
     """
     Create a hybrid system with a set of fictitious user supplied charges
     and ensure that they are properly passed through to the constructed
@@ -782,12 +896,12 @@ def test_dry_run_user_charges(benzene_modifications, vac_settings, tmpdir):
         stateB=openfe.ChemicalSystem({"l": toluene_smc}),
         mapping=mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
-        htf = sampler._factory
-        hybrid_system = htf.hybrid_system
+        results = dag_setup_unit.run(dry=True)
+        htf = results["hybrid_factory"]
+        hybrid_system = results["hybrid_system"]
 
         # get the standard nonbonded force
         nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
@@ -875,15 +989,23 @@ def test_virtual_sites_no_reassign(
         stateB=toluene_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
     with tmpdir.as_cwd():
+        # Manually run the units
+        setup_results = dag_setup_unit.run(dry=True)
         errmsg = "Simulations with virtual sites without velocity"
         with pytest.raises(ValueError, match=errmsg):
-            dag_unit.run(dry=True)
+            sim_results = dag_sim_unit.run(
+                system=setup_results["hybrid_system"],
+                positions=setup_results["hybrid_positions"],
+                selection_indices=setup_results["selection_indices"],
+                dry=True,
+            )
 
 
-def test_dodecahdron_ligand_box(
+def test_setup_dodecahdron_ligand_box(
     benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmpdir
 ):
     """
@@ -898,11 +1020,10 @@ def test_dodecahdron_ligand_box(
         stateB=toluene_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
-        hs = sampler._factory.hybrid_system
+        hs = dag_setup_unit.run(dry=True)["hybrid_system"]
 
         vectors = hs.getDefaultPeriodicBoxVectors()
 
@@ -940,10 +1061,18 @@ def test_dry_run_complex(
         stateB=toluene_complex_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        setup_results = dag_setup_unit.run(dry=True)
+        sim_results = dag_sim_unit.run(
+            system=setup_results["hybrid_system"],
+            positions=setup_results["hybrid_positions"],
+            selection_indices=setup_results["selection_indices"],
+            dry=True,
+        )
+        sampler = sim_results["sampler"]
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
         assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
@@ -967,247 +1096,7 @@ def test_lambda_schedule(windows):
     assert len(lambdas.lambda_schedule) == windows
 
 
-def test_hightimestep(
-    benzene_vacuum_system,
-    toluene_vacuum_system,
-    benzene_to_toluene_mapping,
-    vac_settings,
-    tmpdir,
-):
-    vac_settings.forcefield_settings.hydrogen_mass = 1.0
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=vac_settings,
-    )
-
-    dag = p.create(
-        stateA=benzene_vacuum_system,
-        stateB=toluene_vacuum_system,
-        mapping=benzene_to_toluene_mapping,
-    )
-    dag_unit = list(dag.protocol_units)[0]
-
-    errmsg = "too large for hydrogen mass"
-    with tmpdir.as_cwd():
-        with pytest.raises(ValueError, match=errmsg):
-            dag_unit.run(dry=True)
-
-
-def test_n_replicas_not_n_windows(
-    benzene_vacuum_system,
-    toluene_vacuum_system,
-    benzene_to_toluene_mapping,
-    vac_settings,
-    tmpdir,
-):
-    # For PR #125 we pin such that the number of lambda windows
-    # equals the numbers of replicas used - TODO: remove limitation
-    # default lambda windows is 11
-    vac_settings.simulation_settings.n_replicas = 13
-
-    errmsg = "Number of replicas 13 does not equal the number of lambda windows 11"
-
-    with tmpdir.as_cwd():
-        with pytest.raises(ValueError, match=errmsg):
-            p = openmm_rfe.RelativeHybridTopologyProtocol(
-                settings=vac_settings,
-            )
-            dag = p.create(
-                stateA=benzene_vacuum_system,
-                stateB=toluene_vacuum_system,
-                mapping=benzene_to_toluene_mapping,
-            )
-            dag_unit = list(dag.protocol_units)[0]
-            dag_unit.run(dry=True)
-
-
-def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
-    # state B doesn't have a ligand component
-    stateB = openfe.ChemicalSystem({"solvent": openfe.SolventComponent()})
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-
-    match_str = "missing alchemical components in stateB"
-    with pytest.raises(ValueError, match=match_str):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_vaccuum_PME_error(
-    benzene_vacuum_system, benzene_modifications, benzene_to_toluene_mapping
-):
-    # state B doesn't have a solvent component (i.e. its vacuum)
-    stateB = openfe.ChemicalSystem({"ligand": benzene_modifications["toluene"]})
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    errmsg = "PME cannot be used for vacuum transform"
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_vacuum_system,
-            stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_incompatible_solvent(benzene_system, benzene_modifications, benzene_to_toluene_mapping):
-    # the solvents are different
-    stateB = openfe.ChemicalSystem(
-        {
-            "ligand": benzene_modifications["toluene"],
-            "solvent": openfe.SolventComponent(positive_ion="K", negative_ion="Cl"),
-        }
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    # We don't have a way to map non-ligand components so for now it
-    # just triggers that it's not a mapped component
-    errmsg = "missing alchemical components in stateA"
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_mapping_mismatch_A(benzene_system, toluene_system, benzene_modifications):
-    # the atom mapping doesn't refer to the ligands in the systems
-    mapping = setup.LigandAtomMapping(
-        componentA=benzene_system.components["ligand"],
-        componentB=benzene_modifications["phenol"],
-        componentA_to_componentB=dict(),
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    errmsg = (
-        r"Unmapped alchemical component "
-        r"SmallMoleculeComponent\(name=toluene\)"
-    )
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping=mapping,
-        )
-
-
-def test_mapping_mismatch_B(benzene_system, toluene_system, benzene_modifications):
-    mapping = setup.LigandAtomMapping(
-        componentA=benzene_modifications["phenol"],
-        componentB=toluene_system.components["ligand"],
-        componentA_to_componentB=dict(),
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    errmsg = (
-        r"Unmapped alchemical component "
-        r"SmallMoleculeComponent\(name=benzene\)"
-    )
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping=mapping,
-        )
-
-
-def test_complex_mismatch(benzene_system, toluene_complex_system, benzene_to_toluene_mapping):
-    # only one complex
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    with pytest.raises(ValueError):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=toluene_complex_system,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_too_many_specified_mappings(benzene_system, toluene_system, benzene_to_toluene_mapping):
-    # mapping dict requires 'ligand' key
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    errmsg = "A single LigandAtomMapping is expected for this Protocol"
-    with pytest.raises(ValueError, match=errmsg):
-        _ = p.create(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping=[benzene_to_toluene_mapping, benzene_to_toluene_mapping],
-        )
-
-
-def test_protein_mismatch(
-    benzene_complex_system, toluene_complex_system, benzene_to_toluene_mapping
-):
-    # hack one protein to be labelled differently
-    prot = toluene_complex_system["protein"]
-    alt_prot = openfe.ProteinComponent(prot.to_rdkit(), name="Mickey Mouse")
-    alt_toluene_complex_system = openfe.ChemicalSystem(
-        {
-            "ligand": toluene_complex_system["ligand"],
-            "solvent": toluene_complex_system["solvent"],
-            "protein": alt_prot,
-        }
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    with pytest.raises(ValueError):
-        _ = p.create(
-            stateA=benzene_complex_system,
-            stateB=alt_toluene_complex_system,
-            mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_element_change_warning(atom_mapping_basic_test_files):
-    # check a mapping with element change gets rejected early
-    l1 = atom_mapping_basic_test_files["2-methylnaphthalene"]
-    l2 = atom_mapping_basic_test_files["2-naftanol"]
-
-    # We use the 'old' lomap defaults because the
-    # basic test files inputs we use aren't fully aligned
-    mapper = setup.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
-    )
-
-    mapping = next(mapper.suggest_mappings(l1, l2))
-
-    sys1 = openfe.ChemicalSystem(
-        {"ligand": l1, "solvent": openfe.SolventComponent()},
-    )
-    sys2 = openfe.ChemicalSystem(
-        {"ligand": l2, "solvent": openfe.SolventComponent()},
-    )
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
-    )
-    with pytest.warns(UserWarning, match="Element change"):
-        _ = p.create(
-            stateA=sys1,
-            stateB=sys2,
-            mapping=mapping,
-        )
-
-
-def test_ligand_overlap_warning(
+def test_setup_ligand_overlap_warning(
     benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmpdir
 ):
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -1239,9 +1128,11 @@ def test_ligand_overlap_warning(
             stateB=toluene_vacuum_system,
             mapping=mapping,
         )
-        dag_unit = list(dag.protocol_units)[0]
+        dag_setup_unit = [
+            pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)
+        ][0]
         with tmpdir.as_cwd():
-            dag_unit.run(dry=True)
+            dag_setup_unit.run(dry=True)
 
 
 @pytest.fixture
@@ -1260,28 +1151,110 @@ def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapp
 def test_unit_tagging(solvent_protocol_dag, tmpdir):
     # test that executing the Units includes correct generation and repeat info
     dag_units = solvent_protocol_dag.protocol_units
-    with mock.patch(
-        "openfe.protocols.openmm_rfe.equil_rfe_methods.RelativeHybridTopologyProtocolUnit.run",
-        return_value={"nc": "file.nc", "last_checkpoint": "chk.nc"},
+    with (
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologySetupUnit.run",
+            return_value={
+                "system": Path("system.xml.bz2"),
+                "positions": Path("positions.npy"),
+                "pdb_structure": Path("hybrid_system.pdb"),
+                "selection_indices": np.zeros(100),
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.np.load",
+            return_value=np.zeros(100),
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.deserialize",
+            return_value={
+                "item": "foo",
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit.run",
+            return_value={
+                "nc": Path("file.nc"),
+                "checkpoint": Path("chk.chk"),
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit.run",
+            return_value={
+                "foo": "bar",
+            },
+        ),
     ):
-        results = []
-        for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
-            results.append(ret)
+        setup_results = {}
+        sim_results = {}
+        analysis_results = {}
+
+        setup_units = _get_units(dag_units, HybridTopologySetupUnit)
+        sim_units = _get_units(dag_units, HybridTopologyMultiStateSimulationUnit)
+        analysis_units = _get_units(dag_units, HybridTopologyMultiStateAnalysisUnit)
+
+        for u in setup_units:
+            rid = u.inputs["repeat_id"]
+            setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
+
+        for u in sim_units:
+            rid = u.inputs["repeat_id"]
+            sim_results[rid] = u.execute(
+                context=gufe.Context(tmpdir, tmpdir), setup_results=setup_results[rid]
+            )
+
+        for u in analysis_units:
+            rid = u.inputs["repeat_id"]
+            analysis_results[rid] = u.execute(
+                context=gufe.Context(tmpdir, tmpdir),
+                setup_results=setup_results[rid],
+                simulation_results=sim_results[rid],
+            )
     repeats = set()
-    for ret in results:
-        assert isinstance(ret, gufe.ProtocolUnitResult)
-        assert ret.outputs["generation"] == 0
-        repeats.add(ret.outputs["repeat_id"])
+    for results in [setup_results, sim_results, analysis_results]:
+        for ret in results.values():
+            assert isinstance(ret, gufe.ProtocolUnitResult)
+            assert ret.outputs["generation"] == 0
+
     # repeats are random ints, so check we got 3 individual numbers
-    assert len(repeats) == 3
+    assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
 
 
 def test_gather(solvent_protocol_dag, tmpdir):
     # check .gather behaves as expected
-    with mock.patch(
-        "openfe.protocols.openmm_rfe.equil_rfe_methods.RelativeHybridTopologyProtocolUnit.run",
-        return_value={"nc": "file.nc", "last_checkpoint": "chk.nc"},
+    with (
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologySetupUnit.run",
+            return_value={
+                "system": Path("system.xml.bz2"),
+                "positions": Path("positions.npy"),
+                "pdb_structure": Path("hybrid_system.pdb"),
+                "selection_indices": np.zeros(100),
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.np.load",
+            return_value=np.zeros(100),
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.deserialize",
+            return_value={
+                "item": "foo",
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit.run",
+            return_value={
+                "nc": Path("file.nc"),
+                "checkpoint": Path("chk.chk"),
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit.run",
+            return_value={
+                "foo": "bar",
+            },
+        ),
     ):
         dagres = gufe.protocols.execute_DAG(
             solvent_protocol_dag,
@@ -1592,13 +1565,13 @@ def tyk2_xml(tmp_path_factory):
         stateB=openfe.ChemicalSystem({"ligand": lig55}),
         mapping=mapping,
     )
-    pu = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     tmp = tmp_path_factory.mktemp("xml_reg")
 
-    dryrun = pu.run(dry=True, shared_basepath=tmp)
+    setup_results = dag_setup_unit.run(dry=True, shared_basepath=tmp)
 
-    system = dryrun["debug"]["sampler"]._hybrid_factory.hybrid_system
+    system = setup_results["hybrid_system"]
 
     return ET.fromstring(XmlSerializer.serialize(system))
 
@@ -1747,68 +1720,6 @@ class TestProtocolResult:
 
         with pytest.raises(ValueError, match=errmsg):
             protocolresult.get_replica_states()
-
-
-@pytest.mark.parametrize(
-    "mapping_name,result",
-    [
-        ["benzene_to_toluene_mapping", 0],
-        ["benzene_to_benzoic_mapping", 1],
-        ["benzene_to_aniline_mapping", -1],
-        ["aniline_to_benzene_mapping", 1],
-    ],
-)
-def test_get_charge_difference(mapping_name, result, request):
-    mapping = request.getfixturevalue(mapping_name)
-    if result != 0:
-        ion = r"Na\+" if result == -1 else r"Cl\-"
-        wmsg = (
-            f"A charge difference of {result} is observed "
-            "between the end states. This will be addressed by "
-            f"transforming a water into a {ion} ion"
-        )
-        with pytest.warns(UserWarning, match=wmsg):
-            val = _get_alchemical_charge_difference(mapping, "pme", True, openfe.SolventComponent())
-            assert result == pytest.approx(val)
-    else:
-        val = _get_alchemical_charge_difference(mapping, "pme", True, openfe.SolventComponent())
-        assert result == pytest.approx(val)
-
-
-def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
-    errmsg = "Explicit charge correction when not using PME"
-    with pytest.raises(ValueError, match=errmsg):
-        _get_alchemical_charge_difference(
-            benzene_to_benzoic_mapping,
-            "nocutoff",
-            True,
-            openfe.SolventComponent(),
-        )
-
-
-def test_get_charge_difference_no_corr(benzene_to_benzoic_mapping):
-    wmsg = (
-        "A charge difference of 1 is observed between the end states. "
-        "No charge correction has been requested"
-    )
-    with pytest.warns(UserWarning, match=wmsg):
-        _get_alchemical_charge_difference(
-            benzene_to_benzoic_mapping,
-            "pme",
-            False,
-            openfe.SolventComponent(),
-        )
-
-
-def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
-    errmsg = "A charge difference of 2"
-    with pytest.raises(ValueError, match=errmsg):
-        _get_alchemical_charge_difference(
-            aniline_to_benzoic_mapping,
-            "pme",
-            True,
-            openfe.SolventComponent(),
-        )
 
 
 @pytest.fixture(scope="session")
@@ -2150,11 +2061,12 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, 
         stateB=stateB_system,
         mapping=benzene_to_benzoic_mapping,
     )
-    unit = list(dag.protocol_units)[0]
+
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)["debug"]["sampler"]
-        htf = sampler._factory
+        results = dag_setup_unit.run(dry=True)
+        htf = results["hybrid_factory"]
         _assert_total_charge(htf.hybrid_system, htf._atom_classes, 0, 0)
 
         assert len(htf._atom_classes["core_atoms"]) == 14
@@ -2175,7 +2087,7 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, 
         ["benzoic_to_benzene_mapping", 0, 1, False, 11, 1, 3],
     ],
 )
-def test_dry_run_complex_alchemwater_totcharge(
+def test_setup_complex_alchemwater_totcharge(
     mapping_name,
     chgA,
     chgB,
@@ -2219,11 +2131,11 @@ def test_dry_run_complex_alchemwater_totcharge(
         stateB=stateB_system,
         mapping=mapping,
     )
-    unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)["debug"]["sampler"]
-        htf = sampler._factory
+        setup_results = dag_setup_unit.run(dry=True)
+        htf = setup_results["hybrid_factory"]
         _assert_total_charge(htf.hybrid_system, htf._atom_classes, chgA, chgB)
 
         assert len(htf._atom_classes["core_atoms"]) == core_atoms
@@ -2233,8 +2145,11 @@ def test_dry_run_complex_alchemwater_totcharge(
 
 def test_structural_analysis_error(tmpdir):
     with tmpdir.as_cwd():
-        ret = openmm_rfe.RelativeHybridTopologyProtocolUnit.structural_analysis(
-            Path("."), Path(".")
+        ret = openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit._structural_analysis(
+            Path("."),
+            Path("."),
+            Path("."),
+            True,
         )
 
     assert "structural_analysis_error" in ret
@@ -2274,10 +2189,21 @@ def test_dry_run_vacuum_write_frequency(
         stateB=toluene_vacuum_system,
         mapping=benzene_to_toluene_mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        # Manually run the units
+        setup_results = dag_setup_unit.run(dry=True)
+
+        sim_results = dag_sim_unit.run(
+            system=setup_results["hybrid_system"],
+            positions=setup_results["hybrid_positions"],
+            selection_indices=setup_results["selection_indices"],
+            dry=True,
+        )
+
+        sampler = sim_results["sampler"]
         reporter = sampler._reporter
         if positions_write_frequency:
             assert reporter.position_interval == positions_write_frequency.m
@@ -2287,40 +2213,3 @@ def test_dry_run_vacuum_write_frequency(
             assert reporter.velocity_interval == velocities_write_frequency.m
         else:
             assert reporter.velocity_interval == 0
-
-
-@pytest.mark.parametrize(
-    "positions_write_frequency,velocities_write_frequency",
-    [
-        [100.1 * unit.picosecond, 100 * unit.picosecond],
-        [100 * unit.picosecond, 100.1 * unit.picosecond],
-    ],
-)
-def test_pos_write_frequency_not_divisible(
-    benzene_vacuum_system,
-    toluene_vacuum_system,
-    benzene_to_toluene_mapping,
-    positions_write_frequency,
-    velocities_write_frequency,
-    tmpdir,
-    vac_settings,
-):
-    vac_settings.output_settings.positions_write_frequency = positions_write_frequency
-    vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
-
-    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=vac_settings,
-    )
-
-    # create DAG from protocol and take first (and only) work unit from within
-    dag = protocol.create(
-        stateA=benzene_vacuum_system,
-        stateB=toluene_vacuum_system,
-        mapping=benzene_to_toluene_mapping,
-    )
-    dag_unit = list(dag.protocol_units)[0]
-
-    with tmpdir.as_cwd():
-        errmsg = "The output settings' "
-        with pytest.raises(ValueError, match=errmsg):
-            dag_unit.run(dry=True)["debug"]["sampler"]
