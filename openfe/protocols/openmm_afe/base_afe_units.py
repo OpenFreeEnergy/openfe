@@ -148,7 +148,7 @@ class AbsoluteUnitsMixin:
         ...
 
 
-class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
+class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
     """
     Base class for setting up absolute free energy transformations.
     """
@@ -327,7 +327,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
     @staticmethod
     def _assign_partial_charges(
         partial_charge_settings: OpenFFPartialChargeSettings,
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
         Assign partial charges to the OpenFF Molecules associated with
@@ -337,11 +337,11 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         ----------
         charge_settings : OpenFFPartialChargeSettings
           Settings for controlling how the partial charges are assigned.
-        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           Dictionary of OpenFF Molecules to add, keyed by their
           associated SmallMoleculeComponent.
         """
-        for mol in smc_components.values():
+        for mol in small_mols.values():
             charge_generation.assign_offmol_partial_charges(
                 offmol=mol,
                 overwrite=False,
@@ -353,7 +353,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_system_generator(
-        self,
         settings: dict[str, SettingsBaseModel],
         solvent_component: SolventComponent | None,
         openff_molecules: list[OFFMolecule],
@@ -384,7 +383,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
             integrator_settings=settings["integrator_settings"],
             thermo_settings=settings["thermo_settings"],
             cache=ffcache,
-            has_solvent=solvent_comp is not None,
+            has_solvent=solvent_component is not None,
         )
 
         # Handle openff Molecule templates
@@ -401,7 +400,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
                 ]
             )
             if unique:
-                unique_offmol.append(mol)
+                unique_offmols.append(mol)
 
         # register all the templates
         system_generator.add_molecules(unique_offmols)
@@ -412,7 +411,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
     def _get_modeller(
         protein_component: Optional[ProteinComponent],
         solvent_component: Optional[SolventComponent],
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
         solvation_settings: BaseSolvationSettings,
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
@@ -426,7 +425,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
           Protein Component, if it exists.
         solvent_component : Optional[ProteinCompoinent]
           Solvent Component, if it exists.
-        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           Dictionary of OpenFF Molecules to add, keyed by
           SmallMoleculeComponent.
         system_generator : openmmforcefields.generator.SystemGenerator
@@ -446,7 +445,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         system_modeller, comp_resids = system_creation.get_omm_modeller(
             protein_comp=protein_component,
             solvent_comp=solvent_component,
-            small_mols=smc_components,
+            small_mols=small_mols,
             omm_forcefield=system_generator.forcefield,
             solvent_settings=solvation_settings,
         )
@@ -458,7 +457,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         settings: dict[str, SettingsBaseModel],
         protein_component: Optional[ProteinComponent],
         solvent_component: Optional[SolventComponent],
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> tuple[
         app.Topology,
         openmm.System,
@@ -477,8 +476,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
           Protein component for the system.
         solvent_component : Optional[SolventComponent]
           Solvent component for the system.
-        smc_components : dict[str, OFFMolecule]
-          SmallMoleculeComponents defining ligands to be added to the system
+        small_mols : dict[str, openff.toolkit.Molecule]
+          Dictionary of SmallMoleculeComponents and OpenFF Molecules
+          defining the ligands to be added to the system
 
         Returns
         -------
@@ -497,34 +497,27 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         with without_oechem_backend():
             system_generator = self._get_system_generator(
                 settings=settings,
-                solvent_comp=solvent_component
+                solvent_component=solvent_component,
+                openff_molecules=list(small_mols.values()),
+                ffcache=self.shared_basepath / settings["output_settings"].forcefield_cache,
             )
     
             modeller, comp_resids = self._get_modeller(
                 protein_component=protein_component,
                 solvent_component=solvent_component,
-                smc_components=smc_components,
+                small_mols=small_mols,
                 system_generator=system_generator,
                 solvation_settings=settings["solvation_settings"],
             )
 
             system = system_generator.create_system(
                 topology=modeller.topology,
-                molecules=list(smc_components.values()),
+                molecules=list(small_mols.values()),
             )
 
         topology = modeller.getTopology()
         # roundtrip positions to remove vec3 issues
         positions = to_openmm(from_openmm(modeller.getPositions()))
-
-        # TODO: move this to when we create the Integrator or sampler
-        # Check and fail early on the presence of virtual sites
-        # and multistate sampler not using velocity restart
-        if not settings["integrator_settings"].reassign_velocities:
-            has_vsite = any(system.isVirtualSite(i) for i in range(system.getNumParticles()))
-            if has_vsite:
-                errmsg = "Simulations with virtual sites without velocity reassignment are unstable"
-                raise ValueError(errmsg)
 
         return topology, system, positions, comp_resids
 
@@ -544,7 +537,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         """
         Placeholder method to add restraints if necessary
         """
-        return None, None, system, None
+        return None, system, None
 
     def _get_alchemical_system(
         self,
@@ -640,7 +633,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
           The indices of the subselected system.
         """
         mdt_top = mdt.Topology.from_openmm(topology)
-        selection_indices = mdt_top.select(output_settings.output_indices)
+        selection_indices = mdt_top.select(output_selection)
 
         # Write out the subselected structure to PDB if not empty
         if len(selection_indices) > 0:
@@ -693,14 +686,14 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
         settings = self._get_settings()
 
         # Assign partial charges now to avoid any discrepancies later
-        self._assign_partial_charges(settings["charge_settings"], smc_components)
+        self._assign_partial_charges(settings["charge_settings"], small_mols)
 
         # Get OpenMM topology, positions, system, and comp_resids
         omm_topology, omm_system, positions, comp_resids = self._get_omm_objects(
             settings=settings,
             protein_component=prot_comp,
             solvent_component=solv_comp,
-            smc_components=smc_comps,
+            small_mols=small_mols,
         )
 
         # Pre-equilbrate System (Test + Avoid NaNs + get stable system)
@@ -770,11 +763,12 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit):
 
         if dry:
             unit_results_dict |= {
+                "standard_system": omm_system,
                 "restrained_system": restrained_omm_system,
                 "alchem_system": alchem_system,
                 "alchem_indices": alchem_indices,
                 "alchem_factory": alchem_factory,
-                "positions": positions,
+                "debug_positions": positions,
             }
         return unit_results_dict
 
@@ -932,6 +926,61 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         return sampler_states, cmp_states
 
     @staticmethod
+    def _get_integrator(
+        integrator_settings: IntegratorSettings,
+        simulation_settings: MultiStateSimulationSettings,
+        system: openmm.System,
+    ) -> openmmtools.mcmc.LangevinDynamicsMove:
+        """
+        Return a LangevinDynamicsMove integrator
+
+        Parameters
+        ----------
+        integrator_settings : IntegratorSettings
+          Settings controlling the Langevin integrator
+        simulation_settings : MultiStateSimulationSettings
+          Settings controlling the simulation.
+        system : openmm.System
+          The OpenMM System.
+
+        Returns
+        -------
+        integrator : openmmtools.mcmc.LangevinDynamicsMove
+          A configured integrator object.
+
+        Raises
+        ------
+        ValueError
+          If there are virtual sites in the system, but
+          velocities are not being reassigned after every MCMC move.
+        """
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings, integrator_settings
+        )
+
+        integrator = openmmtools.mcmc.LangevinDynamicsMove(
+            timestep=to_openmm(integrator_settings.timestep),
+            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
+            n_steps=steps_per_iteration,
+            reassign_velocities=integrator_settings.reassign_velocities,
+            n_restart_attempts=integrator_settings.n_restart_attempts,
+            constraint_tolerance=integrator_settings.constraint_tolerance,
+        )
+
+        # Validate for known issue when dealing with virtual sites
+        # and mutltistate simulations
+        if not integrator_settings.reassign_velocities:
+            for particle_idx in range(system.getNumParticles()):
+                if system.isVirtualSite(particle_idx):
+                    errmsg = (
+                        "Simulations with virtual sites without velocity "
+                        "reassignments are unstable with MCMC integrators."
+                    )
+                    raise ValueError(errmsg)
+
+        return integrator
+
+    @staticmethod
     def _get_reporter(
         storage_path: pathlib.Path,
         selection_indices : npt.NDArray,
@@ -999,95 +1048,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
 
         return reporter
 
-    def _get_ctx_caches(
-        self,
-        forcefield_settings: OpenMMSystemGeneratorFFSettings,
-        engine_settings: OpenMMEngineSettings,
-    ) -> tuple[openmmtools.cache.ContextCache, openmmtools.cache.ContextCache]:
-        """
-        Set the context caches based on the chosen platform
-
-        Parameters
-        ----------
-        forcefield_settings: OpenMMSystemGeneratorFFSettings
-        engine_settings : OpenMMEngineSettings
-
-        Returns
-        -------
-        energy_context_cache : openmmtools.cache.ContextCache
-          The energy state context cache.
-        sampler_context_cache : openmmtools.cache.ContextCache
-          The sampler state context cache.
-        """
-        energy_context_cache = openmmtools.cache.ContextCache(
-            capacity=None,
-            time_to_live=None,
-            platform=platform,
-        )
-
-        sampler_context_cache = openmmtools.cache.ContextCache(
-            capacity=None,
-            time_to_live=None,
-            platform=platform,
-        )
-
-        return energy_context_cache, sampler_context_cache
-
-    @staticmethod
-    def _get_integrator(
-        integrator_settings: IntegratorSettings,
-        simulation_settings: MultiStateSimulationSettings,
-        system: openmm.System,
-    ) -> openmmtools.mcmc.LangevinDynamicsMove:
-        """
-        Return a LangevinDynamicsMove integrator
-
-        Parameters
-        ----------
-        integrator_settings : IntegratorSettings
-          Settings controlling the Langevin integrator
-        simulation_settings : MultiStateSimulationSettings
-          Settings controlling the simulation.
-        system : openmm.System
-          The OpenMM System.
-
-        Returns
-        -------
-        integrator : openmmtools.mcmc.LangevinDynamicsMove
-          A configured integrator object.
-
-        Raises
-        ------
-        ValueError
-          If there are virtual sites in the system, but
-          velocities are not being reassigned after every MCMC move.
-        """
-        steps_per_iteration = settings_validation.convert_steps_per_iteration(
-            simulation_settings, integrator_settings
-        )
-
-        integrator = openmmtools.mcmc.LangevinDynamicsMove(
-            timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
-            n_steps=steps_per_iteration,
-            reassign_velocities=integrator_settings.reassign_velocities,
-            n_restart_attempts=integrator_settings.n_restart_attempts,
-            constraint_tolerance=integrator_settings.constraint_tolerance,
-        )
-
-        # Validate for known issue when dealing with virtual sites
-        # and mutltistate simulations
-        if not integrator_settings.reassign_velocities:
-            for particle_idx in range(system.getNumParticles()):
-                if system.isVirtualSite(particle_idx):
-                    errmsg = (
-                        "Simulations with virtual sites without velocity "
-                        "reassignments are unstable with MCMC integrators."
-                    )
-                    raise ValueError(errmsg)
-
-        return integrator
-
     @staticmethod
     def _get_sampler(
         integrator: openmmtools.mcmc.LangevinDynamicsMove,
@@ -1096,8 +1056,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         thermodynamic_settings: ThermoSettings,
         compound_states: list[ThermodynamicState],
         sampler_states: list[SamplerState],
-        energy_context_cache: openmmtools.cache.ContextCache,
-        sampler_context_cache: openmmtools.cache.ContextCache,
         platform: openmm.Platform,
     ) -> multistate.MultiStateSampler:
         """
@@ -1129,7 +1087,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             simulation_settings=simulation_settings,
         )
         et_target_err = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
-            thermo_settings.temperature,
+            thermodynamic_settings.temperature,
             simulation_settings.early_termination_target_error,
         )
 
@@ -1159,7 +1117,9 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             )
 
         sampler.create(
-            thermodynamic_states=cmp_states, sampler_states=sampler_states, storage=reporter
+            thermodynamic_states=compound_states,
+            sampler_states=sampler_states,
+            storage=reporter,
         )
 
         sampler.energy_context_cache = openmmtools.cache.ContextCache(
@@ -1167,6 +1127,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             time_to_live=None,
             platform=platform,
         )
+
         sampler.sampler_context_cache = openmmtools.cache.ContextCache(
             capacity=None,
             time_to_live=None,
@@ -1180,7 +1141,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         sampler: multistate.MultiStateSampler,
         reporter: multistate.MultiStateReporter,
         settings: dict[str, SettingsBaseModel],
-        standard_state_corr: Optional[Quantity],
         dry: bool,
     ):
         """
@@ -1194,8 +1154,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
           The reporter associated with the sampler.
         settings : dict[str, SettingsBaseModel]
           The dictionary of settings for the protocol.
-        standard_state_corr : Optional[openff.units.Quantity]
-          The standard state correction, if available.
         dry : bool
           Whether or not to dry run the simulation
         """
@@ -1259,8 +1217,8 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         alchemical_restraints: bool,
         dry: bool = False,
         verbose: bool = True,
-        scratch_basepath: pathlib.Path | None,
-        shared_basepath: pathlib.Path | None,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
     ) -> dict[str, Any]:
         """
         Run the free energy calculation using a multistate sampler.
@@ -1328,23 +1286,23 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             alchemically_restrained=alchemical_restraints,
         )
 
-        try:
-            # Get the integrator
-            integrator = self._get_integrator(
-                integrator_settings=settings["integrator_settings"],
-                simulation_settings=settings["simulation_settings"],
-                system=system,
-            )
+        # Get the integrator
+        integrator = self._get_integrator(
+            integrator_settings=settings["integrator_settings"],
+            simulation_settings=settings["simulation_settings"],
+            system=system,
+        )
 
+        try:
             # Create or get the multistate reporter
             reporter = self._get_reporter(
-                positions=positions,
+                storage_path=self.shared_basepath,
                 selection_indices=selection_indices,
                 simulation_settings=settings["simulation_settings"],
                 output_settings=settings["output_settings"],
             )
-
-            # 12. Get sampler
+    
+            # Get sampler
             sampler = self._get_sampler(
                 integrator=integrator,
                 reporter=reporter,
@@ -1354,27 +1312,30 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
                 sampler_states=sampler_states,
                 platform=platform,
             )
-
-            # 13. Run simulation
+    
+            # Run simulation
             self._run_simulation(
-                sampler, reporter, settings, standard_state_corr, dry
+                sampler=sampler,
+                reporter=reporter,
+                settings=settings,
+                dry=dry,
             )
-
+    
         finally:
             # close reporter when you're done to prevent file handle clashes
             reporter.close()
 
             # clear GPU context
             # Note: use cache.empty() when openmmtools #690 is resolved
-            for context in list(sampler.energy_ctx_cache._lru._data.keys()):
-                del sampler.energy_ctx_cache._lru._data[context]
-            for context in list(sampler.sampler_ctx_cache._lru._data.keys()):
-                del sampler.sampler_ctx_cache._lru._data[context]
+            for context in list(sampler.energy_context_cache._lru._data.keys()):
+                del sampler.energy_context_cache._lru._data[context]
+            for context in list(sampler.sampler_context_cache._lru._data.keys()):
+                del sampler.sampler_context_cache._lru._data[context]
             # cautiously clear out the global context cache too
             for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
                 del openmmtools.cache.global_context_cache._lru._data[context]
 
-            del sampler.sampler_ctx_cache, sampler.energy_ctx_cache
+            del sampler.sampler_context_cache, sampler.energy_context_cache
 
             # Keep these around in a dry run so we can inspect things
             if not dry:
