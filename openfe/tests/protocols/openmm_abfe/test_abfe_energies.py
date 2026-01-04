@@ -17,8 +17,8 @@ from openmmtools.alchemy import (
 )
 
 from openfe.protocols import openmm_afe
-from openfe.protocols.openmm_afe import (
-    AbsoluteBindingComplexUnit,
+from openfe.protocols.openmm_afe.abfe_units import (
+    ABFEComplexSetupUnit,
 )
 from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
@@ -147,11 +147,14 @@ class TestT4EnergiesRegression:
 
         dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 
-        complex_units = [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)]
+        complex_units = [
+            u for u in dag.protocol_units
+            if isinstance(u, ABFEComplexSetupUnit)
+        ]
 
         with tmpdir.as_cwd():
-            data = complex_units[0].run(dry=True)["debug"]
-            return data
+            results = complex_units[0].run(dry=True)
+            return results
 
     @staticmethod
     def get_energy_components(
@@ -182,7 +185,7 @@ class TestT4EnergiesRegression:
         energies_ref = self.get_energy_components(
             t4_reference_system,
             t4_validation_data["alchem_indices"],
-            t4_validation_data["positions"],
+            t4_validation_data["debug_positions"],
             lambda_val,
             lambda_val,
             lambda_val,
@@ -191,7 +194,7 @@ class TestT4EnergiesRegression:
         energies_val = self.get_energy_components(
             t4_validation_data["alchem_system"],
             t4_validation_data["alchem_indices"],
-            t4_validation_data["positions"],
+            t4_validation_data["debug_positions"],
             lambda_val,
             lambda_val,
             lambda_val,
@@ -223,7 +226,7 @@ class TestT4EnergiesRegression:
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],
             t4_validation_data["alchem_indices"],
-            t4_validation_data["positions"],
+            t4_validation_data["debug_positions"],
             lambda_sterics=1.0,
             lambda_electrostatics=1.0,
             lambda_restraints=1.0,
@@ -236,7 +239,7 @@ class TestT4EnergiesRegression:
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],
             t4_validation_data["alchem_indices"],
-            t4_validation_data["positions"],
+            t4_validation_data["debug_positions"],
             lambda_sterics=1.0,
             lambda_electrostatics=1.0,
             lambda_restraints=0.0,
@@ -249,7 +252,7 @@ class TestT4EnergiesRegression:
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],
             t4_validation_data["alchem_indices"],
-            t4_validation_data["positions"],
+            t4_validation_data["debug_positions"],
             lambda_sterics=1.0,
             lambda_electrostatics=0.0,
             lambda_restraints=0.0,
@@ -270,7 +273,7 @@ class TestT4EnergiesRegression:
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],
             t4_validation_data["alchem_indices"],
-            t4_validation_data["positions"],
+            t4_validation_data["debug_positions"],
             lambda_sterics=0.0,
             lambda_electrostatics=0.0,
             lambda_restraints=0.0,
