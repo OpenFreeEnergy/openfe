@@ -85,7 +85,8 @@ class AbsoluteProtocolResultMixin:
 
         for key in [self.bound_state, self.unbound_state]:
             forward_reverse[key] = [
-                pus[0].outputs["forward_and_reverse_energies"] for pus in self.data[key].values()
+                pus[0].outputs["forward_and_reverse_energies"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
             if None in forward_reverse[key]:
@@ -125,7 +126,8 @@ class AbsoluteProtocolResultMixin:
 
         for key in [self.bound_state, self.unbound_state]:
             overlap_stats[key] = [
-                pus[0].outputs["unit_mbar_overlap"] for pus in self.data[key].values()
+                pus[0].outputs["unit_mbar_overlap"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
         return overlap_stats
@@ -159,7 +161,8 @@ class AbsoluteProtocolResultMixin:
         try:
             for key in [self.bound_state, self.unbound_state]:
                 repex_stats[key] = [
-                    pus[0].outputs["replica_exchange_statistics"] for pus in self.data[key].values()
+                    pus[0].outputs["replica_exchange_statistics"]
+                    for pus in self.data[key].values()  # type: ignore[attr-defined]
                 ]
         except KeyError:
             errmsg = "Replica exchange statistics were not found, did you run a repex calculation?"
@@ -209,7 +212,7 @@ class AbsoluteProtocolResultMixin:
             return retval
 
         for key in [self.bound_state, self.unbound_state]:
-            for pus in self.data[key].values():
+            for pus in self.data[key].values():  # type: ignore[attr-defined]
                 states = get_replica_state(
                     pus[0].outputs["nc"],
                     pus[0].outputs["last_checkpoint"],
@@ -235,7 +238,8 @@ class AbsoluteProtocolResultMixin:
 
         for key in [self.bound_state, self.unbound_state]:
             equilibration_lengths[key] = [
-                pus[0].outputs["equilibration_iterations"] for pus in self.data[key].values()
+                pus[0].outputs["equilibration_iterations"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
         return equilibration_lengths
@@ -259,7 +263,8 @@ class AbsoluteProtocolResultMixin:
 
         for key in [self.bound_state, self.unbound_state]:
             production_lengths[key] = [
-                pus[0].outputs["production_iterations"] for pus in self.data[key].values()
+                pus[0].outputs["production_iterations"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
         return production_lengths
@@ -283,7 +288,7 @@ class AbsoluteProtocolResultMixin:
 
         for key in [self.bound_state, self.unbound_state]:
             indices[key] = []
-            for pus in self.data[key].values():
+            for pus in self.data[key].values():  # type: ignore[attr-defined]
                 indices[key].append(pus[0].outputs["selection_indices"])
 
         return indices
