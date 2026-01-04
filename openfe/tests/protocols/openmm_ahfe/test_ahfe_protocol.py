@@ -446,7 +446,9 @@ def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
             )
 
 
-def test_dry_run_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdir):
+def test_setup_dry_sim_solv_benzene_tip4p(
+    benzene_system, protocol_dry_settings, tmpdir
+):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
@@ -475,10 +477,19 @@ def test_dry_run_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdi
     )
     prot_units = list(dag.protocol_units)
 
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
+    sol_setup_unit = _get_units(prot_units, UNIT_TYPES['solvent']['setup'])     sol_sim_unit = _get_units(prot_units, UNIT_TYPES['solvent']['sim'])
 
     with tmpdir.as_cwd():
-        sol_sampler = sol_unit[0].run(dry=True)["debug"]["sampler"]
+        setup_results = sol_setup_unit[0].run(dry=True)
+        sim_results = sol_sim_unit[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+        )
+        sol_sampler = sim_results["sampler"]
         assert sol_sampler.is_periodic
 
 
@@ -501,11 +512,11 @@ def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tm
     )
     prot_units = list(dag.protocol_units)
 
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
+    sol_setup_unit = _get_units(prot_units, UNIT_TYPES['solvent']['setup'])
 
     with tmpdir.as_cwd():
-        sampler = sol_unit[0].run(dry=True)["debug"]["sampler"]
-        system = sampler._thermodynamic_states[0].system
+        results = sol_setup_unit[0].run(dry=True)
+        system = results["alchem_system"]
 
         vectors = system.getDefaultPeriodicBoxVectors()
         width = float(from_openmm(vectors)[0][0].to("nanometer").m)
@@ -521,7 +532,9 @@ def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tm
         assert_allclose(expected_vectors, from_openmm(vectors))
 
 
-def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_settings, tmpdir):
+def test_dry_run_solv_user_charges_benzene(
+    benzene_modifications, protocol_dry_settings, tmpdir
+):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
@@ -562,13 +575,13 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
     prot_units = list(dag.protocol_units)
 
-    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)][0]
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)][0]
+    vac_setup_units = _get_units(prot_units, UNIT_TYPES['vacuum']['setup'])
+    sol_setup_units = _get_untis(prot_units, UNIT_TYPES['solvent']['setup'])
 
     # check sol_unit charges
     with tmpdir.as_cwd():
-        sampler = sol_unit.run(dry=True)["debug"]["sampler"]
-        system = sampler._thermodynamic_states[0].system
+        results = sol_setup_unit.run(dry=True)
+        system = results["alchem_system"]
         nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
 
         assert len(nonbond) == 1
@@ -582,8 +595,8 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
 
     # check vac_unit charges
     with tmpdir.as_cwd():
-        sampler = vac_unit.run(dry=True)["debug"]["sampler"]
-        system = sampler._thermodynamic_states[0].system
+        results = vac_setup_unit.run(dry=True)
+        system = results["alchem_system"]
         nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
         assert len(nonbond) == 4
 
@@ -648,12 +661,12 @@ def test_dry_run_charge_backends(
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
     prot_units = list(dag.protocol_units)
 
-    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)][0]
+    vac_setup_units = _get_units(prot_units, UNIT_TYPES['vacuum']['setup'])
 
     # check vac_unit charges
     with tmpdir.as_cwd():
-        sampler = vac_unit.run(dry=True)["debug"]["sampler"]
-        system = sampler._thermodynamic_states[0].system
+        results = vac_setup_units[0].run(dry=True)
+        system = results["alchem_system"]
         nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
         assert len(nonbond) == 4
 
