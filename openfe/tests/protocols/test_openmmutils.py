@@ -827,8 +827,7 @@ class TestOFFPartialCharge:
         assert not np.allclose(charges, lig.partial_charges)
 
     @pytest.mark.skipif(
-        not HAS_NAGL or HAS_OPENEYE,
-        reason="NAGL is not available or oechem is installed"
+        not HAS_NAGL or HAS_OPENEYE, reason="NAGL is not available or oechem is installed"
     )
     def test_latest_production_nagl(self, uncharged_mol):
         """We expect to find a NAGL model and be able to generate partial charges with it."""
@@ -843,8 +842,7 @@ class TestOFFPartialCharge:
         assert uncharged_mol.partial_charges.units == "elementary_charge"
 
     @pytest.mark.skipif(
-        not HAS_NAGL or HAS_OPENEYE,
-        reason="NAGL is not available or oechem is installed"
+        not HAS_NAGL or HAS_OPENEYE, reason="NAGL is not available or oechem is installed"
     )
     def test_no_production_nagl(self, uncharged_mol):
         """Cleanly handle the case where a NAGL model isn't found."""
@@ -981,8 +979,7 @@ class TestOFFPartialCharge:
             )
 
     @pytest.mark.skipif(
-        HAS_OPENEYE,
-        reason="NAGL does not work with OpenEye when using the rdkit backend"
+        HAS_OPENEYE, reason="NAGL does not work with OpenEye when using the rdkit backend"
     )
     def test_nagl_import_error(self, monkeypatch, uncharged_mol):
         monkeypatch.setattr(

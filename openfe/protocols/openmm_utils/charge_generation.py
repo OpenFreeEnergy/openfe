@@ -404,7 +404,7 @@ def assign_offmol_partial_charges(
         raise ImportError(errmsg)
 
     # Issue 1760
-    if HAS_OPENEYE and method.lower () == "nagl":
+    if HAS_OPENEYE and method.lower() == "nagl":
         if toolkit_backend.lower() != "openeye":
             errmsg = "OpenEye toolkit is installed but not used in the OpenFF toolkit registry backend. This is not possible with NAGL charges."
             raise ValueError(errmsg)
