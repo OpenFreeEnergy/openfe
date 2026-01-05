@@ -83,8 +83,8 @@ def test_openmm_run_engine(
         unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
-        checkpoint = pur.outputs["last_checkpoint"]
-        assert checkpoint == f"{pur.outputs['simtype']}_checkpoint.nc"
+        checkpoint = pur.outputs["checkpoint"]
+        assert checkpoint == unit_shared / f"{pur.outputs['simtype']}_checkpoint.nc"
         assert (unit_shared / checkpoint).exists()
         nc = pur.outputs["nc"]
         assert nc == unit_shared / f"{pur.outputs['simtype']}.nc"
