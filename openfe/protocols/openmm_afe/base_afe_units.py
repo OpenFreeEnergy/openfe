@@ -1514,7 +1514,6 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         checkpoint = simulation_results.outputs["checkpoint"]
   
         outputs = self.run(
-            pdb_file=pdb_file,
             trajectory=trajectory,
             checkpoint=checkpoint,
             scratch_basepath=ctx.scratch,
