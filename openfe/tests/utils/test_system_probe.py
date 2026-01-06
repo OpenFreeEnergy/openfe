@@ -9,9 +9,9 @@ from unittest.mock import Mock, patch
 import pytest
 
 try:
-    from psutil._common import sdiskusage
-except ImportError:
     from psutil._ntuples import sdiskusage
+except ImportError:
+    from psutil._common import sdiskusage
 
 
 from openfe.utils.system_probe import (
