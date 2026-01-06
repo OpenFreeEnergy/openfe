@@ -53,7 +53,6 @@ from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity, unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmmtools import multistate
-from rdkit import Chem
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -115,161 +114,6 @@ def _get_resname(off_mol) -> str:
     if len(names) > 1:
         raise ValueError("We assume single residue")
     return names[0]
-
-
-def _get_alchemical_charge_difference(
-    mapping: LigandAtomMapping,
-    nonbonded_method: str,
-    explicit_charge_correction: bool,
-    solvent_component: SolventComponent,
-) -> int:
-    """
-    Checks and returns the difference in formal charge between state A and B.
-
-    Raises
-    ------
-    ValueError
-      * If an explicit charge correction is attempted and the
-        nonbonded method is not PME.
-      * If the absolute charge difference is greater than one
-        and an explicit charge correction is attempted.
-    UserWarning
-      If there is any charge difference.
-
-    Parameters
-    ----------
-    mapping : dict[str, ComponentMapping]
-      Dictionary of mappings between transforming components.
-    nonbonded_method : str
-      The OpenMM nonbonded method used for the simulation.
-    explicit_charge_correction : bool
-      Whether or not to use an explicit charge correction.
-    solvent_component : openfe.SolventComponent
-      The SolventComponent of the simulation.
-
-    Returns
-    -------
-    int
-      The formal charge difference between states A and B.
-      This is defined as sum(charge state A) - sum(charge state B)
-    """
-
-    difference = mapping.get_alchemical_charge_difference()
-
-    if abs(difference) > 0:
-        if explicit_charge_correction:
-            if nonbonded_method.lower() != "pme":
-                errmsg = "Explicit charge correction when not using PME is not currently supported."
-                raise ValueError(errmsg)
-            if abs(difference) > 1:
-                errmsg = (
-                    f"A charge difference of {difference} is observed "
-                    "between the end states and an explicit charge  "
-                    "correction has been requested. Unfortunately "
-                    "only absolute differences of 1 are supported."
-                )
-                raise ValueError(errmsg)
-
-            ion = {-1: solvent_component.positive_ion, 1: solvent_component.negative_ion}[
-                difference
-            ]
-            wmsg = (
-                f"A charge difference of {difference} is observed "
-                "between the end states. This will be addressed by "
-                f"transforming a water into a {ion} ion"
-            )
-            logger.warning(wmsg)
-            warnings.warn(wmsg)
-        else:
-            wmsg = (
-                f"A charge difference of {difference} is observed "
-                "between the end states. No charge correction has "
-                "been requested, please account for this in your "
-                "final results."
-            )
-            logger.warning(wmsg)
-            warnings.warn(wmsg)
-
-    return difference
-
-
-def _validate_alchemical_components(
-    alchemical_components: dict[str, list[Component]],
-    mapping: Optional[Union[ComponentMapping, list[ComponentMapping]]],
-):
-    """
-    Checks that the alchemical components are suitable for the RFE protocol.
-
-    Specifically we check:
-      1. That all alchemical components are mapped.
-      2. That all alchemical components are SmallMoleculeComponents.
-      3. If the mappings involves element changes in core atoms
-
-    Parameters
-    ----------
-    alchemical_components : dict[str, list[Component]]
-      Dictionary contatining the alchemical components for
-      states A and B.
-    mapping : Optional[Union[ComponentMapping, list[ComponentMapping]]]
-      all mappings between transforming components.
-
-    Raises
-    ------
-    ValueError
-      * If there are more than one mapping or mapping is None
-      * If there are any unmapped alchemical components.
-      * If there are any alchemical components that are not
-        SmallMoleculeComponents.
-    UserWarning
-      * Mappings which involve element changes in core atoms
-    """
-    if isinstance(mapping, ComponentMapping):
-        mapping = [mapping]
-    # Check mapping
-    # For now we only allow for a single mapping, this will likely change
-    if mapping is None or len(mapping) != 1:
-        errmsg = "A single LigandAtomMapping is expected for this Protocol"
-        raise ValueError(errmsg)
-
-    # Check that all alchemical components are mapped & small molecules
-    mapped = {
-        "stateA": [m.componentA for m in mapping],
-        "stateB": [m.componentB for m in mapping],
-    }
-
-    for idx in ["stateA", "stateB"]:
-        if len(alchemical_components[idx]) != len(mapped[idx]):
-            errmsg = f"missing alchemical components in {idx}"
-            raise ValueError(errmsg)
-        for comp in alchemical_components[idx]:
-            if comp not in mapped[idx]:
-                raise ValueError(f"Unmapped alchemical component {comp}")
-            if not isinstance(comp, SmallMoleculeComponent):  # pragma: no-cover
-                errmsg = (
-                    "Transformations involving non "
-                    "SmallMoleculeComponent species {comp} "
-                    "are not currently supported"
-                )
-                raise ValueError(errmsg)
-
-    # Validate element changes in mappings
-    for m in mapping:
-        molA = m.componentA.to_rdkit()
-        molB = m.componentB.to_rdkit()
-        for i, j in m.componentA_to_componentB.items():
-            atomA = molA.GetAtomWithIdx(i)
-            atomB = molB.GetAtomWithIdx(j)
-            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
-                wmsg = (
-                    f"Element change in mapping between atoms "
-                    f"Ligand A: {i} (element {atomA.GetAtomicNum()}) and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()})\n"
-                    "No mass scaling is attempted in the hybrid topology, "
-                    "the average mass of the two atoms will be used in the "
-                    "simulation"
-                )
-                logger.warning(wmsg)
-                warnings.warn(wmsg)  # TODO: remove this once logging is fixed
 
 
 class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
@@ -612,21 +456,337 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         return protocol_settings
 
-    def _create(
+    @staticmethod
+    def _validate_endstates(
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+    ) -> None:
+        """
+        Validates the end states for the RFE protocol.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+          The chemical system of end state A.
+        stateB : ChemicalSystem
+          The chemical system of end state B.
+
+        Raises
+        ------
+        ValueError
+          * If either state contains more than one unique Component.
+          * If unique components are not SmallMoleculeComponents.
+        """
+        # Get the difference in Components between each state
+        diff = stateA.component_diff(stateB)
+
+        for i, entry in enumerate(diff):
+            state_label = "A" if i == 0 else "B"
+
+            # Check that there is only one unique Component in each state
+            if len(entry) != 1:
+                errmsg = (
+                    "Only one alchemical component is allowed per end state. "
+                    f"Found {len(entry)} in state {state_label}."
+                )
+                raise ValueError(errmsg)
+
+            # Check that the unique Component is a SmallMoleculeComponent
+            if not isinstance(entry[0], SmallMoleculeComponent):
+                errmsg = (
+                    f"Alchemical component in state {state_label} is of type "
+                    f"{type(entry[0])}, but only SmallMoleculeComponents "
+                    "transformations are currently supported."
+                )
+                raise ValueError(errmsg)
+
+    @staticmethod
+    def _validate_mapping(
+        mapping: Optional[Union[ComponentMapping, list[ComponentMapping]]],
+        alchemical_components: dict[str, list[Component]],
+    ) -> None:
+        """
+        Validates that the provided mapping(s) are suitable for the RFE protocol.
+
+        Parameters
+        ----------
+        mapping : Optional[Union[ComponentMapping, list[ComponentMapping]]]
+          all mappings between transforming components.
+        alchemical_components : dict[str, list[Component]]
+          Dictionary contatining the alchemical components for
+          states A and B.
+
+        Raises
+        ------
+        ValueError
+          * If there are more than one mapping or mapping is None
+          * If the mapping components are not in the alchemical components.
+        UserWarning
+          * Mappings which involve element changes in core atoms
+        """
+        # if a single mapping is provided, convert to list
+        if isinstance(mapping, ComponentMapping):
+            mapping = [mapping]
+
+        # For now we only support a single mapping
+        if mapping is None or len(mapping) > 1:
+            errmsg = "A single LigandAtomMapping is expected for this Protocol"
+            raise ValueError(errmsg)
+
+        # check that the mapping components are in the alchemical components
+        for m in mapping:
+            for state in ["A", "B"]:
+                comp = getattr(m, f"component{state}")
+                if comp not in alchemical_components[f"state{state}"]:
+                    raise ValueError(
+                        f"Mapping component{state} {comp} not "
+                        f"in alchemical components of state{state}"
+                    )
+
+        # TODO: remove - this is now the default behaviour?
+        # Check for element changes in mappings
+        for m in mapping:
+            molA = m.componentA.to_rdkit()
+            molB = m.componentB.to_rdkit()
+            for i, j in m.componentA_to_componentB.items():
+                atomA = molA.GetAtomWithIdx(i)
+                atomB = molB.GetAtomWithIdx(j)
+                if atomA.GetAtomicNum() != atomB.GetAtomicNum():
+                    wmsg = (
+                        f"Element change in mapping between atoms "
+                        f"Ligand A: {i} (element {atomA.GetAtomicNum()}) and "
+                        f"Ligand B: {j} (element {atomB.GetAtomicNum()})\n"
+                        "No mass scaling is attempted in the hybrid topology, "
+                        "the average mass of the two atoms will be used in the "
+                        "simulation"
+                    )
+                    logger.warning(wmsg)
+                    warnings.warn(wmsg)
+
+    @staticmethod
+    def _validate_smcs(
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+    ) -> None:
+        """
+        Validates the SmallMoleculeComponents.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+          The chemical system of end state A.
+        stateB : ChemicalSystem
+          The chemical system of end state B.
+
+        Raises
+        ------
+        ValueError
+          * If there are isomorphic SmallMoleculeComponents with
+            different charges.
+        """
+        smcs_A = stateA.get_components_of_type(SmallMoleculeComponent)
+        smcs_B = stateB.get_components_of_type(SmallMoleculeComponent)
+        smcs_all = list(set(smcs_A).union(set(smcs_B)))
+        offmols = [m.to_openff() for m in smcs_all]
+
+        def _equal_charges(moli, molj):
+            # Base case, both molecules don't have charges
+            if (moli.partial_charges is None) & (molj.partial_charges is None):
+                return True
+            # If either is None but not the other
+            if (moli.partial_charges is None) ^ (molj.partial_charges is None):
+                return False
+            # Check if the charges are close to each other
+            return np.allclose(moli.partial_charges, molj.partial_charges)
+
+        clashes = []
+
+        for i, moli in enumerate(offmols):
+            for molj in offmols:
+                if moli.is_isomorphic_with(molj):
+                    if not _equal_charges(moli, molj):
+                        clashes.append(smcs_all[i])
+
+        if len(clashes) > 0:
+            errmsg = (
+                "Found SmallMoleculeComponents that are isomorphic "
+                "but with different charges, this is not currently allowed. "
+                f"Affected components: {clashes}"
+            )
+            raise ValueError(errmsg)
+
+    @staticmethod
+    def _validate_charge_difference(
+        mapping: LigandAtomMapping,
+        nonbonded_method: str,
+        explicit_charge_correction: bool,
+        solvent_component: SolventComponent | None,
+    ):
+        """
+        Validates the net charge difference between the two states.
+
+        Parameters
+        ----------
+        mapping : dict[str, ComponentMapping]
+          Dictionary of mappings between transforming components.
+        nonbonded_method : str
+          The OpenMM nonbonded method used for the simulation.
+        explicit_charge_correction : bool
+          Whether or not to use an explicit charge correction.
+        solvent_component : openfe.SolventComponent | None
+          The SolventComponent of the simulation.
+
+        Raises
+        ------
+        ValueError
+          * If an explicit charge correction is attempted and the
+            nonbonded method is not PME.
+          * If the absolute charge difference is greater than one
+            and an explicit charge correction is attempted.
+            * If an explicit charge correction is attempted and there is no solvent present.
+        UserWarning
+          * If there is any charge difference.
+        """
+        difference = mapping.get_alchemical_charge_difference()
+
+        if abs(difference) == 0:
+            return
+
+        if not explicit_charge_correction:
+            wmsg = (
+                f"A charge difference of {difference} is observed "
+                "between the end states. No charge correction has "
+                "been requested, please account for this in your "
+                "final results."
+            )
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+            return
+
+        if solvent_component is None:
+            errmsg = "Cannot use explicit charge correction without solvent"
+            raise ValueError(errmsg)
+
+        # We implicitly check earlier that we have to have pme for a solvated
+        # system, so we only need to check the nonbonded method here
+        if nonbonded_method.lower() != "pme":
+            errmsg = "Explicit charge correction when not using PME is not currently supported."
+            raise ValueError(errmsg)
+
+        if abs(difference) > 1:
+            errmsg = (
+                f"A charge difference of {difference} is observed "
+                "between the end states and an explicit charge  "
+                "correction has been requested. Unfortunately "
+                "only absolute differences of 1 are supported."
+            )
+            raise ValueError(errmsg)
+
+        ion = {-1: solvent_component.positive_ion, 1: solvent_component.negative_ion}[difference]
+
+        wmsg = (
+            f"A charge difference of {difference} is observed "
+            "between the end states. This will be addressed by "
+            f"transforming a water into a {ion} ion"
+        )
+        logger.info(wmsg)
+
+    @staticmethod
+    def _validate_simulation_settings(
+        simulation_settings: MultiStateSimulationSettings,
+        integrator_settings: IntegratorSettings,
+        output_settings: MultiStateOutputSettings,
+    ):
+        """
+        Validate various simulation settings, including but not limited to
+        timestep conversions, and output file write frequencies.
+
+        Parameters
+        ----------
+        simulation_settings : MultiStateSimulationSettings
+          The sampler simulation settings.
+        integrator_settings : IntegratorSettings
+          Settings defining the behaviour of the integrator.
+        output_settings : MultiStateOutputSettings
+          Settings defining the simulation file writing behaviour.
+
+        Raises
+        ------
+        ValueError
+          * If any of of the simulation control settings (e.g.
+            ``equilibration_length`` or ``production_length``)
+            are not divisible by the timestep or the number of
+            steps per iteration.
+          * If the output frequency for position, velocity, or
+            online analysis are not divisible by the time per
+            multistate iteration.
+        """
+
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings=simulation_settings,
+            integrator_settings=integrator_settings,
+        )
+
+        _ = settings_validation.get_simsteps(
+            sim_length=simulation_settings.equilibration_length,
+            timestep=integrator_settings.timestep,
+            mc_steps=steps_per_iteration,
+        )
+
+        _ = settings_validation.get_simsteps(
+            sim_length=simulation_settings.production_length,
+            timestep=integrator_settings.timestep,
+            mc_steps=steps_per_iteration,
+        )
+
+        _ = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
+
+        if output_settings.positions_write_frequency is not None:
+            _ = settings_validation.divmod_time_and_check(
+                numerator=output_settings.positions_write_frequency,
+                denominator=simulation_settings.time_per_iteration,
+                numerator_name="output settings' positions_write_frequency",
+                denominator_name="sampler settings' time_per_iteration",
+            )
+
+        if output_settings.velocities_write_frequency is not None:
+            _ = settings_validation.divmod_time_and_check(
+                numerator=output_settings.velocities_write_frequency,
+                denominator=simulation_settings.time_per_iteration,
+                numerator_name="output settings' velocities_write_frequency",
+                denominator_name="sampler settings' time_per_iteration",
+            )
+
+        _, _ = settings_validation.convert_real_time_analysis_iterations(
+            simulation_settings=simulation_settings,
+        )
+
+    def _validate(
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]],
-        extends: Optional[gufe.ProtocolDAGResult] = None,
-    ) -> list[gufe.ProtocolUnit]:
-        # TODO: Extensions?
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMapping] | None,
+        extends: gufe.ProtocolDAGResult | None = None,
+    ) -> None:
+        # Check we're not trying to extend
         if extends:
-            raise NotImplementedError("Can't extend simulations yet")
+            # This technically should be NotImplementedError
+            # but gufe.Protocol.validate calls `_validate` wrapped around an
+            # except for NotImplementedError, so we can't raise it here
+            raise ValueError("Can't extend simulations yet")
 
-        # Get alchemical components & validate them + mapping
+        # Validate the end states
+        self._validate_endstates(stateA, stateB)
+
+        # Validate the mapping
         alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-        _validate_alchemical_components(alchem_comps, mapping)
-        ligandmapping = mapping[0] if isinstance(mapping, list) else mapping
+        self._validate_mapping(mapping, alchem_comps)
+
+        # Validate the small molecule components
+        self._validate_smcs(stateA, stateB)
 
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
@@ -638,11 +798,68 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Validate protein component
         system_validation.validate_protein(stateA)
 
+        # Validate charge difference
+        # Note: validation depends on the mapping & solvent component checks
+        if stateA.contains(SolventComponent):
+            solv_comp = stateA.get_components_of_type(SolventComponent)[0]
+        else:
+            solv_comp = None
+
+        self._validate_charge_difference(
+            mapping=mapping[0] if isinstance(mapping, list) else mapping,
+            nonbonded_method=self.settings.forcefield_settings.nonbonded_method,
+            explicit_charge_correction=self.settings.alchemical_settings.explicit_charge_correction,
+            solvent_component=solv_comp,
+        )
+
+        # Validate integrator things
+        settings_validation.validate_timestep(
+            self.settings.forcefield_settings.hydrogen_mass,
+            self.settings.integrator_settings.timestep,
+        )
+
+        # Validate simulation & output settings
+        self._validate_simulation_settings(
+            self.settings.simulation_settings,
+            self.settings.integrator_settings,
+            self.settings.output_settings,
+        )
+
+        # Validate alchemical settings
+        # PR #125 temporarily pin lambda schedule spacing to n_replicas
+        if (
+            self.settings.simulation_settings.n_replicas
+            != self.settings.lambda_settings.lambda_windows
+        ):
+            errmsg = (
+                "Number of replicas in ``simulation_settings``: "
+                f"{self.settings.simulation_settings.n_replicas} must equal "
+                "the number of lambda windows in lambda_settings: "
+                f"{self.settings.lambda_settings.lambda_windows}."
+            )
+            raise ValueError(errmsg)
+
+    def _create(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]],
+        extends: Optional[gufe.ProtocolDAGResult] = None,
+    ) -> list[gufe.ProtocolUnit]:
+        # validate inputs
+        self.validate(stateA=stateA, stateB=stateB, mapping=mapping, extends=extends)
+
+        # get alchemical components and mapping
+        alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
+        ligandmapping = mapping[0] if isinstance(mapping, list) else mapping
+
         # actually create and return Units
         Anames = ",".join(c.name for c in alchem_comps["stateA"])
         Bnames = ",".join(c.name for c in alchem_comps["stateB"])
+
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.protocol_repeats
+
         units = [
             RelativeHybridTopologyProtocolUnit(
                 protocol=self,
@@ -816,10 +1033,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         output_settings: MultiStateOutputSettings = protocol_settings.output_settings
         integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
 
-        # is the timestep good for the mass?
-        settings_validation.validate_timestep(
-            forcefield_settings.hydrogen_mass, integrator_settings.timestep
-        )
         # TODO: Also validate various conversions?
         # Convert various time based inputs to steps/iterations
         steps_per_iteration = settings_validation.convert_steps_per_iteration(
@@ -842,12 +1055,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # Get the change difference between the end states
         # and check if the charge correction used is appropriate
-        charge_difference = _get_alchemical_charge_difference(
-            mapping,
-            forcefield_settings.nonbonded_method,
-            alchem_settings.explicit_charge_correction,
-            solvent_comp,
-        )
+        charge_difference = mapping.get_alchemical_charge_difference()
 
         # 1. Create stateA system
         self.logger.info("Parameterizing molecules")
