@@ -535,14 +535,13 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         # check that the mapping components are in the alchemical components
         for m in mapping:
-            if m.componentA not in alchemical_components["stateA"]:
-                raise ValueError(
-                    f"Mapping componentA {m.componentA} not in alchemical components of stateA"
-                )
-            if m.componentB not in alchemical_components["stateB"]:
-                raise ValueError(
-                    f"Mapping componentB {m.componentB} not in alchemical components of stateB"
-                )
+            for state in ["A", "B"]:
+                comp = getattr(m, f"component{state}")
+                if comp not in alchemical_components[f"state{state}"]:
+                    raise ValueError(
+                        f"Mapping component{state} {comp} not "
+                        f"in alchemical components of state{state}"
+                    )
 
         # TODO: remove - this is now the default behaviour?
         # Check for element changes in mappings
