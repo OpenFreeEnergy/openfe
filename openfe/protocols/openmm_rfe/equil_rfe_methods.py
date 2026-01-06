@@ -15,7 +15,6 @@ Acknowledgements
 This Protocol is based on, and leverages components originating from
 the Perses toolkit (https://github.com/choderalab/perses).
 """
-
 from .equil_rfe_settings import RelativeHybridTopologyProtocolSettings
 from .hybridtop_protocol_results import RelativeHybridTopologyProtocolResult
 from .hybridtop_protocols import RelativeHybridTopologyProtocol
