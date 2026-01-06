@@ -610,7 +610,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         if len(clashes) > 0:
             errmsg = (
-                "Found SmallMoleculeComponents are are isomorphic "
+                "Found SmallMoleculeComponents that are isomorphic "
                 "but with different charges, this is not currently allowed. "
                 f"Affected components: {clashes}"
             )
@@ -644,6 +644,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             nonbonded method is not PME.
           * If the absolute charge difference is greater than one
             and an explicit charge correction is attempted.
+            * If an explicit charge correction is attempted and there is no solvent present.
         UserWarning
           * If there is any charge difference.
         """
@@ -664,7 +665,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             return
 
         if solvent_component is None:
-            errmsg = "Cannot use eplicit charge correction without solvent"
+            errmsg = "Cannot use explicit charge correction without solvent"
             raise ValueError(errmsg)
 
         # We implicitly check earlier that we have to have pme for a solvated
@@ -775,7 +776,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Validate the end states
         self._validate_endstates(stateA, stateB)
 
-        # Valildate the mapping
+        # Validate the mapping
         alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
         self._validate_mapping(mapping, alchem_comps)
 
