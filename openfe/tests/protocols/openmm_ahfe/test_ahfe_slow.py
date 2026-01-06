@@ -79,15 +79,31 @@ def test_openmm_run_engine(
     r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
 
     assert r.ok()
+
+    # get the path to the simulation unit shared dict
     for pur in r.protocol_unit_results:
+        if "Simulation" in pur.name:
+            sim_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+            assert sim_shared.exists()
+            assert pathlib.Path(sim_shared).is_dir()
+
+    # check the analysis outputs
+    for pur in r.protocol_unit_results:
+        if "Analysis" not in pur.name:
+            continue
+
         unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
+
+        # Does the checkpoint file exist?
         checkpoint = pur.outputs["checkpoint"]
-        assert checkpoint == unit_shared / f"{pur.outputs['simtype']}_checkpoint.nc"
+        assert checkpoint == sim_shared / f"{pur.outputs['simtype']}_checkpoint.nc"
         assert checkpoint.exists()
-        nc = pur.outputs["nc"]
-        assert nc == unit_shared / f"{pur.outputs['simtype']}.nc"
+
+        # Does the trajectory file exist?
+        nc = pur.outputs["trajectory"]
+        assert nc == sim_shared / f"{pur.outputs['simtype']}.nc"
         assert nc.exists()
 
     # Test results methods that need files present
