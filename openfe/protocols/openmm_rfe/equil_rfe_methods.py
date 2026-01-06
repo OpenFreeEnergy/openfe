@@ -1128,7 +1128,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
-                hybrid_factory=hybrid_factory,
+                hybrid_system=hybrid_factory.hybrid_system,
+                hybrid_positions=hybrid_factory.hybrid_positions,
                 online_analysis_interval=rta_its,
                 online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=rta_min_its,
@@ -1136,7 +1137,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         elif sampler_settings.sampler_method.lower() == "sams":
             sampler = _rfe_utils.multistate.HybridSAMSSampler(
                 mcmc_moves=integrator,
-                hybrid_factory=hybrid_factory,
+                hybrid_system=hybrid_factory.hybrid_system,
+                hybrid_positions=hybrid_factory.hybrid_positions,
                 online_analysis_interval=rta_its,
                 online_analysis_minimum_iterations=rta_min_its,
                 flatness_criteria=sampler_settings.sams_flatness_criteria,
@@ -1145,12 +1147,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         elif sampler_settings.sampler_method.lower() == "independent":
             sampler = _rfe_utils.multistate.HybridMultiStateSampler(
                 mcmc_moves=integrator,
-                hybrid_factory=hybrid_factory,
+                hybrid_system=hybrid_factory.hybrid_system,
+                hybrid_positions=hybrid_factory.hybrid_positions,
                 online_analysis_interval=rta_its,
                 online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=rta_min_its,
             )
-
         else:
             raise AttributeError(f"Unknown sampler {sampler_settings.sampler_method}")
 
@@ -1247,7 +1249,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         if not dry:  # pragma: no-cover
             return {"nc": nc, "last_checkpoint": chk, **analyzer.unit_results_dict}
         else:
-            return {"debug": {"sampler": sampler}}
+            return {"debug": {"sampler": sampler, "hybrid_factory": hybrid_factory}}
 
     @staticmethod
     def structural_analysis(scratch, shared) -> dict:
