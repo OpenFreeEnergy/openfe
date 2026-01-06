@@ -714,7 +714,13 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Raises
         ------
         ValueError
-          * If the
+          * If any of of the simulation control settings (e.g.
+            ``equilibration_length`` or ``production_length``)
+            are not divisible by the timestep or the number of
+            steps per iteration.
+          * If the output frequency for position, velocity, or
+            online analysis are not divisible by the time per
+            multistate iteration.
         """
 
         steps_per_iteration = settings_validation.convert_steps_per_iteration(
