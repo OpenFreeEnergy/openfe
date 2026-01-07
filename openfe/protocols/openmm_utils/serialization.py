@@ -76,7 +76,7 @@ def make_vec3_box(dimensions: NanometerArrayQuantity) -> Vec3:
 
     Parameters
     ----------
-    dimensions : openff.units.Quantity
+    dimensions : gufe.settings.typing.NanometerArrayQuantity
       United array to turn to Vec3 format.
 
     Returns

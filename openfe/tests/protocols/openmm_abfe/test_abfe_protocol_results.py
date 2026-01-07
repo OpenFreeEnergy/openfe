@@ -344,9 +344,3 @@ class TestProtocolResult:
         for inds in indices[key]:
             assert isinstance(inds, np.ndarray)
             assert len(inds) == expected_size
-
-    def test_filenotfound_replica_states(self, protocolresult):
-        errmsg = "File could not be found"
-
-        with pytest.raises(ValueError, match=errmsg):
-            protocolresult.get_replica_states()

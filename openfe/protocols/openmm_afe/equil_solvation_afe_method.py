@@ -462,7 +462,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             },
         }
 
-        protocol_units = {"solvent": [], "vacuum": []}
+        protocol_units: dict[str, list[gufe.ProtocolUnit]] = {"solvent": [], "vacuum": []}
 
         for phase in ["solvent", "vacuum"]:
             for i in range(self.settings.protocol_repeats):

@@ -79,7 +79,7 @@ class VacuumSettingsMixin:
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
         """
-        prot_settings = self._inputs["protocol"].settings
+        prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         settings = {}
         settings["forcefield_settings"] = prot_settings.vacuum_forcefield_settings
@@ -176,7 +176,7 @@ class SolventSettingsMixin:
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
         """
-        prot_settings = self._inputs["protocol"].settings
+        prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         settings = {}
         settings["forcefield_settings"] = prot_settings.solvent_forcefield_settings

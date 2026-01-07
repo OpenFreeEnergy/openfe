@@ -445,7 +445,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             },
         }
 
-        protocol_units = {"solvent": [], "complex": []}
+        protocol_units: dict[str, list[gufe.ProtocolUnit]] = {"solvent": [], "complex": []}
 
         for phase in ["solvent", "complex"]:
             for i in range(self.settings.protocol_repeats):
