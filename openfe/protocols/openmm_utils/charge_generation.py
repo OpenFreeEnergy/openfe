@@ -403,6 +403,12 @@ def assign_offmol_partial_charges(
         errmsg = "OpenEye is not available and cannot be selected as a backend"
         raise ImportError(errmsg)
 
+    # Issue 1760
+    if HAS_OPENEYE and method.lower() == "nagl":
+        if toolkit_backend.lower() != "openeye":
+            errmsg = "OpenEye toolkit is installed but not used in the OpenFF toolkit registry backend. This is not possible with NAGL charges."
+            raise ValueError(errmsg)
+
     toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]])
 
     # We make a copy of the molecule since we're going to modify conformers
