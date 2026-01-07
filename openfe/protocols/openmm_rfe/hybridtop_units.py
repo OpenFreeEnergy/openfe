@@ -522,8 +522,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {smc: offmol for smc, offmol in smols.items() if state.contains(smc)}
 
         states_inputs = {
-            "A": {"state": stateA, "mols": _filter_mols(small_mols, stateA)},
-            "B": {"state": stateB, "mols": _filter_mols(small_mols, stateB)},
+            "A": {"state": stateA, "mols": _filter_small_mols(small_mols, stateA)},
+            "B": {"state": stateB, "mols": _filter_small_mols(small_mols, stateB)},
         }
 
         # Everything involving systemgenerator handling has a risk of
