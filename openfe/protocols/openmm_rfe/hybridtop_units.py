@@ -484,7 +484,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         ----------
         stateA : ChemicalSystem
           ChemicalSystem defining end state A.
-        stateB : ChmiecalSysstem
+        stateB : ChemicalSystem
           ChemicalSystem defining end state B.
         mapping : LigandAtomMapping
           The mapping for alchemical components between state A and B.
@@ -494,7 +494,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
           The common ProteinComponent between the end states, if there is is one.
         solvent_component : SolventComponent | None
           The common SolventComponent between the end states, if there is one.
-        small_mols : dict[SmallMoleculeCOmponent, openff.toolkit.Molecule]
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           The small molecules for both end states.
 
         Returns
@@ -774,7 +774,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # Validate for known issue when dealing with virtual sites
-        # and mutltistate simulations
+        # and multistate simulations
         if not integrator_settings.reassign_velocities:
             for particle_idx in range(system.getNumParticles()):
                 if system.isVirtualSite(particle_idx):
@@ -788,7 +788,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_reporter(
-        storage_path: pathlib.Path
+        storage_path: pathlib.Path,
         selection_indices: npt.NDArray,
         output_settings: MultiStateOutputSettings,
         simulation_settings: MultiStateSimulationSettings,
@@ -807,7 +807,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         simulation_settings : MultiStateSimulationSettings
           Settings defining out the simulation should be run.
         """
-        nc = self.shared_basepath / output_settings.output_filename
+        nc = storage_path / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
 
         if output_settings.positions_write_frequency is not None:
@@ -1161,14 +1161,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             restrict_cpu_count=restrict_cpu,
         )
 
-        try:
-            # Get the integrator
-            integrator = self._get_integrator(
-                integrator_settings=settings["integrator_settings"],
-                simulation_settings=settings["simulation_settings"],
-                system=hybrid_system,
-            )
+        # Get the integrator
+        integrator = self._get_integrator(
+            integrator_settings=settings["integrator_settings"],
+            simulation_settings=settings["simulation_settings"],
+            system=hybrid_system,
+        )
 
+        try:
             # get the reporter
             reporter = self._get_reporter(
                 storage_path=self.shared_basepath,

@@ -6,9 +6,13 @@ import sys
 from collections import namedtuple
 from unittest.mock import Mock, patch
 
-import psutil
 import pytest
-from psutil._common import sdiskusage
+
+try:
+    from psutil._ntuples import sdiskusage
+except ImportError:
+    from psutil._common import sdiskusage
+
 
 from openfe.utils.system_probe import (
     _get_disk_usage,
