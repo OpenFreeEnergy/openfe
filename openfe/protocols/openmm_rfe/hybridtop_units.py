@@ -299,7 +299,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # TODO: revisit this once the SystemGenerator update happens
             # and we start loading the whole protein into OpenFF Topologies
 
-            # First deduplicate isomoprhic molecules, if there are any
+            # First deduplicate isomorphic molecules, if there are any
             if openff_molecules is None:
                 return system_generator
 
@@ -501,7 +501,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
           The common ProteinComponent between the end states, if there is is one.
         solvent_component : SolventComponent | None
           The common SolventComponent between the end states, if there is one.
-        small_mols : dict[SmallMoleculeCOmponent, openff.toolkit.Molecule]
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           The small molecules for both end states.
 
         Returns
@@ -776,7 +776,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # Validate for known issue when dealing with virtual sites
-        # and mutltistate simulations
+        # and multistate simulations
         if not integrator_settings.reassign_velocities:
             for particle_idx in range(system.getNumParticles()):
                 if system.isVirtualSite(particle_idx):
