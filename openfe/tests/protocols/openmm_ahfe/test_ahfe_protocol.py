@@ -1,12 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import itertools
-import json
 import sys
 from math import sqrt
 from unittest import mock
 
-import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
@@ -18,7 +15,6 @@ from openmm import (
     CustomNonbondedForce,
     HarmonicAngleForce,
     HarmonicBondForce,
-    MonteCarloBarostat,
     NonbondedForce,
     PeriodicTorsionForce,
 )
@@ -29,15 +25,14 @@ from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteSolvationProtocol,
-    AbsoluteSolvationSolventUnit,
-    AbsoluteSolvationVacuumUnit,
 )
-from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
     HAS_OPENEYE,
 )
+
+from .utils import UNIT_TYPES, _get_units
 
 
 @pytest.fixture()
@@ -68,6 +63,40 @@ def test_serialize_protocol(default_settings):
     assert protocol == ret
 
 
+def test_repeat_units(benzene_system):
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+        settings=openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    )
+
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=ChemicalSystem({"solvent": SolventComponent()}),
+        mapping=None,
+    )
+
+    # 6 protocol unit, 3 per repeat
+    pus = list(dag.protocol_units)
+    assert len(pus) == 18
+
+    # Check info for each repeat
+    for phase in ["solvent", "vacuum"]:
+        setup = _get_units(pus, UNIT_TYPES[phase]["setup"])
+        sim = _get_units(pus, UNIT_TYPES[phase]["sim"])
+        analysis = _get_units(pus, UNIT_TYPES[phase]["analysis"])
+
+        # Should be 3 of each set
+        assert len(setup) == len(sim) == len(analysis) == 3
+
+        # Check that the dag chain is correct
+        for analysis_pu in analysis:
+            repeat_id = analysis_pu.inputs["repeat_id"]
+            setup_pu = [s for s in setup if s.inputs["repeat_id"] == repeat_id][0]
+            sim_pu = [s for s in sim if s.inputs["repeat_id"] == repeat_id][0]
+            assert analysis_pu.inputs["setup_results"] == setup_pu
+            assert analysis_pu.inputs["simulation_results"] == sim_pu
+            assert sim_pu.inputs["setup_results"] == setup_pu
+
+
 def test_create_independent_repeat_ids(benzene_system):
     protocol = openmm_afe.AbsoluteSolvationProtocol(
         settings=openmm_afe.AbsoluteSolvationProtocol.default_settings()
@@ -88,9 +117,12 @@ def test_create_independent_repeat_ids(benzene_system):
     repeat_ids = set()
 
     for dag in dags:
+        # 3 sets of 6 units
+        assert len(list(dag.protocol_units)) == 18
         for u in dag.protocol_units:
             repeat_ids.add(u.inputs["repeat_id"])
 
+    # squashed by repeat_id, that's 2 sets of 6
     assert len(repeat_ids) == 12
 
 
@@ -143,7 +175,7 @@ def _verify_alchemical_sterics_force_parameters(
 
 
 @pytest.mark.parametrize("method", ["repex", "sams", "independent", "InDePeNdENT"])
-def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpdir):
+def test_setup_dry_sim_vac_benzene(benzene_system, method, protocol_dry_settings, tmpdir):
     protocol_dry_settings.vacuum_simulation_settings.sampler_method = method
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
@@ -161,21 +193,32 @@ def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpd
     )
     prot_units = list(dag.protocol_units)
 
-    assert len(prot_units) == 2
+    assert len(prot_units) == 6
 
-    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)]
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
+    vac_setup_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
+    vac_sim_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["sim"])
 
-    assert len(vac_unit) == 1
-    assert len(sol_unit) == 1
+    assert len(vac_setup_unit) == 1
+    assert len(vac_sim_unit) == 1
 
     with tmpdir.as_cwd():
-        debug = vac_unit[0].run(dry=True)["debug"]
-        vac_sampler = debug["sampler"]
-        assert not vac_sampler.is_periodic
+        setup_results = vac_setup_unit[0].run(dry=True)
+        sim_results = vac_sim_unit[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+        )
+
+        sampler = sim_results["sampler"]
+        assert isinstance(sampler, MultiStateSampler)
+        assert not sampler.is_periodic
+        assert sampler._thermodynamic_states[0].barostat is None
 
         # standard system
-        system = debug["system"]
+        system = setup_results["standard_system"]
         assert system.getNumParticles() == 12
         assert len(system.getForces()) == 4
         _assert_num_forces(system, NonbondedForce, 1)
@@ -184,7 +227,7 @@ def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpd
         _assert_num_forces(system, PeriodicTorsionForce, 1)
 
         # alchemical system
-        alchem_system = debug["alchem_system"]
+        alchem_system = setup_results["alchem_system"]
         assert alchem_system.getNumParticles() == 12
         assert len(alchem_system.getForces()) == 12
         _assert_num_forces(alchem_system, NonbondedForce, 1)
@@ -212,7 +255,7 @@ def test_dry_run_vac_benzene(benzene_system, method, protocol_dry_settings, tmpd
         [0.35, 2.2, 1.5, 0, False],
     ],
 )
-def test_alchemical_settings_dry_run_vacuum(
+def test_alchemical_settings_setup_vacuum(
     alpha, a, b, c, correction, benzene_system, protocol_dry_settings, tmpdir
 ):
     """
@@ -238,18 +281,18 @@ def test_alchemical_settings_dry_run_vacuum(
     )
     prot_units = list(dag.protocol_units)
 
-    assert len(prot_units) == 2
+    assert len(prot_units) == 6
 
-    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)]
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
+    vac_setup_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
+    vac_sim_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["sim"])
 
-    assert len(vac_unit) == 1
-    assert len(sol_unit) == 1
+    assert len(vac_setup_unit) == 1
+    assert len(vac_sim_unit) == 1
 
     with tmpdir.as_cwd():
-        debug = vac_unit[0].run(dry=True)["debug"]
+        results = vac_setup_unit[0].run(dry=True)
 
-        alchem_system = debug["alchem_system"]
+        alchem_system = results["alchem_system"]
         _assert_num_forces(alchem_system, NonbondedForce, 1)
         _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
         _assert_num_forces(alchem_system, CustomBondForce, 4)
@@ -291,16 +334,16 @@ def test_confgen_fail_AFE(benzene_system, protocol_dry_settings, tmpdir):
         mapping=None,
     )
     prot_units = list(dag.protocol_units)
-    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)]
+    vac_setup_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
 
     with tmpdir.as_cwd():
         with mock.patch("rdkit.Chem.AllChem.EmbedMultipleConfs", return_value=0):
-            vac_sampler = vac_unit[0].run(dry=True)["debug"]["sampler"]
+            # If this worked, the system will have been built
+            system = vac_setup_unit[0].run(dry=True)["alchem_system"]
+            assert system
 
-            assert vac_sampler
 
-
-def test_dry_run_solv_benzene(benzene_system, protocol_dry_settings, tmpdir):
+def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmpdir):
     protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
@@ -318,19 +361,25 @@ def test_dry_run_solv_benzene(benzene_system, protocol_dry_settings, tmpdir):
     )
     prot_units = list(dag.protocol_units)
 
-    assert len(prot_units) == 2
+    sol_setup_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
+    sol_sim_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["sim"])
 
-    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)]
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
-
-    assert len(vac_unit) == 1
-    assert len(sol_unit) == 1
+    assert len(sol_setup_unit) == len(sol_sim_unit) == 1
 
     with tmpdir.as_cwd():
-        sol_sampler = sol_unit[0].run(dry=True)["debug"]["sampler"]
+        setup_results = sol_setup_unit[0].run(dry=True)
+        sim_results = sol_sim_unit[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+        )
+        sol_sampler = sim_results["sampler"]
         assert sol_sampler.is_periodic
 
-        pdb = mdt.load_pdb("hybrid_system.pdb")
+        pdb = mdt.load_pdb(setup_results["pdb_structure"])
         assert pdb.n_atoms == 12
 
 
@@ -363,14 +412,23 @@ def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
     )
     prot_units = list(dag.protocol_units)
 
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
+    sol_setup_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
+    sol_sim_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["sim"])
 
     with tmpdir.as_cwd():
+        setup_results = sol_setup_unit[0].run(dry=True)
         with pytest.raises(ValueError, match="are unstable"):
-            _ = sol_unit[0].run(dry=True)
+            sim_results = sol_sim_unit[0].run(
+                system=setup_results["alchem_system"],
+                positions=setup_results["debug_positions"],
+                selection_indices=setup_results["selection_indices"],
+                box_vectors=setup_results["box_vectors"],
+                alchemical_restraints=False,
+                dry=True,
+            )
 
 
-def test_dry_run_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdir):
+def test_setup_dry_sim_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdir):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
@@ -399,10 +457,20 @@ def test_dry_run_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdi
     )
     prot_units = list(dag.protocol_units)
 
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
+    sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
+    sol_sim_units = _get_units(prot_units, UNIT_TYPES["solvent"]["sim"])
 
     with tmpdir.as_cwd():
-        sol_sampler = sol_unit[0].run(dry=True)["debug"]["sampler"]
+        setup_results = sol_setup_units[0].run(dry=True)
+        sim_results = sol_sim_units[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+        )
+        sol_sampler = sim_results["sampler"]
         assert sol_sampler.is_periodic
 
 
@@ -425,11 +493,11 @@ def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tm
     )
     prot_units = list(dag.protocol_units)
 
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)]
+    sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
 
     with tmpdir.as_cwd():
-        sampler = sol_unit[0].run(dry=True)["debug"]["sampler"]
-        system = sampler._thermodynamic_states[0].system
+        results = sol_setup_units[0].run(dry=True)
+        system = results["alchem_system"]
 
         vectors = system.getDefaultPeriodicBoxVectors()
         width = float(from_openmm(vectors)[0][0].to("nanometer").m)
@@ -486,13 +554,13 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
     prot_units = list(dag.protocol_units)
 
-    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)][0]
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationSolventUnit)][0]
+    vac_setup_units = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
+    sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
 
     # check sol_unit charges
     with tmpdir.as_cwd():
-        sampler = sol_unit.run(dry=True)["debug"]["sampler"]
-        system = sampler._thermodynamic_states[0].system
+        results = sol_setup_units[0].run(dry=True)
+        system = results["alchem_system"]
         nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
 
         assert len(nonbond) == 1
@@ -506,8 +574,8 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
 
     # check vac_unit charges
     with tmpdir.as_cwd():
-        sampler = vac_unit.run(dry=True)["debug"]["sampler"]
-        system = sampler._thermodynamic_states[0].system
+        results = vac_setup_units[0].run(dry=True)
+        system = results["alchem_system"]
         nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
         assert len(nonbond) == 4
 
@@ -572,12 +640,12 @@ def test_dry_run_charge_backends(
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
     prot_units = list(dag.protocol_units)
 
-    vac_unit = [u for u in prot_units if isinstance(u, AbsoluteSolvationVacuumUnit)][0]
+    vac_setup_units = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
 
     # check vac_unit charges
     with tmpdir.as_cwd():
-        sampler = vac_unit.run(dry=True)["debug"]["sampler"]
-        system = sampler._thermodynamic_states[0].system
+        results = vac_setup_units[0].run(dry=True)
+        system = results["alchem_system"]
         nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
         assert len(nonbond) == 4
 
@@ -607,187 +675,6 @@ def benzene_solvation_dag(benzene_system, protocol_dry_settings):
     stateB = ChemicalSystem({"solvent": SolventComponent()})
 
     return protocol.create(stateA=stateA, stateB=stateB, mapping=None)
-
-
-def test_unit_tagging(benzene_solvation_dag, tmpdir):
-    # test that executing the units includes correct gen and repeat info
-
-    dag_units = benzene_solvation_dag.protocol_units
-
-    with (
-        mock.patch(
-            "openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationSolventUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationVacuumUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
-        ),
-    ):
-        results = []
-        for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
-            results.append(ret)
-
-    solv_repeats = set()
-    vac_repeats = set()
-    for ret in results:
-        assert isinstance(ret, gufe.ProtocolUnitResult)
-        assert ret.outputs["generation"] == 0
-        if ret.outputs["simtype"] == "vacuum":
-            vac_repeats.add(ret.outputs["repeat_id"])
-        else:
-            solv_repeats.add(ret.outputs["repeat_id"])
-    # Repeat ids are random ints so just check their lengths
-    assert len(vac_repeats) == len(solv_repeats) == 3
-
-
-def test_gather(benzene_solvation_dag, tmpdir):
-    # check that .gather behaves as expected
-    with (
-        mock.patch(
-            "openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationSolventUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationVacuumUnit.run",
-            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
-        ),
-    ):
-        dagres = gufe.protocols.execute_DAG(
-            benzene_solvation_dag,
-            shared_basedir=tmpdir,
-            scratch_basedir=tmpdir,
-            keep_shared=True,
-        )
-
-    protocol = AbsoluteSolvationProtocol(
-        settings=AbsoluteSolvationProtocol.default_settings(),
-    )
-
-    res = protocol.gather([dagres])
-
-    assert isinstance(res, openmm_afe.AbsoluteSolvationProtocolResult)
-
-
-class TestProtocolResult:
-    @pytest.fixture()
-    def protocolresult(self, afe_solv_transformation_json):
-        d = json.loads(afe_solv_transformation_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
-
-        pr = openfe.ProtocolResult.from_dict(d["protocol_result"])
-
-        return pr
-
-    def test_reload_protocol_result(self, afe_solv_transformation_json):
-        d = json.loads(afe_solv_transformation_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
-
-        pr = openmm_afe.AbsoluteSolvationProtocolResult.from_dict(d["protocol_result"])
-
-        assert pr
-
-    def test_get_estimate(self, protocolresult):
-        est = protocolresult.get_estimate()
-
-        assert est
-        assert est.m == pytest.approx(-2.47, abs=0.5)
-        assert isinstance(est, offunit.Quantity)
-        assert est.is_compatible_with(offunit.kilojoule_per_mole)
-
-    def test_get_uncertainty(self, protocolresult):
-        est = protocolresult.get_uncertainty()
-
-        assert est
-        assert est.m == pytest.approx(0.2, abs=0.2)
-        assert isinstance(est, offunit.Quantity)
-        assert est.is_compatible_with(offunit.kilojoule_per_mole)
-
-    def test_get_individual(self, protocolresult):
-        inds = protocolresult.get_individual_estimates()
-
-        assert isinstance(inds, dict)
-        assert isinstance(inds["solvent"], list)
-        assert isinstance(inds["vacuum"], list)
-        assert len(inds["solvent"]) == len(inds["vacuum"]) == 3
-        for e, u in itertools.chain(inds["solvent"], inds["vacuum"]):
-            assert e.is_compatible_with(offunit.kilojoule_per_mole)
-            assert u.is_compatible_with(offunit.kilojoule_per_mole)
-
-    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
-    def test_get_forwards_etc(self, key, protocolresult):
-        far = protocolresult.get_forward_and_reverse_energy_analysis()
-
-        assert isinstance(far, dict)
-        assert isinstance(far[key], list)
-        far1 = far[key][0]
-        assert isinstance(far1, dict)
-
-        for k in ["fractions", "forward_DGs", "forward_dDGs", "reverse_DGs", "reverse_dDGs"]:
-            assert k in far1
-
-            if k == "fractions":
-                assert isinstance(far1[k], np.ndarray)
-
-    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
-    def test_get_frwd_reverse_none_return(self, key, protocolresult):
-        # fetch the first result of type key
-        data = [i for i in protocolresult.data[key].values()][0][0]
-        # set the output to None
-        data.outputs["forward_and_reverse_energies"] = None
-
-        # now fetch the analysis results and expect a warning
-        wmsg = f"were found in the forward and reverse dictionaries of the repeats of the {key}"
-        with pytest.warns(UserWarning, match=wmsg):
-            protocolresult.get_forward_and_reverse_energy_analysis()
-
-    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
-    def test_get_overlap_matrices(self, key, protocolresult):
-        ovp = protocolresult.get_overlap_matrices()
-
-        assert isinstance(ovp, dict)
-        assert isinstance(ovp[key], list)
-        assert len(ovp[key]) == 3
-
-        ovp1 = ovp[key][0]
-        assert isinstance(ovp1["matrix"], np.ndarray)
-        assert ovp1["matrix"].shape == (14, 14)
-
-    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
-    def test_get_replica_transition_statistics(self, key, protocolresult):
-        rpx = protocolresult.get_replica_transition_statistics()
-
-        assert isinstance(rpx, dict)
-        assert isinstance(rpx[key], list)
-        assert len(rpx[key]) == 3
-        rpx1 = rpx[key][0]
-        assert "eigenvalues" in rpx1
-        assert "matrix" in rpx1
-        assert rpx1["eigenvalues"].shape == (14,)
-        assert rpx1["matrix"].shape == (14, 14)
-
-    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
-    def test_equilibration_iterations(self, key, protocolresult):
-        eq = protocolresult.equilibration_iterations()
-
-        assert isinstance(eq, dict)
-        assert isinstance(eq[key], list)
-        assert len(eq[key]) == 3
-        assert all(isinstance(v, float) for v in eq[key])
-
-    @pytest.mark.parametrize("key", ["solvent", "vacuum"])
-    def test_production_iterations(self, key, protocolresult):
-        prod = protocolresult.production_iterations()
-
-        assert isinstance(prod, dict)
-        assert isinstance(prod[key], list)
-        assert len(prod[key]) == 3
-        assert all(isinstance(v, float) for v in prod[key])
-
-    def test_filenotfound_replica_states(self, protocolresult):
-        errmsg = "File could not be found"
-
-        with pytest.raises(ValueError, match=errmsg):
-            protocolresult.get_replica_states()
 
 
 @pytest.mark.parametrize(
@@ -821,7 +708,6 @@ def test_dry_run_vacuum_write_frequency(
     stateB = ChemicalSystem({"solvent": SolventComponent()})
 
     # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first solvent unit
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
@@ -829,11 +715,23 @@ def test_dry_run_vacuum_write_frequency(
     )
     prot_units = list(dag.protocol_units)
 
-    assert len(prot_units) == 2
+    assert len(prot_units) == 6
 
-    with tmpdir.as_cwd():
-        for u in prot_units:
-            sampler = u.run(dry=True)["debug"]["sampler"]
+    for phase in ["solvent", "vacuum"]:
+        setup_units = _get_units(prot_units, UNIT_TYPES[phase]["setup"])
+        sim_units = _get_units(prot_units, UNIT_TYPES[phase]["sim"])
+
+        with tmpdir.as_cwd():
+            setup_results = setup_units[0].run(dry=True)
+            sim_results = sim_units[0].run(
+                system=setup_results["alchem_system"],
+                positions=setup_results["debug_positions"],
+                selection_indices=setup_results["selection_indices"],
+                box_vectors=setup_results["box_vectors"],
+                alchemical_restraints=False,
+                dry=True,
+            )
+            sampler = sim_results["sampler"]
             reporter = sampler._reporter
             if positions_write_frequency:
                 assert reporter.position_interval == positions_write_frequency.m
