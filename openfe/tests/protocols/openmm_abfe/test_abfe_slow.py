@@ -11,7 +11,7 @@ from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEY
 
 
 @pytest.mark.integration
-#@pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
+@pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.skipif(not HAS_NAGL, reason="need NAGL")
 @pytest.mark.xfail(
     HAS_OPENEYE and HAS_NAGL,
