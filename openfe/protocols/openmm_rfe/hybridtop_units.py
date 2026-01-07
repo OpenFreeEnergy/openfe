@@ -299,7 +299,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # TODO: revisit this once the SystemGenerator update happens
             # and we start loading the whole protein into OpenFF Topologies
 
-            # First deduplicate isomoprhic molecules
+            # First deduplicate isomoprhic molecules, if there are any
+            if openff_molecules is None:
+                return system_generator
+
             unique_offmols: list[OFFMolecule] = []
             for mol in openff_molecules:
                 unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
