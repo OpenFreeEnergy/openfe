@@ -1159,15 +1159,15 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             gpu_device_index=settings["engine_settings"].gpu_device_index,
             restrict_cpu_count=restrict_cpu,
         )
-
-        try:
-            # Get the integrator
-            integrator = self._get_integrator(
-                integrator_settings=settings["integrator_settings"],
-                simulation_settings=settings["simulation_settings"],
-                system=hybrid_system,
-            )
+ 
+        # Get the integrator
+        integrator = self._get_integrator(
+            integrator_settings=settings["integrator_settings"],
+            simulation_settings=settings["simulation_settings"],
+            system=hybrid_system,
+        )
     
+        try:
             # get the reporter
             reporter = self._get_reporter(
                 storage_path=self.shared_basepath,
@@ -1175,7 +1175,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 output_settings=settings["output_settings"],
                 simulation_settings=settings["simulation_settings"],
             )
-    
+        
             # Get sampler
             sampler = self._get_sampler(
                 system=hybrid_system,
@@ -1189,7 +1189,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 platform=platform,
                 dry=dry,
             )
-    
+        
             unit_results_dict = self._run_simulation(
                 sampler=sampler,
                 reporter=reporter,
@@ -1202,7 +1202,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # close reporter when you're done, prevent
             # file handle clashes
             reporter.close()
-
+    
             # clear GPU contexts
             # TODO: use cache.empty() calls when openmmtools #690 is resolved
             # replace with above
@@ -1213,9 +1213,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # cautiously clear out the global context cache too
             for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
                 del openmmtools.cache.global_context_cache._lru._data[context]
-
+    
             del sampler.sampler_context_cache, sampler.energy_context_cache
-
+    
             if not dry:
                 del integrator, sampler
 
