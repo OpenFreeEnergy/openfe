@@ -23,6 +23,7 @@ Acknowledgements
   `Yank <https://github.com/choderalab/yank>`_.
 
 """
+
 import logging
 import uuid
 import warnings
@@ -60,12 +61,12 @@ from openfe.protocols.openmm_utils import (
 )
 
 from .abfe_units import (
+    ABFEComplexAnalysisUnit,
     ABFEComplexSetupUnit,
     ABFEComplexSimUnit,
-    ABFEComplexAnalysisUnit,
+    ABFESolventAnalysisUnit,
     ABFESolventSetupUnit,
     ABFESolventSimUnit,
-    ABFESolventAnalysisUnit,
 )
 from .afe_protocol_results import AbsoluteBindingProtocolResult
 
@@ -432,25 +433,25 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Get the name of the alchemical species
         alchname = alchem_comps["stateA"][0].name
         unit_classes = {
-            'solvent': {
-                'setup': ABFESolventSetupUnit,
-                'simulation': ABFESolventSimUnit,
-                'analysis': ABFESolventAnalysisUnit,
+            "solvent": {
+                "setup": ABFESolventSetupUnit,
+                "simulation": ABFESolventSimUnit,
+                "analysis": ABFESolventAnalysisUnit,
             },
-            'complex': {
-                'setup': ABFEComplexSetupUnit,
-                'simulation': ABFEComplexSimUnit,
-                'analysis': ABFEComplexAnalysisUnit,
-            }
+            "complex": {
+                "setup": ABFEComplexSetupUnit,
+                "simulation": ABFEComplexSimUnit,
+                "analysis": ABFEComplexAnalysisUnit,
+            },
         }
 
-        protocol_units = {'solvent': [], 'complex': []}
+        protocol_units = {"solvent": [], "complex": []}
 
-        for phase in ['solvent', 'complex']:
+        for phase in ["solvent", "complex"]:
             for i in range(self.settings.protocol_repeats):
                 repeat_id = int(uuid.uuid4())
 
-                setup = unit_classes[phase]['setup'](
+                setup = unit_classes[phase]["setup"](
                     protocol=self,
                     stateA=stateA,
                     stateB=stateB,
@@ -460,7 +461,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     name=f"ABFE Setup: {alchname} {phase} leg: repeat {i} generation 0",
                 )
 
-                simulation = unit_classes[phase]['simulation'](
+                simulation = unit_classes[phase]["simulation"](
                     protocol=self,
                     # only need state A & alchem comps
                     stateA=stateA,
@@ -471,7 +472,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     name=f"ABFE Simulation: {alchname} {phase} leg: repeat {i} generation 0",
                 )
 
-                analysis = unit_classes[phase]['analysis'](
+                analysis = unit_classes[phase]["analysis"](
                     protocol=self,
                     setup_results=setup,
                     simulation_results=simulation,

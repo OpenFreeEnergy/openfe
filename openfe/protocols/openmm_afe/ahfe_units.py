@@ -6,6 +6,7 @@
 This module defines the ProtocolUnits for the
 :class:`AbsoluteSolvationProtocol`.
 """
+
 import logging
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
@@ -14,11 +15,10 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 
 from ..openmm_utils import system_validation
 from .base_afe_units import (
-    BaseAbsoluteSetupUnit,
-    BaseAbsoluteMultiStateSimulationUnit,
     BaseAbsoluteMultiStateAnalysisUnit,
+    BaseAbsoluteMultiStateSimulationUnit,
+    BaseAbsoluteSetupUnit,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -98,12 +98,11 @@ class VacuumSettingsMixin:
         return settings
 
 
-class AHFEVacuumSetupUnit(
-    VacuumComponentsMixin, VacuumSettingsMixin, BaseAbsoluteSetupUnit
-):
+class AHFEVacuumSetupUnit(VacuumComponentsMixin, VacuumSettingsMixin, BaseAbsoluteSetupUnit):
     """
     ProtocolUnit for the vacuum setup phase of an absolute hydration free energy
     """
+
     simtype = "vacuum"
 
 
@@ -113,15 +112,15 @@ class AHFEVacuumSimUnit(
     """
     ProtocolUnit for the vacuum simulation phase of an absolute hydration free energy
     """
+
     simtype = "vacuum"
 
 
-class AHFEVacuumAnalysisUnit(
-    VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
-):
+class AHFEVacuumAnalysisUnit(VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
     """
     ProtocolUnit for the vacuum analysis phase of an absolute hydration free energy
     """
+
     simtype = "vacuum"
 
 
@@ -196,12 +195,11 @@ class SolventSettingsMixin:
         return settings
 
 
-class AHFESolventSetupUnit(
-    SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit
-):
+class AHFESolventSetupUnit(SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit):
     """
     ProtocolUnit for the solvent setup phase of an absolute hydration free energy
     """
+
     simtype = "solvent"
 
 
@@ -211,15 +209,13 @@ class AHFESolventSimUnit(
     """
     ProtocolUnit for the solvent simulation phase of an absolute hydration free energy
     """
+
     simtype = "solvent"
 
 
-class AHFESolventAnalysisUnit(
-    SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
-):
+class AHFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
     """
     ProtocolUnit for the solvent analysis phase of an absolute hydration free energy
     """
+
     simtype = "solvent"
-
-

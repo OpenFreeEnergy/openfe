@@ -43,6 +43,7 @@ from openfe.protocols.openmm_afe.abfe_units import (
     ABFESolventSetupUnit,
     ABFESolventSimUnit,
 )
+
 from .utils import UNIT_TYPES, _get_units
 
 
@@ -107,10 +108,10 @@ def test_repeat_units(benzene_modifications, T4_protein_component):
     assert len(pus) == 18
 
     # Check info for each repeat
-    for phase in ['solvent', 'complex']:
-        setup = _get_units(pus, UNIT_TYPES[phase]['setup'])
-        sim = _get_units(pus, UNIT_TYPES[phase]['sim'])
-        analysis = _get_units(pus, UNIT_TYPES[phase]['analysis'])
+    for phase in ["solvent", "complex"]:
+        setup = _get_units(pus, UNIT_TYPES[phase]["setup"])
+        sim = _get_units(pus, UNIT_TYPES[phase]["sim"])
+        analysis = _get_units(pus, UNIT_TYPES[phase]["analysis"])
 
         # Should be 3 of each set
         assert len(setup) == len(sim) == len(analysis) == 3
@@ -211,19 +212,19 @@ class TestT4LysozymeDryRun:
 
     @pytest.fixture(scope="class")
     def complex_setup_units(self, dag):
-        return _get_units(dag.protocol_units, UNIT_TYPES['complex']['setup'])
+        return _get_units(dag.protocol_units, UNIT_TYPES["complex"]["setup"])
 
     @pytest.fixture(scope="class")
     def complex_sim_units(self, dag):
-        return _get_units(dag.protocol_units, UNIT_TYPES['complex']['sim'])
+        return _get_units(dag.protocol_units, UNIT_TYPES["complex"]["sim"])
 
     @pytest.fixture(scope="class")
     def solvent_setup_units(self, dag):
-        return _get_units(dag.protocol_units, UNIT_TYPES['solvent']['setup'])
+        return _get_units(dag.protocol_units, UNIT_TYPES["solvent"]["setup"])
 
     @pytest.fixture(scope="class")
     def solvent_sim_units(self, dag):
-        return _get_units(dag.protocol_units, UNIT_TYPES['solvent']['sim'])
+        return _get_units(dag.protocol_units, UNIT_TYPES["solvent"]["sim"])
 
     def test_number_of_units(
         self,
@@ -380,9 +381,7 @@ class TestT4LysozymeDryRun:
             positions=positions,
         )
 
-    def test_complex_dry_run(
-        self, complex_setup_units, complex_sim_units, settings, tmpdir
-    ):
+    def test_complex_dry_run(self, complex_setup_units, complex_sim_units, settings, tmpdir):
         with tmpdir.as_cwd():
             setup_results = complex_setup_units[0].run(dry=True, verbose=True)
             sim_results = complex_sim_units[0].run(
@@ -395,9 +394,7 @@ class TestT4LysozymeDryRun:
             )
 
             # Check the sampler
-            self._verify_sampler(
-                sim_results["sampler"], complexed=True, settings=settings
-            )
+            self._verify_sampler(sim_results["sampler"], complexed=True, settings=settings)
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
@@ -423,9 +420,7 @@ class TestT4LysozymeDryRun:
             assert pdb.n_atoms == self.num_all_not_water
 
             # Check energies
-            alchem_region = AlchemicalRegion(
-                alchemical_atoms=setup_results["alchem_indices"]
-            )
+            alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
             self._test_energies(
                 reference_system=setup_results["standard_system"],
                 alchemical_system=setup_results["alchem_system"],
@@ -433,9 +428,7 @@ class TestT4LysozymeDryRun:
                 positions=setup_results["debug_positions"],
             )
 
-    def test_solvent_dry_run(
-            self, solvent_setup_units, solvent_sim_units, settings, tmpdir
-        ):
+    def test_solvent_dry_run(self, solvent_setup_units, solvent_sim_units, settings, tmpdir):
         with tmpdir.as_cwd():
             setup_results = solvent_setup_units[0].run(dry=True, verbose=True)
             sim_results = solvent_sim_units[0].run(
@@ -461,9 +454,7 @@ class TestT4LysozymeDryRun:
             assert expected_indices == setup_results["alchem_indices"]
 
             # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                setup_results["standard_system"], settings
-            )
+            self._assert_expected_nonalchemical_forces(setup_results["standard_system"], settings)
             self._test_cubic_vectors(setup_results["standard_system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
@@ -476,9 +467,7 @@ class TestT4LysozymeDryRun:
             assert pdb.n_atoms == self.num_solvent_atoms
 
             # Check energies
-            alchem_region = AlchemicalRegion(
-                alchemical_atoms=setup_results["alchem_indices"]
-            )
+            alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
 
             self._test_energies(
                 reference_system=setup_results["standard_system"],
@@ -562,12 +551,14 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
 
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 
-    complex_setup_units = _get_units(dag.protocol_units, UNIT_TYPES['complex']['setup'])
+    complex_setup_units = _get_units(dag.protocol_units, UNIT_TYPES["complex"]["setup"])
 
     with tmpdir.as_cwd():
         results = complex_setup_units[0].run(dry=True)
 
-        system_nbf = [f for f in results["standard_system"].getForces() if isinstance(f, NonbondedForce)][0]
+        system_nbf = [
+            f for f in results["standard_system"].getForces() if isinstance(f, NonbondedForce)
+        ][0]
         alchem_system_nbf = [
             f
             for f in results["alchem_system"].getForces()

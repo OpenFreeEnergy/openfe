@@ -147,10 +147,7 @@ class TestT4EnergiesRegression:
 
         dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 
-        complex_units = [
-            u for u in dag.protocol_units
-            if isinstance(u, ABFEComplexSetupUnit)
-        ]
+        complex_units = [u for u in dag.protocol_units if isinstance(u, ABFEComplexSetupUnit)]
 
         with tmpdir.as_cwd():
             results = complex_units[0].run(dry=True)

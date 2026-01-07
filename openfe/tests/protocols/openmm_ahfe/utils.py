@@ -2,26 +2,25 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from openfe.protocols.openmm_afe import (
     AbsoluteSolvationProtocol,
-    AHFESolventSetupUnit,
-    AHFEVacuumSetupUnit,
-    AHFESolventSimUnit,
-    AHFEVacuumSimUnit,
     AHFESolventAnalysisUnit,
+    AHFESolventSetupUnit,
+    AHFESolventSimUnit,
     AHFEVacuumAnalysisUnit,
+    AHFEVacuumSetupUnit,
+    AHFEVacuumSimUnit,
 )
 
-
 UNIT_TYPES = {
-    'solvent': {
-        'setup': AHFESolventSetupUnit,
-        'sim': AHFESolventSimUnit,
-        'analysis': AHFESolventAnalysisUnit,
+    "solvent": {
+        "setup": AHFESolventSetupUnit,
+        "sim": AHFESolventSimUnit,
+        "analysis": AHFESolventAnalysisUnit,
     },
-    'vacuum': {
-        'setup': AHFEVacuumSetupUnit,
-        'sim': AHFEVacuumSimUnit,
-        'analysis': AHFEVacuumAnalysisUnit,
-    }
+    "vacuum": {
+        "setup": AHFEVacuumSetupUnit,
+        "sim": AHFEVacuumSimUnit,
+        "analysis": AHFEVacuumAnalysisUnit,
+    },
 }
 
 

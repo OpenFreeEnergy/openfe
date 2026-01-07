@@ -27,6 +27,7 @@ Acknowledgements
   `espaloma_charge <https://github.com/choderalab/espaloma_charge>`_
 
 """
+
 import logging
 import uuid
 import warnings
@@ -60,16 +61,15 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 
 from ..openmm_utils import settings_validation, system_validation
+from .afe_protocol_results import AbsoluteSolvationProtocolResult
 from .ahfe_units import (
+    AHFESolventAnalysisUnit,
     AHFESolventSetupUnit,
     AHFESolventSimUnit,
-    AHFESolventAnalysisUnit,
+    AHFEVacuumAnalysisUnit,
     AHFEVacuumSetupUnit,
     AHFEVacuumSimUnit,
-    AHFEVacuumAnalysisUnit,
 )
-from .afe_protocol_results import AbsoluteSolvationProtocolResult
-
 
 due.cite(
     Doi("10.5281/zenodo.596504"),
@@ -450,25 +450,25 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         alchname = alchem_comps["stateA"][0].name
 
         unit_classes = {
-            'solvent': {
-                'setup': AHFESolventSetupUnit,
-                'simulation': AHFESolventSimUnit,
-                'analysis': AHFESolventAnalysisUnit,
+            "solvent": {
+                "setup": AHFESolventSetupUnit,
+                "simulation": AHFESolventSimUnit,
+                "analysis": AHFESolventAnalysisUnit,
             },
-            'vacuum': {
-                'setup': AHFEVacuumSetupUnit,
-                'simulation': AHFEVacuumSimUnit,
-                'analysis': AHFEVacuumAnalysisUnit,
-            }
+            "vacuum": {
+                "setup": AHFEVacuumSetupUnit,
+                "simulation": AHFEVacuumSimUnit,
+                "analysis": AHFEVacuumAnalysisUnit,
+            },
         }
 
-        protocol_units = {'solvent': [], 'vacuum': []}
+        protocol_units = {"solvent": [], "vacuum": []}
 
-        for phase in ['solvent', 'vacuum']:
+        for phase in ["solvent", "vacuum"]:
             for i in range(self.settings.protocol_repeats):
                 repeat_id = int(uuid.uuid4())
 
-                setup = unit_classes[phase]['setup'](
+                setup = unit_classes[phase]["setup"](
                     protocol=self,
                     stateA=stateA,
                     stateB=stateB,
@@ -478,7 +478,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                     name=f"AHFE Setup: {alchname} solvent leg: repeat {i} generation 0",
                 )
 
-                simulation = unit_classes[phase]['simulation'](
+                simulation = unit_classes[phase]["simulation"](
                     protocol=self,
                     # only need state A & alchem comps
                     stateA=stateA,
@@ -489,7 +489,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                     name=f"AHFE Simulation: {alchname} solvent leg: repeat {i} generation 0",
                 )
 
-                analysis = unit_classes[phase]['analysis'](
+                analysis = unit_classes[phase]["analysis"](
                     protocol=self,
                     setup_results=setup,
                     simulation_results=simulation,

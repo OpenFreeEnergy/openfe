@@ -1,5 +1,6 @@
 import os
 import pathlib
+
 from openff.units import Quantity
 from openmm import Vec3
 from openmm import unit as ommunit
@@ -82,8 +83,6 @@ def make_vec3_box(dimensions: Quantity) -> Vec3:
       The input array in Vec3 format.
     """
     return [
-        Vec3(
-            float(row[0]), float(row[1]), float(row[2])
-        ) * ommunit.nanometer
+        Vec3(float(row[0]), float(row[1]), float(row[2])) * ommunit.nanometer
         for row in dimensions.m_as("nanometer")
     ]

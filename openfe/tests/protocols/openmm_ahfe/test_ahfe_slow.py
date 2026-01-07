@@ -82,10 +82,7 @@ def test_openmm_run_engine(
 
     # Check outputs of solvent & vacuum results
     for phase in ["solvent", "vacuum"]:
-        purs = [
-            pur for pur in r.protocol_unit_results
-            if pur.outputs["simtype"] == phase
-        ]
+        purs = [pur for pur in r.protocol_unit_results if pur.outputs["simtype"] == phase]
 
         # get the path to the simulation unit shared dict
         for pur in purs:
@@ -107,7 +104,7 @@ def test_openmm_run_engine(
             checkpoint = pur.outputs["checkpoint"]
             assert checkpoint == sim_shared / f"{pur.outputs['simtype']}_checkpoint.nc"
             assert checkpoint.exists()
-    
+
             # Does the trajectory file exist?
             nc = pur.outputs["trajectory"]
             assert nc == sim_shared / f"{pur.outputs['simtype']}.nc"

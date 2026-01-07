@@ -5,6 +5,7 @@
 This module defines the ProtocolUnits for the
 :class:`AbsoluteBindingProtocol`.
 """
+
 import logging
 import pathlib
 
@@ -34,11 +35,10 @@ from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 
 from .base_afe_units import (
-    BaseAbsoluteSetupUnit,
-    BaseAbsoluteMultiStateSimulationUnit,
     BaseAbsoluteMultiStateAnalysisUnit,
+    BaseAbsoluteMultiStateSimulationUnit,
+    BaseAbsoluteSetupUnit,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -115,9 +115,7 @@ class ComplexSettingsMixin:
         return settings
 
 
-class ABFEComplexSetupUnit(
-    ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteSetupUnit
-):
+class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteSetupUnit):
     """
     Protocol Unit for the complex phase of an absolute binding free energy
     """
@@ -396,15 +394,15 @@ class ABFEComplexSimUnit(
     """
     ProtocolUnit for the vacuum simulation phase of an absolute hydration free energy
     """
+
     simtype = "vacuum"
 
 
-class ABFEComplexAnalysisUnit(
-    ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
-):
+class ABFEComplexAnalysisUnit(ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
     """
     ProtocolUnit for the vacuum analysis phase of an absolute hydration free energy
     """
+
     simtype = "vacuum"
 
 
@@ -478,12 +476,11 @@ class SolventSettingsMixin:
         return settings
 
 
-class ABFESolventSetupUnit(
-    SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit
-):
+class ABFESolventSetupUnit(SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit):
     """
     ProtocolUnit for the solvent setup phase of an absolute binding free energy
     """
+
     simtype = "solvent"
 
 
@@ -493,13 +490,13 @@ class ABFESolventSimUnit(
     """
     ProtocolUnit for the solvent simulation phase of an absolute binding free energy
     """
+
     simtype = "solvent"
 
 
-class ABFESolventAnalysisUnit(
-    SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
-):
+class ABFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
     """
     ProtocolUnit for the solvent analysis phase of an absolute binding free energy
     """
+
     simtype = "solvent"

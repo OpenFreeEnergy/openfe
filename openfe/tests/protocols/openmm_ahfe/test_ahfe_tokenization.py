@@ -4,18 +4,19 @@ import json
 
 import gufe
 import pytest
-from ..conftest import ModGufeTokenizableTestsMixin
 
 import openfe
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
+    AHFESolventAnalysisUnit,
     AHFESolventSetupUnit,
     AHFESolventSimUnit,
-    AHFESolventAnalysisUnit,
+    AHFEVacuumAnalysisUnit,
     AHFEVacuumSetupUnit,
     AHFEVacuumSimUnit,
-    AHFEVacuumAnalysisUnit,
 )
+
+from ..conftest import ModGufeTokenizableTestsMixin
 
 
 @pytest.fixture
@@ -39,6 +40,7 @@ def _filter_units(pus, classtype):
     for pu in pus:
         if isinstance(pu, classtype):
             return pu
+
 
 @pytest.fixture
 def solvent_protocol_setup_unit(protocol_units):

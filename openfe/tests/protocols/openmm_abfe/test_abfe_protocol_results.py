@@ -14,6 +14,7 @@ from openff.units import unit as offunit
 import openfe
 from openfe.protocols import openmm_afe
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
+
 from .utils import UNIT_TYPES, _get_units
 
 
@@ -68,15 +69,11 @@ def test_gather(benzene_complex_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_afe.abfe_units.ABFEComplexAnalysisUnit.run",
-            return_value={
-                "foo": "bar"
-            },
+            return_value={"foo": "bar"},
         ),
         mock.patch(
             "openfe.protocols.openmm_afe.abfe_units.ABFESolventAnalysisUnit.run",
-            return_value={
-                "foo": "bar"
-            },
+            return_value={"foo": "bar"},
         ),
     ):
         dagres = gufe.protocols.execute_DAG(
@@ -149,15 +146,11 @@ def test_unit_tagging(benzene_complex_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_afe.abfe_units.ABFEComplexAnalysisUnit.run",
-            return_value={
-                "foo": "bar"
-            },
+            return_value={"foo": "bar"},
         ),
         mock.patch(
             "openfe.protocols.openmm_afe.abfe_units.ABFESolventAnalysisUnit.run",
-            return_value={
-                "foo": "bar"
-            },
+            return_value={"foo": "bar"},
         ),
     ):
         for phase in ["solvent", "complex"]:
@@ -171,9 +164,7 @@ def test_unit_tagging(benzene_complex_dag, tmpdir):
 
             for u in setup_units:
                 rid = u.inputs["repeat_id"]
-                setup_results[rid] = u.execute(
-                    context=gufe.Context(tmpdir, tmpdir)
-                )
+                setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
 
             for u in sim_units:
                 rid = u.inputs["repeat_id"]

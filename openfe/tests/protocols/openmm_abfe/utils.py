@@ -1,26 +1,25 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from openfe.protocols.openmm_afe.abfe_units import (
+    ABFEComplexAnalysisUnit,
     ABFEComplexSetupUnit,
     ABFEComplexSimUnit,
-    ABFEComplexAnalysisUnit,
+    ABFESolventAnalysisUnit,
     ABFESolventSetupUnit,
     ABFESolventSimUnit,
-    ABFESolventAnalysisUnit,
 )
 
-
 UNIT_TYPES = {
-    'solvent': {
-        'setup': ABFESolventSetupUnit,
-        'sim': ABFESolventSimUnit,
-        'analysis': ABFESolventAnalysisUnit,
+    "solvent": {
+        "setup": ABFESolventSetupUnit,
+        "sim": ABFESolventSimUnit,
+        "analysis": ABFESolventAnalysisUnit,
     },
-    'complex': {
-        'setup': ABFEComplexSetupUnit,
-        'sim': ABFEComplexSimUnit,
-        'analysis': ABFEComplexAnalysisUnit,
-    }
+    "complex": {
+        "setup": ABFEComplexSetupUnit,
+        "sim": ABFEComplexSimUnit,
+        "analysis": ABFEComplexAnalysisUnit,
+    },
 }
 
 

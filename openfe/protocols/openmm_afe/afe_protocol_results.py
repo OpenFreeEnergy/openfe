@@ -11,6 +11,7 @@ Specifically it implements:
   * AbsoluteBindingProtocolResult
   * AbsoluteSolvationProtocolResult
 """
+
 import itertools
 import logging
 import pathlib
@@ -20,14 +21,11 @@ from typing import Optional, Union
 import gufe
 import numpy as np
 import numpy.typing as npt
-from openff.units import unit as offunit
 from openff.units import Quantity
+from openff.units import unit as offunit
 from openmmtools import multistate
 
-from openfe.protocols.restraint_utils.geometry.boresch import (
-    BoreschRestraintGeometry
-)
-
+from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +182,7 @@ class AbsoluteProtocolResultMixin:
         """
         replica_states: dict[str, list[npt.NDArray]] = {
             self.bound_state: [],
-            self.unbound_state: []
+            self.unbound_state: [],
         }
 
         def is_file(filename: str):

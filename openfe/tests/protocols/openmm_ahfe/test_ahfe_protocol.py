@@ -31,6 +31,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
+
 from .utils import UNIT_TYPES, _get_units
 
 
@@ -69,7 +70,7 @@ def test_repeat_units(benzene_system):
 
     dag = protocol.create(
         stateA=benzene_system,
-        stateB=ChemicalSystem({'solvent': SolventComponent()}),
+        stateB=ChemicalSystem({"solvent": SolventComponent()}),
         mapping=None,
     )
 
@@ -78,10 +79,10 @@ def test_repeat_units(benzene_system):
     assert len(pus) == 18
 
     # Check info for each repeat
-    for phase in ['solvent', 'vacuum']:
-        setup = _get_units(pus, UNIT_TYPES[phase]['setup'])
-        sim = _get_units(pus, UNIT_TYPES[phase]['sim'])
-        analysis = _get_units(pus, UNIT_TYPES[phase]['analysis'])
+    for phase in ["solvent", "vacuum"]:
+        setup = _get_units(pus, UNIT_TYPES[phase]["setup"])
+        sim = _get_units(pus, UNIT_TYPES[phase]["sim"])
+        analysis = _get_units(pus, UNIT_TYPES[phase]["analysis"])
 
         # Should be 3 of each set
         assert len(setup) == len(sim) == len(analysis) == 3
@@ -194,8 +195,8 @@ def test_setup_dry_sim_vac_benzene(benzene_system, method, protocol_dry_settings
 
     assert len(prot_units) == 6
 
-    vac_setup_unit = _get_units(prot_units, UNIT_TYPES['vacuum']['setup'])
-    vac_sim_unit = _get_units(prot_units, UNIT_TYPES['vacuum']['sim'])
+    vac_setup_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
+    vac_sim_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["sim"])
 
     assert len(vac_setup_unit) == 1
     assert len(vac_sim_unit) == 1
@@ -282,8 +283,8 @@ def test_alchemical_settings_setup_vacuum(
 
     assert len(prot_units) == 6
 
-    vac_setup_unit = _get_units(prot_units, UNIT_TYPES['vacuum']['setup'])
-    vac_sim_unit = _get_units(prot_units, UNIT_TYPES['vacuum']['sim'])
+    vac_setup_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
+    vac_sim_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["sim"])
 
     assert len(vac_setup_unit) == 1
     assert len(vac_sim_unit) == 1
@@ -333,7 +334,7 @@ def test_confgen_fail_AFE(benzene_system, protocol_dry_settings, tmpdir):
         mapping=None,
     )
     prot_units = list(dag.protocol_units)
-    vac_setup_unit = _get_units(prot_units, UNIT_TYPES['vacuum']['setup'])
+    vac_setup_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
 
     with tmpdir.as_cwd():
         with mock.patch("rdkit.Chem.AllChem.EmbedMultipleConfs", return_value=0):
@@ -360,8 +361,8 @@ def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmpdir):
     )
     prot_units = list(dag.protocol_units)
 
-    sol_setup_unit = _get_units(prot_units, UNIT_TYPES['solvent']['setup'])
-    sol_sim_unit = _get_units(prot_units, UNIT_TYPES['solvent']['sim'])
+    sol_setup_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
+    sol_sim_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["sim"])
 
     assert len(sol_setup_unit) == len(sol_sim_unit) == 1
 
@@ -411,8 +412,8 @@ def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
     )
     prot_units = list(dag.protocol_units)
 
-    sol_setup_unit = _get_units(prot_units, UNIT_TYPES['solvent']['setup'])
-    sol_sim_unit = _get_units(prot_units, UNIT_TYPES['solvent']['sim'])
+    sol_setup_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
+    sol_sim_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["sim"])
 
     with tmpdir.as_cwd():
         setup_results = sol_setup_unit[0].run(dry=True)
@@ -427,9 +428,7 @@ def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
             )
 
 
-def test_setup_dry_sim_solv_benzene_tip4p(
-    benzene_system, protocol_dry_settings, tmpdir
-):
+def test_setup_dry_sim_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdir):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
@@ -458,8 +457,8 @@ def test_setup_dry_sim_solv_benzene_tip4p(
     )
     prot_units = list(dag.protocol_units)
 
-    sol_setup_units = _get_units(prot_units, UNIT_TYPES['solvent']['setup'])
-    sol_sim_units = _get_units(prot_units, UNIT_TYPES['solvent']['sim'])
+    sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
+    sol_sim_units = _get_units(prot_units, UNIT_TYPES["solvent"]["sim"])
 
     with tmpdir.as_cwd():
         setup_results = sol_setup_units[0].run(dry=True)
@@ -494,7 +493,7 @@ def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tm
     )
     prot_units = list(dag.protocol_units)
 
-    sol_setup_units = _get_units(prot_units, UNIT_TYPES['solvent']['setup'])
+    sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
 
     with tmpdir.as_cwd():
         results = sol_setup_units[0].run(dry=True)
@@ -514,9 +513,7 @@ def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tm
         assert_allclose(expected_vectors, from_openmm(vectors))
 
 
-def test_dry_run_solv_user_charges_benzene(
-    benzene_modifications, protocol_dry_settings, tmpdir
-):
+def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_settings, tmpdir):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
@@ -557,8 +554,8 @@ def test_dry_run_solv_user_charges_benzene(
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
     prot_units = list(dag.protocol_units)
 
-    vac_setup_units = _get_units(prot_units, UNIT_TYPES['vacuum']['setup'])
-    sol_setup_units = _get_units(prot_units, UNIT_TYPES['solvent']['setup'])
+    vac_setup_units = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
+    sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
 
     # check sol_unit charges
     with tmpdir.as_cwd():
@@ -643,7 +640,7 @@ def test_dry_run_charge_backends(
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
     prot_units = list(dag.protocol_units)
 
-    vac_setup_units = _get_units(prot_units, UNIT_TYPES['vacuum']['setup'])
+    vac_setup_units = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
 
     # check vac_unit charges
     with tmpdir.as_cwd():
@@ -721,8 +718,8 @@ def test_dry_run_vacuum_write_frequency(
     assert len(prot_units) == 6
 
     for phase in ["solvent", "vacuum"]:
-        setup_units = _get_units(prot_units, UNIT_TYPES[phase]['setup'])
-        sim_units = _get_units(prot_units, UNIT_TYPES[phase]['sim'])
+        setup_units = _get_units(prot_units, UNIT_TYPES[phase]["setup"])
+        sim_units = _get_units(prot_units, UNIT_TYPES[phase]["sim"])
 
         with tmpdir.as_cwd():
             setup_results = setup_units[0].run(dry=True)

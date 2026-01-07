@@ -99,10 +99,7 @@ def test_openmm_run_engine(
 
     # Check outputs of solvent & complex results
     for phase in ["solvent", "complex"]:
-        purs = [
-            pur for pur in r.protocol_unit_results
-            if pur.outputs["simtype"] == phase
-        ]
+        purs = [pur for pur in r.protocol_unit_results if pur.outputs["simtype"] == phase]
 
         # get the path to the simulation unit shared dict
         for pur in purs:

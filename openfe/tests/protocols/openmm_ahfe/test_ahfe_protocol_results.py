@@ -13,6 +13,7 @@ from openff.units import unit as offunit
 import openfe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
+
 from .utils import UNIT_TYPES, _get_units
 
 
@@ -28,9 +29,7 @@ def protocol_dry_settings():
 @pytest.fixture
 def benzene_solvation_dag(benzene_system, protocol_dry_settings):
     protocol_dry_settings.protocol_repeats = 3
-    protocol = openmm_afe.AbsoluteSolvationProtocol(
-        settings=protocol_dry_settings
-    )
+    protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
 
     stateA = benzene_system
 
@@ -90,15 +89,11 @@ def test_gather(benzene_solvation_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_afe.ahfe_units.AHFESolventAnalysisUnit.run",
-            return_value={
-                "foo": "bar"
-            },
+            return_value={"foo": "bar"},
         ),
         mock.patch(
             "openfe.protocols.openmm_afe.ahfe_units.AHFEVacuumAnalysisUnit.run",
-            return_value={
-                "foo": "bar"
-            },
+            return_value={"foo": "bar"},
         ),
     ):
         dagres = gufe.protocols.execute_DAG(
@@ -171,15 +166,11 @@ def test_unit_tagging(benzene_solvation_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_afe.ahfe_units.AHFESolventAnalysisUnit.run",
-            return_value={
-                "foo": "bar"
-            },
+            return_value={"foo": "bar"},
         ),
         mock.patch(
             "openfe.protocols.openmm_afe.ahfe_units.AHFEVacuumAnalysisUnit.run",
-            return_value={
-                "foo": "bar"
-            },
+            return_value={"foo": "bar"},
         ),
     ):
         for phase in ["solvent", "vacuum"]:
@@ -193,9 +184,7 @@ def test_unit_tagging(benzene_solvation_dag, tmpdir):
 
             for u in setup_units:
                 rid = u.inputs["repeat_id"]
-                setup_results[rid] = u.execute(
-                    context=gufe.Context(tmpdir, tmpdir)
-                )
+                setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
 
             for u in sim_units:
                 rid = u.inputs["repeat_id"]

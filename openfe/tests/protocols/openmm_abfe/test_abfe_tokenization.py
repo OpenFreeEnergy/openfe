@@ -3,19 +3,20 @@
 import gzip
 
 import pytest
-from ..conftest import ModGufeTokenizableTestsMixin
 
 import openfe
 from openfe.protocols.openmm_afe import (
-    AbsoluteBindingProtocol,
-    AbsoluteBindingProtocolResult,
+    ABFEComplexAnalysisUnit,
     ABFEComplexSetupUnit,
     ABFEComplexSimUnit,
-    ABFEComplexAnalysisUnit,
+    ABFESolventAnalysisUnit,
     ABFESolventSetupUnit,
     ABFESolventSimUnit,
-    ABFESolventAnalysisUnit,
+    AbsoluteBindingProtocol,
+    AbsoluteBindingProtocolResult,
 )
+
+from ..conftest import ModGufeTokenizableTestsMixin
 
 
 @pytest.fixture

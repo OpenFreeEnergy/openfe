@@ -14,6 +14,7 @@ TODO
   as settings.
 * Allow for a more flexible setting of Lambda regions.
 """
+
 import abc
 import copy
 import logging
@@ -76,14 +77,13 @@ from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
 )
 from openfe.protocols.openmm_utils.serialization import (
-    serialize,
     deserialize,
     make_vec3_box,
+    serialize,
 )
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.utils import log_system_probe, without_oechem_backend
-
 
 logger = logging.getLogger(__name__)
 
@@ -393,12 +393,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
 
         unique_offmols = []
         for mol in openff_molecules:
-            unique = all(
-                [
-                    not mol.is_isomorphic_with(umol)
-                    for umol in unique_offmols
-                ]
-            )
+            unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
             if unique:
                 unique_offmols.append(mol)
 
@@ -501,7 +496,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
                 openff_molecules=list(small_mols.values()),
                 ffcache=self.shared_basepath / settings["output_settings"].forcefield_cache,
             )
-    
+
             modeller, comp_resids = self._get_modeller(
                 protein_component=protein_component,
                 solvent_component=solvent_component,
@@ -746,7 +741,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
             "selection_indices": selection_indices,
-            "box_vectors": from_openmm(box_vectors)
+            "box_vectors": from_openmm(box_vectors),
         }
 
         if standard_state_corr is not None:
@@ -899,9 +894,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
 
         # Get the composable states
         if alchemically_restrained:
-            restraint_state = omm_restraints.RestraintParameterState(
-                lambda_restraints=1.0
-            )
+            restraint_state = omm_restraints.RestraintParameterState(lambda_restraints=1.0)
             composable_states = [alchemical_state, restraint_state]
         else:
             composable_states = [alchemical_state]
@@ -983,7 +976,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
     @staticmethod
     def _get_reporter(
         storage_path: pathlib.Path,
-        selection_indices : npt.NDArray,
+        selection_indices: npt.NDArray,
         simulation_settings: MultiStateSimulationSettings,
         output_settings: MultiStateOutputSettings,
     ) -> multistate.MultiStateReporter:
@@ -1301,7 +1294,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
                 simulation_settings=settings["simulation_settings"],
                 output_settings=settings["output_settings"],
             )
-    
+
             # Get sampler
             sampler = self._get_sampler(
                 integrator=integrator,
@@ -1312,7 +1305,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
                 sampler_states=sampler_states,
                 platform=platform,
             )
-    
+
             # Run simulation
             self._run_simulation(
                 sampler=sampler,
@@ -1320,7 +1313,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
                 settings=settings,
                 dry=dry,
             )
-    
+
         finally:
             # close reporter when you're done to prevent file handle clashes
             reporter.close()
@@ -1369,9 +1362,9 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         box_vectors = setup_results.outputs["box_vectors"]
 
         if setup_results.outputs["restraint_geometry"] is not None:
-            alchemical_restraints=True
+            alchemical_restraints = True
         else:
-            alchemical_restraints=False
+            alchemical_restraints = False
 
         outputs = self.run(
             system=system,
@@ -1380,7 +1373,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
             selection_indices=selection_indices,
             alchemical_restraints=alchemical_restraints,
             scratch_basepath=ctx.scratch,
-            shared_basepath=ctx.shared
+            shared_basepath=ctx.shared,
         )
 
         return {
@@ -1392,7 +1385,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
 
 
 class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
-
     @staticmethod
     def _analyze_multistate_energies(
         trajectory: pathlib.Path,
@@ -1512,12 +1504,12 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         standard_state_corr = setup_results.outputs["standard_state_correction"]
         trajectory = simulation_results.outputs["trajectory"]
         checkpoint = simulation_results.outputs["checkpoint"]
-  
+
         outputs = self.run(
             trajectory=trajectory,
             checkpoint=checkpoint,
             scratch_basepath=ctx.scratch,
-            shared_basepath=ctx.shared
+            shared_basepath=ctx.shared,
         )
 
         return {
