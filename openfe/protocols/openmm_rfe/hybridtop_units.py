@@ -1270,6 +1270,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         whereas structural stuff requires the file handle to be closed.
         """
         import json
+
         from openfe_analysis import rmsd
 
         pdb_file = shared / pdb_filename
