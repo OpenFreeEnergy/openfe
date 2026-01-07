@@ -9,6 +9,10 @@ from openff.toolkit import Molecule
 from openff.units import unit
 from openff.utilities.testing import skip_if_missing
 
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_NAGL,
+    HAS_OPENEYE,
+)
 from openfecli.commands.generate_partial_charges import charge_molecules
 
 
@@ -122,8 +126,13 @@ def test_charge_molecules_overwrite(
         pytest.param(2, id="2"),
     ],
 )
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_charge_settings(methane, tmpdir, caplog, yaml_nagl_settings, ncores):
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
