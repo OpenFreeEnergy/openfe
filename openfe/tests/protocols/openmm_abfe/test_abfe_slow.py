@@ -11,7 +11,7 @@ from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEY
 
 
 @pytest.mark.integration
-@pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
+#@pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.skipif(not HAS_NAGL, reason="need NAGL")
 @pytest.mark.xfail(
     HAS_OPENEYE and HAS_NAGL,
@@ -96,16 +96,39 @@ def test_openmm_run_engine(
     r = openfe.execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
 
     assert r.ok()
-    for pur in r.protocol_unit_results:
-        unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
-        assert unit_shared.exists()
-        assert pathlib.Path(unit_shared).is_dir()
-        checkpoint = pur.outputs["last_checkpoint"]
-        assert checkpoint == f"{pur.outputs['simtype']}_checkpoint.nc"
-        assert (unit_shared / checkpoint).exists()
-        nc = pur.outputs["nc"]
-        assert nc == unit_shared / f"{pur.outputs['simtype']}.nc"
-        assert nc.exists()
+
+    # Check outputs of solvent & complex results
+    for phase in ["solvent", "complex"]:
+        purs = [
+            pur for pur in r.protocol_unit_results
+            if pur.outputs["simtype"] == phase
+        ]
+
+        # get the path to the simulation unit shared dict
+        for pur in purs:
+            if "Simulation" in pur.name:
+                sim_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+                assert sim_shared.exists()
+                assert pathlib.Path(sim_shared).is_dir()
+
+        # check the analysis outputs
+        for pur in purs:
+            if "Analysis" not in pur.name:
+                continue
+
+            unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+            assert unit_shared.exists()
+            assert pathlib.Path(unit_shared).is_dir()
+
+            # Does the checkpoint file exist?
+            checkpoint = pur.outputs["checkpoint"]
+            assert checkpoint == sim_shared / f"{pur.outputs['simtype']}_checkpoint.nc"
+            assert checkpoint.exists()
+
+            # Does the trajectory file exist?
+            nc = pur.outputs["trajectory"]
+            assert nc == sim_shared / f"{pur.outputs['simtype']}.nc"
+            assert nc.exists()
 
     # Test results methods that need files present
     results = protocol.gather([r])
