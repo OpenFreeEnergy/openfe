@@ -491,7 +491,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         ----------
         stateA : ChemicalSystem
           ChemicalSystem defining end state A.
-        stateB : ChmiecalSysstem
+        stateB : ChemicalSystem
           ChemicalSystem defining end state B.
         mapping : LigandAtomMapping
           The mapping for alchemical components between state A and B.
