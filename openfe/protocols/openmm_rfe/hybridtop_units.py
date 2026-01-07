@@ -1243,7 +1243,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         shared: pathlib.Path,
         pdb_filename: str,
         trj_filename: str,
-    ) -> dict[str, str]:
+    ) -> dict[str, pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
 
