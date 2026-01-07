@@ -22,7 +22,7 @@ import gufe
 import matplotlib.pyplot as plt
 import mdtraj
 import numpy as np
-import numpy.typing as nptnpt
+import numpy.typing as npt
 import openmm
 import openmmtools
 from gufe import (
@@ -806,7 +806,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         simulation_settings : MultiStateSimulationSettings
           Settings defining out the simulation should be run.
         """
-        nc = self.shared_basepath / output_settings.output_filename
+        nc = storage_path / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
 
         if output_settings.positions_write_frequency is not None:
@@ -1167,7 +1167,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 simulation_settings=settings["simulation_settings"],
                 system=hybrid_system,
             )
-
+    
             # get the reporter
             reporter = self._get_reporter(
                 storage_path=self.shared_basepath,
@@ -1175,7 +1175,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 output_settings=settings["output_settings"],
                 simulation_settings=settings["simulation_settings"],
             )
-
+    
             # Get sampler
             sampler = self._get_sampler(
                 system=hybrid_system,
@@ -1189,7 +1189,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 platform=platform,
                 dry=dry,
             )
-
+    
             unit_results_dict = self._run_simulation(
                 sampler=sampler,
                 reporter=reporter,
