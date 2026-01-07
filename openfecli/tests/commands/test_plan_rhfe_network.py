@@ -10,6 +10,10 @@ from gufe import AlchemicalNetwork, SmallMoleculeComponent, SolventComponent
 from gufe.tokenization import JSON_HANDLER
 from openff.utilities.testing import skip_if_missing
 
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_NAGL,
+    HAS_OPENEYE,
+)
 from openfecli.commands.plan_rhfe_network import (
     plan_rhfe_network,
     plan_rhfe_network_main,
@@ -54,8 +58,13 @@ def validate_charges(smc):
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
 
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_plan_rhfe_network_main():
     from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
     from openfe.setup import (
@@ -102,8 +111,13 @@ partial_charge:
 """
 
 
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_plan_rhfe_network(mol_dir_args, tmpdir, yaml_nagl_settings):
     """
     smoke test
@@ -175,8 +189,13 @@ partial_charge:
 """
 
 
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tmpdir):
     settings_path = tmpdir / "settings.yaml"
     with open(settings_path, "w") as f:
@@ -201,8 +220,13 @@ def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tm
         pytest.param(False, id="No overwrite"),
     ],
 )
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_nagl_settings, overwrite):  # fmt: skip
     # make sure the dummy charges are overwritten when requested
 
