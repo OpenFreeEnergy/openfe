@@ -296,7 +296,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return system_generator
 
         # First deduplicate isomoprhic molecules
-        unique_offmols = []
+        unique_offmols: list[OFFMolecule] = []
         for mol in openff_molecules:
             unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
             if unique:
