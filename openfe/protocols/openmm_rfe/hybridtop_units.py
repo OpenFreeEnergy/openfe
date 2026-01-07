@@ -787,7 +787,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_reporter(
-        storage_path: pathlib.Path
+        storage_path: pathlib.Path,
         selection_indices: npt.NDArray,
         output_settings: MultiStateOutputSettings,
         simulation_settings: MultiStateSimulationSettings,
