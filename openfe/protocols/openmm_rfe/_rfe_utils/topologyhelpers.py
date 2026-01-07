@@ -746,7 +746,6 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
     assert 0 <= scale_factor <= 1, "Scale factor must be between 0 and 1."
 
     logger.info(f"Softening angles and torsions involving dummy atoms in the hybrid system by {(1.0 - scale_factor) * 100}%.")
-    htf_softened = deepcopy(htf)
     dummy_old_atoms = htf._atom_classes["unique_old_atoms"]
     dummy_new_atoms = htf._atom_classes["unique_new_atoms"]
 
@@ -759,6 +758,14 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
     for i in range(htf.hybrid_system.getNumConstraints()):
         p1, p2, dist = htf.hybrid_system.getConstraintParameters(i)
         softened_hybrid_system.addConstraint(p1, p2, dist)
+    # add the barostat and the box vectors
+    for force in htf.hybrid_system.getForces():
+        if isinstance(force, openmm.MonteCarloBarostat) or isinstance(force, openmm.MonteCarloMembraneBarostat):
+            softened_hybrid_system.addForce(deepcopy(force))
+            # also add the box vectors
+            box_vectors = htf.hybrid_system.getDefaultPeriodicBoxVectors()
+            softened_hybrid_system.setDefaultPeriodicBoxVectors(*box_vectors)
+            break
 
     hybrid_forces = htf._hybrid_system_forces
     # copy all forces which do not need to be modified
@@ -845,7 +852,7 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
             # the term does not involve any dummy atoms, so we can just copy it
             softened_torsion_force.addTorsion(p1, p2, p3, p4, periodicity, phase, k)
 
-    htf_softened._hybrid_system = softened_hybrid_system
+    htf._hybrid_system = softened_hybrid_system
     # set the hybrid system forces dict to the new one
-    htf_softened._hybrid_system_forces = {force.getName(): force for force in softened_hybrid_system.getForces()}
-    return htf_softened
+    htf._hybrid_system_forces = {force.getName(): force for force in softened_hybrid_system.getForces()}
+    return htf
