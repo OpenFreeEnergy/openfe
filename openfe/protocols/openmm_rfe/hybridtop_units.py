@@ -22,7 +22,7 @@ import gufe
 import matplotlib.pyplot as plt
 import mdtraj
 import numpy as np
-import numpy.typing as npt
+import numpy.typing as nptnpt
 import openmm
 import openmmtools
 from gufe import (
