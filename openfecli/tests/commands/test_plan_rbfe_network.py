@@ -10,7 +10,10 @@ from gufe import AlchemicalNetwork, SmallMoleculeComponent
 from openff.units import unit
 from openff.utilities import skip_if_missing
 
-from openfe.protocols.openmm_utils.charge_generation import HAS_OPENEYE
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_NAGL,
+    HAS_OPENEYE,
+)
 from openfecli.commands.plan_rbfe_network import (
     plan_rbfe_network,
     plan_rbfe_network_main,
@@ -70,8 +73,13 @@ def validate_charges(smc):
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
 
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_plan_rbfe_network_main():
     from gufe import (
         ProteinComponent,
@@ -137,8 +145,13 @@ partial_charge:
 """
 
 
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_settings):
     """
     smoke test
@@ -218,8 +231,13 @@ def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat,
         pytest.param(False, id="No overwrite"),
     ],
 )
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args, tmpdir, yaml_nagl_settings, overwrite):  # fmt: skip
     # make sure the dummy charges are overwritten when requested
 
@@ -268,9 +286,13 @@ def eg5_files():
         yield pdb_path, lig_path, cof_path
 
 
-@pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
     # use nagl charges for CI speed!
     settings_path = tmpdir / "settings.yaml"
@@ -372,8 +394,13 @@ partial_charge:
 """
 
 
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_lomap_yaml_plan_rbfe_smoke_test(lomap_yaml_settings, cdk8_files, tmpdir):
     protein, ligand = cdk8_files
     settings_path = tmpdir / "settings.yaml"
@@ -413,9 +440,13 @@ partial_charge:
 """
 
 
-@pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
-@skip_if_missing("openff.nagl")
-@skip_if_missing("openff.nagl_models")
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
 def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmpdir):
     protein, ligand, cofactor = eg5_files
     settings_path = tmpdir / "settings.yaml"
