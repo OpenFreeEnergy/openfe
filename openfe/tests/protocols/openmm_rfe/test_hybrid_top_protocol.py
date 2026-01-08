@@ -732,7 +732,7 @@ def test_dry_run_same_mol_different_charges(benzene_modifications, vac_settings,
     mapping = gufe.LigandAtomMapping(
         componentA=stateA_mol,
         componentB=stateB_mol,
-        componentA_to_componentB={i:i for i in range(12)}
+        componentA_to_componentB={i: i for i in range(12)},
     )
 
     # create DAG from protocol and take first (and only) work unit from within
@@ -770,7 +770,7 @@ def test_dry_run_same_mol_different_charges(benzene_modifications, vac_settings,
             # check state B charge
             c_diff = stateB_charges[i] - stateA_charges[i]
             assert pytest.approx(offset) == c_diff
-            
+
             # check that the offset value is non-zero
             assert abs(offset) > 0 * offset.units
 
