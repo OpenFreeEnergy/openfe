@@ -729,8 +729,11 @@ def test_dry_run_same_mol_different_charges(benzene_modifications, vac_settings,
     stateB_mol = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
 
     # Create new mapping
-    mapper = openfe.setup.LomapAtomMapper(element_change=False)
-    mapping = next(mapper.suggest_mappings(stateA_mol, stateB_mol))
+    mapping = gufe.LigandAtomMapping(
+        componentA=stateA_mol,
+        componentB=stateB_mol,
+        componentA_to_componentB={i:i for i in range(12)}
+    )
 
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
