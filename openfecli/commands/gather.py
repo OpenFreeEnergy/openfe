@@ -608,7 +608,7 @@ def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path
         """Sanity check that file is a result json before we try to deserialize"""
         return "estimate" in open(fpath, "r").read(20)
 
-    results = list(sorted(results))  # ensures reproducible output order regardless of input order
+    results = sorted(results)  # ensures reproducible output order regardless of input order
 
     # 1) find all possible jsons
     json_fns = collect_jsons(results)
