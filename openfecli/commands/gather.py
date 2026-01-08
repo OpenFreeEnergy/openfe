@@ -8,13 +8,11 @@ from typing import List, Literal
 
 import click
 import pandas as pd
-import tqdm
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
 FAIL_STR = "Error"  # string used to indicate a failed run in output tables.
-from line_profiler import profile
 
 
 def _get_column(val: float | int) -> int:
@@ -610,17 +608,15 @@ def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path
         """Sanity check that file is a result json before we try to deserialize"""
         return "estimate" in open(fpath, "r").read(20)
 
-    results = sorted(results)  # ensures reproducible output order regardless of input order
+    results = list(sorted(results))  # ensures reproducible output order regardless of input order
 
     # 1) find all possible jsons
     json_fns = collect_jsons(results)
-    print(f"processing {len(json_fns)} JSON files ...")
     # 2) filter only result jsons
-    result_fns = filter(is_results_json, json_fns)
+    result_fns = list(filter(is_results_json, json_fns))
     return result_fns
 
 
-@profile
 def _get_legs_from_result_jsons(
     result_fns: list[pathlib.Path], report: Literal["dg", "ddg", "raw"]
 ) -> dict[tuple[str, str], dict[str, list]]:
@@ -645,35 +641,45 @@ def _get_legs_from_result_jsons(
 
     legs = defaultdict(lambda: defaultdict(list))
 
-    for result_fn in tqdm.rich.tqdm(result_fns):
-        result_info, result = _load_valid_result_json(result_fn)
+    with click.progressbar(
+        result_fns,
+        label="Loading results: ",
+        fill_char="▇",
+        empty_char=" ",
+        bar_template="%(label)s  %(bar)s  %(info)s files",
+        length=len(result_fns),
+        show_percent=False,
+        show_pos=True,
+        show_eta=False,
+    ) as bar:
+        for result_fn in bar:
+            result_info, result = _load_valid_result_json(result_fn)
 
-        if result_info is None:  # this means it couldn't find names and/or simtype
-            continue
-        names, simtype = result_info
-        if report.lower() == "raw":
-            if result is None:
-                parsed_raw_data = [(None, None)]
+            if result_info is None:  # this means it couldn't find names and/or simtype
+                continue
+            names, simtype = result_info
+            if report.lower() == "raw":
+                if result is None:
+                    parsed_raw_data = [(None, None)]
+                else:
+                    parsed_raw_data = [
+                        (
+                            v[0]["outputs"]["unit_estimate"],
+                            v[0]["outputs"]["unit_estimate_error"],
+                        )
+                        for v in result["protocol_result"]["data"].values()
+                    ]
+                legs[names][simtype].append(parsed_raw_data)
             else:
-                parsed_raw_data = [
-                    (
-                        v[0]["outputs"]["unit_estimate"],
-                        v[0]["outputs"]["unit_estimate_error"],
-                    )
-                    for v in result["protocol_result"]["data"].values()
-                ]
-            legs[names][simtype].append(parsed_raw_data)
-        else:
-            if result is None:
-                # we want the dict name/simtype entry to exist for error reporting, even if there's no valid data
-                dGs = []
-            else:
-                dGs = [
-                    v[0]["outputs"]["unit_estimate"]
-                    for v in result["protocol_result"]["data"].values()
-                ]
-            legs[names][simtype].extend(dGs)
-
+                if result is None:
+                    # we want the dict name/simtype entry to exist for error reporting, even if there's no valid data
+                    dGs = []
+                else:
+                    dGs = [
+                        v[0]["outputs"]["unit_estimate"]
+                        for v in result["protocol_result"]["data"].values()
+                    ]
+                legs[names][simtype].extend(dGs)
     return legs
 
 
@@ -744,7 +750,6 @@ def rich_print_to_stdout(df: pd.DataFrame) -> None:
         "(Skip those edges and issue warning instead.)"
     ),
 )
-@profile
 def gather(
     results: List[os.PathLike | str],
     output: os.PathLike | str,
