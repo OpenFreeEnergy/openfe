@@ -767,6 +767,9 @@ def test_dry_run_same_mol_different_charges(benzene_modifications, vac_settings,
             # check state B charge
             c_diff = stateB_charges[i] - stateA_charges[i]
             assert pytest.approx(offset) == c_diff
+            
+            # check that the offset value is non-zero
+            assert abs(offset) > 0 * offset.units
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen

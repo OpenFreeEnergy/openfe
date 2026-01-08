@@ -295,15 +295,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         if openff_molecules is None:
             return system_generator
 
-        # First deduplicate isomoprhic molecules
-        unique_offmols: list[OFFMolecule] = []
-        for mol in openff_molecules:
-            unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
-            if unique:
-                unique_offmols.append(mol)
-
-        # register all the templates
-        system_generator.add_molecules(unique_offmols)
+        # Register all the templates, pass unique molecules to avoid clashes
+        system_generator.add_molecules(list(set(openff_molecules)))
 
         return system_generator
 

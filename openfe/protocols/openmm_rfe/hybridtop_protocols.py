@@ -327,7 +327,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         smcs_A = stateA.get_components_of_type(SmallMoleculeComponent)
         smcs_B = stateB.get_components_of_type(SmallMoleculeComponent)
         smcs_all = list(set(smcs_A).union(set(smcs_B)))
-        offmols = [m.to_openff() for m in smcs_all]
 
         def _equal_charges(moli, molj):
             # Base case, both molecules don't have charges
