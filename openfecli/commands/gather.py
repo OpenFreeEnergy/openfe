@@ -7,13 +7,14 @@ import sys
 from typing import List, Literal
 
 import click
-import gufe
 import pandas as pd
+import tqdm
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
 FAIL_STR = "Error"  # string used to indicate a failed run in output tables.
+from line_profiler import profile
 
 
 def _get_column(val: float | int) -> int:
@@ -613,12 +614,13 @@ def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path
 
     # 1) find all possible jsons
     json_fns = collect_jsons(results)
-
+    print(f"processing {len(json_fns)} JSON files ...")
     # 2) filter only result jsons
     result_fns = filter(is_results_json, json_fns)
     return result_fns
 
 
+@profile
 def _get_legs_from_result_jsons(
     result_fns: list[pathlib.Path], report: Literal["dg", "ddg", "raw"]
 ) -> dict[tuple[str, str], dict[str, list]]:
@@ -643,7 +645,7 @@ def _get_legs_from_result_jsons(
 
     legs = defaultdict(lambda: defaultdict(list))
 
-    for result_fn in result_fns:
+    for result_fn in tqdm.rich.tqdm(result_fns):
         result_info, result = _load_valid_result_json(result_fn)
 
         if result_info is None:  # this means it couldn't find names and/or simtype
@@ -742,6 +744,7 @@ def rich_print_to_stdout(df: pd.DataFrame) -> None:
         "(Skip those edges and issue warning instead.)"
     ),
 )
+@profile
 def gather(
     results: List[os.PathLike | str],
     output: os.PathLike | str,
