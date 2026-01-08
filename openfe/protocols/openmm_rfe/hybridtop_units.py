@@ -10,7 +10,6 @@ These ProtocolUnits are based on, and leverage components originating from
 the Perses toolkit (https://github.com/choderalab/perses).
 """
 
-import json
 import logging
 import os
 import pathlib
@@ -1249,9 +1248,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         Parameters
         ----------
-        scratch : pathlib.path
+        scratch : pathlib.Path
           Path to the scratch directory.
-        shared : pathlib.path
+        shared : pathlib.Path
           Path to the shared directory.
         pdb_filename : str
           The PDB file name.
@@ -1260,7 +1259,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        dict[str, str]
+        dict[str, str | pathlib.Path]
           Dictionary containing either the path to the NPZ
           file with the structural data, or the analysis error.
 
@@ -1269,8 +1268,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         Don't put energy analysis here, it uses the open file reporter
         whereas structural stuff requires the file handle to be closed.
         """
-        import json
-
         from openfe_analysis import rmsd
 
         pdb_file = shared / pdb_filename
