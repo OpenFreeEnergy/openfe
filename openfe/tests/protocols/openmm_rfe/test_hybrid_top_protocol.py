@@ -710,6 +710,71 @@ def test_dry_run_charge_backends(
                 np.testing.assert_allclose(c, ref, rtol=1e-4)
 
 
+def test_dry_run_same_mol_different_charges(benzene_modifications, vac_settings, tmpdir):
+    """
+    Issue #1120 - make sure we can do an RFE of a system with different
+    parameters but the same molecule.
+    """
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    benzene_offmol = benzene_modifications["benzene"].to_openff()
+    # Give state A some gasteiger charges
+    benzene_offmol.assign_partial_charges(partial_charge_method="gasteiger")
+    stateA_charges = copy.deepcopy(benzene_offmol.partial_charges)
+    stateA_mol = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+
+    # Give state B gasteiger charges scaled by 0.9
+    benzene_offmol.partial_charges *= 0.9
+    stateB_charges = copy.deepcopy(benzene_offmol.partial_charges)
+    stateB_mol = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+
+    # Create new mapping
+    mapping = gufe.LigandAtomMapping(
+        componentA=stateA_mol,
+        componentB=stateB_mol,
+        componentA_to_componentB={i: i for i in range(12)},
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem({"l": stateA_mol}),
+        stateB=openfe.ChemicalSystem({"l": stateB_mol}),
+        mapping=mapping,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        debug = dag_unit.run(dry=True)["debug"]
+        sampler = debug["sampler"]
+        htf = debug["hybrid_factory"]
+        hybrid_system = sampler._hybrid_system
+
+        # get the standard nonbonded force
+        nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
+
+        # get the particle parameters & offsets
+        for i in range(hybrid_system.getNumParticles()):
+            # All particles should be core atoms
+            assert i in htf._atom_classes["core_atoms"]
+
+            # offsets
+            offset = ensure_quantity(nonbond[0].getParticleParameterOffset(i)[2], "openff")
+
+            # parameters
+            c, s, e = nonbond[0].getParticleParameters(i)
+            c = ensure_quantity(c, "openff")
+
+            # check state A charge
+            assert pytest.approx(c) == stateA_charges[i]
+
+            # check state B charge
+            c_diff = stateB_charges[i] - stateA_charges[i]
+            assert pytest.approx(offset) == c_diff
+
+            # check that the offset value is non-zero
+            assert abs(offset) > 0 * offset.units
+
+
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
 def test_dry_run_user_charges(benzene_modifications, vac_settings, tmpdir):
     """
