@@ -101,7 +101,7 @@ class HybridTopologyUnitMixin:
         self.verbose = verbose
 
         if self.verbose:
-            self.logger.info("Setting up the hybrid topology simulation")
+            self.logger.info("Setting up the hybrid topology simulation")  # type: ignore[attr-defined]
 
         # set basepaths
         def _set_optional_path(basepath):
