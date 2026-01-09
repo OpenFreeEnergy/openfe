@@ -1,9 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""OpenMM Equilibrium AFE Protocol base classes
-===============================================
+"""OpenMM AFE Protocol base classes
+===================================
 
-Base classes for the equilibrium OpenMM absolute free energy ProtocolUnits.
+Base classes for the OpenMM absolute free energy ProtocolUnits.
 
 Thist mostly implements BaseAbsoluteUnit whose methods can be
 overriden to define different types of alchemical transformations.
@@ -30,7 +30,12 @@ import numpy as np
 import numpy.typing as npt
 import openmm
 import openmmtools
-from gufe import ChemicalSystem, ProteinComponent, SmallMoleculeComponent, SolventComponent
+from gufe import (
+    ChemicalSystem,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+)
 from gufe.components import Component
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity, unit

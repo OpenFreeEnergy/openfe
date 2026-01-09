@@ -28,11 +28,7 @@ Acknowledgements
 
 """
 
-from __future__ import annotations
-
-import itertools
 import logging
-import pathlib
 import uuid
 import warnings
 from collections import defaultdict
@@ -40,7 +36,6 @@ from typing import Any, Iterable, Optional, Union
 
 import gufe
 import numpy as np
-import numpy.typing as npt
 from gufe import (
     ChemicalSystem,
     ProteinComponent,
@@ -48,9 +43,7 @@ from gufe import (
     SolventComponent,
     settings,
 )
-from gufe.components import Component
-from openff.units import Quantity, unit
-from openmmtools import multistate
+from openff.units import unit as offunit
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
@@ -65,11 +58,14 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
-    SettingsBaseModel,
 )
 
 from ..openmm_utils import settings_validation, system_validation
-from .base import BaseAbsoluteUnit
+from .afe_protocol_results import AbsoluteSolvationProtocolResult
+from .ahfe_units import (
+    AbsoluteSolvationSolventUnit,
+    AbsoluteSolvationVacuumUnit,
+)
 
 due.cite(
     Doi("10.5281/zenodo.596504"),
@@ -101,305 +97,6 @@ due.cite(
 
 
 logger = logging.getLogger(__name__)
-
-
-class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a AbsoluteSolvationProtocol"""
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        # TODO: Detect when we have extensions and stitch these together?
-        if any(
-            len(pur_list) > 2
-            for pur_list in itertools.chain(
-                self.data["solvent"].values(), self.data["vacuum"].values()
-            )
-        ):
-            raise NotImplementedError("Can't stitch together results yet")
-
-    def get_individual_estimates(self) -> dict[str, list[tuple[Quantity, Quantity]]]:
-        """
-        Get the individual estimate of the free energies.
-
-        Returns
-        -------
-        dGs : dict[str, list[tuple[openff.units.Quantity, openff.units.Quantity]]]
-          A dictionary, keyed `solvent` and `vacuum` for each leg
-          of the thermodynamic cycle, with lists of tuples containing
-          the individual free energy estimates and associated MBAR
-          uncertainties for each repeat of that simulation type.
-        """
-        vac_dGs = []
-        solv_dGs = []
-
-        for pus in self.data["vacuum"].values():
-            vac_dGs.append((pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"]))
-
-        for pus in self.data["solvent"].values():
-            solv_dGs.append(
-                (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
-            )
-
-        return {"solvent": solv_dGs, "vacuum": vac_dGs}
-
-    def get_estimate(self):
-        """Get the solvation free energy estimate for this calculation.
-
-        Returns
-        -------
-        dG : openff.units.Quantity
-          The solvation free energy. This is a Quantity defined with units.
-        """
-
-        def _get_average(estimates):
-            # Get the unit value of the first value in the estimates
-            u = estimates[0][0].u
-            # Loop through estimates and get the free energy values
-            # in the unit of the first estimate
-            dGs = [i[0].to(u).m for i in estimates]
-
-            return np.average(dGs) * u
-
-        individual_estimates = self.get_individual_estimates()
-        vac_dG = _get_average(individual_estimates["vacuum"])
-        solv_dG = _get_average(individual_estimates["solvent"])
-
-        return vac_dG - solv_dG
-
-    def get_uncertainty(self):
-        """Get the solvation free energy error for this calculation.
-
-        Returns
-        -------
-        err : openff.units.Quantity
-          The standard deviation between estimates of the solvation free
-          energy. This is a Quantity defined with units.
-        """
-
-        def _get_stdev(estimates):
-            # Get the unit value of the first value in the estimates
-            u = estimates[0][0].u
-            # Loop through estimates and get the free energy values
-            # in the unit of the first estimate
-            dGs = [i[0].to(u).m for i in estimates]
-
-            return np.std(dGs) * u
-
-        individual_estimates = self.get_individual_estimates()
-        vac_err = _get_stdev(individual_estimates["vacuum"])
-        solv_err = _get_stdev(individual_estimates["solvent"])
-
-        # return the combined error
-        return np.sqrt(vac_err**2 + solv_err**2)
-
-    def get_forward_and_reverse_energy_analysis(
-        self,
-    ) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]]:
-        """
-        Get the reverse and forward analysis of the free energies.
-
-        Returns
-        -------
-        forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, openff.units.Quantity]]]]]
-            A dictionary, keyed `solvent` and `vacuum` for each leg of the
-            thermodynamic cycle which each contain a list of dictionaries
-            containing the forward and reverse analysis of each repeat
-            of that simulation type.
-
-            The forward and reverse analysis dictionaries contain:
-              - `fractions`: npt.NDArray
-                  The fractions of data used for the estimates
-              - `forward_DGs`, `reverse_DGs`: openff.units.Quantity
-                  The forward and reverse estimates for each fraction of data
-              - `forward_dDGs`, `reverse_dDGs`: openff.units.Quantity
-                  The forward and reverse estimate uncertainty for each
-                  fraction of data.
-
-            If one of the cycle leg list entries is ``None``, this indicates
-            that the analysis could not be carried out for that repeat. This
-            is most likely caused by MBAR convergence issues when attempting to
-            calculate free energies from too few samples.
-
-        Raises
-        ------
-        UserWarning
-          * If any of the forward and reverse dictionaries are ``None`` in a
-            given thermodynamic cycle leg.
-        """
-
-        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]] = {}
-
-        for key in ["solvent", "vacuum"]:
-            forward_reverse[key] = [
-                pus[0].outputs["forward_and_reverse_energies"] for pus in self.data[key].values()
-            ]
-
-            if None in forward_reverse[key]:
-                wmsg = (
-                    "One or more ``None`` entries were found in the forward "
-                    f"and reverse dictionaries of the repeats of the {key} "
-                    "calculations. This is likely caused by an MBAR convergence "
-                    "failure caused by too few independent samples when "
-                    "calculating the free energies of the 10% timeseries slice."
-                )
-                warnings.warn(wmsg)
-
-        return forward_reverse
-
-    def get_overlap_matrices(self) -> dict[str, list[dict[str, npt.NDArray]]]:
-        """
-        Get a the MBAR overlap estimates for all legs of the simulation.
-
-        Returns
-        -------
-        overlap_stats : dict[str, list[dict[str, npt.NDArray]]]
-          A dictionary with keys `solvent` and `vacuum` for each
-          leg of the thermodynamic cycle, which each containing a
-          list of dictionaries with the MBAR overlap estimates of
-          each repeat of that simulation type.
-
-          The underlying MBAR dictionaries contain the following keys:
-            * ``scalar``: One minus the largest nontrivial eigenvalue
-            * ``eigenvalues``: The sorted (descending) eigenvalues of the
-              overlap matrix
-            * ``matrix``: Estimated overlap matrix of observing a sample from
-              state i in state j
-        """
-        # Loop through and get the repeats and get the matrices
-        overlap_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
-
-        for key in ["solvent", "vacuum"]:
-            overlap_stats[key] = [
-                pus[0].outputs["unit_mbar_overlap"] for pus in self.data[key].values()
-            ]
-
-        return overlap_stats
-
-    def get_replica_transition_statistics(self) -> dict[str, list[dict[str, npt.NDArray]]]:
-        """
-        Get the replica exchange transition statistics for all
-        legs of the simulation.
-
-        Note
-        ----
-        This is currently only available in cases where a replica exchange
-        simulation was run.
-
-        Returns
-        -------
-        repex_stats : dict[str, list[dict[str, npt.NDArray]]]
-          A dictionary with keys `solvent` and `vacuum` for each
-          leg of the thermodynamic cycle, which each containing
-          a list of dictionaries containing the replica transition
-          statistics for each repeat of that simulation type.
-
-          The replica transition statistics dictionaries contain the following:
-            * ``eigenvalues``: The sorted (descending) eigenvalues of the
-              lambda state transition matrix
-            * ``matrix``: The transition matrix estimate of a replica switching
-              from state i to state j.
-        """
-        repex_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
-        try:
-            for key in ["solvent", "vacuum"]:
-                repex_stats[key] = [
-                    pus[0].outputs["replica_exchange_statistics"] for pus in self.data[key].values()
-                ]
-        except KeyError:
-            errmsg = "Replica exchange statistics were not found, did you run a repex calculation?"
-            raise ValueError(errmsg)
-
-        return repex_stats
-
-    def get_replica_states(self) -> dict[str, list[npt.NDArray]]:
-        """
-        Get the timeseries of replica states for all simulation legs.
-
-        Returns
-        -------
-        replica_states : dict[str, list[npt.NDArray]]
-          Dictionary keyed `solvent` and `vacuum` for each leg of
-          the thermodynamic cycle, with lists of replica states
-          timeseries for each repeat of that simulation type.
-        """
-        replica_states: dict[str, list[npt.NDArray]] = {"solvent": [], "vacuum": []}
-
-        def is_file(filename: str):
-            p = pathlib.Path(filename)
-
-            if not p.exists():
-                errmsg = f"File could not be found {p}"
-                raise ValueError(errmsg)
-
-            return p
-
-        def get_replica_state(nc, chk):
-            nc = is_file(nc)
-            dir_path = nc.parents[0]
-            chk = is_file(dir_path / chk).name
-
-            reporter = multistate.MultiStateReporter(
-                storage=nc, checkpoint_storage=chk, open_mode="r"
-            )
-
-            retval = np.asarray(reporter.read_replica_thermodynamic_states())
-            reporter.close()
-
-            return retval
-
-        for key in ["solvent", "vacuum"]:
-            for pus in self.data[key].values():
-                states = get_replica_state(
-                    pus[0].outputs["nc"],
-                    pus[0].outputs["last_checkpoint"],
-                )
-                replica_states[key].append(states)
-
-        return replica_states
-
-    def equilibration_iterations(self) -> dict[str, list[float]]:
-        """
-        Get the number of equilibration iterations for each simulation.
-
-        Returns
-        -------
-        equilibration_lengths : dict[str, list[float]]
-          Dictionary keyed `solvent` and `vacuum` for each leg
-          of the thermodynamic cycle, with lists containing the
-          number of equilibration iterations for each repeat
-          of that simulation type.
-        """
-        equilibration_lengths: dict[str, list[float]] = {}
-
-        for key in ["solvent", "vacuum"]:
-            equilibration_lengths[key] = [
-                pus[0].outputs["equilibration_iterations"] for pus in self.data[key].values()
-            ]
-
-        return equilibration_lengths
-
-    def production_iterations(self) -> dict[str, list[float]]:
-        """
-        Get the number of production iterations for each simulation.
-        Returns the number of uncorrelated production samples for each
-        repeat of the calculation.
-
-        Returns
-        -------
-        production_lengths : dict[str, list[float]]
-          Dictionary keyed `solvent` and `vacuum` for each leg of the
-          thermodynamic cycle, with lists with the number
-          of production iterations for each repeat of that simulation
-          type.
-        """
-        production_lengths: dict[str, list[float]] = {}
-
-        for key in ["solvent", "vacuum"]:
-            production_lengths[key] = [
-                pus[0].outputs["production_iterations"] for pus in self.data[key].values()
-            ]
-
-        return production_lengths
 
 
 class AbsoluteSolvationProtocol(gufe.Protocol):
@@ -439,8 +136,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 nonbonded_method="nocutoff",
             ),
             thermo_settings=settings.ThermoSettings(
-                temperature=298.15 * unit.kelvin,
-                pressure=1 * unit.bar,
+                temperature=298.15 * offunit.kelvin,
+                pressure=1 * offunit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
             lambda_settings=LambdaSettings(
@@ -460,9 +157,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             solvent_engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=0.1 * unit.nanosecond,
-                equilibration_length=0.2 * unit.nanosecond,
-                production_length=0.5 * unit.nanosecond,
+                equilibration_length_nvt=0.1 * offunit.nanosecond,
+                equilibration_length=0.2 * offunit.nanosecond,
+                production_length=0.5 * offunit.nanosecond,
             ),
             solvent_equil_output_settings=MDOutputSettings(
                 equil_nvt_structure="equil_nvt_structure.pdb",
@@ -472,8 +169,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=14,
-                equilibration_length=1.0 * unit.nanosecond,
-                production_length=10.0 * unit.nanosecond,
+                equilibration_length=1.0 * offunit.nanosecond,
+                production_length=10.0 * offunit.nanosecond,
             ),
             solvent_output_settings=MultiStateOutputSettings(
                 output_filename="solvent.nc",
@@ -481,8 +178,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             ),
             vacuum_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=None,
-                equilibration_length=0.2 * unit.nanosecond,
-                production_length=0.5 * unit.nanosecond,
+                equilibration_length=0.2 * offunit.nanosecond,
+                production_length=0.5 * offunit.nanosecond,
             ),
             vacuum_equil_output_settings=MDOutputSettings(
                 equil_nvt_structure=None,
@@ -492,8 +189,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             ),
             vacuum_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=14,
-                equilibration_length=0.5 * unit.nanosecond,
-                production_length=2.0 * unit.nanosecond,
+                equilibration_length=0.5 * offunit.nanosecond,
+                production_length=2.0 * offunit.nanosecond,
             ),
             vacuum_output_settings=MultiStateOutputSettings(
                 output_filename="vacuum.nc",
@@ -714,7 +411,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Check vacuum equilibration MD settings is 0 ns
         nvt_time = self.settings.vacuum_equil_simulation_settings.equilibration_length_nvt
         if nvt_time is not None:
-            if not np.allclose(nvt_time, 0 * unit.nanosecond):
+            if not np.allclose(nvt_time, 0 * offunit.nanosecond):
                 errmsg = "NVT equilibration cannot be run in vacuum simulation"
                 raise ValueError(errmsg)
 
@@ -806,157 +503,3 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         for k, v in unsorted_vacuum_repeats.items():
             repeats["vacuum"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
         return repeats
-
-
-class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
-    """
-    Protocol Unit for the vacuum phase of an absolute solvation free energy
-    """
-
-    simtype = "vacuum"
-
-    def _get_components(self):
-        """
-        Get the relevant components for a vacuum transformation.
-
-        Returns
-        -------
-        alchem_comps : dict[str, list[Component]]
-          A list of alchemical components
-        solv_comp : None
-          For the gas phase transformation, None will always be returned
-          for the solvent component of the chemical system.
-        prot_comp : Optional[ProteinComponent]
-          The protein component of the system, if it exists.
-        small_mols : dict[Component, OpenFF Molecule]
-          The openff Molecules to add to the system. This
-          is equivalent to the alchemical components in stateA (since
-          we only allow for disappearing ligands).
-        """
-        stateA = self._inputs["stateA"]
-        alchem_comps = self._inputs["alchemical_components"]
-
-        off_comps = {m: m.to_openff() for m in alchem_comps["stateA"]}
-
-        _, prot_comp, _ = system_validation.get_components(stateA)
-
-        # Notes:
-        # 1. Our input state will contain a solvent, we ``None`` that out
-        # since this is the gas phase unit.
-        # 2. Our small molecules will always just be the alchemical components
-        # (of stateA since we enforce only one disappearing ligand)
-        return alchem_comps, None, prot_comp, off_comps
-
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
-        """
-        Extract the relevant settings for a vacuum transformation.
-
-        Returns
-        -------
-        settings : dict[str, SettingsBaseModel]
-          A dictionary with the following entries:
-            * forcefield_settings : OpenMMSystemGeneratorFFSettings
-            * thermo_settings : ThermoSettings
-            * charge_settings : OpenFFPartialChargeSettings
-            * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
-            * lambda_settings : LambdaSettings
-            * engine_settings : OpenMMEngineSettings
-            * integrator_settings : IntegratorSettings
-            * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : MDOutputSettings
-            * simulation_settings : SimulationSettings
-            * output_settings: MultiStateOutputSettings
-        """
-        prot_settings = self._inputs["protocol"].settings
-
-        settings = {}
-        settings["forcefield_settings"] = prot_settings.vacuum_forcefield_settings
-        settings["thermo_settings"] = prot_settings.thermo_settings
-        settings["charge_settings"] = prot_settings.partial_charge_settings
-        settings["solvation_settings"] = prot_settings.solvation_settings
-        settings["alchemical_settings"] = prot_settings.alchemical_settings
-        settings["lambda_settings"] = prot_settings.lambda_settings
-        settings["engine_settings"] = prot_settings.vacuum_engine_settings
-        settings["integrator_settings"] = prot_settings.integrator_settings
-        settings["equil_simulation_settings"] = prot_settings.vacuum_equil_simulation_settings
-        settings["equil_output_settings"] = prot_settings.vacuum_equil_output_settings
-        settings["simulation_settings"] = prot_settings.vacuum_simulation_settings
-        settings["output_settings"] = prot_settings.vacuum_output_settings
-
-        return settings
-
-
-class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
-    """
-    Protocol Unit for the solvent phase of an absolute solvation free energy
-    """
-
-    simtype = "solvent"
-
-    def _get_components(self):
-        """
-        Get the relevant components for a solvent transformation.
-
-        Returns
-        -------
-        alchem_comps : dict[str, Component]
-          A list of alchemical components
-        solv_comp : SolventComponent
-          The SolventComponent of the system
-        prot_comp : Optional[ProteinComponent]
-          The protein component of the system, if it exists.
-        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
-          SmallMoleculeComponents to add to the system.
-        """
-        stateA = self._inputs["stateA"]
-        alchem_comps = self._inputs["alchemical_components"]
-
-        solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
-        off_comps = {m: m.to_openff() for m in small_mols}
-
-        # We don't need to check that solv_comp is not None, otherwise
-        # an error will have been raised when calling `validate_solvent`
-        # in the Protocol's `_create`.
-        # Similarly we don't need to check prot_comp since that's also
-        # disallowed on create
-        return alchem_comps, solv_comp, prot_comp, off_comps
-
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
-        """
-        Extract the relevant settings for a solvent transformation.
-
-        Returns
-        -------
-        settings : dict[str, SettingsBaseModel]
-          A dictionary with the following entries:
-            * forcefield_settings : OpenMMSystemGeneratorFFSettings
-            * thermo_settings : ThermoSettings
-            * charge_settings : OpenFFPartialChargeSettings
-            * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
-            * lambda_settings : LambdaSettings
-            * engine_settings : OpenMMEngineSettings
-            * integrator_settings : IntegratorSettings
-            * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : MDOutputSettings
-            * simulation_settings : MultiStateSimulationSettings
-            * output_settings: MultiStateOutputSettings
-        """
-        prot_settings = self._inputs["protocol"].settings
-
-        settings = {}
-        settings["forcefield_settings"] = prot_settings.solvent_forcefield_settings
-        settings["thermo_settings"] = prot_settings.thermo_settings
-        settings["charge_settings"] = prot_settings.partial_charge_settings
-        settings["solvation_settings"] = prot_settings.solvation_settings
-        settings["alchemical_settings"] = prot_settings.alchemical_settings
-        settings["lambda_settings"] = prot_settings.lambda_settings
-        settings["engine_settings"] = prot_settings.solvent_engine_settings
-        settings["integrator_settings"] = prot_settings.integrator_settings
-        settings["equil_simulation_settings"] = prot_settings.solvent_equil_simulation_settings
-        settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
-        settings["simulation_settings"] = prot_settings.solvent_simulation_settings
-        settings["output_settings"] = prot_settings.solvent_output_settings
-
-        return settings
