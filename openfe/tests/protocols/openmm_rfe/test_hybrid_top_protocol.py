@@ -1063,7 +1063,7 @@ def test_dry_run_membrane_complex(
 
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.protocol_repeats = 1
-    settings.integrator_settings.barostat = 'MonteCarloMembraneBarostat'
+    settings.integrator_settings.barostat = "MonteCarloMembraneBarostat"
     settings.engine_settings.compute_platform = "cpu"
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",

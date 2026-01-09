@@ -1158,27 +1158,22 @@ class SepTopProtocol(gufe.Protocol):
           in either stateA or stateB.
         """
         # check that there is a protein component
-        if not any(isinstance(comp, ProteinComponent) for comp in
-                   stateA.values()):
+        if not any(isinstance(comp, ProteinComponent) for comp in stateA.values()):
             errmsg = "No ProteinComponent found in stateA"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, ProteinComponent) for comp in
-                   stateB.values()):
+        if not any(isinstance(comp, ProteinComponent) for comp in stateB.values()):
             errmsg = "No ProteinComponent found in stateB"
             raise ValueError(errmsg)
 
         # check that there is a BaseSolvent component
-        if not any(isinstance(comp, BaseSolventComponent) for comp in
-                   stateA.values()):
+        if not any(isinstance(comp, BaseSolventComponent) for comp in stateA.values()):
             errmsg = "No BaseSolventComponent found in stateA"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, BaseSolventComponent) for comp in
-                   stateB.values()):
+        if not any(isinstance(comp, BaseSolventComponent) for comp in stateB.values()):
             errmsg = "No BaseSolventComponent found in stateB"
             raise ValueError(errmsg)
-
 
     @staticmethod
     def _validate_alchemical_components(alchemical_components: dict[str, list[Component]]) -> None:
