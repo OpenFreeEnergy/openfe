@@ -1528,7 +1528,7 @@ class TestA2AMembraneDryRun:
         s.complex_solvation_settings.box_shape = "dodecahedron"
         s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
         s.solvent_solvation_settings.box_shape = "cube"
-        s.complex_integrator_settings.barostat = 'MonteCarloMembraneBarostat'
+        s.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
         s.forcefield_settings.forcefields = [
             "amber/ff14SB.xml",
             "amber/tip3p_standard.xml",

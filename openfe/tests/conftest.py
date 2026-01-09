@@ -117,7 +117,7 @@ def pytest_configure(config):
 
 def mol_from_smiles(smiles: str) -> Chem.Mol:
     m = Chem.MolFromSmiles(smiles)
-    AllChem.Compute2DCoords(m)
+    AllChem.Compute2DCoords(m)  # type: ignore[attr-defined]
 
     return m
 

@@ -37,11 +37,11 @@ import MDAnalysis as mda
 import numpy as np
 import numpy.typing as npt
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
-    BaseSolventComponent,
     SolvatedPDBComponent,
     SolventComponent,
     settings,
@@ -659,13 +659,11 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If stateB contains any unique Components.
           If the alchemical species is charged.
         """
-        if not (stateA.contains(ProteinComponent) and stateB.contains(
-                ProteinComponent)):
+        if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
             errmsg = "No ProteinComponent found"
             raise ValueError(errmsg)
 
-        if not (stateA.contains(BaseSolventComponent) and stateB.contains(
-                BaseSolventComponent)):
+        if not (stateA.contains(BaseSolventComponent) and stateB.contains(BaseSolventComponent)):
             errmsg = "No BaseSolventComponent found"
             raise ValueError(errmsg)
 

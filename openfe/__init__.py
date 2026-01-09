@@ -72,6 +72,7 @@ from gufe.protocols import (
 
 from . import analysis, orchestration, setup, utils
 from .setup import (
+    KartografAtomMapper,
     LigandAtomMapper,
     LigandNetwork,
     LomapAtomMapper,
