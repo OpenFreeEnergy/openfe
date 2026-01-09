@@ -140,6 +140,7 @@ def test_no_results_found():
 
 
 _RBFE_EXPECTED_DG = b"""
+Loading results:
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
 lig_ejm_31	-0.09	0.05
 lig_ejm_42	0.7	0.1
@@ -154,6 +155,7 @@ lig_jmc_28	-1.25	0.08
 """
 
 _RBFE_EXPECTED_DDG = b"""
+Loading results:
 ligand_i	ligand_j	DDG(i->j) (kcal/mol)	uncertainty (kcal/mol)
 lig_ejm_31	lig_ejm_42	0.8	0.1
 lig_ejm_31	lig_ejm_46	-0.89	0.06
@@ -167,6 +169,7 @@ lig_ejm_46	lig_jmc_28	-0.27	0.06
 """
 
 _RBFE_EXPECTED_RAW = b"""\
+Loading results:
 leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	lig_ejm_31	lig_ejm_42	-14.9	0.8
 complex	lig_ejm_31	lig_ejm_42	-14.8	0.8
