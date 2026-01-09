@@ -20,7 +20,7 @@ from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingComplexUnit,
 )
-from openfe.protocols.openmm_septop.utils import deserialize
+from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 
 

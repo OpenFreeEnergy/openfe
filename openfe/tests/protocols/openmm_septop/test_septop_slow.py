@@ -18,7 +18,8 @@ from openfe.protocols.openmm_septop import (
     SepTopProtocol,
     SepTopSolventSetupUnit,
 )
-from openfe.protocols.openmm_septop.utils import SepTopParameterState, deserialize
+from openfe.protocols.openmm_septop.utils import SepTopParameterState
+from openfe.protocols.openmm_utils.serialization import deserialize
 
 
 @pytest.fixture()
