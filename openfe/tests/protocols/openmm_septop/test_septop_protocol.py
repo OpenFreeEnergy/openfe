@@ -1628,7 +1628,9 @@ class TestA2AMembraneDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(settings.complex_integrator_settings.barostat_frequency.m)
+        assert barostat[0].getFrequency() == int(
+            settings.complex_integrator_settings.barostat_frequency.m
+        )
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
@@ -1662,7 +1664,9 @@ class TestA2AMembraneDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(settings.complex_integrator_settings.barostat_frequency.m)
+        assert barostat[0].getFrequency() == int(
+            settings.complex_integrator_settings.barostat_frequency.m
+        )
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
