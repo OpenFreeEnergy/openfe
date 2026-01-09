@@ -8,10 +8,13 @@ Protocols.
 from typing import Optional, Tuple
 
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     Component,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
 )
 from openff.toolkit import Molecule as OFFMol
@@ -91,13 +94,15 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     ------
     ValueError
       * If there are multiple SolventComponents in the ChemicalSystem.
-      * If there is a SolventComponent and the `nonbonded_method` is
+      * If there is a BaseSolventComponent and the `nonbonded_method` is
         `nocutoff`.
+      * If there is no BaseSolventComponent and the `nonbonded_method` is `pme`.
       * If the SolventComponent solvent is not water.
     """
     solv_comps = state.get_components_of_type(SolventComponent)
+    base_solv_comps = state.get_components_of_type(BaseSolventComponent)
 
-    if len(solv_comps) > 0:
+    if len(base_solv_comps) > 0:
         if nonbonded_method.lower() == "nocutoff":
             errmsg = "nocutoff cannot be used for solvent transformations"
             raise ValueError(errmsg)
@@ -106,7 +111,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
             errmsg = "Multiple SolventComponent found, only one is supported"
             raise ValueError(errmsg)
 
-        if solv_comps[0].smiles != "O":
+        if len(solv_comps) == 1 and solv_comps[0].smiles != "O":
             errmsg = "Non water solvent is not currently supported"
             raise ValueError(errmsg)
     else:
@@ -134,6 +139,12 @@ def validate_protein(state: ChemicalSystem):
 
     if len(prot_comps) > 1:
         errmsg = "Multiple ProteinComponent found, only one is supported"
+        raise ValueError(errmsg)
+
+    solvated_pdb = state.get_components_of_type(SolvatedPDBComponent)
+
+    if len(solvated_pdb) == 1 and not solvated_pdb[0]._periodic_box_vectors:
+        errmsg = "No periodic box vector is supplied with the SolvatedPDBComponent"
         raise ValueError(errmsg)
 
 

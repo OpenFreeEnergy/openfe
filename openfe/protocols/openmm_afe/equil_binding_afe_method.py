@@ -37,9 +37,12 @@ import MDAnalysis as mda
 import numpy as np
 import numpy.typing as npt
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -591,7 +594,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
             solvent_solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
+            solvent_integrator_settings=IntegratorSettings(),
+            complex_integrator_settings=IntegratorSettings(),
             restraint_settings=BoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
@@ -649,7 +653,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         ------
         ValueError
           If stateA & stateB do not contain a ProteinComponent.
-          If stateA & stateB do not contain a SolventComponent.
+          If stateA & stateB do not contain a BaseSolventComponent.
           If stateA has more than one unique Component.
           If the stateA unique Component is not a SmallMoleculeComponent.
           If stateB contains any unique Components.
@@ -659,8 +663,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             errmsg = "No ProteinComponent found"
             raise ValueError(errmsg)
 
-        if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
-            errmsg = "No SolventComponent found"
+        if not (stateA.contains(BaseSolventComponent) and stateB.contains(BaseSolventComponent)):
+            errmsg = "No BaseSolventComponent found"
             raise ValueError(errmsg)
 
         # Needs gufe 1.3
@@ -944,6 +948,12 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # an error will have been raised when calling `validate_solvent`
         # in the Protocol's `_create`.
         # Similarly we don't need to check prot_comp
+
+        # If there is an SolvatedPDBComponent, we set the solv_comp
+        # in the complex to None, as it is only used in the solvent leg
+        if isinstance(prot_comp, SolvatedPDBComponent):
+            solv_comp = None
+
         return alchem_comps, solv_comp, prot_comp, off_comps
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
@@ -978,7 +988,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings["alchemical_settings"] = prot_settings.alchemical_settings
         settings["lambda_settings"] = prot_settings.complex_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
-        settings["integrator_settings"] = prot_settings.integrator_settings
+        settings["integrator_settings"] = prot_settings.complex_integrator_settings
         settings["equil_simulation_settings"] = prot_settings.complex_equil_simulation_settings
         settings["equil_output_settings"] = prot_settings.complex_equil_output_settings
         settings["simulation_settings"] = prot_settings.complex_simulation_settings
@@ -1325,7 +1335,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         settings["alchemical_settings"] = prot_settings.alchemical_settings
         settings["lambda_settings"] = prot_settings.solvent_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
-        settings["integrator_settings"] = prot_settings.integrator_settings
+        settings["integrator_settings"] = prot_settings.solvent_integrator_settings
         settings["equil_simulation_settings"] = prot_settings.solvent_equil_simulation_settings
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings
