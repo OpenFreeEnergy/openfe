@@ -49,7 +49,11 @@ from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings,
 )
 from .hybridtop_protocol_results import RelativeHybridTopologyProtocolResult
-from .hybridtop_units import RelativeHybridTopologyProtocolUnit
+from .hybridtop_units import (
+    HybridTopologyMultiStateAnalysisUnit,
+    HybridTopologyMultiStateSimulationUnit,
+    HybridTopologySetupUnit,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -593,23 +597,47 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Anames = ",".join(c.name for c in alchem_comps["stateA"])
         Bnames = ",".join(c.name for c in alchem_comps["stateB"])
 
-        # our DAG has no dependencies, so just list units
-        n_repeats = self.settings.protocol_repeats
+        # DAG dependency is setup -> simulation -> analysis
+        #                     |--------------------->
+        setup_units = []
+        simulation_units = []
+        analysis_units = []
 
-        units = [
-            RelativeHybridTopologyProtocolUnit(
+        for i in range(self.settings.protocol_repeats):
+            repeat_id = int(uuid.uuid4())
+
+            setup = HybridTopologySetupUnit(
                 protocol=self,
                 stateA=stateA,
                 stateB=stateB,
                 ligandmapping=ligandmapping,
+                alchemical_components=alchem_comps,
                 generation=0,
-                repeat_id=int(uuid.uuid4()),
-                name=f"{Anames} to {Bnames} repeat {i} generation 0",
+                repeat_id=repeat_id,
+                name=(f"HybridTopology Setup: {Anames} to {Bnames} repeat {i} generation 0"),
             )
-            for i in range(n_repeats)
-        ]
 
-        return units
+            simulation = HybridTopologyMultiStateSimulationUnit(
+                protocol=self,
+                setup_results=setup,
+                generation=0,
+                repeat_id=repeat_id,
+                name=(f"HybridTopology Simulation: {Anames} to {Bnames} repeat {i} generation 0"),
+            )
+
+            analysis = HybridTopologyMultiStateAnalysisUnit(
+                protocol=self,
+                setup_results=setup,
+                simulation_results=simulation,
+                generation=0,
+                repeat_id=repeat_id,
+                name=(f"HybridTopology Analysis: {Anames} to {Bnames} repeat {i} generation 0"),
+            )
+            setup_units.append(setup)
+            simulation_units.append(simulation)
+            analysis_units.append(analysis)
+
+        return [*setup_units, *simulation_units, *analysis_units]
 
     def _gather(self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]) -> dict[str, Any]:
         # result units will have a repeat_id and generations within this repeat_id
@@ -618,7 +646,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         for d in protocol_dag_results:
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
-                if not pu.ok():
+                # We only need the analysis units that are ok
+                if ("Analysis" not in pu.name) or (not pu.ok()):
                     continue
 
                 unsorted_repeats[pu.outputs["repeat_id"]].append(pu)

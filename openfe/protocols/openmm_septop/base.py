@@ -66,7 +66,8 @@ from ..openmm_utils import (
     settings_validation,
     system_creation,
 )
-from .utils import SepTopParameterState, deserialize
+from .utils import SepTopParameterState
+from openfe.protocols.openmm_utils.serialization import deserialize
 
 logger = logging.getLogger(__name__)
 

@@ -96,7 +96,7 @@ from ..restraint_utils.settings import (
     DistanceRestraintSettings,
 )
 from .base import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
-from .utils import serialize
+from openfe.protocols.openmm_utils.serialization import serialize
 
 due.cite(
     Doi("10.1021/acs.jctc.3c00282"),
