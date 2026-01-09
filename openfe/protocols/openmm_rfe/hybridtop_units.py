@@ -1346,7 +1346,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         ----------
         pdb_file : pathlib.Path
           Path to the PDB file.
-        trj_filen : pathlib.Path
+        trj_file : pathlib.Path
           Path to the trajectory file.
         output_directory : pathlib.Path
           The output directory where plots and the data NPZ file
