@@ -42,7 +42,7 @@ class AtomMappingEdge(Edge):
         molA_to_molB: Dict[int, int],
     ):
         # create the image in a format matplotlib can handle
-        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)
+        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)  # type: ignore[attr-defined]
         d2d.drawOptions().setBackgroundColour((1, 1, 1, 0.7))
         # TODO: use a custom draw2d object; figure size from transforms
         img_bytes = draw_one_molecule_mapping(
