@@ -10,7 +10,6 @@ These ProtocolUnits are based on, and leverage components originating from
 the Perses toolkit (https://github.com/choderalab/perses).
 """
 
-import json
 import logging
 import os
 import pathlib
@@ -1229,42 +1228,62 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             }
 
     @staticmethod
-    def structural_analysis(scratch, shared) -> dict:
-        # don't put energy analysis in here, it uses the open file reporter
-        # whereas structural stuff requires that the file handle is closed
-        # TODO: we should just make openfe_analysis write an npz instead!
-        analysis_out = scratch / "structural_analysis.json"
+    def structural_analysis(
+        scratch: pathlib.Path,
+        shared: pathlib.Path,
+        pdb_filename: str,
+        trj_filename: str,
+    ) -> dict[str, str | pathlib.Path]:
+        """
+        Run structural analysis using ``openfe-analysis``.
 
-        ret = subprocess.run(
-            [
-                "openfe_analysis",  # CLI entry point
-                "RFE_analysis",  # CLI option
-                str(shared),  # Where the simulation.nc fille
-                str(analysis_out),  # Where the analysis json file is written
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if ret.returncode:
-            return {"structural_analysis_error": ret.stderr}
+        Parameters
+        ----------
+        scratch : pathlib.Path
+          Path to the scratch directory.
+        shared : pathlib.Path
+          Path to the shared directory.
+        pdb_filename : str
+          The PDB file name.
+        trj_filename : str
+          The trajectory file name.
 
-        with open(analysis_out, "rb") as f:
-            data = json.load(f)
+        Returns
+        -------
+        dict[str, str | pathlib.Path]
+          Dictionary containing either the path to the NPZ
+          file with the structural data, or the analysis error.
 
-        savedir = pathlib.Path(shared)
+        Notes
+        -----
+        Don't put energy analysis here, it uses the open file reporter
+        whereas structural stuff requires the file handle to be closed.
+        """
+        from openfe_analysis import rmsd
+
+        pdb_file = shared / pdb_filename
+        trj_file = shared / trj_filename
+
+        try:
+            data = rmsd.gather_rms_data(pdb_file, trj_file)
+        # TODO: change this to more specific exception types
+        except Exception as e:
+            return {"structural_analysis_error": str(e)}
+
+        # Generate plots
         if d := data["protein_2D_RMSD"]:
             fig = plotting.plot_2D_rmsd(d)
-            fig.savefig(savedir / "protein_2D_RMSD.png")
+            fig.savefig(shared / "protein_2D_RMSD.png")
             plt.close(fig)
             f2 = plotting.plot_ligand_COM_drift(data["time(ps)"], data["ligand_wander"])
-            f2.savefig(savedir / "ligand_COM_drift.png")
+            f2.savefig(shared / "ligand_COM_drift.png")
             plt.close(f2)
 
         f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
-        f3.savefig(savedir / "ligand_RMSD.png")
+        f3.savefig(shared / "ligand_RMSD.png")
         plt.close(f3)
 
-        # Save to numpy compressed format (~ 6x more space efficient than JSON)
+        # Write out NPZ with the analyzed data
         np.savez_compressed(
             shared / "structural_analysis.npz",
             protein_RMSD=np.asarray(data["protein_RMSD"], dtype=np.float32),
@@ -1285,7 +1304,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
 
-        structural_analysis_outputs = self.structural_analysis(ctx.scratch, ctx.shared)
+        structural_analysis_outputs = self.structural_analysis(
+            scratch=ctx.scratch,
+            shared=ctx.shared,
+            pdb_filename=self._inputs["protocol"].settings.output_settings.output_structure,
+            trj_filename=self._inputs["protocol"].settings.output_settings.output_filename,
+        )
 
         return {
             "repeat_id": self._inputs["repeat_id"],
