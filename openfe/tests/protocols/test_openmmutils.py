@@ -427,7 +427,7 @@ class TestSystemCreation:
 
         thermosets.temperature = 320 * unit.kelvin
         thermosets.pressure = 1.25 * unit.bar
-        thermosets.membrane = True
+        intsets.barostat = "MonteCarloMembraneBarostat"
         intsets.barostat_frequency = 200 * unit.timestep
         generator = system_creation.get_system_generator(
             ffsets, thermosets, intsets, Path("./db.json"), False
@@ -483,7 +483,7 @@ class TestSystemCreation:
         get_settings,
     ):
         ffsets, intsets, thermosets = get_settings
-        thermosets.membrane = True
+        intsets.barostat = "MonteCarloMembraneBarostat"
         ffsets.forcefields = [
             "amber/ff14SB.xml",
             "amber/tip3p_standard.xml",

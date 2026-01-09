@@ -244,7 +244,7 @@ class TestT4LysozymeDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
+        assert barostat[0].getFrequency() == int(settings.complex_integrator_settings.barostat_frequency.m)
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
@@ -275,7 +275,7 @@ class TestT4LysozymeDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
+        assert barostat[0].getFrequency() == int(settings.complex_integrator_settings.barostat_frequency.m)
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
@@ -464,8 +464,10 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
             "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
             "amber/phosaa10.xml",  # Handles THE TPO
         ]
-        s.integrator_settings.reassign_velocities = True
-        s.integrator_settings.barostat_frequency = 100.0 * offunit.timestep
+        s.complex_integrator_settings.reassign_velocities = True
+        s.solvent_integrator_settings.reassign_velocities = True
+        s.complex_integrator_settings.barostat_frequency = 100.0 * offunit.timestep
+        s.solvent_integrator_settings.barostat_frequency = 100.0 * offunit.timestep
         s.thermo_settings.pressure = 1.1 * offunit.bar
         return s
 
@@ -554,7 +556,7 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
         s.complex_solvation_settings.box_shape = "dodecahedron"
         s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
         s.solvent_solvation_settings.box_shape = "cube"
-        s.integrator_settings.barostat = 'MonteCarloMembraneBarostat'
+        s.complex_integrator_settings.barostat = 'MonteCarloMembraneBarostat'
         s.forcefield_settings.forcefields = [
             "amber/ff14SB.xml",
             "amber/tip3p_standard.xml",

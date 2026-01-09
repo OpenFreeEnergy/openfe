@@ -594,7 +594,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
             solvent_solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
+            solvent_integrator_settings=IntegratorSettings(),
+            complex_integrator_settings=IntegratorSettings(),
             restraint_settings=BoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
@@ -950,7 +951,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # in the Protocol's `_create`.
         # Similarly we don't need to check prot_comp
 
-        # If there is an SolvatedPDBComponent, we set the SolventComponent
+        # If there is an SolvatedPDBComponent, we set the solv_comp
         # in the complex to None, as it is only used in the solvent leg
         if isinstance(prot_comp, SolvatedPDBComponent):
             solv_comp = None
@@ -989,7 +990,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings["alchemical_settings"] = prot_settings.alchemical_settings
         settings["lambda_settings"] = prot_settings.complex_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
-        settings["integrator_settings"] = prot_settings.integrator_settings
+        settings["integrator_settings"] = prot_settings.complex_integrator_settings
         settings["equil_simulation_settings"] = prot_settings.complex_equil_simulation_settings
         settings["equil_output_settings"] = prot_settings.complex_equil_output_settings
         settings["simulation_settings"] = prot_settings.complex_simulation_settings
@@ -1336,7 +1337,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         settings["alchemical_settings"] = prot_settings.alchemical_settings
         settings["lambda_settings"] = prot_settings.solvent_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
-        settings["integrator_settings"] = prot_settings.integrator_settings
+        settings["integrator_settings"] = prot_settings.solvent_integrator_settings
         settings["equil_simulation_settings"] = prot_settings.solvent_equil_simulation_settings
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings

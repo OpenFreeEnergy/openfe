@@ -78,34 +78,6 @@ def get_alchemical_components(
     return alchemical_components
 
 
-# def require_components(systems, component_types, msg=None):
-#     """
-#     Ensure that every system in `systems` contains at least one component
-#     whose type is in `component_types`.
-#
-#     Parameters
-#     ----------
-#     systems : iterable
-#         Chemical systems / states to check (e.g., stateA, stateB).
-#     component_types : tuple[type]
-#         Component classes to test for (e.g., (ProteinComponent, ProteinMembraneComponent)).
-#     msg : str, optional
-#         Custom error message.
-#
-#     Raises
-#     ------
-#     ValueError
-#         If any system does not contain at least one component of the allowed types.
-#     """
-#     for i, system in enumerate(systems):
-#         if not any(system.contains(t) for t in component_types):
-#             default = (
-#                 f"System {i} does not contain any of the required component types: "
-#                 f"{component_types}"
-#             )
-#             raise ValueError(msg or default)
-
-
 def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     """
     Checks that the ChemicalSystem component has the right solvent

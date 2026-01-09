@@ -124,9 +124,7 @@ def get_system_generator(
     # https://livecomsjournal.org/index.php/livecoms/article/view/v1i1e5966
     # if membrane barostat and not has_solvent
     # ToDo: We could also only check for the barostat setting here. But for
-    #       that we would need adaptive settings for the rfe protocol and
-    #       separate solvent and complex integrator/barostat settings for
-    #       ABFE/SepTop protocols
+    #       that we first need adaptive settings for the rfe protocol
     if integrator_settings.barostat == "MonteCarloMembraneBarostat" and not has_solvent:
         barostat = MonteCarloMembraneBarostat(
             ensure_quantity(thermo_settings.pressure, "openmm"),

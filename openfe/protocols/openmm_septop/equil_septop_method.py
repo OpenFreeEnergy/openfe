@@ -230,6 +230,8 @@ class SepTopComplexMixin:
         small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         small_mols = small_mols | small_mols_B
 
+        # If there is an SolvatedPDBComponent, we set the solv_comp
+        # in the complex to None, as it is only used in the solvent leg
         if isinstance(prot_comp, SolvatedPDBComponent):
             solv_comp = None
 
@@ -267,7 +269,7 @@ class SepTopComplexMixin:
             "alchemical_settings": prot_settings.alchemical_settings,
             "lambda_settings": prot_settings.complex_lambda_settings,
             "engine_settings": prot_settings.engine_settings,
-            "integrator_settings": prot_settings.integrator_settings,
+            "integrator_settings": prot_settings.complex_integrator_settings,
             "equil_simulation_settings": prot_settings.complex_equil_simulation_settings,
             "equil_output_settings": prot_settings.complex_equil_output_settings,
             "simulation_settings": prot_settings.complex_simulation_settings,
@@ -353,7 +355,7 @@ class SepTopSolventMixin:
             "alchemical_settings": prot_settings.alchemical_settings,
             "lambda_settings": prot_settings.solvent_lambda_settings,
             "engine_settings": prot_settings.engine_settings,
-            "integrator_settings": prot_settings.integrator_settings,
+            "integrator_settings": prot_settings.solvent_integrator_settings,
             "equil_simulation_settings": prot_settings.solvent_equil_simulation_settings,
             "equil_output_settings": prot_settings.solvent_equil_output_settings,
             "simulation_settings": prot_settings.solvent_simulation_settings,
@@ -1084,7 +1086,8 @@ class SepTopProtocol(gufe.Protocol):
                 solvent_padding=1.0 * unit.nanometer,
             ),
             engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
+            solvent_integrator_settings=IntegratorSettings(),
+            complex_integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
                 equilibration_length=0.1 * unit.nanosecond,

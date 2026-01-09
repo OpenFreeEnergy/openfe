@@ -889,7 +889,7 @@ def test_virtual_sites_no_reassign(
         "amber/tip4pew_standard.xml",  # FF with VS
     ]
     protocol_dry_settings.solvent_solvation_settings.solvent_model = "tip4pew"
-    protocol_dry_settings.integrator_settings.reassign_velocities = False
+    protocol_dry_settings.solvent_integrator_settings.reassign_velocities = False
 
     protocol = SepTopProtocol(
         settings=protocol_dry_settings,
@@ -963,7 +963,7 @@ def test_dry_run_benzene_toluene_tip4p(
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvent_solvation_settings.solvent_model = "tip4pew"
-    protocol_dry_settings.integrator_settings.reassign_velocities = True
+    protocol_dry_settings.solvent_integrator_settings.reassign_velocities = True
 
     protocol = SepTopProtocol(settings=protocol_dry_settings)
 
@@ -1528,7 +1528,7 @@ class TestA2AMembraneDryRun:
         s.complex_solvation_settings.box_shape = "dodecahedron"
         s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
         s.solvent_solvation_settings.box_shape = "cube"
-        s.integrator_settings.barostat = 'MonteCarloMembraneBarostat'
+        s.complex_integrator_settings.barostat = 'MonteCarloMembraneBarostat'
         s.forcefield_settings.forcefields = [
             "amber/ff14SB.xml",
             "amber/tip3p_standard.xml",
@@ -1628,7 +1628,7 @@ class TestA2AMembraneDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
+        assert barostat[0].getFrequency() == int(settings.complex_integrator_settings.barostat_frequency.m)
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
@@ -1662,7 +1662,7 @@ class TestA2AMembraneDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
+        assert barostat[0].getFrequency() == int(settings.complex_integrator_settings.barostat_frequency.m)
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
