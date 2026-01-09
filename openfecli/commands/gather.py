@@ -643,7 +643,7 @@ def _get_legs_from_result_jsons(
 
     with click.progressbar(
         result_fns,
-        label="Loading results: ",
+        label="Loading results:",
         fill_char="▇",
         empty_char=" ",
         bar_template="%(label)s  %(bar)s  %(info)s files",
