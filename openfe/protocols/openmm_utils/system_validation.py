@@ -111,7 +111,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
             errmsg = "Multiple SolventComponent found, only one is supported"
             raise ValueError(errmsg)
 
-        if solv_comps[0].smiles != "O":
+        if len(solv_comps) == 1 and solv_comps[0].smiles != "O":
             errmsg = "Non water solvent is not currently supported"
             raise ValueError(errmsg)
     else:
