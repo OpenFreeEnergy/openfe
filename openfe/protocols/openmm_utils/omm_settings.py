@@ -41,6 +41,7 @@ InversePicosecondQuantity: TypeAlias = Annotated[
     GufeQuantity, specify_quantity_units("1/picosecond")
 ]
 TimestepQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("timestep")]
+SurfaceTensionQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("bar*nanometer")]
 
 
 class BaseSolvationSettings(SettingsBaseModel):
@@ -382,11 +383,27 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance: float = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
+    barostat: Literal["MonteCarloBarostat", "MonteCarloMembraneBarostat"] = "MonteCarloBarostat"
+    """
+    The barostat to be used in the simulations. Default MonteCarloBarostat.
+    Notes
+    -----
+    If the system contains a membrane, use the `MonteCarloMembraneBarostat`.
+    """
     barostat_frequency: TimestepQuantity = 25.0 * unit.timestep
     """
     Frequency at which volume scaling changes should be attempted.
     Note: The barostat frequency is ignored for gas-phase simulations.
     Default 25 * unit.timestep.
+    """
+    surface_tension: Optional[SurfaceTensionQuantity] = 0 * unit.bar * unit.nanometer
+    """
+    The surface tension in bar*nm to define the `MonteCarloMembraneBarostat`.
+    Default 0 * unit.bar * unit.nanometer.
+    Notes
+    -----
+    The `surface_tension` is ignored when the `MonteCarloMembraneBarostat` is
+    not used.
     """
     remove_com: bool = False
     """

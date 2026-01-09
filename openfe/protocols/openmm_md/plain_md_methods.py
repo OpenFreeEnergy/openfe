@@ -23,8 +23,8 @@ import mdtraj
 import openmm
 import openmm.unit as omm_unit
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
-    ProteinMembraneComponent,
     SmallMoleculeComponent,
     settings,
 )
@@ -189,11 +189,7 @@ class PlainMDProtocol(gufe.Protocol):
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
-        system_name = (
-            "Solvent MD"
-            if solvent_comp is not None or isinstance(protein_comp, ProteinMembraneComponent)
-            else "Vacuum MD"
-        )
+        system_name = "Solvent MD" if stateA.contains(BaseSolventComponent) else "Vacuum MD"
 
         for comp in [protein_comp] + small_mols:
             if comp is not None:

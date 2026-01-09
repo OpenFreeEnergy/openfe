@@ -50,10 +50,12 @@ import openmm
 import openmm.unit
 import openmm.unit as omm_units
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -228,7 +230,7 @@ class SepTopComplexMixin:
         small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         small_mols = small_mols | small_mols_B
 
-        if isinstance(prot_comp, ProteinMembraneComponent):
+        if isinstance(prot_comp, SolvatedPDBComponent):
             solv_comp = None
 
         return alchem_comps, solv_comp, prot_comp, small_mols
@@ -1155,21 +1157,28 @@ class SepTopProtocol(gufe.Protocol):
           If there is no SolventComponent and no ProteinComponent
           in either stateA or stateB.
         """
-        # Check that there is a ProteinComponent or ProteinMembraneComponent
-        components = (ProteinComponent, ProteinMembraneComponent)
-        system_validation.require_components(
-            systems=[stateA, stateB],
-            component_types=components,
-            msg="No ProteinComponent or ProteinMembraneComponent found",
-        )
+        # check that there is a protein component
+        if not any(isinstance(comp, ProteinComponent) for comp in
+                   stateA.values()):
+            errmsg = "No ProteinComponent found in stateA"
+            raise ValueError(errmsg)
 
-        # Check that there is a SolventComponent or ProteinMembraneComponent
-        components = (SolventComponent, ProteinMembraneComponent)
-        system_validation.require_components(
-            systems=[stateA, stateB],
-            component_types=components,
-            msg="No SolventComponent or ProteinMembraneComponent found",
-        )
+        if not any(isinstance(comp, ProteinComponent) for comp in
+                   stateB.values()):
+            errmsg = "No ProteinComponent found in stateB"
+            raise ValueError(errmsg)
+
+        # check that there is a BaseSolvent component
+        if not any(isinstance(comp, BaseSolventComponent) for comp in
+                   stateA.values()):
+            errmsg = "No BaseSolventComponent found in stateA"
+            raise ValueError(errmsg)
+
+        if not any(isinstance(comp, BaseSolventComponent) for comp in
+                   stateB.values()):
+            errmsg = "No BaseSolventComponent found in stateB"
+            raise ValueError(errmsg)
+
 
     @staticmethod
     def _validate_alchemical_components(alchemical_components: dict[str, list[Component]]) -> None:

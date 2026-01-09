@@ -554,7 +554,7 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
         s.complex_solvation_settings.box_shape = "dodecahedron"
         s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
         s.solvent_solvation_settings.box_shape = "cube"
-        s.thermo_settings.membrane = True
+        s.integrator_settings.barostat = 'MonteCarloMembraneBarostat'
         s.forcefield_settings.forcefields = [
             "amber/ff14SB.xml",
             "amber/tip3p_standard.xml",

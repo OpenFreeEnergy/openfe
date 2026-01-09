@@ -41,6 +41,8 @@ from gufe import (
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
+    BaseSolventComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -650,25 +652,21 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         ------
         ValueError
           If stateA & stateB do not contain a ProteinComponent.
-          If stateA & stateB do not contain a SolventComponent.
+          If stateA & stateB do not contain a BaseSolventComponent.
           If stateA has more than one unique Component.
           If the stateA unique Component is not a SmallMoleculeComponent.
           If stateB contains any unique Components.
           If the alchemical species is charged.
         """
-        components = (ProteinComponent, ProteinMembraneComponent)
-        system_validation.require_components(
-            systems=[stateA, stateB],
-            component_types=components,
-            msg="No ProteinComponent or ProteinMembraneComponent found",
-        )
+        if not (stateA.contains(ProteinComponent) and stateB.contains(
+                ProteinComponent)):
+            errmsg = "No ProteinComponent found"
+            raise ValueError(errmsg)
 
-        components = (SolventComponent, ProteinMembraneComponent)
-        system_validation.require_components(
-            systems=[stateA, stateB],
-            component_types=components,
-            msg="No SolventComponent or ProteinMembraneComponent found",
-        )
+        if not (stateA.contains(BaseSolventComponent) and stateB.contains(
+                BaseSolventComponent)):
+            errmsg = "No BaseSolventComponent found"
+            raise ValueError(errmsg)
 
         # Needs gufe 1.3
         diff = stateA.component_diff(stateB)
@@ -952,9 +950,9 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # in the Protocol's `_create`.
         # Similarly we don't need to check prot_comp
 
-        # If there is a ProteinMembraneComponent, we set the SolventComponent
+        # If there is an SolvatedPDBComponent, we set the SolventComponent
         # in the complex to None, as it is only used in the solvent leg
-        if isinstance(prot_comp, ProteinMembraneComponent):
+        if isinstance(prot_comp, SolvatedPDBComponent):
             solv_comp = None
 
         return alchem_comps, solv_comp, prot_comp, off_comps

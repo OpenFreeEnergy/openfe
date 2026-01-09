@@ -126,7 +126,7 @@ def test_validate_no_protcomp(
         }
     )
 
-    errmsg = "No ProteinComponent or ProteinMembraneComponent found"
+    errmsg = "No ProteinComponent found"
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
@@ -147,7 +147,7 @@ def test_validate_endstates_nosolvcomp_stateA(benzene_modifications, T4_protein_
         }
     )
 
-    with pytest.raises(ValueError, match="No SolventComponent or ProteinMembraneComponent found"):
+    with pytest.raises(ValueError, match="No BaseSolventComponent found"):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
@@ -167,7 +167,7 @@ def test_validate_endstates_nosolvcomp_stateB(benzene_modifications, T4_protein_
         }
     )
 
-    with pytest.raises(ValueError, match="No SolventComponent"):
+    with pytest.raises(ValueError, match="No BaseSolventComponent"):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 

@@ -15,6 +15,7 @@ from gufe import (
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
 )
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
@@ -121,10 +122,15 @@ def get_system_generator(
     # - Frequencey as defined in `thermo_settings`
     # Reference:
     # https://livecomsjournal.org/index.php/livecoms/article/view/v1i1e5966
-    if thermo_settings.membrane and not has_solvent:
+    # if membrane barostat and not has_solvent
+    # ToDo: We could also only check for the barostat setting here. But for
+    #       that we would need adaptive settings for the rfe protocol and
+    #       separate solvent and complex integrator/barostat settings for
+    #       ABFE/SepTop protocols
+    if integrator_settings.barostat == "MonteCarloMembraneBarostat" and not has_solvent:
         barostat = MonteCarloMembraneBarostat(
             ensure_quantity(thermo_settings.pressure, "openmm"),
-            0,
+            to_openmm(integrator_settings.surface_tension),
             ensure_quantity(thermo_settings.temperature, "openmm"),
             MonteCarloMembraneBarostat.XYIsotropic,
             MonteCarloMembraneBarostat.ZFree,
@@ -226,11 +232,11 @@ def get_omm_modeller(
     for comp, mol in small_mols.items():
         _add_small_mol(comp, mol, system_modeller, component_resids)
 
-    # If we are working with a protein-membrane system (with lipids and solvent
+    # If we are working with a presolvated system (with solvent
     # already added) and we have predefined box vectors, then skip solvation
     # with Modeller.
     skip_solvation = False
-    if isinstance(protein_comp, ProteinMembraneComponent) and protein_comp._periodic_box_vectors:
+    if isinstance(protein_comp, SolvatedPDBComponent) and protein_comp._periodic_box_vectors:
         # Set the periodic box vectors
         system_modeller.topology.setPeriodicBoxVectors(protein_comp._periodic_box_vectors)
         skip_solvation = True

@@ -366,7 +366,7 @@ def test_charge_error_create(charged_benzene_modifications, T4_protein_component
     ],
 )
 def test_validate_complex_endstates_protcomp(request, system_A, system_B, fail_endstate):
-    with pytest.raises(ValueError, match="No ProteinComponent or ProteinMembraneComponent found"):
+    with pytest.raises(ValueError, match="No ProteinComponent found"):
         SepTopProtocol._validate_complex_endstates(
             request.getfixturevalue(system_A),
             request.getfixturevalue(system_B),
@@ -396,7 +396,7 @@ def test_validate_complex_endstates_nosolvcomp(
     system_B,
     fail_endstate,
 ):
-    with pytest.raises(ValueError, match="No SolventComponent or ProteinMembraneComponent found"):
+    with pytest.raises(ValueError, match="No BaseSolventComponent found"):
         SepTopProtocol._validate_complex_endstates(
             request.getfixturevalue(system_A),
             request.getfixturevalue(system_B),
@@ -1528,7 +1528,7 @@ class TestA2AMembraneDryRun:
         s.complex_solvation_settings.box_shape = "dodecahedron"
         s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
         s.solvent_solvation_settings.box_shape = "cube"
-        s.thermo_settings.membrane = True
+        s.integrator_settings.barostat = 'MonteCarloMembraneBarostat'
         s.forcefield_settings.forcefields = [
             "amber/ff14SB.xml",
             "amber/tip3p_standard.xml",
