@@ -10,7 +10,6 @@ These ProtocolUnits are based on, and leverage components originating from
 the Perses toolkit (https://github.com/choderalab/perses).
 """
 
-import json
 import logging
 import os
 import pathlib
@@ -248,15 +247,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         if openff_molecules is None:
             return system_generator
 
-        # First deduplicate isomoprhic molecules
-        unique_offmols = []
-        for mol in openff_molecules:
-            unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
-            if unique:
-                unique_offmols.append(mol)
-
-        # register all the templates
-        system_generator.add_molecules(unique_offmols)
+        # Register all the templates, pass unique molecules to avoid clashes
+        system_generator.add_molecules(list(set(openff_molecules)))
 
         return system_generator
 
@@ -437,7 +429,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         ----------
         stateA : ChemicalSystem
           ChemicalSystem defining end state A.
-        stateB : ChmiecalSysstem
+        stateB : ChemicalSystem
           ChemicalSystem defining end state B.
         mapping : LigandAtomMapping
           The mapping for alchemical components between state A and B.
@@ -447,7 +439,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
           The common ProteinComponent between the end states, if there is is one.
         solvent_component : SolventComponent | None
           The common SolventComponent between the end states, if there is one.
-        small_mols : dict[SmallMoleculeCOmponent, openff.toolkit.Molecule]
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           The small molecules for both end states.
 
         Returns
@@ -471,12 +463,12 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         if self.verbose:
             self.logger.info("Parameterizing systems")
 
-        def _filter_mols(smols, state):
+        def _filter_small_mols(smols, state):
             return {smc: offmol for smc, offmol in smols.items() if state.contains(smc)}
 
         states_inputs = {
-            "A": {"state": stateA, "mols": _filter_mols(small_mols, stateA)},
-            "B": {"state": stateB, "mols": _filter_mols(small_mols, stateB)},
+            "A": {"state": stateA, "mols": _filter_small_mols(small_mols, stateA)},
+            "B": {"state": stateB, "mols": _filter_small_mols(small_mols, stateB)},
         }
 
         # Everything involving systemgenerator handling has a risk of
@@ -861,7 +853,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         )
 
         # Validate for known issue when dealing with virtual sites
-        # and mutltistate simulations
+        # and multistate simulations
         if not integrator_settings.reassign_velocities:
             for particle_idx in range(system.getNumParticles()):
                 if system.isVirtualSite(particle_idx):
@@ -894,9 +886,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         simulation_settings : MultiStateSimulationSettings
           Settings defining out the simulation should be run.
         """
-        nc = self.shared_basepath / output_settings.output_filename
-        # The checkpoint file in openmmtools is taken as a file relative
-        # to the location of the nc file, so you only want the filename
+        nc = storage_path / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
 
         if output_settings.positions_write_frequency is not None:
@@ -1366,7 +1356,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
 
         Returns
         -------
-        dict[str, str]
+        dict[str, str | pathlib.Path]
           Dictionary containing either the path to the NPZ
           file with the structural data, or the analysis error.
 

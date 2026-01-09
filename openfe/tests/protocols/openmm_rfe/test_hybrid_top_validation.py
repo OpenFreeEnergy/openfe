@@ -365,7 +365,7 @@ def test_charge_difference_no_corr(benzene_to_benzoic_mapping):
 
 
 def test_charge_difference_no_solvent(benzene_to_benzoic_mapping):
-    errmsg = "Cannot use eplicit charge correction without solvent"
+    errmsg = "Cannot use explicit charge correction without solvent"
 
     with pytest.raises(ValueError, match=errmsg):
         openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
