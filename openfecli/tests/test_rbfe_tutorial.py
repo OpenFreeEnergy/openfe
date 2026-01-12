@@ -145,7 +145,7 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, ref_gath
                     "system": Path("system.xml.bz2"),
                     "positions": Path("positions.npy"),
                     "pdb_structure": Path("hybrid_system.pdb"),
-                    "selection_indices": np.zeros(100),
+                    "selection_indices": np.zeros(31),
                 },
             ),
             mock.patch(
@@ -159,13 +159,10 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, ref_gath
                 },
             ),
             mock.patch(
-                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit._execute",
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit.run",
                 return_value={
-                    "repeat_id": "foo",
-                    "generation": 0,
                     "nc": Path("file.nc"),
                     "checkpoint": Path("chk.chk"),
-                    "unit_estimate": 4.2 * unit.kilocalories_per_mole,
                 },
             ),
             mock.patch(
