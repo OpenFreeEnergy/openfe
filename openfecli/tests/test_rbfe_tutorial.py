@@ -92,25 +92,6 @@ def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
 
 
 @pytest.fixture
-def mock_execute(expected_transformations):
-    def fake_execute(*args, **kwargs):
-        return {
-            "repeat_id": kwargs["repeat_id"],
-            "generation": kwargs["generation"],
-            "nc": "file.nc",
-            "last_checkpoint": "checkpoint.nc",
-            "unit_estimate": 4.2 * unit.kilocalories_per_mole,
-        }
-
-    with mock.patch(
-        "openfe.protocols.openmm_rfe.equil_rfe_methods.RelativeHybridTopologyProtocolUnit._execute"
-    ) as m:
-        m.side_effect = fake_execute
-
-        yield m
-
-
-@pytest.fixture
 def ref_gather():
     return """\
 ligand_i\tligand_j\tDDG(i->j) (kcal/mol)\tuncertainty (kcal/mol)
