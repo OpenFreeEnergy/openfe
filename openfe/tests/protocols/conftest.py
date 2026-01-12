@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
+import json
 from importlib import resources
 from typing import Optional
 
@@ -398,4 +399,45 @@ def chloroethane_to_ethane_mapping(chloroethane, ethane):
             # Cl-H not mapped, all others one-to-one
             1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7,
         }
+    )
+
+@pytest.fixture(scope="module")
+def chloroethane_ethane_ghostly_modifications():
+    return {
+        "lambda_0": {
+            "removed_angles": [],
+            "removed_dihedrals": [
+                "6, 2, 1, 8",
+                "7, 2, 1, 8",
+                "5, 2, 1, 8",
+            ],
+            "stiffened_angles": [],
+            "softened_angles": {
+                "4, 1, 8": {"k": 5.0, "theta0": 2.1329879928506985},
+                "2, 1, 8": {"k": 5.0, "theta0": 1.9101780962868387},
+                "3, 1, 8": {"k": 5.0, "theta0": 1.6792925223888766},
+            },
+        },
+        "lambda_1": {
+            "removed_angles": [],
+            "removed_dihedrals": ["0, 1, 2, 6", "0, 1, 2, 7", "0, 1, 2, 5"],
+            "stiffened_angles": [],
+            "softened_angles": {
+                "0, 1, 4": {"k": 5.0, "theta0": 2.230554843104804},
+                "0, 1, 2": {"k": 5.0, "theta0": 1.8982497804952694},
+                "0, 1, 3": {"k": 5.0, "theta0": 1.543215972886785},
+            },
+        },
+    }
+
+
+@pytest.fixture(scope="module")
+def chloroethane_to_ethane_mapping_ghostly(chloroethane_to_ethane_mapping, chloroethane_ethane_ghostly_modifications):
+    """Return a mapping from chloroethane to ethane with ghosted corrections stored on componentA."""
+
+    chloro_ghostly = chloroethane_to_ethane_mapping.componentA.copy_with_replacements(**{"molprops": {"ghostly_corrections": json.dumps(chloroethane_ethane_ghostly_modifications)}})
+    return openfe.LigandAtomMapping(
+        componentA=chloro_ghostly,
+        componentB=chloroethane_to_ethane_mapping.componentB,
+        componentA_to_componentB=chloroethane_to_ethane_mapping.componentA_to_componentB
     )

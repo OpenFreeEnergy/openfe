@@ -1009,6 +1009,15 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 scale_factor=alchem_settings.dummy_junction_angle_torsion_scale_factor,
                 scale_angles=alchem_settings.scale_dummy_junction_angle_terms
             )
+        elif alchem_settings.apply_ghostly_corrections:
+            self.logger.info(f"Applying ghostly corrections to angles and torsions involving dummy atoms in the hybrid system.")
+            corrections = _rfe_utils.topologyhelpers._load_ghostly_corrections(mapping.componentA.to_dict()["molprops"].get("ghostly_corrections", {}))
+            print("Ghostly corrections:", corrections)
+
+            hybrid_factory = _rfe_utils.topologyhelpers._apply_ghostly_corrections(
+                htf=hybrid_factory,
+                corrections=corrections,
+            )
 
         # 4. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the

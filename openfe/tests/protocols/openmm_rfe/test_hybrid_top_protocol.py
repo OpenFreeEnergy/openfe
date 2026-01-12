@@ -517,6 +517,286 @@ def test_dry_run_scaled_torsion_junction_terms(phase, chloroethane_to_ethane_map
             assert k == ethane_torsion.k[term_index].m_as(unit.kilojoule_per_mole) * omm_unit.kilojoule_per_mole
 
 
+@pytest.mark.parametrize("phase", ["vacuum", "solvent"])
+def test_apply_ghostly_corrections_angles_chloro(chloroethane_to_ethane_mapping_ghostly, phase, vac_settings, solv_settings, tmpdir):
+    """Test applying the ghostly corrections to angle terms for chloroethane to ethane transformation in different phases."""
+
+    state_a_dict = {"ligand": chloroethane_to_ethane_mapping_ghostly.componentA}
+    state_b_dict = {"ligand": chloroethane_to_ethane_mapping_ghostly.componentB}
+    if phase == "vacuum":
+        settings = vac_settings
+    else:
+        settings = solv_settings
+        state_a_dict["solvent"] = openfe.SolventComponent()
+        state_b_dict["solvent"] = openfe.SolventComponent()
+
+    # turn off the angle and torsion scaling to just test the ghostly corrections
+    scale_factor = 1.0
+    settings.alchemical_settings.dummy_junction_angle_torsion_scale_factor = scale_factor
+    settings.alchemical_settings.scale_dummy_junction_angle_terms = False
+    # Turn on 1-4 scaling as well
+    settings.alchemical_settings.turn_off_core_unique_exceptions = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+    ff_name = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in ff_name:
+        ff_name += ".offxml"
+    ff = ForceField(ff_name)
+    off_chloroethane = chloroethane_to_ethane_mapping_ghostly.componentA.to_openff()
+    off_ethane = chloroethane_to_ethane_mapping_ghostly.componentB.to_openff()
+    chloro_labels = ff.label_molecules(off_chloroethane.to_topology())[0]
+    ethane_labels = ff.label_molecules(off_ethane.to_topology())[0]
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem(state_a_dict),
+        stateB=openfe.ChemicalSystem(state_b_dict),
+        mapping=chloroethane_to_ethane_mapping_ghostly,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        htf = sampler._hybrid_factory
+        # get the dummy atoms for later comparison
+        dummy_new_atoms = htf._atom_classes["unique_new_atoms"]
+        dummy_old_atoms = htf._atom_classes["unique_old_atoms"]
+        # the new dummy atom is added to the end of the system so we need to account for that
+        ethane_dummy_index = list(htf._atom_classes["unique_new_atoms"])[0]
+
+        # get the shifted ghostly corrections to compare against
+        corrections = topologyhelpers._load_ghostly_corrections(chloroethane_to_ethane_mapping_ghostly.componentA.to_dict()["molprops"]["ghostly_corrections"])
+        corrections = topologyhelpers._shift_ghostly_correction_indices(
+            htf, corrections
+        )
+
+        # extract the forces to compare
+        hybrid_system = htf.hybrid_system
+        forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+        if phase == "solvent":
+            # in solvent there should be a barostat
+            assert "MonteCarloBarostat" in forces
+        else:
+            assert "MonteCarloBarostat" not in forces
+
+        # based on the corrections check that the angle and torsion force contains the expected parameters
+        # there should be 0 standard angle force terms (non-interpolated)
+        # as we now soften the unique angles they should have been moved to the custom angle force
+        standard_angle_force = forces["HarmonicAngleForce"]
+        num_angles = standard_angle_force.getNumAngles()
+        assert num_angles == 0
+
+        # there should then be 15 interpolated angle terms
+        # included a mix of unique and fully mapped terms as we now soften unique angles in this junction type
+        custom_angle_force = forces["CustomAngleForce"]
+        # there should be a single global parameter for lambda
+        assert custom_angle_force.getNumGlobalParameters() == 1
+        # make sure it has the correct name
+        assert custom_angle_force.getGlobalParameterName(0) == "lambda_angles"
+
+        num_angles = custom_angle_force.getNumAngles()
+        assert num_angles == 15
+        for i in range(num_angles):
+            p1, p2, p3, params = custom_angle_force.getAngleParameters(i)
+            angle = (p1, p2, p3)
+            # check if this angle is expected to be in the correction terms
+            if 1 <= len(dummy_new_atoms.intersection(angle)) < 3:
+                # this angle or the reverse should be in the lambda_0 softened angles
+                assert (prob_angle := angle) in corrections["lambda_0"]["softened_angles"] or (
+                    prob_angle := angle[::-1]) in corrections["lambda_0"]["softened_angles"]
+                # check that the parameters are as expected
+                # we should be turning on the angle so it should be soft at lambda_0 and on at lambda_1
+                assert params[0] == corrections["lambda_0"]["softened_angles"][prob_angle]["theta0"]  # theta0
+                assert params[1] == (corrections["lambda_0"]["softened_angles"][prob_angle][
+                                         "k"] * unit.kilocalorie_per_mole).m_as(
+                    unit.kilojoule_per_mole)  # k at lambda_0
+                # at lambda_1 it should be fully on so check against the ethane parameters
+                # map the angle to ethane indices
+                e1 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p1] if p1 != ethane_dummy_index else 0
+                e2 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p2]
+                e3 = chloroethane_to_ethane_mapping_ghostly.componentB_to_componentA[p3] if p3 != ethane_dummy_index else 0
+                ethane_angle = ethane_labels["Angles"][(e1, e2, e3)]
+                assert params[2] == ethane_angle.angle.m_as(unit.radian)  # theta0
+                assert params[3] == ethane_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2)
+
+            elif 1 <= len(dummy_old_atoms.intersection(angle)) < 3:
+                # this angle or the reverse should be in the lambda_1 softened angles
+                assert (prob_angle := angle) in corrections["lambda_1"]["softened_angles"] or (
+                    prob_angle := angle[::-1]) in corrections["lambda_1"]["softened_angles"]
+                # check that the parameters are as expected
+                # we should be turning off the angle so it should be on at lambda_0 and soft at lambda_1
+                # at lambda_0 it should be fully on so check against the chloroethane parameters
+                chloro_angle = chloro_labels["Angles"][angle]
+                assert params[0] == chloro_angle.angle.m_as(unit.radian)  # theta0
+                assert params[1] == chloro_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2)
+                assert params[2] == corrections["lambda_1"]["softened_angles"][prob_angle]["theta0"]  # theta0
+                assert params[3] == (corrections["lambda_1"]["softened_angles"][prob_angle][
+                                         "k"] * unit.kilocalorie_per_mole).m_as(
+                    unit.kilojoule_per_mole)  # k at lambda_1
+            else:
+                # this is a fully mapped angle with no dummies so it should not be in the corrections and should be
+                # using the normal interpolated parameters
+                assert angle not in corrections["lambda_0"]["softened_angles"] and angle[::-1] not in \
+                       corrections["lambda_0"]["softened_angles"]
+                assert angle not in corrections["lambda_1"]["softened_angles"] and angle[::-1] not in \
+                       corrections["lambda_1"]["softened_angles"]
+                chloro_angle = chloro_labels["Angles"][angle]
+                e1 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p1]
+                e2 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p2]
+                e3 = chloroethane_to_ethane_mapping_ghostly.componentB_to_componentA[p3]
+                ethane_angle = ethane_labels["Angles"][(e1, e2, e3)]
+                # lambda_0 angle
+                assert params[0] == chloro_angle.angle.m_as(unit.radian)
+                # lambda_0 k
+                assert params[1] == chloro_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2)
+                # lambda_1 angle
+                assert params[2] == ethane_angle.angle.m_as(unit.radian)
+                # lambda_1 k
+                assert params[3] == ethane_angle.k.m_as(unit.kilojoule_per_mole / unit.radian ** 2)
+
+
+@pytest.mark.parametrize("phase", ["vacuum", "solvent"])
+def test_apply_ghostly_corrections_torsions_chloro(chloroethane_to_ethane_mapping_ghostly, phase, vac_settings, solv_settings, tmpdir):
+    """Test applying the ghostly corrections to torsions terms for chloroethane to ethane transformation in different phases."""
+
+    state_a_dict = {"ligand": chloroethane_to_ethane_mapping_ghostly.componentA}
+    state_b_dict = {"ligand": chloroethane_to_ethane_mapping_ghostly.componentB}
+    if phase == "vacuum":
+        settings = vac_settings
+    else:
+        settings = solv_settings
+        state_a_dict["solvent"] = openfe.SolventComponent()
+        state_b_dict["solvent"] = openfe.SolventComponent()
+
+    # turn off the angle and torsion scaling to just test the ghostly corrections
+    scale_factor = 1.0
+    settings.alchemical_settings.dummy_junction_angle_torsion_scale_factor = scale_factor
+    settings.alchemical_settings.scale_dummy_junction_angle_terms = False
+    # Turn on 1-4 scaling as well
+    settings.alchemical_settings.turn_off_core_unique_exceptions = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+    ff_name = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in ff_name:
+        ff_name += ".offxml"
+    ff = ForceField(ff_name)
+    off_chloroethane = chloroethane_to_ethane_mapping_ghostly.componentA.to_openff()
+    off_ethane = chloroethane_to_ethane_mapping_ghostly.componentB.to_openff()
+    chloro_labels = ff.label_molecules(off_chloroethane.to_topology())[0]
+    ethane_labels = ff.label_molecules(off_ethane.to_topology())[0]
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem(state_a_dict),
+        stateB=openfe.ChemicalSystem(state_b_dict),
+        mapping=chloroethane_to_ethane_mapping_ghostly,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        htf = sampler._hybrid_factory
+        # get the dummy atoms for later comparison
+        dummy_new_atoms = htf._atom_classes["unique_new_atoms"]
+        dummy_old_atoms = htf._atom_classes["unique_old_atoms"]
+        # the new dummy atom is added to the end of the system so we need to account for that
+        ethane_dummy_index = list(htf._atom_classes["unique_new_atoms"])[0]
+
+        # get the shifted ghostly corrections to compare against
+        corrections = topologyhelpers._load_ghostly_corrections(chloroethane_to_ethane_mapping_ghostly.componentA.to_dict()["molprops"]["ghostly_corrections"])
+        corrections = topologyhelpers._shift_ghostly_correction_indices(
+            htf, corrections
+        )
+
+        # extract the forces to compare
+        hybrid_system = htf.hybrid_system
+        forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+        if phase == "solvent":
+            # in solvent there should be a barostat
+            assert "MonteCarloBarostat" in forces
+        else:
+            assert "MonteCarloBarostat" not in forces
+
+        # there should be 9 interpolated torsion terms only involving ghost atoms
+        # there should be 3 terms for the chloroethane unique torsions with 2 peroidicities each
+        # and 3 terms for the ethane unique torsions with 1 periodicity
+        custom_torsion_force = forces["CustomTorsionForce"]
+        # there should be a single global parameter for lambda
+        assert custom_torsion_force.getNumGlobalParameters() == 1
+        # make sure it has the correct name
+        assert custom_torsion_force.getGlobalParameterName(0) == "lambda_torsions"
+        num_torsions = custom_torsion_force.getNumTorsions()
+        assert num_torsions == 9
+
+        for i in range(num_torsions):
+            p1, p2, p3, p4, params = custom_torsion_force.getTorsionParameters(i)
+            torsion = (p1, p2, p3, p4)
+            # check if this torsion is expected to be in the correction terms
+            if 1 <= len(dummy_new_atoms.intersection(torsion)) < 4:
+                # this torsion or the reverse should be in the lambda_0 removed torsions
+                assert torsion in corrections["lambda_0"]["removed_dihedrals"] or torsion[::-1] in \
+                       corrections["lambda_0"]["removed_dihedrals"]
+                # check that the parameters are as expected
+                # we should be turning on the torsion so it should be soft at lambda_0 and on at lambda_1
+                # so we need to check against the ethane parameters
+                e1 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p1] if p1 != ethane_dummy_index else 0
+                e2 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p2]
+                e3 = chloroethane_to_ethane_mapping_ghostly.componentB_to_componentA[p3]
+                e4 = chloroethane_to_ethane_mapping_ghostly.componentB_to_componentA[p4] if p4 != ethane_dummy_index else 0
+                ethane_torsion = ethane_labels["ProperTorsions"][(e1, e2, e3, e4)]
+                assert params[0] in ethane_torsion.periodicity
+                term_index = ethane_torsion.periodicity.index(params[0])
+                assert params[1] == ethane_torsion.phase[term_index].m_as(unit.radian)  # phase
+                assert params[2] == 0.0  # k
+                assert params[3] == ethane_torsion.periodicity[term_index]
+                assert params[4] == ethane_torsion.phase[term_index].m_as(unit.radian)
+                assert params[5] == ethane_torsion.k[term_index].m_as(unit.kilojoule_per_mole)
+
+            elif 1 <= len(dummy_old_atoms.intersection(torsion)) < 4:
+                # this torsion or the reverse should be in the lambda_1 removed torsions
+                assert torsion in corrections["lambda_1"]["removed_dihedrals"] or torsion[::-1] in \
+                       corrections["lambda_1"]["removed_dihedrals"]
+                # check that the parameters are as expected
+                # we should be turning off the torsion so it should be on at lambda_0 and soft at lambda_1
+                # so we need to check against the chloroethane parameters
+                chloro_torsion = chloro_labels["ProperTorsions"][torsion]
+                assert params[0] in chloro_torsion.periodicity
+                term_index = chloro_torsion.periodicity.index(params[0])
+                assert params[1] == chloro_torsion.phase[term_index].m_as(unit.radian)  # phase
+                assert params[2] == chloro_torsion.k[term_index].m_as(unit.kilojoule_per_mole)  # k
+                assert params[3] == chloro_torsion.periodicity[term_index]  # periodicity
+                assert params[4] == chloro_torsion.phase[term_index].m_as(unit.radian)  # phase
+                assert params[5] == 0.0  # k
+
+            else:
+                assert False, f"All torsions in this test should involve at least one dummy atom, but got {torsion}"
+
+        # check the standard torsion force has the correct number of terms
+        standard_torsion_force = forces["PeriodicTorsionForce"]
+        num_standard_torsions = standard_torsion_force.getNumTorsions()
+        # there should be 6 fully mapped torsions which each have a single periodicity
+        assert num_standard_torsions == 6
+        # make sure the terms are correct
+        for i in range(num_standard_torsions):
+            p1, p2, p3, p4, periodicity, phase, k = standard_torsion_force.getTorsionParameters(i)
+            chloro_torsion = chloro_labels["ProperTorsions"][(p1, p2, p3, p4)]
+            e1 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p1]
+            e2 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p2]
+            e3 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p3]
+            e4 = chloroethane_to_ethane_mapping_ghostly.componentA_to_componentB[p4]
+            ethane_torsion = ethane_labels["ProperTorsions"][(e1, e2, e3, e4)]
+            # check against chloroethane parameters
+            assert periodicity in chloro_torsion.periodicity
+            term_index = chloro_torsion.periodicity.index(periodicity)
+            assert phase == chloro_torsion.phase[term_index].m_as(unit.radian) * omm_unit.radian
+            assert k == chloro_torsion.k[term_index].m_as(unit.kilojoule_per_mole) * omm_unit.kilojoule_per_mole
+            # check against ethane parameters which should be the same
+            assert periodicity in ethane_torsion.periodicity
+            term_index = ethane_torsion.periodicity.index(periodicity)
+            assert phase == ethane_torsion.phase[term_index].m_as(unit.radian) * omm_unit.radian
+            assert k == ethane_torsion.k[term_index].m_as(unit.kilojoule_per_mole) * omm_unit.kilojoule_per_mole
+
+
 def test_dry_run_gaff_vacuum(
     benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmpdir
 ):

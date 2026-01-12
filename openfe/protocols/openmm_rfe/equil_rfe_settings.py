@@ -109,6 +109,10 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     Whether to scale angles (True) or not (False) in the dummy-core junction, by default True.
     """
+    apply_ghostly_corrections: bool = True
+    """
+    Whether to apply ghostly corrections to the free energy estimate, by default True these should be stored on componentA of the mapping.
+    """
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):
