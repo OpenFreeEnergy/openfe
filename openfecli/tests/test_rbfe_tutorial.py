@@ -8,8 +8,10 @@ Tests the easy start guide
 import os
 from importlib import resources
 from os import path
+from pathlib import Path
 from unittest import mock
 
+import numpy as np
 import pytest
 from click.testing import CliRunner
 from openff.units import unit
@@ -124,10 +126,10 @@ lig_jmc_27\tlig_jmc_28\t0.0\t0.0
 """
 
 
-def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, mock_execute, ref_gather):
+def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, ref_gather):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(
+        result_setup = runner.invoke(
             plan_rbfe_network,
             [
                 "-M", tyk2_ligands,
@@ -135,14 +137,50 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, mock_exe
             ],
         )  # fmt: skip
 
-        assert_click_success(result)
+        assert_click_success(result_setup)
+        with (
+            mock.patch(
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologySetupUnit.run",
+                return_value={
+                    "system": Path("system.xml.bz2"),
+                    "positions": Path("positions.npy"),
+                    "pdb_structure": Path("hybrid_system.pdb"),
+                    "selection_indices": np.zeros(100),
+                },
+            ),
+            mock.patch(
+                "openfe.protocols.openmm_rfe.hybridtop_units.np.load",
+                return_value=np.zeros((31, 3)),
+            ),
+            mock.patch(
+                "openfe.protocols.openmm_rfe.hybridtop_units.deserialize",
+                return_value={
+                    "item": "foo",
+                },
+            ),
+            mock.patch(
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit._execute",
+                return_value={
+                    "repeat_id": "foo",
+                    "generation": 0,
+                    "nc": Path("file.nc"),
+                    "checkpoint": Path("chk.chk"),
+                    "unit_estimate": 4.2 * unit.kilocalories_per_mole,
+                },
+            ),
+            mock.patch(
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit.run",
+                return_value={
+                    "unit_estimate": 4.2 * unit.kilocalories_per_mole,
+                },
+            ),
+        ):
+            for f in expected_transformations:
+                fn = path.join("alchemicalNetwork/transformations", f)
+                result_run = runner.invoke(quickrun, [fn])
+                assert_click_success(result_run)
 
-        for f in expected_transformations:
-            fn = path.join("alchemicalNetwork/transformations", f)
-            result2 = runner.invoke(quickrun, [fn])
-            assert_click_success(result2)
+        result_gather = runner.invoke(gather, ["--report", "ddg", ".", "--tsv"])
 
-        gather_result = runner.invoke(gather, ["--report", "ddg", ".", "--tsv"])
-
-        assert_click_success(gather_result)
-        assert gather_result.stdout == ref_gather
+        assert_click_success(result_gather)
+        assert result_gather.stdout == ref_gather
