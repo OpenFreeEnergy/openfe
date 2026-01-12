@@ -126,12 +126,12 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, ref_gath
                     "system": Path("system.xml.bz2"),
                     "positions": Path("positions.npy"),
                     "pdb_structure": Path("hybrid_system.pdb"),
-                    "selection_indices": np.zeros(31),
+                    "selection_indices": np.zeros(50),
                 },
             ),
             mock.patch(
                 "openfe.protocols.openmm_rfe.hybridtop_units.np.load",
-                return_value=np.zeros((31, 3)),
+                return_value=np.zeros((1769, 3)),
             ),
             mock.patch(
                 "openfe.protocols.openmm_rfe.hybridtop_units.deserialize",
