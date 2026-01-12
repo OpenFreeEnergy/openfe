@@ -1,4 +1,14 @@
+import logging
+
 import pytest
+
+disable_loggers = ["kartograf", "interchange"]
+
+
+def pytest_configure():
+    for logger_name in disable_loggers:
+        logger = logging.getLogger(logger_name)
+        logger.disabled = True
 
 
 @pytest.fixture
