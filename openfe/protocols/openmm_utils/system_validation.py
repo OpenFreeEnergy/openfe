@@ -141,12 +141,6 @@ def validate_protein(state: ChemicalSystem):
         errmsg = "Multiple ProteinComponent found, only one is supported"
         raise ValueError(errmsg)
 
-    solvated_pdb = state.get_components_of_type(SolvatedPDBComponent)
-
-    if len(solvated_pdb) == 1 and not solvated_pdb[0].box_vectors:
-        errmsg = "No box vector is supplied with the SolvatedPDBComponent"
-        raise ValueError(errmsg)
-
 
 ParseCompRet = Tuple[
     Optional[SolventComponent],
