@@ -234,9 +234,9 @@ def get_omm_modeller(
     # already added) and we have predefined box vectors, then skip solvation
     # with Modeller.
     skip_solvation = False
-    if isinstance(protein_comp, SolvatedPDBComponent) and protein_comp._periodic_box_vectors:
+    if isinstance(protein_comp, SolvatedPDBComponent) and protein_comp.box_vectors:
         # Set the periodic box vectors
-        system_modeller.topology.setPeriodicBoxVectors(protein_comp._periodic_box_vectors)
+        system_modeller.topology.setPeriodicBoxVectors(to_openmm(protein_comp.box_vectors))
         skip_solvation = True
 
     # Add solvent if needed

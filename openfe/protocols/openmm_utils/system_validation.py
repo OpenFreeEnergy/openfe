@@ -143,8 +143,8 @@ def validate_protein(state: ChemicalSystem):
 
     solvated_pdb = state.get_components_of_type(SolvatedPDBComponent)
 
-    if len(solvated_pdb) == 1 and not solvated_pdb[0]._periodic_box_vectors:
-        errmsg = "No periodic box vector is supplied with the SolvatedPDBComponent"
+    if len(solvated_pdb) == 1 and not solvated_pdb[0].box_vectors:
+        errmsg = "No box vector is supplied with the SolvatedPDBComponent"
         raise ValueError(errmsg)
 
 
