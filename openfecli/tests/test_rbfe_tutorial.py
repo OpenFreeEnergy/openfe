@@ -107,7 +107,64 @@ lig_jmc_27\tlig_jmc_28\t0.0\t0.0
 """
 
 
-def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, ref_gather):
+@pytest.fixture
+def fake_setup_execute_results():
+    """Use for mocking the expensive _execute step and instead directly return plausible results."""
+
+    def _fake_execute_results(*args, **kwargs):
+        return {
+            "repeat_id": kwargs["repeat_id"],
+            "generation": kwargs["generation"],
+            "system": Path("system.xml.bz2"),
+            "positions": Path("positions.npy"),
+            "pdb_structure": Path("hybrid_system.pdb"),
+            "selection_indices": np.arange(50),
+        }
+
+    return _fake_execute_results
+
+
+@pytest.fixture
+def fake_sim_execute_results():
+    """Use for mocking the expensive _execute step and instead directly return plausible results."""
+
+    def _fake_execute_results(*args, **kwargs):
+        return {
+            "repeat_id": kwargs["repeat_id"],
+            "generation": kwargs["generation"],
+            "nc": Path("file.nc"),
+            "checkpoint": Path("chk.chk"),
+        }
+
+    return _fake_execute_results
+
+
+@pytest.fixture
+def fake_analysis_execute_results():
+    """Use for mocking the expensive _execute step and instead directly return plausible results."""
+
+    def _fake_execute_results(*args, **kwargs):
+        return {
+            "repeat_id": kwargs["repeat_id"],
+            "generation": kwargs["generation"],
+            "pdb_structure": Path("hybrid_system.pdb"),
+            "checkpoint": Path("chk.chk"),
+            "selection_indices": np.arange(50),
+            "unit_estimate": 4.2 * unit.kilocalories_per_mole,
+        }
+
+    return _fake_execute_results
+
+
+def test_run_tyk2(
+    tyk2_ligands,
+    tyk2_protein,
+    expected_transformations,
+    fake_setup_execute_results,
+    fake_sim_execute_results,
+    fake_analysis_execute_results,
+    ref_gather,
+):
     runner = CliRunner()
     with runner.isolated_filesystem():
         result_setup = runner.invoke(
@@ -121,36 +178,16 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, ref_gath
         assert_click_success(result_setup)
         with (
             mock.patch(
-                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologySetupUnit.run",
-                return_value={
-                    "system": Path("system.xml.bz2"),
-                    "positions": Path("positions.npy"),
-                    "pdb_structure": Path("hybrid_system.pdb"),
-                    "selection_indices": np.arange(50),
-                },
-            ),
-            # mock.patch(
-            #     "openfe.protocols.openmm_rfe.hybridtop_units.np.load",
-            #     return_value=np.arange((1769, 3)),
-            # ),
-            mock.patch(
-                "openfe.protocols.openmm_rfe.hybridtop_units.deserialize",
-                return_value={
-                    "item": "foo",
-                },
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologySetupUnit._execute",
+                side_effect=fake_setup_execute_results,
             ),
             mock.patch(
-                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit.run",
-                return_value={
-                    "nc": Path("file.nc"),
-                    "checkpoint": Path("chk.chk"),
-                },
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit._execute",
+                side_effect=fake_sim_execute_results,
             ),
             mock.patch(
-                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit.run",
-                return_value={
-                    "unit_estimate": 4.2 * unit.kilocalories_per_mole,
-                },
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit._execute",
+                side_effect=fake_analysis_execute_results,
             ),
         ):
             for f in expected_transformations:
