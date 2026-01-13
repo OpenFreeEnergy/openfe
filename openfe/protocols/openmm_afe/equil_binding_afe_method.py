@@ -836,8 +836,10 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         timestep_complex = self.settings.complex_integrator_settings.timestep
         timestep_solvent = self.settings.solvent_integrator_settings.timestep
         if timestep_complex != timestep_solvent:
-            errmsg = ("Timesteps in complex and solvent leg need to be the same,"
-                      f"got complex: {timestep_complex}; solvent: {timestep_solvent}.")
+            errmsg = (
+                "Timesteps in complex and solvent leg need to be the same,"
+                f"got complex: {timestep_complex}; solvent: {timestep_solvent}."
+            )
             raise ValueError(errmsg)
         settings_validation.validate_timestep(
             self.settings.forcefield_settings.hydrogen_mass,
