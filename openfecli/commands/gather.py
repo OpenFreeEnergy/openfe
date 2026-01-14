@@ -182,29 +182,6 @@ def is_results_json(fpath: os.PathLike | str) -> bool:
     return "estimate" in open(fpath, "r").read(20)
 
 
-def load_json(fpath: os.PathLike | str) -> dict:
-    """Load a JSON file containing a gufe object.
-
-    Parameters
-    ----------
-    fpath : os.PathLike | str
-        The path to a gufe-serialized JSON.
-
-
-    Returns
-    -------
-    dict
-        A dict containing data from the results JSON.
-
-    """
-    # TODO: move this function to openfe/utils
-    import json
-
-    from gufe.tokenization import JSON_HANDLER
-
-    return json.load(open(fpath, "r"), cls=JSON_HANDLER.decoder)
-
-
 def _get_names(result: QuickrunResult) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
 
