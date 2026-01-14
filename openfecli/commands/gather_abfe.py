@@ -15,7 +15,7 @@ from openfecli.commands.gather import (
     format_df_with_precision,
     rich_print_to_stdout,
 )
-from openfecli.commands.quickrun import QuickrunResult
+from openfecli.quickrun_result import QuickrunResult
 
 
 def _get_name(result: QuickrunResult) -> str:
