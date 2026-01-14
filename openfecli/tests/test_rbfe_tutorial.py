@@ -111,6 +111,7 @@ def mock_execute(expected_transformations):
 @pytest.fixture
 def ref_gather():
     return """\
+Loading results:
 ligand_i\tligand_j\tDDG(i->j) (kcal/mol)\tuncertainty (kcal/mol)
 lig_ejm_31\tlig_ejm_46\t0.0\t0.0
 lig_ejm_31\tlig_ejm_47\t0.0\t0.0

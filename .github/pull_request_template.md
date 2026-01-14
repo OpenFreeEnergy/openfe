@@ -14,7 +14,7 @@ see https://regro.github.io/rever-docs/news.html for details on how to add news 
 Checklist
 * [ ] All new code is appropriately documented (user-facing code _must_ have complete docstrings).
 * [ ] Added a ``news`` entry, or the changes are not user-facing.
-* [ ] Ran pre-commit by making a comment with `pre-commit.ci autofix` before requesting review.
+* [ ] Ran pre-commit: you can run [pre-commit](https://pre-commit.com) locally or comment on this PR with `pre-commit.ci autofix`.
 
 Manual Tests: these are slow so don't need to be run every commit, only before merging and when relevant changes are made (generally at reviewer-discretion). 
 * [ ] [GPU integration tests](https://github.com/OpenFreeEnergy/openfe/actions/workflows/gpu-integration-tests.yaml)

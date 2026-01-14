@@ -34,7 +34,7 @@ class TestDuecredit:
                 ],
             ],
             [
-                "openfe.protocols.openmm_rfe.equil_rfe_methods",
+                "openfe.protocols.openmm_rfe.hybridtop_protocols",
                 ["10.5281/zenodo.1297683", "10.5281/zenodo.596622", "10.1371/journal.pcbi.1005659"],
             ],
             [
