@@ -4,6 +4,7 @@
 import json
 import pathlib
 from dataclasses import asdict, dataclass
+from os import PathLike
 from typing import Any, Self
 
 import click
@@ -37,7 +38,7 @@ class QuickrunResult:
             json.dump(asdict(self), file, cls=JSON_HANDLER.encoder)
 
     @classmethod
-    def from_json(cls, filepath) -> Self:
+    def from_json(cls, file: PathLike | None, content: str | None = None) -> Self:
         """Load a JSON file containing a gufe object.
 
         Parameters
@@ -49,10 +50,19 @@ class QuickrunResult:
         Returns
         -------
         QuickrunResult
-            A QuickrunResult instance containing the data from ``filepath``.
+            A QuickrunResult instance containing the data from ``file, co``.
 
         """
-        return json.load(open(filepath, "r"), cls=JSON_HANDLER.decoder)
+        # similar to gufe.tokenization.from_json
+        if content is not None and file is not None:
+            raise ValueError("Cannot specify both `content` and `file`; only one input allowed")
+        elif content is None and file is None:
+            raise ValueError("Must specify either `content` and `file` for JSON input")
+        if file:
+            data = json.load(open(file, "r"), cls=JSON_HANDLER.decoder)
+        if content:
+            data = json.loads(content, cls=JSON_HANDLER.decoder)
+        return cls(**data)
 
 
 @click.command("quickrun", short_help="Run a given transformation, saved as a JSON file")

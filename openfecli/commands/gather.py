@@ -11,6 +11,7 @@ import pandas as pd
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
+from openfecli.commands.quickrun import QuickrunResult
 
 FAIL_STR = "Error"  # string used to indicate a failed run in output tables.
 
@@ -204,7 +205,7 @@ def load_json(fpath: os.PathLike | str) -> dict:
     return json.load(open(fpath, "r"), cls=JSON_HANDLER.decoder)
 
 
-def _get_names(result: dict) -> tuple[str, str]:
+def _get_names(result: QuickrunResult) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
 
     Parameters
@@ -219,7 +220,7 @@ def _get_names(result: dict) -> tuple[str, str]:
     """
 
     # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
-    protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+    protocol_data = list(result.protocol_result["data"].values())[0][0]
 
     name_A = protocol_data["inputs"]["ligandmapping"]["componentA"]["molprops"]["ofe-name"]
     name_B = protocol_data["inputs"]["ligandmapping"]["componentB"]["molprops"]["ofe-name"]
@@ -227,10 +228,10 @@ def _get_names(result: dict) -> tuple[str, str]:
     return str(name_A), str(name_B)
 
 
-def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
+def _get_type(result: QuickrunResult) -> Literal["vacuum", "solvent", "complex"]:
     """Determine the simulation type based on the component types."""
 
-    protocol_data = list(result["protocol_result"]["data"].values())[0][0]
+    protocol_data = list(result.protocol_result["data"].values())[0][0]
     component_types = [
         x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
     ]
@@ -255,7 +256,7 @@ def _legacy_get_type(res_fn: os.PathLike | str) -> Literal["vacuum", "solvent", 
 
 
 def _get_result_id(
-    result: dict, result_fn: os.PathLike | str
+    result: QuickrunResult, result_fn: os.PathLike | str
 ) -> tuple[tuple[str, str], Literal["vacuum", "solvent", "complex"]]:
     """Extract the name and simulation type from a results dict.
 
@@ -281,7 +282,7 @@ def _get_result_id(
     return (ligA, ligB), simtype
 
 
-def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
+def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, QuickrunResult | None]:
     """Load the data from a results JSON into a dict.
 
     Parameters
@@ -296,25 +297,25 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
         or None if the JSON file is invalid or missing.
 
     """
-
     # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
     # for now though, it's not the bottleneck on performance
-    result = load_json(fpath)
+    result = QuickrunResult.from_json(fpath)
+
     try:
         result_id = _get_result_id(result, fpath)
     except (ValueError, IndexError):
         click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.",err=True, fg="yellow")  # fmt: skip
         return None, None
-    if result["estimate"] is None:
+    if result.estimate is None:
         click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
-    if result["uncertainty"] is None:
+    if result.uncertainty is None:
         click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
-    if result["unit_results"] == {}:
+    if result.unit_results == {}:
         click.secho(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
-    if all("exception" in u for u in result["unit_results"].values()):
+    if all("exception" in u for u in result.unit_results.values()):
         click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
 
@@ -667,7 +668,7 @@ def _get_legs_from_result_jsons(
                             v[0]["outputs"]["unit_estimate"],
                             v[0]["outputs"]["unit_estimate_error"],
                         )
-                        for v in result["protocol_result"]["data"].values()
+                        for v in result.protocol_result["data"].values()
                     ]
                 legs[names][simtype].append(parsed_raw_data)
             else:
@@ -677,7 +678,7 @@ def _get_legs_from_result_jsons(
                 else:
                     dGs = [
                         v[0]["outputs"]["unit_estimate"]
-                        for v in result["protocol_result"]["data"].values()
+                        for v in result.protocol_result["data"].values()
                     ]
                 legs[names][simtype].extend(dGs)
     return legs
