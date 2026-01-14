@@ -1,8 +1,9 @@
 import json
 from dataclasses import asdict, dataclass
 from os import PathLike
-from typing import Any, Self
+from typing import Any, Iterable, Self, Tuple
 
+from gufe import ChemicalSystem
 from gufe.tokenization import JSON_HANDLER
 from openff.units import Quantity
 
@@ -19,6 +20,8 @@ class QuickrunResult:
     protocol_result: dict[str, Any]
     unit_results: dict[int, dict]
     # ok: bool  # TODO: add in 2.0?
+    # id: Tuple = ()
+    # run_type: # protocol-specific?
 
     def to_json(self, filepath) -> None:
         with open(filepath, mode="w") as file:
@@ -50,3 +53,24 @@ class QuickrunResult:
         if content:
             data = json.loads(content, cls=JSON_HANDLER.decoder)
         return cls(**data)
+
+    def _load_valid_result_json(self):
+        pass
+
+    def run_type(self):
+        pass
+
+    def stateA(self):
+        pass
+
+    def stateB(self):
+        pass
+
+
+@dataclass
+class QuickrunResultsNetwork:
+    edges: Iterable[QuickrunResult]
+    nodes: Iterable[ChemicalSystem]  # TODO: should this be a ChemicalSystem or SMC?
+
+    def to_FEMap(self):
+        pass
