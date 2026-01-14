@@ -664,7 +664,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
         if not (stateA.contains(BaseSolventComponent) and stateB.contains(BaseSolventComponent)):
-            errmsg = "No BaseSolventComponent found"
+            errmsg = "No solvent found"
             raise ValueError(errmsg)
 
         # Needs gufe 1.3
