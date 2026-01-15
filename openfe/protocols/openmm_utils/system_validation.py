@@ -88,35 +88,36 @@ def get_alchemical_components(
 #     state : ChemicalSystem
 #       The chemical system to inspect.
 #     nonbonded_method : str
-    #   The nonbonded method to be applied for the simulation.
-    #
-    # Raises
-    # ------
-    # ValueError
-    #   * If there are multiple SolventComponents in the ChemicalSystem.
-    #   * If there is a BaseSolventComponent and the `nonbonded_method` is
-    #     `nocutoff`.
-    #   * If there is no BaseSolventComponent and the `nonbonded_method` is `pme`.
-    #   * If the SolventComponent solvent is not water.
-    # """
-    # base_solv_comps = state.get_components_of_type(BaseSolventComponent)
-    #
-    # if len(base_solv_comps) > 0:
-    #     if nonbonded_method.lower() == "nocutoff":
-    #         errmsg = "nocutoff cannot be used for solvent transformations"
-    #         raise ValueError(errmsg)
-    #
-    #     if len(solv_comps) > 1:
-    #         errmsg = "Multiple SolventComponent found, only one is supported"
-    #         raise ValueError(errmsg)
-    #
-    #     if len(solv_comps) == 1 and solv_comps[0].smiles != "O":
-    #         errmsg = "Non water solvent is not currently supported"
-    #         raise ValueError(errmsg)
-    # else:
-    #     if nonbonded_method.lower() == "pme":
-    #         errmsg = "PME cannot be used for vacuum transform"
-    #         raise ValueError(errmsg)
+#   The nonbonded method to be applied for the simulation.
+#
+# Raises
+# ------
+# ValueError
+#   * If there are multiple SolventComponents in the ChemicalSystem.
+#   * If there is a BaseSolventComponent and the `nonbonded_method` is
+#     `nocutoff`.
+#   * If there is no BaseSolventComponent and the `nonbonded_method` is `pme`.
+#   * If the SolventComponent solvent is not water.
+# """
+# base_solv_comps = state.get_components_of_type(BaseSolventComponent)
+#
+# if len(base_solv_comps) > 0:
+#     if nonbonded_method.lower() == "nocutoff":
+#         errmsg = "nocutoff cannot be used for solvent transformations"
+#         raise ValueError(errmsg)
+#
+#     if len(solv_comps) > 1:
+#         errmsg = "Multiple SolventComponent found, only one is supported"
+#         raise ValueError(errmsg)
+#
+#     if len(solv_comps) == 1 and solv_comps[0].smiles != "O":
+#         errmsg = "Non water solvent is not currently supported"
+#         raise ValueError(errmsg)
+# else:
+#     if nonbonded_method.lower() == "pme":
+#         errmsg = "PME cannot be used for vacuum transform"
+#         raise ValueError(errmsg)
+
 
 def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     """
@@ -150,22 +151,13 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     base_solv_comps = state.get_components_of_type(BaseSolventComponent)
 
     if len(base_solv_comps) > 2:
-        raise ValueError(
-            "At most one SolventComponent and one SolvatedPDBComponent "
-            "are supported"
-        )
+        raise ValueError("At most one SolventComponent and one SolvatedPDBComponent are supported")
 
-    solvent_comps = [
-        c for c in base_solv_comps if isinstance(c, SolventComponent)
-    ]
-    solvated_pdb_comps = [
-        c for c in base_solv_comps if isinstance(c, SolvatedPDBComponent)
-    ]
+    solvent_comps = [c for c in base_solv_comps if isinstance(c, SolventComponent)]
+    solvated_pdb_comps = [c for c in base_solv_comps if isinstance(c, SolvatedPDBComponent)]
 
     if len(solvent_comps) > 1:
-        raise ValueError(
-            "Multiple SolventComponent found, only one is supported"
-        )
+        raise ValueError("Multiple SolventComponent found, only one is supported")
 
     # SolvatedPDBComponent must be paired with a SolventComponent
     if solvated_pdb_comps and not solvent_comps:
@@ -177,16 +169,12 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
 
     # Any BaseSolventComponent present → nocutoff is invalid
     if base_solv_comps and nonbonded_method == "nocutoff":
-        raise ValueError(
-            "nocutoff cannot be used for solvent transformations"
-        )
+        raise ValueError("nocutoff cannot be used for solvent transformations")
 
     # Vacuum transform
     if not base_solv_comps:
         if nonbonded_method == "pme":
-            raise ValueError(
-                "PME cannot be used for vacuum transform"
-            )
+            raise ValueError("PME cannot be used for vacuum transform")
         return
 
     # Solvent-specific checks
@@ -194,10 +182,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         solvent = solvent_comps[0]
 
         if solvent.smiles != "O":
-            raise ValueError(
-                "Non water solvent is not currently supported"
-            )
-
+            raise ValueError("Non water solvent is not currently supported")
 
 
 def validate_protein(state: ChemicalSystem):

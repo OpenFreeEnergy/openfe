@@ -442,13 +442,9 @@ class IntegratorSettings(SettingsBaseModel):
 
     @model_validator(mode="after")
     def validate_surface_tension(self):
-        if (
-                self.barostat == "MonteCarloMembraneBarostat"
-                and self.surface_tension is None
-        ):
+        if self.barostat == "MonteCarloMembraneBarostat" and self.surface_tension is None:
             raise ValueError(
-                "surface_tension must be set (may be zero) when using "
-                "MonteCarloMembraneBarostat"
+                "surface_tension must be set (may be zero) when using MonteCarloMembraneBarostat"
             )
         return self
 

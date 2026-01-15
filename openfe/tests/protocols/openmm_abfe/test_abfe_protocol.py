@@ -381,9 +381,7 @@ class TestT4LysozymeDryRun:
             assert expected_indices == data["alchem_indices"]
 
             # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                data["system"], "complex", settings=settings
-            )
+            self._assert_expected_nonalchemical_forces(data["system"], "complex", settings=settings)
             self._check_box_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
@@ -422,9 +420,7 @@ class TestT4LysozymeDryRun:
             assert expected_indices == data["alchem_indices"]
 
             # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                data["system"], "solvent", settings=settings
-            )
+            self._assert_expected_nonalchemical_forces(data["system"], "solvent", settings=settings)
             self._test_cubic_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
