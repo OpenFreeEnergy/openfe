@@ -150,9 +150,7 @@ def test_mda_universe_error():
     """
     with pytest.raises(ValueError, match="No positions to create"):
         _ = openmm_afe.AbsoluteBindingComplexUnit._get_mda_universe(
-            topology="foo",
-            positions=None,
-            trajectory=None
+            topology="foo", positions=None, trajectory=None
         )
 
 
