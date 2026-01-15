@@ -34,7 +34,7 @@ from gufe.settings.typing import (
 )
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 from openff.units import unit
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator, model_validator
 
 FemtosecondQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("femtosecond")]
 InversePicosecondQuantity: TypeAlias = Annotated[
@@ -439,6 +439,18 @@ class IntegratorSettings(SettingsBaseModel):
         if not v.is_compatible_with(1 / unit.picosecond):
             raise ValueError("langevin collision_rate must be in inverse time (i.e. 1/picoseconds)")
         return v
+
+    @model_validator(mode="after")
+    def validate_surface_tension(self):
+        if (
+                self.barostat == "MonteCarloMembraneBarostat"
+                and self.surface_tension is None
+        ):
+            raise ValueError(
+                "surface_tension must be set (may be zero) when using "
+                "MonteCarloMembraneBarostat"
+            )
+        return self
 
 
 class OutputSettings(SettingsBaseModel):
