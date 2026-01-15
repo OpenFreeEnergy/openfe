@@ -16,7 +16,7 @@ from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
-from openff.units.openmm import ensure_quantity, from_openmm
+from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat, NonbondedForce, app
 from openmm import unit as ommunit
 from openmmtools import multistate
@@ -520,9 +520,9 @@ class TestSystemCreation:
             OpenMMSolvationSettings(),
         )
         box_modeller = model.topology.getPeriodicBoxVectors()
-        box_protein = a2a_protein_membrane_component._periodic_box_vectors
+        box_protein = a2a_protein_membrane_component.box_vectors
 
-        assert np.allclose(box_modeller, box_protein, atol=1e-6)
+        assert np.allclose(box_modeller, to_openmm(box_protein), atol=1e-6)
 
     @pytest.fixture(scope="module")
     def ligand_mol_and_generator(self, get_settings):
