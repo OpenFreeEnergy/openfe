@@ -113,15 +113,7 @@ def get_system_generator(
         nonperiodic_kwargs = periodic_kwargs
 
     # Add barostat if necessary
-    # For membrane systems, add a MonteCarloMembraneBarostat. Choices:
-    # - Pressure as defined in `thermo_settings`
-    # - Zero surface tension
-    # - Temperature as defined in `thermo_settings`
-    # - XY isotropic
-    # - Z free
-    # - Frequencey as defined in `thermo_settings`
-    # Reference:
-    # https://livecomsjournal.org/index.php/livecoms/article/view/v1i1e5966
+    # For membrane systems, add a MonteCarloMembraneBarostat. 
     # if membrane barostat and not has_solvent
     # ToDo: We could also only check for the barostat setting here. But for
     #       that we first need adaptive settings for the rfe protocol

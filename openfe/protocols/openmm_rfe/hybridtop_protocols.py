@@ -25,6 +25,7 @@ from gufe import (
     ComponentMapping,
     LigandAtomMapping,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     settings,
@@ -193,6 +194,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # adapt the solvation padding based on the system components
         if stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent):
             protocol_settings.solvation_settings.solvent_padding = 1 * offunit.nanometer
+
+        # adapt the barostat based on the system components
+        if stateA.contains(ProteinMembraneComponent) and stateB.contains(ProteinMembraneComponent):
+            protocol_settings.integrator_settings.barostat = "MonteCarloMembraneBarostat"
 
         return protocol_settings
 
