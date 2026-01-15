@@ -1,11 +1,10 @@
 import os
 import pathlib
 
+from gufe.settings.typing import NanometerArrayQuantity
 from openff.units import Quantity
 from openmm import Vec3
 from openmm import unit as ommunit
-
-from gufe.settings.typing import NanometerArrayQuantity
 
 
 def serialize(item, filename: pathlib.Path):
@@ -86,5 +85,5 @@ def make_vec3_box(dimensions: NanometerArrayQuantity) -> Vec3:
     """
     return [
         Vec3(float(row[0]), float(row[1]), float(row[2])) * ommunit.nanometer
-        for row in dimensions.m_as("nanometer") 
+        for row in dimensions.m_as("nanometer")
     ]

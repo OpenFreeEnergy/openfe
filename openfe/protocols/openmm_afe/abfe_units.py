@@ -95,7 +95,7 @@ class ComplexSettingsMixin:
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintSettings
         """
-        prot_settings = self._inputs["protocol"].settings  #type: ignore[attr-defined]
+        prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         settings = {}
         settings["forcefield_settings"] = prot_settings.forcefield_settings

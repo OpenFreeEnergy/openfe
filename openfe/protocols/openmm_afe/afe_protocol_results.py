@@ -264,7 +264,7 @@ class AbsoluteProtocolResultMixin:
         for key in [self.bound_state, self.unbound_state]:
             production_lengths[key] = [
                 pus[0].outputs["production_iterations"]
-                for pus in self.data[key].values()  # type: ignore[attr-defined] 
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
         return production_lengths
