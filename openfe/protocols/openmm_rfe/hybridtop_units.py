@@ -1262,7 +1262,6 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-
         # Get the relevant inputs
         system = deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nm)

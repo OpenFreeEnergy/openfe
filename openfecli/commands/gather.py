@@ -220,9 +220,16 @@ def _get_names(result: dict) -> tuple[str, str]:
 
     # TODO: I don't like this [0][0] indexing, but I can't think of a better way currently
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
-
-    name_A = protocol_data["inputs"]["ligandmapping"]["componentA"]["molprops"]["ofe-name"]
-    name_B = protocol_data["inputs"]["ligandmapping"]["componentB"]["molprops"]["ofe-name"]
+    try:
+        name_A = protocol_data["inputs"]["setup_results"]["inputs"]["ligandmapping"]["componentA"][
+            "molprops"
+        ]["ofe-name"]
+        name_B = protocol_data["inputs"]["setup_results"]["inputs"]["ligandmapping"]["componentB"][
+            "molprops"
+        ]["ofe-name"]
+    except KeyError:
+        name_A = protocol_data["inputs"]["ligandmapping"]["componentA"]["molprops"]["ofe-name"]
+        name_B = protocol_data["inputs"]["ligandmapping"]["componentB"]["molprops"]["ofe-name"]
 
     return str(name_A), str(name_B)
 
@@ -231,9 +238,17 @@ def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     """Determine the simulation type based on the component types."""
 
     protocol_data = list(result["protocol_result"]["data"].values())[0][0]
-    component_types = [
-        x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
-    ]
+    try:
+        component_types = [
+            x["__module__"]
+            for x in protocol_data["inputs"]["setup_results"]["inputs"]["stateA"][
+                "components"
+            ].values()
+        ]
+    except KeyError:
+        component_types = [
+            x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
+        ]
     if "gufe.components.solventcomponent" not in component_types:
         return "vacuum"
     elif "gufe.components.proteincomponent" in component_types:
