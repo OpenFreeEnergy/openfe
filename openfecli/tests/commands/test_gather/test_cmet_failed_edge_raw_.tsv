@@ -1,3 +1,4 @@
+Loading results:
 leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	lig_CHEMBL3402745_200_5	lig_CHEMBL3402744_300_4	-12.54	0.06
 complex	lig_CHEMBL3402745_200_5	lig_CHEMBL3402744_300_4	-12.31	0.06
