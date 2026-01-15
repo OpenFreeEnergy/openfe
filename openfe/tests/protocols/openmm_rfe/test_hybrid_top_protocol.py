@@ -1216,7 +1216,6 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
                 setup_results=setup_results[rid],
                 simulation_results=sim_results[rid],
             )
-    repeats = set()
     for results in [setup_results, sim_results, analysis_results]:
         for ret in results.values():
             assert isinstance(ret, gufe.ProtocolUnitResult)
