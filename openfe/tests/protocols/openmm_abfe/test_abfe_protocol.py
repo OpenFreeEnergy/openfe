@@ -170,7 +170,7 @@ def test_mda_universe_error():
     when calling the mda Universe getter.
     """
     with pytest.raises(ValueError, match="No positions to create"):
-        _ = openmm_afe.AbsoluteBindingComplexUnit._get_mda_universe(
+        _ = openmm_afe.ABFEComplexSetupUnit._get_mda_universe(
             topology="foo", positions=None, trajectory=None
         )
 
