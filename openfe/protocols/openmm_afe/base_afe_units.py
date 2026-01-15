@@ -109,7 +109,7 @@ class AbsoluteUnitsMixin:
         self.verbose = verbose
 
         if self.verbose:
-            self.logger.info("setting up alchemical system")
+            self.logger.info("setting up alchemical system")  # typing: ignore[attr-defined]
 
         # set basepaths
         def _set_optional_path(basepath):
@@ -391,14 +391,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         if openff_molecules is None:
             return system_generator
 
-        unique_offmols = []
-        for mol in openff_molecules:
-            unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
-            if unique:
-                unique_offmols.append(mol)
-
-        # register all the templates
-        system_generator.add_molecules(unique_offmols)
+        # Register all the templates, pass unique molecules to avoid clashes
+        system_generator.add_molecules(list(set(openff_molecules)))
 
         return system_generator
 
