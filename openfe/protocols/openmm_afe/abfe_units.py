@@ -125,7 +125,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
     @staticmethod
     def _get_mda_universe(
         topology: omm_topology,
-        positions: ommunit.Quantity,
+        positions: ommunit.Quantity | None,
         trajectory: pathlib.Path | None,
     ) -> mda.Universe:
         """
@@ -136,10 +136,10 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
         ----------
         topology : openmm.app.Topology
           An OpenMM Topology that defines the System.
-        positions: openmm.unit.Quantity
+        positions: openmm.unit.Quantity | None
           The System's current positions.
           Used if a trajectory file is None or is not a file.
-        trajectory: pathlib.Path
+        trajectory: pathlib.Path | None
           A Path to a trajectory file to read positions from.
 
         Returns
@@ -157,6 +157,9 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
                 topology_format="OPENMMTOPOLOGY",
             )
         else:
+            if positions is None:
+                raise ValueError("No positions to create the Universe with")
+
             # Positions is an openmm Quantity in nm we need
             # to convert to angstroms
             return mda.Universe(

@@ -312,18 +312,16 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResul
           the individual free energy estimates and associated MBAR
           uncertainties for each repeat of that simulation type.
         """
-        vac_dGs = []
-        solv_dGs = []
+        dGs = {}
 
-        for pus in self.data["vacuum"].values():
-            vac_dGs.append((pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"]))
-
-        for pus in self.data["solvent"].values():
-            solv_dGs.append(
+        for state in [self.bound_state, self.unbound_state]:
+            state_dGs = [
                 (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
-            )
+                for pus in self.data[state].values()
+            ]
+            dGs[state] = state_dGs
 
-        return {"solvent": solv_dGs, "vacuum": vac_dGs}
+        return dGs
 
     def get_estimate(self):
         """Get the solvation free energy estimate for this calculation.

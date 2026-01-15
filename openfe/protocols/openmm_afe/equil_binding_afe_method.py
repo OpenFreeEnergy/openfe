@@ -28,7 +28,7 @@ import logging
 import uuid
 import warnings
 from collections import defaultdict
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable
 
 import gufe
 from gufe import (
@@ -341,8 +341,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         *,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
-        extends: Optional[gufe.ProtocolDAGResult] = None,
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMapping] | None = None,
+        extends: gufe.ProtocolDAGResult | None = None,
     ):
         # Check we're not extending
         if extends is not None:
@@ -418,8 +418,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
-        extends: Optional[gufe.ProtocolDAGResult] = None,
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMapping] | None = None,
+        extends: gufe.ProtocolDAGResult | None = None,
     ) -> list[gufe.ProtocolUnit]:
         # Validate inputs
         self.validate(stateA=stateA, stateB=stateB, mapping=mapping, extends=extends)

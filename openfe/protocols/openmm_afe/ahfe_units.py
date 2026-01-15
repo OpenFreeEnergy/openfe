@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""AHFE Protocol Units --- :mod:`openfe.protocols.openmm_afe.ahfe_units`
-========================================================================
+"""
+AHFE Protocol Units --- :mod:`openfe.protocols.openmm_afe.ahfe_units`
+=====================================================================
 
 This module defines the ProtocolUnits for the
 :class:`AbsoluteSolvationProtocol`.
