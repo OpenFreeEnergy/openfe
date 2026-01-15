@@ -6,6 +6,11 @@ from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 from openff.units import unit
 
 from openfe.protocols import openmm_rfe
+from openfe.protocols.openmm_rfe.hybridtop_units import (
+    HybridTopologyMultiStateAnalysisUnit,
+    HybridTopologyMultiStateSimulationUnit,
+    HybridTopologySetupUnit,
+)
 
 """
 todo:
@@ -23,7 +28,7 @@ def rfe_protocol():
 
 
 @pytest.fixture
-def rfe_protocol_other_units():
+def rfe_protocol_other_input_units():
     """Identical to rfe_protocol, but with `kcal / mol` as input unit instead of `kilocalorie_per_mole`."""
     new_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     new_settings.simulation_settings.early_termination_target_error = 0.0 * unit.kilocalorie/unit.mol  # fmt: skip
@@ -31,13 +36,34 @@ def rfe_protocol_other_units():
 
 
 @pytest.fixture
-def protocol_unit(rfe_protocol, benzene_system, toluene_system, benzene_to_toluene_mapping):
+def protocol_units(rfe_protocol, benzene_system, toluene_system, benzene_to_toluene_mapping):
     pus = rfe_protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
         mapping=[benzene_to_toluene_mapping],
     )
-    return list(pus.protocol_units)[0]
+    return list(pus.protocol_units)
+
+
+@pytest.fixture
+def protocol_setup_unit(protocol_units):
+    for pu in protocol_units:
+        if isinstance(pu, HybridTopologySetupUnit):
+            return pu
+
+
+@pytest.fixture
+def protocol_simulation_unit(protocol_units):
+    for pu in protocol_units:
+        if isinstance(pu, HybridTopologyMultiStateSimulationUnit):
+            return pu
+
+
+@pytest.fixture
+def protocol_analysis_unit(protocol_units):
+    for pu in protocol_units:
+        if isinstance(pu, HybridTopologyMultiStateAnalysisUnit):
+            return pu
 
 
 @pytest.mark.skip
@@ -51,14 +77,14 @@ class TestRelativeHybridTopologyProtocolResult(GufeTokenizableTestsMixin):
         pass
 
 
-class TestRelativeHybridTopologyProtocolOtherUnits(GufeTokenizableTestsMixin):
+class TestRelativeHybridTopologyProtocolOtherInputUnits(GufeTokenizableTestsMixin):
     cls = openmm_rfe.RelativeHybridTopologyProtocol
     key = None
     repr = "<RelativeHybridTopologyProtocol-"
 
     @pytest.fixture()
-    def instance(self, rfe_protocol_other_units):
-        return rfe_protocol_other_units
+    def instance(self, rfe_protocol_other_input_units):
+        return rfe_protocol_other_input_units
 
     def test_repr(self, instance):
         """
@@ -85,14 +111,54 @@ class TestRelativeHybridTopologyProtocol(GufeTokenizableTestsMixin):
         assert self.repr in repr(instance)
 
 
-class TestRelativeHybridTopologyProtocolUnit(GufeTokenizableTestsMixin):
-    cls = openmm_rfe.RelativeHybridTopologyProtocolUnit
-    repr = "RelativeHybridTopologyProtocolUnit(benzene to toluene repeat"
+class TestHybridTopologySetupUnit(GufeTokenizableTestsMixin):
+    cls = openmm_rfe.HybridTopologySetupUnit
+    repr = "HybridTopologySetupUnit(HybridTopology Setup:"
     key = None
 
     @pytest.fixture()
-    def instance(self, protocol_unit):
-        return protocol_unit
+    def instance(self, protocol_setup_unit):
+        return protocol_setup_unit
+
+    def test_key_stable(self):
+        pytest.skip()
+
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
+
+
+class TestHybridTopologyMultiStateSimulationUnit(GufeTokenizableTestsMixin):
+    cls = openmm_rfe.HybridTopologyMultiStateSimulationUnit
+    repr = "HybridTopologyMultiStateSimulationUnit(HybridTopology Simulation:"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, protocol_simulation_unit):
+        return protocol_simulation_unit
+
+    def test_key_stable(self):
+        pytest.skip()
+
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
+
+
+class TestHybridTopologyMultiStateAnalysisUnit(GufeTokenizableTestsMixin):
+    cls = openmm_rfe.HybridTopologyMultiStateAnalysisUnit
+    repr = "HybridTopologyMultiStateAnalysisUnit(HybridTopology Analysis:"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, protocol_analysis_unit):
+        return protocol_analysis_unit
 
     def test_key_stable(self):
         pytest.skip()

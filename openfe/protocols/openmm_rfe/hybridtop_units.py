@@ -15,7 +15,7 @@ import os
 import pathlib
 import subprocess
 from itertools import chain
-from typing import Any, Optional
+from typing import Any
 
 import gufe
 import matplotlib.pyplot as plt
@@ -57,6 +57,10 @@ from ..openmm_utils import (
     system_creation,
     system_validation,
 )
+from ..openmm_utils.serialization import (
+    deserialize,
+    serialize,
+)
 from . import _rfe_utils
 from ._rfe_utils.relative import HybridTopologyFactory
 from .equil_rfe_settings import (
@@ -74,55 +78,7 @@ from .equil_rfe_settings import (
 logger = logging.getLogger(__name__)
 
 
-class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
-    """
-    Calculates the relative free energy of an alchemical ligand transformation.
-    """
-
-    def __init__(
-        self,
-        *,
-        protocol: gufe.Protocol,
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-        ligandmapping: LigandAtomMapping,
-        generation: int,
-        repeat_id: int,
-        name: Optional[str] = None,
-    ):
-        """
-        Parameters
-        ----------
-        protocol : RelativeHybridTopologyProtocol
-          protocol used to create this Unit. Contains key information such
-          as the settings.
-        stateA, stateB : ChemicalSystem
-          the two ligand SmallMoleculeComponents to transform between.  The
-          transformation will go from ligandA to ligandB.
-        ligandmapping : LigandAtomMapping
-          the mapping of atoms between the two ligand components
-        repeat_id : int
-          identifier for which repeat (aka replica/clone) this Unit is
-        generation : int
-          counter for how many times this repeat has been extended
-        name : str, optional
-          human-readable identifier for this Unit
-
-        Notes
-        -----
-        The mapping used must not involve any elemental changes.  A check for
-        this is done on class creation.
-        """
-        super().__init__(
-            name=name,
-            protocol=protocol,
-            stateA=stateA,
-            stateB=stateB,
-            ligandmapping=ligandmapping,
-            repeat_id=repeat_id,
-            generation=generation,
-        )
-
+class HybridTopologyUnitMixin:
     def _prepare(
         self,
         verbose: bool,
@@ -145,7 +101,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         self.verbose = verbose
 
         if self.verbose:
-            self.logger.info("Setting up the hybrid topology simulation")
+            self.logger.info("Setting up the hybrid topology simulation")  # type: ignore[attr-defined]
 
         # set basepaths
         def _set_optional_path(basepath):
@@ -187,15 +143,16 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         protocol_settings["engine_settings"] = settings.engine_settings
         return protocol_settings
 
+
+class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+    """
+    Calculates the relative free energy of an alchemical ligand transformation.
+    """
+
     @staticmethod
     def _get_components(
         stateA: ChemicalSystem, stateB: ChemicalSystem
-    ) -> tuple[
-        dict[str, Component],
-        SolventComponent,
-        ProteinComponent,
-        dict[SmallMoleculeComponent, OFFMolecule],
-    ]:
+    ) -> tuple[SolventComponent, ProteinComponent, dict[SmallMoleculeComponent, OFFMolecule]]:
         """
         Get the components from the ChemicalSystem inputs.
 
@@ -208,8 +165,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        alchem_comps : dict[str, Component]
-            Dictionary of alchemical components.
         solv_comp : SolventComponent
             The solvent component.
         protein_comp : ProteinComponent
@@ -218,14 +173,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             Dictionary of small molecule components paired
             with their OpenFF Molecule.
         """
-        alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-
         solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
         _, _, smcs_B = system_validation.get_components(stateB)
 
         small_mols = {m: m.to_openff() for m in set(smcs_A).union(set(smcs_B))}
 
-        return alchem_comps, solvent_comp, protein_comp, small_mols
+        return solvent_comp, protein_comp, small_mols
 
     @staticmethod
     def _assign_partial_charges(
@@ -723,6 +676,140 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         return selection_indices
 
+    def run(
+        self,
+        *,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
+    ) -> dict[str, Any]:
+        """Setup a hybrid topology system.
+
+        Parameters
+        ----------
+        dry : bool
+          Do a dry run of the calculation, creating all necessary hybrid
+          system components (topology, system, sampler, etc...) but without
+          running the simulation.
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        scratch_basepath: pathlib.Path | None
+          Where to store temporary files, defaults to current working directory
+        shared_basepath : pathlib.Path | None
+          Where to run the calculation, defaults to current working directory
+
+        Returns
+        -------
+        dict
+          Outputs created by the setup unit or the debug objects
+          (e.g. HybridTopologyFactory) if ``dry==True``.
+
+        Raises
+        ------
+        error
+          Exception if anything failed
+        """
+        # Prepare paths & verbosity
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        # Get settings
+        settings = self._get_settings(self._inputs["protocol"].settings)
+
+        # Get components
+        stateA = self._inputs["stateA"]
+        stateB = self._inputs["stateB"]
+        mapping = self._inputs["ligandmapping"]
+        alchem_comps = self._inputs["alchemical_components"]
+        solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
+
+        # Assign partial charges now to avoid any discrepancies later
+        self._assign_partial_charges(settings["charge_settings"], small_mols)
+
+        (
+            stateA_system,
+            stateA_topology,
+            stateA_positions,
+            stateB_system,
+            stateB_topology,
+            stateB_positions,
+            system_mappings,
+        ) = self._get_omm_objects(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=mapping,
+            settings=settings,
+            protein_component=protein_comp,
+            solvent_component=solvent_comp,
+            small_mols=small_mols,
+        )
+
+        # Get the hybrid factory & system
+        hybrid_factory, hybrid_system = self._get_alchemical_system(
+            stateA_system=stateA_system,
+            stateA_positions=stateA_positions,
+            stateA_topology=stateA_topology,
+            stateB_system=stateB_system,
+            stateB_positions=stateB_positions,
+            stateB_topology=stateB_topology,
+            system_mappings=system_mappings,
+            alchemical_settings=settings["alchemical_settings"],
+        )
+
+        # Subselect system based on user inputs & write initial PDB
+        selection_indices = self._subsample_topology(
+            hybrid_topology=hybrid_factory.hybrid_topology,
+            hybrid_positions=hybrid_factory.hybrid_positions,
+            output_selection=settings["output_settings"].output_indices,
+            output_filename=settings["output_settings"].output_structure,
+            atom_classes=hybrid_factory._atom_classes,
+        )
+
+        # Serialize things
+        # OpenMM System
+        system_outfile = self.shared_basepath / "hybrid_system.xml.bz2"
+        serialize(hybrid_system, system_outfile)
+
+        # Positions
+        positions_outfile = self.shared_basepath / "hybrid_positions.npy"
+        npy_positions = from_openmm(hybrid_factory.hybrid_positions).to("nanometer").m
+        np.save(positions_outfile, npy_positions)
+
+        unit_results_dict = {
+            "system": system_outfile,
+            "positions": positions_outfile,
+            "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
+            "selection_indices": selection_indices,
+        }
+
+        if dry:
+            unit_results_dict |= {
+                # Adding unserialized objects so we can directly use them
+                # to chain units in tests
+                "hybrid_factory": hybrid_factory,
+                "hybrid_system": hybrid_system,
+                "hybrid_positions": hybrid_factory.hybrid_positions,
+            }
+
+        return unit_results_dict
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **inputs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            **outputs,
+        }
+
+
+class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     @staticmethod
     def _get_integrator(
         integrator_settings: IntegratorSettings,
@@ -978,12 +1065,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
           Simulation output control settings.
         dry : bool
           Whether or not to dry run the simulation.
-
-        Returns
-        -------
-        unit_results_dict : dict | None
-          A dictionary containing the free energy results to report.
-          ``None`` if it is a dry run.
         """
         # Get the relevant simulation steps
         mc_steps = settings_validation.convert_steps_per_iteration(
@@ -1023,21 +1104,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
             if self.verbose:
                 self.logger.info("production phase complete")
-
-            if self.verbose:
-                self.logger.info("post-simulation result analysis")
-
-            # calculate relevant analysis of the free energies & sampling
-            analyzer = multistate_analysis.MultistateEquilFEAnalysis(
-                reporter,
-                sampling_method=simulation_settings.sampler_method.lower(),
-                result_units=offunit.kilocalorie_per_mole,
-            )
-            analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
-            analyzer.close()
-
-            return analyzer.unit_results_dict
-
         else:
             # We ran a dry simulation
             # close reporter when you're done, prevent file handle clashes
@@ -1052,15 +1118,27 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             for fn in fns:
                 os.remove(fn)
 
-            return None
-
     def run(
-        self, *, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
+        self,
+        *,
+        system: openmm.System,
+        positions: openmm.unit.Quantity,
+        selection_indices: npt.NDArray,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
     ) -> dict[str, Any]:
-        """Run the relative free energy calculation.
+        """Run the free energy calculation using a multistate sampler.
 
         Parameters
         ----------
+        system : openmm.System
+          The System to simulate.
+        positions : openmm.unit.Quantity
+          The positions of the System.
+        selection_indices : npt.NDArray
+          Indices of the System particles to write to file.
         dry : bool
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
@@ -1068,9 +1146,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
-        scratch_basepath: Pathlike, optional
+        scratch_basepath: pathlib.Path | None
           Where to store temporary files, defaults to current working directory
-        shared_basepath : Pathlike, optional
+        shared_basepath : pathlib.Path | None
           Where to run the calculation, defaults to current working directory
 
         Returns
@@ -1087,56 +1165,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
-        # Get settings
+        # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
-
-        # Get components
-        stateA = self._inputs["stateA"]
-        stateB = self._inputs["stateB"]
-        mapping = self._inputs["ligandmapping"]
-        alchem_comps, solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
-
-        # Assign partial charges now to avoid any discrepancies later
-        self._assign_partial_charges(settings["charge_settings"], small_mols)
-
-        (
-            stateA_system,
-            stateA_topology,
-            stateA_positions,
-            stateB_system,
-            stateB_topology,
-            stateB_positions,
-            system_mappings,
-        ) = self._get_omm_objects(
-            stateA=stateA,
-            stateB=stateB,
-            mapping=mapping,
-            settings=settings,
-            protein_component=protein_comp,
-            solvent_component=solvent_comp,
-            small_mols=small_mols,
-        )
-
-        # Get the hybrid factory & system
-        hybrid_factory, hybrid_system = self._get_alchemical_system(
-            stateA_system=stateA_system,
-            stateA_positions=stateA_positions,
-            stateA_topology=stateA_topology,
-            stateB_system=stateB_system,
-            stateB_positions=stateB_positions,
-            stateB_topology=stateB_topology,
-            system_mappings=system_mappings,
-            alchemical_settings=settings["alchemical_settings"],
-        )
-
-        # Subselect system based on user inputs & write initial PDB
-        selection_indices = self._subsample_topology(
-            hybrid_topology=hybrid_factory.hybrid_topology,
-            hybrid_positions=hybrid_factory.hybrid_positions,
-            output_selection=settings["output_settings"].output_indices,
-            output_filename=settings["output_settings"].output_structure,
-            atom_classes=hybrid_factory._atom_classes,
-        )
 
         # Get the lambda schedule
         # TODO - this should be better exposed to users
@@ -1157,11 +1187,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         integrator = self._get_integrator(
             integrator_settings=settings["integrator_settings"],
             simulation_settings=settings["simulation_settings"],
-            system=hybrid_system,
+            system=system,
         )
 
         try:
-            # get the reporter
+            # Get the reporter
             reporter = self._get_reporter(
                 storage_path=self.shared_basepath,
                 selection_indices=selection_indices,
@@ -1171,8 +1201,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
             # Get sampler
             sampler = self._get_sampler(
-                system=hybrid_system,
-                positions=hybrid_factory.hybrid_positions,
+                system=system,
+                positions=positions,
                 lambdas=lambdas,
                 integrator=integrator,
                 reporter=reporter,
@@ -1183,7 +1213,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 dry=dry,
             )
 
-            unit_results_dict = self._run_simulation(
+            self._run_simulation(
                 sampler=sampler,
                 reporter=reporter,
                 simulation_settings=settings["simulation_settings"],
@@ -1213,40 +1243,115 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 del integrator, sampler
 
         if not dry:  # pragma: no-cover
-            nc = self.shared_basepath / settings["output_settings"].output_filename
-            chk = settings["output_settings"].checkpoint_storage_filename
-            unit_results_dict["nc"] = nc
-            unit_results_dict["last_checkpoint"] = chk
-            unit_results_dict["selection_indices"] = selection_indices
-            return unit_results_dict
+            return {
+                "nc": self.shared_basepath / settings["output_settings"].output_filename,
+                "checkpoint": self.shared_basepath
+                / settings["output_settings"].checkpoint_storage_filename,
+            }
         else:
             return {
-                "debug": {
-                    "sampler": sampler,
-                    "hybrid_factory": hybrid_factory,
-                }
+                "sampler": sampler,
+                "integrator": integrator,
             }
 
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        *,
+        setup_results,
+        **inputs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+        # Get the relevant inputs
+        system = deserialize(setup_results.outputs["system"])
+        positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nm)
+        selection_indices = setup_results.outputs["selection_indices"]
+
+        # Run the unit
+        outputs = self.run(
+            system=system,
+            positions=positions,
+            selection_indices=selection_indices,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared,
+        )
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            **outputs,
+        }
+
+
+class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     @staticmethod
-    def structural_analysis(
-        scratch: pathlib.Path,
-        shared: pathlib.Path,
-        pdb_filename: str,
-        trj_filename: str,
+    def _analyze_multistate_energies(
+        trajectory: pathlib.Path,
+        checkpoint: pathlib.Path,
+        sampler_method: str,
+        output_directory: pathlib.Path,
+        dry: bool,
+    ):
+        """
+        Analyze multistate energies and generate plots.
+
+        Parameters
+        ----------
+        trajectory : pathlib.Path
+          Path to the NetCDF trajectory file.
+        checkpoint : pathlib.Path
+          The name of the checkpoint file. Note this is
+          relative in path to the trajectory file.
+        sampler_method : str
+          The multistate sampler method used.
+        output_directory : pathlib.Path
+          The path to where plots will be written.
+        dry : bool
+          Whether or not we are running a dry run.
+        """
+        reporter = multistate.MultiStateReporter(
+            storage=trajectory,
+            # Note: openmmtools only wants the name of the checkpoint
+            # file, it assumes it to be in the same place as the trajectory
+            checkpoint_storage=checkpoint.name,
+            open_mode="r",
+        )
+
+        analyzer = multistate_analysis.MultistateEquilFEAnalysis(
+            reporter=reporter,
+            sampling_method=sampler_method,
+            result_units=offunit.kilocalorie_per_mole,
+        )
+
+        # Only create plots when not doing a dry run
+        if not dry:
+            analyzer.plot(filepath=output_directory, filename_prefix="")
+
+        analyzer.close()
+        reporter.close()
+        return analyzer.unit_results_dict
+
+    @staticmethod
+    def _structural_analysis(
+        pdb_file: pathlib.Path,
+        trj_file: pathlib.Path,
+        output_directory: pathlib.Path,
+        dry: bool,
     ) -> dict[str, str | pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
 
         Parameters
         ----------
-        scratch : pathlib.Path
-          Path to the scratch directory.
-        shared : pathlib.Path
-          Path to the shared directory.
-        pdb_filename : str
-          The PDB file name.
-        trj_filename : str
-          The trajectory file name.
+        pdb_file : pathlib.Path
+          Path to the PDB file.
+        trj_file : pathlib.Path
+          Path to the trajectory file.
+        output_directory : pathlib.Path
+          The output directory where plots and the data NPZ file
+          will be stored.
+        dry : bool
+          Whether or not we are running a dry run.
 
         Returns
         -------
@@ -1256,36 +1361,35 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         Notes
         -----
-        Don't put energy analysis here, it uses the open file reporter
-        whereas structural stuff requires the file handle to be closed.
+        Don't put energy analysis here as it uses the MultiStateReporter,
+        the structural analysis requires the file handle to be closed.
         """
         from openfe_analysis import rmsd
 
-        pdb_file = shared / pdb_filename
-        trj_file = shared / trj_filename
-
         try:
             data = rmsd.gather_rms_data(pdb_file, trj_file)
-        # TODO: change this to more specific exception types
+        # TODO: eventually change this to more specific exception types
         except Exception as e:
             return {"structural_analysis_error": str(e)}
 
-        # Generate plots
-        if d := data["protein_2D_RMSD"]:
-            fig = plotting.plot_2D_rmsd(d)
-            fig.savefig(shared / "protein_2D_RMSD.png")
-            plt.close(fig)
-            f2 = plotting.plot_ligand_COM_drift(data["time(ps)"], data["ligand_wander"])
-            f2.savefig(shared / "ligand_COM_drift.png")
-            plt.close(f2)
+        # Generate relevant plots if not a dry run
+        if not dry:
+            if d := data["protein_2D_RMSD"]:
+                fig = plotting.plot_2D_rmsd(d)
+                fig.savefig(output_directory / "protein_2D_RMSD.png")
+                plt.close(fig)
+                f2 = plotting.plot_ligand_COM_drift(data["time(ps)"], data["ligand_wander"])
+                f2.savefig(output_directory / "ligand_COM_drift.png")
+                plt.close(f2)
 
-        f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
-        f3.savefig(shared / "ligand_RMSD.png")
-        plt.close(f3)
+            f3 = plotting.plot_ligand_RMSD(data["time(ps)"], data["ligand_RMSD"])
+            f3.savefig(output_directory / "ligand_RMSD.png")
+            plt.close(f3)
 
-        # Write out NPZ with the analyzed data
+        # Write out an NPZ with all the relevant analysis data
+        npz_file = output_directory / "structural_analysis.npz"
         np.savez_compressed(
-            shared / "structural_analysis.npz",
+            npz_file,
             protein_RMSD=np.asarray(data["protein_RMSD"], dtype=np.float32),
             ligand_RMSD=np.asarray(data["ligand_RMSD"], dtype=np.float32),
             ligand_COM_drift=np.asarray(data["ligand_wander"], dtype=np.float32),
@@ -1293,27 +1397,116 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             time_ps=np.asarray(data["time(ps)"], dtype=np.float32),
         )
 
-        return {"structural_analysis": shared / "structural_analysis.npz"}
+        return {"structural_analysis": npz_file}
+
+    def run(
+        self,
+        *,
+        pdb_file: pathlib.Path,
+        trajectory: pathlib.Path,
+        checkpoint: pathlib.Path,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
+    ) -> dict[str, Any]:
+        """Analyze the multistate simulation.
+
+        Parameters
+        ----------
+        pdb_file : pathlib.Path
+          Path to the PDB file representing the subsampled structure.
+        trajectory : pathlib.Path
+          Path to the MultiStateReporter generated NetCDF file.
+        checkpoint : pathlib.Path
+          Path to the checkpoint file generated by MultiStateReporter.
+        dry : bool
+          Do a dry run of the calculation, creating all necessary hybrid
+          system components (topology, system, sampler, etc...) but without
+          running the simulation.
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        scratch_basepath: pathlib.Path | None
+          Where to store temporary files, defaults to current working directory
+        shared_basepath : pathlib.Path | None
+          Where to run the calculation, defaults to current working directory
+
+        Returns
+        -------
+        dict
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
+
+        Raises
+        ------
+        error
+          Exception if anything failed
+        """
+        # Prepare paths & verbosity
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        # Get the settings
+        settings = self._get_settings(self._inputs["protocol"].settings)
+
+        # Energies analysis
+        if verbose:
+            self.logger.info("Analyzing energies")
+
+        energy_analysis = self._analyze_multistate_energies(
+            trajectory=trajectory,
+            checkpoint=checkpoint,
+            sampler_method=settings["simulation_settings"].sampler_method.lower(),
+            output_directory=self.shared_basepath,
+            dry=dry,
+        )
+
+        # Structural analysis
+        if verbose:
+            self.logger.info("Analyzing structural outputs")
+
+        structural_analysis = self._structural_analysis(
+            pdb_file=pdb_file,
+            trj_file=trajectory,
+            output_directory=self.shared_basepath,
+            dry=dry,
+        )
+
+        # Return relevant things
+        outputs = energy_analysis | structural_analysis
+        return outputs
 
     def _execute(
         self,
         ctx: gufe.Context,
-        **kwargs,
+        *,
+        setup_results,
+        simulation_results,
+        **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+        pdb_file = setup_results.outputs["pdb_structure"]
+        selection_indices = setup_results.outputs["selection_indices"]
+        trajectory = simulation_results.outputs["nc"]
+        checkpoint = simulation_results.outputs["checkpoint"]
 
-        structural_analysis_outputs = self.structural_analysis(
-            scratch=ctx.scratch,
-            shared=ctx.shared,
-            pdb_filename=self._inputs["protocol"].settings.output_settings.output_structure,
-            trj_filename=self._inputs["protocol"].settings.output_settings.output_filename,
+        outputs = self.run(
+            pdb_file=pdb_file,
+            trajectory=trajectory,
+            checkpoint=checkpoint,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared,
         )
 
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            # We include various other outputs here to make
+            # things easier when gathering.
+            "pdb_structure": pdb_file,
+            "trajectory": trajectory,
+            "checkpoint": checkpoint,
+            "selection_indices": selection_indices,
             **outputs,
-            **structural_analysis_outputs,
         }

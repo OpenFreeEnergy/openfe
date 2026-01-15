@@ -19,4 +19,8 @@ the Perses toolkit (https://github.com/choderalab/perses).
 from .equil_rfe_settings import RelativeHybridTopologyProtocolSettings
 from .hybridtop_protocol_results import RelativeHybridTopologyProtocolResult
 from .hybridtop_protocols import RelativeHybridTopologyProtocol
-from .hybridtop_units import RelativeHybridTopologyProtocolUnit
+from .hybridtop_units import (
+    HybridTopologyMultiStateAnalysisUnit,
+    HybridTopologyMultiStateSimulationUnit,
+    HybridTopologySetupUnit,
+)
