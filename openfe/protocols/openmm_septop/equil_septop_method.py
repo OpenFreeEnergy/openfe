@@ -1347,6 +1347,9 @@ class SepTopProtocol(gufe.Protocol):
         # Validate protein component
         system_validation.validate_protein(stateA)
 
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_protein_barostat(stateA, self.settings.complex_integrator_settings.barostat)
+
         # Create list units for complex and solvent transforms
         def create_setup_units(unit_cls, leg):
             return [

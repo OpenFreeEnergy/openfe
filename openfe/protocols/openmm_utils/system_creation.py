@@ -113,7 +113,7 @@ def get_system_generator(
         nonperiodic_kwargs = periodic_kwargs
 
     # Add barostat if necessary
-    # For membrane systems, add a MonteCarloMembraneBarostat. 
+    # For membrane systems, add a MonteCarloMembraneBarostat.
     # if membrane barostat and not has_solvent
     # ToDo: We could also only check for the barostat setting here. But for
     #       that we first need adaptive settings for the rfe protocol

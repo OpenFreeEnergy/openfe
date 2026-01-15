@@ -5,6 +5,7 @@ Reusable utility methods to validate input systems to OpenMM-based alchemical
 Protocols.
 """
 
+import warnings
 from typing import Optional, Tuple
 
 from gufe import (
@@ -207,12 +208,51 @@ def validate_protein(state: ChemicalSystem):
         raise ValueError(errmsg)
 
 
+def validate_protein_barostat(state: ChemicalSystem, barostat: str):
+    """
+    Warn if there is a mismatch between the protein component type and barostat.
+
+    A ProteinMembraneComponent should generally be simulated with a
+    MonteCarloMembraneBarostat, while non-membrane protein systems should
+    use a MonteCarloBarostat.
+
+    Parameters
+    ----------
+    state : ChemicalSystem
+      The chemical system to inspect.
+    barostat: str
+      The barostat to be applied to the simulation
+    """
+    prot_comps = state.get_components_of_type(ProteinComponent)
+
+    if not prot_comps:
+        return
+
+    protein = prot_comps[0]
+
+    if isinstance(protein, ProteinMembraneComponent) and barostat != "MonteCarloMembraneBarostat":
+        wmsg = (
+            "A ProteinMembraneComponent is present, but a membrane-specific "
+            "barostat (MonteCarloMembraneBarostat) is not specified. If you "
+            "are simulating a system with a membrane, consider using "
+            "integrator_settings.barostat='MonteCarloMembraneBarostat'."
+        )
+        warnings.warn(wmsg)
+    if not isinstance(protein, ProteinMembraneComponent) and barostat == "MonteCarloMembraneBarostat":
+        wmsg = (
+            "A MonteCarloMembraneBarostat is specified, but no "
+            "ProteinMembraneComponent is present. If you are not simulating a "
+            "membrane system, consider using "
+            "integrator_settings.barostat='MonteCarloBarostat'."
+        )
+        warnings.warn(wmsg)
+
+
 ParseCompRet = Tuple[
     Optional[SolventComponent],
     Optional[ProteinComponent],
     list[SmallMoleculeComponent],
 ]
-
 
 def get_components(state: ChemicalSystem) -> ParseCompRet:
     """

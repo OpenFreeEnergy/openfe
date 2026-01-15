@@ -824,6 +824,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Use the more complete system validation solvent checks
         system_validation.validate_solvent(stateA, nonbonded_method)
 
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_protein_barostat(stateA, self.settings.complex_integrator_settings.barostat)
+
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvent_solvation_settings

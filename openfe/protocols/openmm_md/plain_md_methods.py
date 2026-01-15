@@ -182,6 +182,9 @@ class PlainMDProtocol(gufe.Protocol):
         # Validate protein component
         system_validation.validate_protein(stateA)
 
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_protein_barostat(stateA, self.settings.integrator_settings.barostat)
+
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
 
