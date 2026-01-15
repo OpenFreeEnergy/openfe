@@ -153,6 +153,11 @@ class TestT4LysozymeDryRun:
     # No ions
     num_ligand_atoms = 12
 
+    barostat_by_phase = {
+        "complex": MonteCarloBarostat,
+        "solvent": MonteCarloBarostat,
+    }
+
     @pytest.fixture(scope="class")
     def protocol(self, settings):
         return openmm_afe.AbsoluteBindingProtocol(
@@ -206,18 +211,15 @@ class TestT4LysozymeDryRun:
         assert len(complex_units) == 1
         assert len(solvent_units) == 1
 
-    def _get_barostat_type(self, complexed: bool):
-        return MonteCarloBarostat
-
     def _assert_force_num(self, system, forcetype, number):
         forces = [f for f in system.getForces() if isinstance(f, forcetype)]
         assert len(forces) == number
 
-    def _assert_expected_alchemical_forces(self, system, complexed: bool, settings):
+    def _assert_expected_alchemical_forces(self, system, phase: str, settings):
         """
         Assert the forces expected in the alchemical system.
         """
-        barostat_type = self._get_barostat_type(complexed)
+        barostat_type = self.barostat_by_phase[phase]
         self._assert_force_num(system, NonbondedForce, 1)
         self._assert_force_num(system, CustomNonbondedForce, 2)
         self._assert_force_num(system, CustomBondForce, 2)
@@ -226,7 +228,7 @@ class TestT4LysozymeDryRun:
         self._assert_force_num(system, PeriodicTorsionForce, 1)
         self._assert_force_num(system, barostat_type, 1)
 
-        if complexed:
+        if phase == "complex":
             self._assert_force_num(system, CustomCompoundBondForce, 1)
             assert len(system.getForces()) == 10
         else:
@@ -252,11 +254,11 @@ class TestT4LysozymeDryRun:
             settings.thermo_settings.temperature
         )
 
-    def _assert_expected_nonalchemical_forces(self, system, complexed: bool, settings):
+    def _assert_expected_nonalchemical_forces(self, system, phase: str, settings):
         """
         Assert the forces expected in the non-alchemical system.
         """
-        barostat_type = self._get_barostat_type(complexed)
+        barostat_type = self.barostat_by_phase[phase]
         self._assert_force_num(system, NonbondedForce, 1)
         self._assert_force_num(system, HarmonicBondForce, 1)
         self._assert_force_num(system, HarmonicAngleForce, 1)
@@ -285,7 +287,7 @@ class TestT4LysozymeDryRun:
             settings.thermo_settings.temperature
         )
 
-    def _verify_sampler(self, sampler, complexed: bool, settings):
+    def _verify_sampler(self, sampler, phase: str, settings):
         """
         Utility to verify the contents of the sampler.
         """
@@ -297,7 +299,7 @@ class TestT4LysozymeDryRun:
         )
         for state in sampler._thermodynamic_states:
             system = state.get_system(remove_thermostat=True)
-            self._assert_expected_alchemical_forces(system, complexed, settings)
+            self._assert_expected_alchemical_forces(system, phase, settings)
 
     def _check_box_vectors(self, system):
         self._test_dodecahedron_vectors(system)
@@ -366,11 +368,11 @@ class TestT4LysozymeDryRun:
             data = complex_units[0].run(dry=True, verbose=True)["debug"]
 
             # Check the sampler
-            self._verify_sampler(data["sampler"], complexed=True, settings=settings)
+            self._verify_sampler(data["sampler"], "complex", settings=settings)
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
-                data["alchem_system"], complexed=True, settings=settings
+                data["alchem_system"], "complex", settings=settings
             )
             self._check_box_vectors(data["alchem_system"])
 
@@ -380,7 +382,7 @@ class TestT4LysozymeDryRun:
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(
-                data["system"], complexed=True, settings=settings
+                data["system"], "complex", settings=settings
             )
             self._check_box_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
@@ -407,11 +409,11 @@ class TestT4LysozymeDryRun:
             data = solvent_units[0].run(dry=True, verbose=True)["debug"]
 
             # Check the sampler
-            self._verify_sampler(data["sampler"], complexed=False, settings=settings)
+            self._verify_sampler(data["sampler"], "solvent", settings=settings)
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
-                data["alchem_system"], complexed=False, settings=settings
+                data["alchem_system"], "solvent", settings=settings
             )
             self._test_cubic_vectors(data["alchem_system"])
 
@@ -421,7 +423,7 @@ class TestT4LysozymeDryRun:
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(
-                data["system"], complexed=False, settings=settings
+                data["system"], "solvent", settings=settings
             )
             self._test_cubic_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
@@ -551,6 +553,11 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
     # No ions
     num_ligand_atoms = 36
 
+    barostat_by_phase = {
+        "complex": MonteCarloMembraneBarostat,
+        "solvent": MonteCarloBarostat,
+    }
+
     @pytest.fixture(scope="class")
     def settings(self):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
@@ -593,29 +600,23 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
             mapping=None,
         )
 
-    def _get_barostat_type(self, complexed: bool):
-        return MonteCarloMembraneBarostat if complexed else MonteCarloBarostat
-
     def _check_box_vectors(self, system):
         self._test_orthogonal_vectors(system)
 
-    def _verify_sampler(self, sampler, complexed: bool, settings):
+    def _verify_sampler(self, sampler, phase: str, settings):
         """
         Utility to verify the contents of the sampler.
         """
         assert sampler.is_periodic
         assert isinstance(sampler, MultiStateSampler)
-        if complexed:
-            barostat_type = MonteCarloMembraneBarostat
-        else:
-            barostat_type = MonteCarloBarostat
+        barostat_type = self.barostat_by_phase[phase]
         assert isinstance(sampler._thermodynamic_states[0].barostat, barostat_type)
         assert sampler._thermodynamic_states[1].pressure == to_openmm(
             settings.thermo_settings.pressure
         )
         for state in sampler._thermodynamic_states:
             system = state.get_system(remove_thermostat=True)
-            self._assert_expected_alchemical_forces(system, complexed, settings)
+            self._assert_expected_alchemical_forces(system, phase, settings)
 
     @staticmethod
     def _test_orthogonal_vectors(system):
