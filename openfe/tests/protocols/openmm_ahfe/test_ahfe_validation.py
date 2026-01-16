@@ -8,15 +8,8 @@ from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteSolvationProtocol,
-    AbsoluteSolvationSolventUnit,
-    AbsoluteSolvationVacuumUnit,
 )
 from openfe.protocols.openmm_utils import system_validation
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_ESPALOMA_CHARGE,
-    HAS_NAGL,
-    HAS_OPENEYE,
-)
 
 
 @pytest.fixture()

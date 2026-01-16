@@ -1,7 +1,5 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-# This code is part of OpenFE and is licensed under the MIT license.
-# For details, see https://github.com/OpenFreeEnergy/openfe
 """ABFE Protocol Units --- :mod:`openfe.protocols.openmm_afe.abfe_units`
 ========================================================================
 This module defines the ProtocolUnits for the
@@ -23,7 +21,7 @@ from openff.units.openmm import to_openmm
 from openmm import System
 from openmm import unit as ommunit
 from openmm.app import Topology as omm_topology
-from openmmtools.states import GlobalParameterState, ThermodynamicState
+from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
@@ -36,18 +34,16 @@ from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGe
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 
-from .base_afe_units import BaseAbsoluteUnit
+from .base_afe_units import (
+    BaseAbsoluteMultiStateAnalysisUnit,
+    BaseAbsoluteMultiStateSimulationUnit,
+    BaseAbsoluteSetupUnit,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
-    """
-    Protocol Unit for the complex phase of an absolute binding free energy
-    """
-
-    simtype = "complex"
-
+class ComplexComponentsMixin:
     def _get_components(self):
         """
         Get the relevant components for a complex transformation.
@@ -75,7 +71,9 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # Similarly we don't need to check prot_comp
         return alchem_comps, solv_comp, prot_comp, off_comps
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+
+class ComplexSettingsMixin:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a complex transformation.
 
@@ -97,7 +95,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintSettings
         """
-        prot_settings = self._inputs["protocol"].settings
+        prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         settings = {}
         settings["forcefield_settings"] = prot_settings.forcefield_settings
@@ -115,6 +113,15 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings["restraint_settings"] = prot_settings.restraint_settings
 
         return settings
+
+
+class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteSetupUnit):
+    """
+    Setup unit for the complex phase of absolute binding free energy
+    transformations.
+    """
+
+    simtype = "complex"
 
     @staticmethod
     def _get_mda_universe(
@@ -261,7 +268,6 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
     ) -> tuple[
-        GlobalParameterState,
         Quantity,
         System,
         geometry.HostGuestRestraintGeometry,
@@ -295,9 +301,6 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
 
         Returns
         -------
-        restraint_parameter_state : RestraintParameterState
-          A RestraintParameterState object that defines the control
-          parameter for the restraint.
         correction : openff.units.Quantity
           The standard state correction for the restraint.
         system : openmm.System
@@ -380,10 +383,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             rest_geom,
         )
 
-        # Get the GlobalParameterState for the restraint
-        restraint_parameter_state = omm_restraints.RestraintParameterState(lambda_restraints=1.0)
         return (
-            restraint_parameter_state,
             correction,
             # Remove the thermostat, otherwise you'll get an
             # Andersen thermostat by default!
@@ -392,13 +392,28 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         )
 
 
-class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
+class ABFEComplexSimUnit(
+    ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
+):
     """
-    Protocol Unit for the solvent phase of an absolute binding free energy
+    Multi-state simulation (e.g. multi replica methods like Hamiltonian
+    replica exchange) unit for the complex phase of absolute binding
+    free energy transformations.
     """
 
-    simtype = "solvent"
+    simtype = "complex"
 
+
+class ABFEComplexAnalysisUnit(ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+    """
+    Analysis unit for multi-state simulations with the complex phase
+    of absolute binding free energy transformations.
+    """
+
+    simtype = "complex"
+
+
+class SolventComponentsMixin:
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
@@ -426,7 +441,9 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         # Similarly we don't need to check prot_comp just return None
         return alchem_comps, solv_comp, None, off_comps
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+
+class SolventSettingsMixin:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a solvent transformation.
 
@@ -447,7 +464,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
         """
-        prot_settings = self._inputs["protocol"].settings
+        prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         settings = {}
         settings["forcefield_settings"] = prot_settings.forcefield_settings
@@ -464,3 +481,33 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         settings["output_settings"] = prot_settings.solvent_output_settings
 
         return settings
+
+
+class ABFESolventSetupUnit(SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit):
+    """
+    Setup unit for the solvent phase of absolute binding free energy
+    transformations.
+    """
+
+    simtype = "solvent"
+
+
+class ABFESolventSimUnit(
+    SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
+):
+    """
+    Multi-state simulation (e.g. multi replica methods like Hamiltonian
+    replica exchange) unit for the solvent phase of absolute binding
+    free energy transformations.
+    """
+
+    simtype = "solvent"
+
+
+class ABFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+    """
+    Analysis unit for multi-state simulations with the solvent phase
+    of absolute binding free energy transformations.
+    """
+
+    simtype = "solvent"

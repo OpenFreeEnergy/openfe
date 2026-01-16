@@ -1,9 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-# This code is part of OpenFE and is licensed under the MIT license.
-# For details, see https://github.com/OpenFreeEnergy/openfe
-"""AHFE Protocol Units --- :mod:`openfe.protocols.openmm_afe.ahfe_units`
-========================================================================
+"""
+AHFE Protocol Units --- :mod:`openfe.protocols.openmm_afe.ahfe_units`
+=====================================================================
+
 This module defines the ProtocolUnits for the
 :class:`AbsoluteSolvationProtocol`.
 """
@@ -15,18 +15,16 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 
 from ..openmm_utils import system_validation
-from .base_afe_units import BaseAbsoluteUnit
+from .base_afe_units import (
+    BaseAbsoluteMultiStateAnalysisUnit,
+    BaseAbsoluteMultiStateSimulationUnit,
+    BaseAbsoluteSetupUnit,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
-    """
-    Protocol Unit for the vacuum phase of an absolute solvation free energy
-    """
-
-    simtype = "vacuum"
-
+class VacuumComponentsMixin:
     def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
@@ -59,7 +57,9 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         # (of stateA since we enforce only one disappearing ligand)
         return alchem_comps, None, prot_comp, off_comps
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+
+class VacuumSettingsMixin:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a vacuum transformation.
 
@@ -80,7 +80,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
         """
-        prot_settings = self._inputs["protocol"].settings
+        prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         settings = {}
         settings["forcefield_settings"] = prot_settings.vacuum_forcefield_settings
@@ -99,13 +99,37 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         return settings
 
 
-class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
+class AHFEVacuumSetupUnit(VacuumComponentsMixin, VacuumSettingsMixin, BaseAbsoluteSetupUnit):
     """
-    Protocol Unit for the solvent phase of an absolute solvation free energy
+    Setup unit for the vacuum phase of absolute hydration free energy
+    transformations.
     """
 
-    simtype = "solvent"
+    simtype = "vacuum"
 
+
+class AHFEVacuumSimUnit(
+    VacuumComponentsMixin, VacuumSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
+):
+    """
+    Multi-state simulation (e.g. multi replica methods like Hamiltonian
+    replica exchange) unit for the vacuum phase of absolute hydration
+    free energy transformations.
+    """
+
+    simtype = "vacuum"
+
+
+class AHFEVacuumAnalysisUnit(VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+    """
+    Analysis unit for multi-state simulations with the vacuum phase
+    of absolute hydration free energy transformations.
+    """
+
+    simtype = "vacuum"
+
+
+class SolventComponentsMixin:
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
@@ -134,7 +158,9 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         # disallowed on create
         return alchem_comps, solv_comp, prot_comp, off_comps
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+
+class SolventSettingsMixin:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a solvent transformation.
 
@@ -155,7 +181,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
         """
-        prot_settings = self._inputs["protocol"].settings
+        prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         settings = {}
         settings["forcefield_settings"] = prot_settings.solvent_forcefield_settings
@@ -172,3 +198,33 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings["output_settings"] = prot_settings.solvent_output_settings
 
         return settings
+
+
+class AHFESolventSetupUnit(SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit):
+    """
+    Setup unit for the solvent phase of absolute hydration free energy
+    transformations.
+    """
+
+    simtype = "solvent"
+
+
+class AHFESolventSimUnit(
+    SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
+):
+    """
+    Multi-state simulation (e.g. multi replica methods like Hamiltonian
+    replica exchange) unit for the solvent phase of absolute hydration
+    free energy transformations.
+    """
+
+    simtype = "solvent"
+
+
+class AHFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+    """
+    Analysis unit for multi-state simulations with the solvent phase
+    of absolute hydration free energy transformations.
+    """
+
+    simtype = "solvent"

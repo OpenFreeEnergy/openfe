@@ -214,8 +214,8 @@ class AbsoluteProtocolResultMixin:
         for key in [self.bound_state, self.unbound_state]:
             for pus in self.data[key].values():  # type: ignore[attr-defined]
                 states = get_replica_state(
-                    pus[0].outputs["nc"],
-                    pus[0].outputs["last_checkpoint"],
+                    pus[0].outputs["trajectory"],
+                    pus[0].outputs["checkpoint"],
                 )
                 replica_states[key].append(states)
 
@@ -295,7 +295,9 @@ class AbsoluteProtocolResultMixin:
 
 
 class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResultMixin):
-    """Dict-like container for the output of a AbsoluteSolvationProtocol"""
+    """
+    Protocol results with the output of a AbsoluteSolvationProtocol
+    """
 
     bound_state = "solvent"
     unbound_state = "vacuum"
@@ -375,7 +377,9 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResul
 
 
 class AbsoluteBindingProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResultMixin):
-    """Dict-like container for the output of a AbsoluteBindingProtocol"""
+    """
+    Protocol results with the output of a AbsoluteBindingProtocol.
+    """
 
     bound_state = "complex"
     unbound_state = "solvent"

@@ -55,9 +55,19 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
 )
-from openfe.protocols.openmm_utils import settings_validation, system_validation
+from openfe.protocols.openmm_utils import (
+    settings_validation,
+    system_validation,
+)
 
-from .abfe_units import AbsoluteBindingComplexUnit, AbsoluteBindingSolventUnit
+from .abfe_units import (
+    ABFEComplexAnalysisUnit,
+    ABFEComplexSetupUnit,
+    ABFEComplexSimUnit,
+    ABFESolventAnalysisUnit,
+    ABFESolventSetupUnit,
+    ABFESolventSimUnit,
+)
 from .afe_protocol_results import AbsoluteBindingProtocolResult
 
 due.cite(
@@ -422,36 +432,58 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         # Get the name of the alchemical species
         alchname = alchem_comps["stateA"][0].name
+        unit_classes = {
+            "solvent": {
+                "setup": ABFESolventSetupUnit,
+                "simulation": ABFESolventSimUnit,
+                "analysis": ABFESolventAnalysisUnit,
+            },
+            "complex": {
+                "setup": ABFEComplexSetupUnit,
+                "simulation": ABFEComplexSimUnit,
+                "analysis": ABFEComplexAnalysisUnit,
+            },
+        }
 
-        # Create list units for complex and solvent transforms
+        protocol_units: dict[str, list[gufe.ProtocolUnit]] = {"solvent": [], "complex": []}
 
-        solvent_units = [
-            AbsoluteBindingSolventUnit(
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                generation=0,
-                repeat_id=int(uuid.uuid4()),
-                name=(f"Absolute Binding, {alchname} solvent leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
+        for phase in ["solvent", "complex"]:
+            for i in range(self.settings.protocol_repeats):
+                repeat_id = int(uuid.uuid4())
 
-        complex_units = [
-            AbsoluteBindingComplexUnit(
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                generation=0,
-                repeat_id=int(uuid.uuid4()),
-                name=(f"Absolute Binding, {alchname} complex leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
+                setup = unit_classes[phase]["setup"](
+                    protocol=self,
+                    stateA=stateA,
+                    stateB=stateB,
+                    alchemical_components=alchem_comps,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"ABFE Setup: {alchname} {phase} leg: repeat {i} generation 0",
+                )
 
-        return solvent_units + complex_units
+                simulation = unit_classes[phase]["simulation"](
+                    protocol=self,
+                    # only need state A & alchem comps
+                    stateA=stateA,
+                    alchemical_components=alchem_comps,
+                    setup_results=setup,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"ABFE Simulation: {alchname} {phase} leg: repeat {i} generation 0",
+                )
+
+                analysis = unit_classes[phase]["analysis"](
+                    protocol=self,
+                    setup_results=setup,
+                    simulation_results=simulation,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"ABFE Analysis: {alchname} {phase} leg, repeat {i} generation 0",
+                )
+
+                protocol_units[phase] += [setup, simulation, analysis]
+
+        return protocol_units["solvent"] + protocol_units["complex"]
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
@@ -463,7 +495,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         for d in protocol_dag_results:
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
-                if not pu.ok():
+                if ("Analysis" not in pu.name) or (not pu.ok()):
                     continue
                 if pu.outputs["simtype"] == "solvent":
                     unsorted_solvent_repeats[pu.outputs["repeat_id"]].append(pu)

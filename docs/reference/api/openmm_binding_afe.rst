@@ -16,8 +16,12 @@ Protocol API specification
    :toctree: generated/
 
    AbsoluteBindingProtocol
-   AbsoluteBindingComplexUnit
-   AbsoluteBindingSolventUnit
+   ABFEComplexAnalysisUnit
+   ABFEComplexSetupUnit
+   ABFEComplexSimUnit
+   ABFESolventAnalysisUnit
+   ABFESolventSetupUnit
+   ABFESolventSimUnit
    AbsoluteBindingProtocolResult
 
 Protocol Settings
