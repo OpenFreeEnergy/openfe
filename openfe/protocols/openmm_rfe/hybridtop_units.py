@@ -146,7 +146,7 @@ class HybridTopologyUnitMixin:
 
 class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
-    Calculates the relative free energy of an alchemical ligand transformation.
+    Setup unit for Hybrid Topology Protocol transformations.
     """
 
     @staticmethod
@@ -810,6 +810,11 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
 
 class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+    """
+    Multi-state simulation (e.g. multi replica methods like hamiltonian
+    replica exchange) unit for Hybrid Topology Protocol transformations.
+    """
+
     @staticmethod
     def _get_integrator(
         integrator_settings: IntegratorSettings,
@@ -1284,6 +1289,10 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
 
 class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+    """
+    Analysis unit for multi-state Hybrid Topology Protocol transformations.
+    """
+
     @staticmethod
     def _analyze_multistate_energies(
         trajectory: pathlib.Path,

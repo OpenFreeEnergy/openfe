@@ -16,7 +16,9 @@ Protocol API specification
    :toctree: generated/
 
    RelativeHybridTopologyProtocol
-   RelativeHybridTopologyProtocolUnit
+   HybridTopologySetupUnit
+   HybridTopologyMultiStateSimulationUnit
+   HybridTopologyMultiStateAnalysisUnit
    RelativeHybridTopologyProtocolResult
 
 Protocol Settings
