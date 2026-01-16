@@ -20,8 +20,8 @@ from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe.abfe_units import (
     ABFEComplexSetupUnit,
 )
-from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
+from openfe.protocols.openmm_utils.serialization import deserialize
 
 
 class AlchemStateRest(AlchemicalState):
