@@ -29,7 +29,7 @@ All sections of the file ``network:``, ``mapper:``  and ``partial_charge:`` are 
 
 The settings YAML file is then provided to the ``-s`` option of ``openfe plan-rbfe-network``: ::
 
-  openfe plan-rbfe-network -M molecules.sdf -P protein.pdb -s settings.yaml
+  openfe plan-rbfe-network -M molecules.sdf -p protein.pdb -s settings.yaml
 
 Customising the atom mapper
 ---------------------------
