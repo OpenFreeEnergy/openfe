@@ -146,6 +146,17 @@ def test_create_independent_repeat_ids(benzene_modifications, T4_protein_compone
     assert len(repeat_ids) == 12
 
 
+def test_mda_universe_error():
+    """
+    Test that we get an error if we pass no positions or trajectory
+    when calling the mda Universe getter.
+    """
+    with pytest.raises(ValueError, match="No positions to create"):
+        _ = openmm_afe.AbsoluteBindingComplexUnit._get_mda_universe(
+            topology="foo", positions=None, trajectory=None
+        )
+
+
 class TestT4LysozymeDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 2634

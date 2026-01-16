@@ -84,6 +84,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     SepTopSettings,
     SettingsBaseModel,
 )
+from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
@@ -99,7 +100,6 @@ from ..restraint_utils.settings import (
     DistanceRestraintSettings,
 )
 from .base import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
-from .utils import serialize
 
 due.cite(
     Doi("10.1021/acs.jctc.3c00282"),
