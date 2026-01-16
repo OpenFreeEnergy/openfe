@@ -23,7 +23,7 @@ from rdkit.Chem import AllChem
 import openfe
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
-from openfe.protocols.openmm_septop.utils import deserialize
+from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.tests.protocols.openmm_rfe.helpers import make_htf
 
 
