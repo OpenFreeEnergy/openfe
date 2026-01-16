@@ -10,7 +10,7 @@ This settings file has a series of sections for customising the different algori
 For example, the settings file which re-specifies the default behaviour would look like ::
 
   network:
-    method: plan_minimal_spanning_tree
+    method: generate_minimal_spanning_network
   mapper:
     method: LomapAtomMapper
     settings:
