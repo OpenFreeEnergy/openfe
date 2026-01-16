@@ -814,6 +814,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
     Multi-state simulation (e.g. multi replica methods like hamiltonian
     replica exchange) unit for Hybrid Topology Protocol transformations.
     """
+
     @staticmethod
     def _get_integrator(
         integrator_settings: IntegratorSettings,
@@ -1291,6 +1292,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
     """
     Analysis unit for multi-state Hybrid Topology Protocol transformations.
     """
+
     @staticmethod
     def _analyze_multistate_energies(
         trajectory: pathlib.Path,
