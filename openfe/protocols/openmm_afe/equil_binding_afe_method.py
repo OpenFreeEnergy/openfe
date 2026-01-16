@@ -28,20 +28,17 @@ import logging
 import uuid
 import warnings
 from collections import defaultdict
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable
 
 import gufe
 from gufe import (
     BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
-    ProteinMembraneComponent,
     SmallMoleculeComponent,
-    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
-
 from openff.units import unit as offunit
 
 from openfe.due import Doi, due
@@ -58,7 +55,6 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
-    SettingsBaseModel,
 )
 from openfe.protocols.openmm_utils import settings_validation, system_validation
 
