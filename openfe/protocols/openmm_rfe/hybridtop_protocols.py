@@ -82,7 +82,8 @@ due.cite(
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
     """
-    Relative Free Energy calculations using OpenMM and OpenMMTools.
+    Relative Free Energy calculations using a Hybrid Topology scheme
+    using OpenMM and OpenMMTools.
 
     Based on `Perses <https://github.com/choderalab/perses>`_
 
