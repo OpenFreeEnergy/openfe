@@ -111,7 +111,7 @@ class AbsoluteUnitMixin:
         self.verbose = verbose
 
         if self.verbose:
-            self.logger.info("setting up alchemical system")  # typing: ignore[attr-defined]
+            self.logger.info("setting up alchemical system")  # type: ignore[attr-defined]
 
         # set basepaths
         def _set_optional_path(basepath):
