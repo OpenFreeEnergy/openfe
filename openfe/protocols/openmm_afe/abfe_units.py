@@ -117,7 +117,8 @@ class ComplexSettingsMixin:
 
 class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteSetupUnit):
     """
-    Protocol Unit for the complex phase of an absolute binding free energy
+    Setup unit for the complex phase of absolute binding free energy
+    transformations.
     """
 
     simtype = "complex"
@@ -395,18 +396,21 @@ class ABFEComplexSimUnit(
     ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
 ):
     """
-    ProtocolUnit for the vacuum simulation phase of an absolute hydration free energy
+    Multi-state simulation (e.g. multi replica methods like Hamiltonian
+    replica exchange) unit for the complex phase of absolute binding
+    free energy transformations.
     """
 
-    simtype = "vacuum"
+    simtype = "complex"
 
 
 class ABFEComplexAnalysisUnit(ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
     """
-    ProtocolUnit for the vacuum analysis phase of an absolute hydration free energy
+    Analysis unit for multi-state simulations with the complex phase
+    of absolute binding free energy transformations.
     """
 
-    simtype = "vacuum"
+    simtype = "complex"
 
 
 class SolventComponentsMixin:
@@ -481,7 +485,8 @@ class SolventSettingsMixin:
 
 class ABFESolventSetupUnit(SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit):
     """
-    ProtocolUnit for the solvent setup phase of an absolute binding free energy
+    Setup unit for the solvent phase of absolute binding free energy
+    transformations.
     """
 
     simtype = "solvent"
@@ -491,7 +496,9 @@ class ABFESolventSimUnit(
     SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
 ):
     """
-    ProtocolUnit for the solvent simulation phase of an absolute binding free energy
+    Multi-state simulation (e.g. multi replica methods like Hamiltonian
+    replica exchange) unit for the solvent phase of absolute binding
+    free energy transformations.
     """
 
     simtype = "solvent"
@@ -499,7 +506,8 @@ class ABFESolventSimUnit(
 
 class ABFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
     """
-    ProtocolUnit for the solvent analysis phase of an absolute binding free energy
+    Analysis unit for multi-state simulations with the solvent phase
+    of absolute binding free energy transformations.
     """
 
     simtype = "solvent"

@@ -295,7 +295,9 @@ class AbsoluteProtocolResultMixin:
 
 
 class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResultMixin):
-    """Dict-like container for the output of a AbsoluteSolvationProtocol"""
+    """
+    Protocol results with the output of a AbsoluteSolvationProtocol
+    """
 
     bound_state = "solvent"
     unbound_state = "vacuum"
@@ -375,7 +377,9 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResul
 
 
 class AbsoluteBindingProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResultMixin):
-    """Dict-like container for the output of a AbsoluteBindingProtocol"""
+    """
+    Protocol results with the output of a AbsoluteBindingProtocol.
+    """
 
     bound_state = "complex"
     unbound_state = "solvent"

@@ -101,7 +101,8 @@ class VacuumSettingsMixin:
 
 class AHFEVacuumSetupUnit(VacuumComponentsMixin, VacuumSettingsMixin, BaseAbsoluteSetupUnit):
     """
-    ProtocolUnit for the vacuum setup phase of an absolute hydration free energy
+    Setup unit for the vacuum phase of absolute hydration free energy
+    transformations.
     """
 
     simtype = "vacuum"
@@ -111,7 +112,9 @@ class AHFEVacuumSimUnit(
     VacuumComponentsMixin, VacuumSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
 ):
     """
-    ProtocolUnit for the vacuum simulation phase of an absolute hydration free energy
+    Multi-state simulation (e.g. multi replica methods like Hamiltonian
+    replica exchange) unit for the vacuum phase of absolute hydration
+    free energy transformations.
     """
 
     simtype = "vacuum"
@@ -119,7 +122,8 @@ class AHFEVacuumSimUnit(
 
 class AHFEVacuumAnalysisUnit(VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
     """
-    ProtocolUnit for the vacuum analysis phase of an absolute hydration free energy
+    Analysis unit for multi-state simulations with the vacuum phase
+    of absolute hydration free energy transformations.
     """
 
     simtype = "vacuum"
@@ -198,7 +202,8 @@ class SolventSettingsMixin:
 
 class AHFESolventSetupUnit(SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit):
     """
-    ProtocolUnit for the solvent setup phase of an absolute hydration free energy
+    Setup unit for the solvent phase of absolute hydration free energy
+    transformations.
     """
 
     simtype = "solvent"
@@ -208,7 +213,9 @@ class AHFESolventSimUnit(
     SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteMultiStateSimulationUnit
 ):
     """
-    ProtocolUnit for the solvent simulation phase of an absolute hydration free energy
+    Multi-state simulation (e.g. multi replica methods like Hamiltonian
+    replica exchange) unit for the solvent phase of absolute hydration
+    free energy transformations.
     """
 
     simtype = "solvent"
@@ -216,7 +223,8 @@ class AHFESolventSimUnit(
 
 class AHFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
     """
-    ProtocolUnit for the solvent analysis phase of an absolute hydration free energy
+    Analysis unit for multi-state simulations with the solvent phase
+    of absolute hydration free energy transformations.
     """
 
     simtype = "solvent"

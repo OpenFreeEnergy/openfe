@@ -20,7 +20,7 @@ import copy
 import logging
 import os
 import pathlib
-from typing import Any, Optional
+from typing import Any
 
 import gufe
 import mdtraj as mdt
@@ -88,12 +88,12 @@ from openfe.utils import log_system_probe, without_oechem_backend
 logger = logging.getLogger(__name__)
 
 
-class AbsoluteUnitsMixin:
+class AbsoluteUnitMixin:
     def _prepare(
         self,
         verbose: bool,
-        scratch_basepath: Optional[pathlib.Path],
-        shared_basepath: Optional[pathlib.Path],
+        scratch_basepath: pathlib.Path | None,
+        shared_basepath: pathlib.Path | None,
     ):
         """
         Set basepaths and do some initial logging.
@@ -103,8 +103,10 @@ class AbsoluteUnitsMixin:
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
-        basepath : Optional[pathlib.Path]
-          Optional base path to write files to.
+        scratch_basepath : pathlib.Path | None
+          Optional base path to write scratch files to.
+        shared_basepath : pathlib.Path | None
+          Optional base path to write shared files to.
         """
         self.verbose = verbose
 
@@ -148,9 +150,9 @@ class AbsoluteUnitsMixin:
         ...
 
 
-class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
+class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
     """
-    Base class for setting up absolute free energy transformations.
+    Base class for setting up an absolute free energy transformations.
     """
 
     @abc.abstractmethod
@@ -158,8 +160,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         self,
     ) -> tuple[
         dict[str, list[Component]],
-        Optional[gufe.SolventComponent],
-        Optional[gufe.ProteinComponent],
+        gufe.SolventComponent | None,
+        gufe.ProteinComponent | None,
         dict[SmallMoleculeComponent, OFFMolecule],
     ]:
         """
@@ -366,7 +368,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         ----------
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings object for the unit.
-        solvent_comp : Optional[SolventComponent]
+        solvent_comp : SolventComponent | None
           The solvent component of this system, if there is one.
         openff_molecules : list[openff.toolkit.Molecule] | None
           A list of OpenFF Molecules to generate templates for, if any.
@@ -398,8 +400,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
 
     @staticmethod
     def _get_modeller(
-        protein_component: Optional[ProteinComponent],
-        solvent_component: Optional[SolventComponent],
+        protein_component: ProteinComponent | None,
+        solvent_component: SolventComponent | None,
         small_mols: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
         solvation_settings: BaseSolvationSettings,
@@ -410,9 +412,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
 
         Parameters
         ----------
-        protein_component : Optional[ProteinComponent]
+        protein_component : ProteinComponent | None
           Protein Component, if it exists.
-        solvent_component : Optional[ProteinCompoinent]
+        solvent_component : SolventComponent | None
           Solvent Component, if it exists.
         small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           Dictionary of OpenFF Molecules to add, keyed by
@@ -444,8 +446,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
     def _get_omm_objects(
         self,
         settings: dict[str, SettingsBaseModel],
-        protein_component: Optional[ProteinComponent],
-        solvent_component: Optional[SolventComponent],
+        protein_component: ProteinComponent | None,
+        solvent_component: SolventComponent | None,
         small_mols: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> tuple[
         app.Topology,
@@ -461,9 +463,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         ----------
         settings : dict[str, SettingsBaseModel]
           Protocol settings
-        protein_component : Optional[ProteinComponent]
+        protein_component : ProteinComponent | None
           Protein component for the system.
-        solvent_component : Optional[SolventComponent]
+        solvent_component : SolventComponent | None
           Solvent component for the system.
         small_mols : dict[str, openff.toolkit.Molecule]
           Dictionary of SmallMoleculeComponents and OpenFF Molecules
@@ -519,9 +521,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
     ) -> tuple[
-        Optional[Quantity],
-        Optional[openmm.System],
-        Optional[geometry.BaseRestraintGeometry],
+        Quantity | None,
+        openmm.System | None,
+        geometry.BaseRestraintGeometry | None,
     ]:
         """
         Placeholder method to add restraints if necessary
@@ -641,7 +643,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         scratch_basepath: pathlib.Path | None = None,
         shared_basepath: pathlib.Path | None = None,
     ) -> dict[str, Any]:
-        """Run the absolute free energy calculation.
+        """Run the setup phase of an absolute free energy calculation.
 
         Parameters
         ----------
@@ -730,10 +732,16 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         npy_positions = from_openmm(positions).to("nanometer").m
         np.save(positions_outfile, npy_positions)
 
+        # Set the PDB file name
+        if len(selection_indices) > 0:
+            pdb_structure = self.shared_basepath / settings["output_settings"].output_structure
+        else:
+            pdb_structure = None
+
         unit_results_dict = {
             "system": system_outfile,
             "positions": positions_outfile,
-            "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
+            "pdb_structure": pdb_structure,
             "selection_indices": selection_indices,
             "box_vectors": from_openmm(box_vectors),
         }
@@ -778,14 +786,14 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
         }
 
 
-class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
+class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
     @abc.abstractmethod
     def _get_components(
         self,
     ) -> tuple[
         dict[str, list[Component]],
-        Optional[gufe.SolventComponent],
-        Optional[gufe.ProteinComponent],
+        gufe.SolventComponent | None,
+        gufe.ProteinComponent | None,
         dict[SmallMoleculeComponent, OFFMolecule],
     ]:
         """
@@ -823,7 +831,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         lambda_vdw = settings["lambda_settings"].lambda_vdw
         lambda_rest = settings["lambda_settings"].lambda_restraints
 
-        # Reverse lambda schedule for vdw, elect, and restraints
+        # Reverse lambda schedule for vdw, end elec,
         # since in AbsoluteAlchemicalFactory 1 means fully
         # interacting (which would be non-interacting for us)
         lambdas["lambda_electrostatics"] = [1 - x for x in lambda_elec]
@@ -839,7 +847,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         box_vectors: openmm.unit.Quantity,
         thermodynamic_settings: ThermoSettings,
         lambdas: dict[str, list[float]],
-        solvent_component: Optional[SolventComponent],
+        solvent_component: SolventComponent | None,
         alchemically_restrained: bool,
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
@@ -858,7 +866,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
           Settings controlling the thermodynamic parameters.
         lambdas : dict[str, list[float]]
           A dictionary of lambda scales.
-        solvent_component : Optional[SolventComponent]
+        solvent_component : SolventComponent | None
           The solvent component of the system, if there is one.
         alchemically_restrained : bool
           Whether or not the system requires a control parameter
@@ -1378,7 +1386,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin
         }
 
 
-class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitsMixin):
+class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
     @staticmethod
     def _analyze_multistate_energies(
         trajectory: pathlib.Path,
