@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a RelativeHybridTopologyProtocol"""
-
+    """
+    Protocol results with the output of a RelativeHybridTopologyProtocol.
+    """
     def __init__(self, **data):
         super().__init__(**data)
         # data is mapping of str(repeat_id): list[protocolunitresults]
