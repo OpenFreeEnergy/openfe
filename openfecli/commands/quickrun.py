@@ -1,12 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import json
 import pathlib
 
 import click
 
 from openfecli import OFECommandPlugin
+from openfecli.quickrun_result import QuickrunResult
 from openfecli.utils import configure_logger, print_duration, write
 
 
@@ -114,17 +114,15 @@ def quickrun(transformation, work_dir, output):
     else:
         estimate = uncertainty = None  # for output file
 
-    out_dict = {
-        "estimate": estimate,
-        "uncertainty": uncertainty,
-        "protocol_result": prot_result.to_dict(),
-        "unit_results": {
-            unit.key: unit.to_keyed_dict() for unit in dagresult.protocol_unit_results
-        },
-    }
+    quickrun_result = QuickrunResult(
+        estimate=estimate,
+        uncertainty=uncertainty,
+        protocol_result=prot_result.to_dict(),
+        unit_results={unit.key: unit.to_keyed_dict() for unit in dagresult.protocol_unit_results},
+        # ok=dagresult.ok()  # TODO: add in 2.0
+    )
 
-    with open(output, mode="w") as outf:
-        json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
+    quickrun_result.to_json(output)
 
     write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
     write("")
