@@ -1063,7 +1063,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
         # Restarting doesn't need any setup, we just rebuild from storage.
         if restart:
-            sampler = _SAMPLERS[sampler_method].from_storage(reporter)
+            sampler = _SAMPLERS[sampler_method].from_storage(reporter)  # type: ignore[attr-defined]
         else:
             sampler = _SAMPLERS[sampler_method](**sampler_kwargs)
 
