@@ -8,8 +8,10 @@ Tests the easy start guide
 import os
 from importlib import resources
 from os import path
+from pathlib import Path
 from unittest import mock
 
+import numpy as np
 import pytest
 from click.testing import CliRunner
 from openff.units import unit
@@ -90,27 +92,9 @@ def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
 
 
 @pytest.fixture
-def mock_execute(expected_transformations):
-    def fake_execute(*args, **kwargs):
-        return {
-            "repeat_id": kwargs["repeat_id"],
-            "generation": kwargs["generation"],
-            "nc": "file.nc",
-            "last_checkpoint": "checkpoint.nc",
-            "unit_estimate": 4.2 * unit.kilocalories_per_mole,
-        }
-
-    with mock.patch(
-        "openfe.protocols.openmm_rfe.equil_rfe_methods.RelativeHybridTopologyProtocolUnit._execute"
-    ) as m:
-        m.side_effect = fake_execute
-
-        yield m
-
-
-@pytest.fixture
 def ref_gather():
     return """\
+Loading results:
 ligand_i\tligand_j\tDDG(i->j) (kcal/mol)\tuncertainty (kcal/mol)
 lig_ejm_31\tlig_ejm_46\t0.0\t0.0
 lig_ejm_31\tlig_ejm_47\t0.0\t0.0
@@ -124,10 +108,67 @@ lig_jmc_27\tlig_jmc_28\t0.0\t0.0
 """
 
 
-def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, mock_execute, ref_gather):
+@pytest.fixture
+def fake_setup_execute_results():
+    """Use for mocking the expensive _execute step and instead directly return plausible results."""
+
+    def _fake_execute_results(*args, **kwargs):
+        return {
+            "repeat_id": kwargs["repeat_id"],
+            "generation": kwargs["generation"],
+            "system": Path("system.xml.bz2"),
+            "positions": Path("positions.npy"),
+            "pdb_structure": Path("hybrid_system.pdb"),
+            "selection_indices": np.arange(50),
+        }
+
+    return _fake_execute_results
+
+
+@pytest.fixture
+def fake_sim_execute_results():
+    """Use for mocking the expensive _execute step and instead directly return plausible results."""
+
+    def _fake_execute_results(*args, **kwargs):
+        return {
+            "repeat_id": kwargs["repeat_id"],
+            "generation": kwargs["generation"],
+            "nc": Path("file.nc"),
+            "checkpoint": Path("chk.chk"),
+        }
+
+    return _fake_execute_results
+
+
+@pytest.fixture
+def fake_analysis_execute_results():
+    """Use for mocking the expensive _execute step and instead directly return plausible results."""
+
+    def _fake_execute_results(*args, **kwargs):
+        return {
+            "repeat_id": kwargs["repeat_id"],
+            "generation": kwargs["generation"],
+            "pdb_structure": Path("hybrid_system.pdb"),
+            "checkpoint": Path("chk.chk"),
+            "selection_indices": np.arange(50),
+            "unit_estimate": 4.2 * unit.kilocalories_per_mole,
+        }
+
+    return _fake_execute_results
+
+
+def test_run_tyk2(
+    tyk2_ligands,
+    tyk2_protein,
+    expected_transformations,
+    fake_setup_execute_results,
+    fake_sim_execute_results,
+    fake_analysis_execute_results,
+    ref_gather,
+):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(
+        result_setup = runner.invoke(
             plan_rbfe_network,
             [
                 "-M", tyk2_ligands,
@@ -135,14 +176,27 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, mock_exe
             ],
         )  # fmt: skip
 
-        assert_click_success(result)
+        assert_click_success(result_setup)
+        with (
+            mock.patch(
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologySetupUnit._execute",
+                side_effect=fake_setup_execute_results,
+            ),
+            mock.patch(
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit._execute",
+                side_effect=fake_sim_execute_results,
+            ),
+            mock.patch(
+                "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit._execute",
+                side_effect=fake_analysis_execute_results,
+            ),
+        ):
+            for f in expected_transformations:
+                fn = path.join("alchemicalNetwork/transformations", f)
+                result_run = runner.invoke(quickrun, [fn])
+                assert_click_success(result_run)
 
-        for f in expected_transformations:
-            fn = path.join("alchemicalNetwork/transformations", f)
-            result2 = runner.invoke(quickrun, [fn])
-            assert_click_success(result2)
+        result_gather = runner.invoke(gather, ["--report", "ddg", ".", "--tsv"])
 
-        gather_result = runner.invoke(gather, ["--report", "ddg", ".", "--tsv"])
-
-        assert_click_success(gather_result)
-        assert gather_result.stdout == ref_gather
+        assert_click_success(result_gather)
+        assert result_gather.stdout == ref_gather

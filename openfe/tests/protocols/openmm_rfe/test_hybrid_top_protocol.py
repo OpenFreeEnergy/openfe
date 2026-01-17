@@ -708,8 +708,8 @@ def test_setup_ligand_system_cutoff(
             "rdkit",
             "nagl",
             marks=pytest.mark.skipif(
-                not HAS_NAGL or sys.platform.startswith("darwin"),
-                reason="needs NAGL and/or on macos",
+                not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
+                reason="needs NAGL (without oechem) and/or on macos",
             ),
         ),
         pytest.param(
@@ -802,8 +802,11 @@ def test_setup_same_mol_different_charges(benzene_modifications, vac_settings, t
     stateB_mol = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
 
     # Create new mapping
-    mapper = openfe.setup.LomapAtomMapper(element_change=False)
-    mapping = next(mapper.suggest_mappings(stateA_mol, stateB_mol))
+    mapping = gufe.LigandAtomMapping(
+        componentA=stateA_mol,
+        componentB=stateB_mol,
+        componentA_to_componentB={i: i for i in range(12)},
+    )
 
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
@@ -839,6 +842,9 @@ def test_setup_same_mol_different_charges(benzene_modifications, vac_settings, t
             # check state B charge
             c_diff = stateB_charges[i] - stateA_charges[i]
             assert pytest.approx(offset) == c_diff
+
+            # check that the offset value is non-zero
+            assert abs(offset) > 0 * offset.units
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
@@ -1210,7 +1216,6 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
                 setup_results=setup_results[rid],
                 simulation_results=sim_results[rid],
             )
-    repeats = set()
     for results in [setup_results, sim_results, analysis_results]:
         for ret in results.values():
             assert isinstance(ret, gufe.ProtocolUnitResult)

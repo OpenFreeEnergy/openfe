@@ -10,7 +10,6 @@ These ProtocolUnits are based on, and leverage components originating from
 the Perses toolkit (https://github.com/choderalab/perses).
 """
 
-import json
 import logging
 import os
 import pathlib
@@ -102,7 +101,7 @@ class HybridTopologyUnitMixin:
         self.verbose = verbose
 
         if self.verbose:
-            self.logger.info("Setting up the hybrid topology simulation")
+            self.logger.info("Setting up the hybrid topology simulation")  # type: ignore[attr-defined]
 
         # set basepaths
         def _set_optional_path(basepath):
@@ -147,7 +146,7 @@ class HybridTopologyUnitMixin:
 
 class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
-    Calculates the relative free energy of an alchemical ligand transformation.
+    Setup unit for Hybrid Topology Protocol transformations.
     """
 
     @staticmethod
@@ -248,15 +247,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         if openff_molecules is None:
             return system_generator
 
-        # First deduplicate isomoprhic molecules
-        unique_offmols = []
-        for mol in openff_molecules:
-            unique = all([not mol.is_isomorphic_with(umol) for umol in unique_offmols])
-            if unique:
-                unique_offmols.append(mol)
-
-        # register all the templates
-        system_generator.add_molecules(unique_offmols)
+        # Register all the templates, pass unique molecules to avoid clashes
+        system_generator.add_molecules(list(set(openff_molecules)))
 
         return system_generator
 
@@ -437,7 +429,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         ----------
         stateA : ChemicalSystem
           ChemicalSystem defining end state A.
-        stateB : ChmiecalSysstem
+        stateB : ChemicalSystem
           ChemicalSystem defining end state B.
         mapping : LigandAtomMapping
           The mapping for alchemical components between state A and B.
@@ -447,7 +439,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
           The common ProteinComponent between the end states, if there is is one.
         solvent_component : SolventComponent | None
           The common SolventComponent between the end states, if there is one.
-        small_mols : dict[SmallMoleculeCOmponent, openff.toolkit.Molecule]
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           The small molecules for both end states.
 
         Returns
@@ -471,12 +463,12 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         if self.verbose:
             self.logger.info("Parameterizing systems")
 
-        def _filter_mols(smols, state):
+        def _filter_small_mols(smols, state):
             return {smc: offmol for smc, offmol in smols.items() if state.contains(smc)}
 
         states_inputs = {
-            "A": {"state": stateA, "mols": _filter_mols(small_mols, stateA)},
-            "B": {"state": stateB, "mols": _filter_mols(small_mols, stateB)},
+            "A": {"state": stateA, "mols": _filter_small_mols(small_mols, stateA)},
+            "B": {"state": stateB, "mols": _filter_small_mols(small_mols, stateB)},
         }
 
         # Everything involving systemgenerator handling has a risk of
@@ -818,6 +810,11 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
 
 class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+    """
+    Multi-state simulation (e.g. multi replica methods like hamiltonian
+    replica exchange) unit for Hybrid Topology Protocol transformations.
+    """
+
     @staticmethod
     def _check_restart(settings: dict[str, SettingsBaseModel], shared_path: pathlib.Path):
         """
@@ -887,7 +884,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         )
 
         # Validate for known issue when dealing with virtual sites
-        # and mutltistate simulations
+        # and multistate simulations
         if not integrator_settings.reassign_velocities:
             for particle_idx in range(system.getNumParticles()):
                 if system.isVirtualSite(particle_idx):
@@ -1329,7 +1326,6 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-
         # Get the relevant inputs
         system = deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nm)
@@ -1352,6 +1348,10 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
 
 class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+    """
+    Analysis unit for multi-state Hybrid Topology Protocol transformations.
+    """
+
     @staticmethod
     def _analyze_multistate_energies(
         trajectory: pathlib.Path,
@@ -1413,7 +1413,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         ----------
         pdb_file : pathlib.Path
           Path to the PDB file.
-        trj_filen : pathlib.Path
+        trj_file : pathlib.Path
           Path to the trajectory file.
         output_directory : pathlib.Path
           The output directory where plots and the data NPZ file
@@ -1423,7 +1423,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
 
         Returns
         -------
-        dict[str, str]
+        dict[str, str | pathlib.Path]
           Dictionary containing either the path to the NPZ
           file with the structural data, or the analysis error.
 

@@ -6,10 +6,11 @@ import numpy as np
 import pytest
 from gufe.protocols import execute_DAG
 from numpy.testing import assert_allclose
-from openff.units import unit
+from openff.units import unit as offunit
 
 import openfe
 from openfe.protocols import openmm_rfe
+from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEYE
 
 
 @pytest.mark.slow
@@ -28,14 +29,14 @@ def test_openmm_run_engine(
     # these settings are a small self to self sim, that has enough eq that
     # it doesn't occasionally crash
     s = openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    s.simulation_settings.equilibration_length = 0.1 * unit.picosecond
-    s.simulation_settings.production_length = 0.1 * unit.picosecond
-    s.simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    s.simulation_settings.equilibration_length = 0.1 * offunit.picosecond
+    s.simulation_settings.production_length = 0.1 * offunit.picosecond
+    s.simulation_settings.time_per_iteration = 20 * offunit.femtosecond
     s.forcefield_settings.nonbonded_method = "nocutoff"
     s.protocol_repeats = 1
     s.engine_settings.compute_platform = platform
-    s.output_settings.checkpoint_interval = 20 * unit.femtosecond
-    s.output_settings.positions_write_frequency = 20 * unit.femtosecond
+    s.output_settings.checkpoint_interval = 20 * offunit.femtosecond
+    s.output_settings.positions_write_frequency = 20 * offunit.femtosecond
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
@@ -123,6 +124,11 @@ def test_openmm_run_engine(
 
 @pytest.mark.integration  # takes ~7 minutes to run
 @pytest.mark.flaky(reruns=3)
+@pytest.mark.skipif(not HAS_NAGL, reason="need NAGL")
+@pytest.mark.skipif(
+    HAS_OPENEYE and HAS_NAGL,
+    reason="NAGL/openeye incompatibility. See https://github.com/openforcefield/openff-nagl/issues/177",
+)
 def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     # this runs a very short eg5 complex leg
     # different to previous test:
@@ -131,11 +137,14 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     # - runs in solvated protein
     # if this passes 99.9% chance of a good time
     s = openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    s.simulation_settings.equilibration_length = 0.1 * unit.picosecond
-    s.simulation_settings.production_length = 0.1 * unit.picosecond
-    s.simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    s.simulation_settings.equilibration_length = 0.1 * offunit.picosecond
+    s.simulation_settings.production_length = 0.1 * offunit.picosecond
+    s.simulation_settings.time_per_iteration = 20 * offunit.femtosecond
+    s.forcefield_settings.nonbonded_cutoff = 0.8 * offunit.nanometer
+    s.partial_charge_settings.partial_charge_method = "nagl"
+    s.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.3.pt"
     s.protocol_repeats = 1
-    s.output_settings.checkpoint_interval = 20 * unit.femtosecond
+    s.output_settings.checkpoint_interval = 20 * offunit.femtosecond
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
@@ -171,13 +180,13 @@ def test_run_dodecahedron_sim(benzene_system, toluene_system, benzene_to_toluene
     Test that we can run a ligand in solvent RFE with a non-cubic box
     """
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
+    settings.solvation_settings.solvent_padding = 1.5 * offunit.nanometer
     settings.solvation_settings.box_shape = "dodecahedron"
     settings.protocol_repeats = 1
-    settings.simulation_settings.equilibration_length = 0.1 * unit.picosecond
-    settings.simulation_settings.production_length = 0.1 * unit.picosecond
-    settings.simulation_settings.time_per_iteration = 20 * unit.femtosecond
-    settings.output_settings.checkpoint_interval = 20 * unit.femtosecond
+    settings.simulation_settings.equilibration_length = 0.1 * offunit.picosecond
+    settings.simulation_settings.production_length = 0.1 * offunit.picosecond
+    settings.simulation_settings.time_per_iteration = 20 * offunit.femtosecond
+    settings.output_settings.checkpoint_interval = 20 * offunit.femtosecond
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
 
     dag = protocol.create(
