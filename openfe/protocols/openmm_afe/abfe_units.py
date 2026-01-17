@@ -17,7 +17,7 @@ import numpy.typing as npt
 from gufe import (
     SolventComponent,
 )
-from gufe.components import Component
+from gufe.components import Component, SolvatedPDBComponent
 from openff.units import Quantity
 from openff.units.openmm import to_openmm
 from openmm import System
@@ -73,6 +73,12 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # an error will have been raised when calling `validate_solvent`
         # in the Protocol's `_create`.
         # Similarly we don't need to check prot_comp
+
+        # If there is an SolvatedPDBComponent, we set the solv_comp
+        # in the complex to None, as it is only used in the solvent leg
+        if isinstance(prot_comp, SolvatedPDBComponent):
+            solv_comp = None
+
         return alchem_comps, solv_comp, prot_comp, off_comps
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
@@ -107,7 +113,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings["alchemical_settings"] = prot_settings.alchemical_settings
         settings["lambda_settings"] = prot_settings.complex_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
-        settings["integrator_settings"] = prot_settings.integrator_settings
+        settings["integrator_settings"] = prot_settings.complex_integrator_settings
         settings["equil_simulation_settings"] = prot_settings.complex_equil_simulation_settings
         settings["equil_output_settings"] = prot_settings.complex_equil_output_settings
         settings["simulation_settings"] = prot_settings.complex_simulation_settings
@@ -457,7 +463,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         settings["alchemical_settings"] = prot_settings.alchemical_settings
         settings["lambda_settings"] = prot_settings.solvent_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
-        settings["integrator_settings"] = prot_settings.integrator_settings
+        settings["integrator_settings"] = prot_settings.solvent_integrator_settings
         settings["equil_simulation_settings"] = prot_settings.solvent_equil_simulation_settings
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings
