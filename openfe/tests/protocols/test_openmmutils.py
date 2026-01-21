@@ -1044,7 +1044,7 @@ RFE_OUTPUT = pooch.create(
         "simulation.nc": "md5:bc4e842b47de17704d804ae345b91599",
         "simulation_real_time_analysis.yaml": "md5:68a7d81462c42353a91bbbe5e64fd418",
     },
-    retry_if_failed=5,
+    retry_if_failed=0,
 )
 
 
