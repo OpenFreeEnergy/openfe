@@ -1,7 +1,7 @@
 import json
 from dataclasses import asdict, dataclass
 from os import PathLike
-from typing import Any, Iterable, Self, Tuple
+from typing import Any, Self
 
 from gufe import ChemicalSystem
 from gufe.tokenization import JSON_HANDLER
@@ -19,9 +19,6 @@ class QuickrunResult:
     uncertainty: Quantity
     protocol_result: dict[str, Any]
     unit_results: dict[int, dict]
-    # ok: bool  # TODO: add in 2.0?
-    # id: Tuple = ()
-    # run_type: # protocol-specific?
 
     def to_json(self, filepath) -> None:
         with open(filepath, mode="w") as file:
@@ -64,13 +61,4 @@ class QuickrunResult:
         pass
 
     def stateB(self):
-        pass
-
-
-@dataclass
-class QuickrunResultsNetwork:
-    edges: Iterable[QuickrunResult]
-    nodes: Iterable[ChemicalSystem]  # TODO: should this be a ChemicalSystem or SMC?
-
-    def to_FEMap(self):
         pass
