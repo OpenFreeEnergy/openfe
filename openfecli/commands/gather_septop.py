@@ -16,7 +16,7 @@ from openfecli.commands.gather import (
     format_df_with_precision,
     rich_print_to_stdout,
 )
-from openfecli.quickrun_result import QuickrunResult
+from openfecli.quickrun_result import _QuickrunResult
 
 
 def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
@@ -44,7 +44,7 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
 
     # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
     # for now though, it's not the bottleneck on performance
-    result = QuickrunResult.from_json(fpath)
+    result = _QuickrunResult.from_json(fpath)
     try:
         names = _get_names(result)
     except (ValueError, IndexError):
@@ -119,7 +119,7 @@ def _get_legs_from_result_jsons(
     return ddgs
 
 
-def _get_names(result: QuickrunResult) -> tuple[str, str]:
+def _get_names(result: _QuickrunResult) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
 
     Parameters

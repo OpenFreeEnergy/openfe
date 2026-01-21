@@ -6,7 +6,7 @@ import pathlib
 import click
 
 from openfecli import OFECommandPlugin
-from openfecli.quickrun_result import QuickrunResult
+from openfecli.quickrun_result import _QuickrunResult
 from openfecli.utils import configure_logger, print_duration, write
 
 
@@ -114,12 +114,11 @@ def quickrun(transformation, work_dir, output):
     else:
         estimate = uncertainty = None  # for output file
 
-    quickrun_result = QuickrunResult(
+    quickrun_result = _QuickrunResult(
         estimate=estimate,
         uncertainty=uncertainty,
         protocol_result=prot_result.to_dict(),
         unit_results={unit.key: unit.to_keyed_dict() for unit in dagresult.protocol_unit_results},
-        # ok=dagresult.ok()  # TODO: add in 2.0
     )
 
     quickrun_result.to_json(output)

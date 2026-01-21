@@ -3,13 +3,12 @@ from dataclasses import asdict, dataclass
 from os import PathLike
 from typing import Any, Self
 
-from gufe import ChemicalSystem
 from gufe.tokenization import JSON_HANDLER
 from openff.units import Quantity
 
 
 @dataclass
-class QuickrunResult:
+class _QuickrunResult:
     """
     Class for storing protocol result data along with useful metadata.
     Could ProtocolResults store this data alongside ``n_protocol_dag_results``?
@@ -36,8 +35,8 @@ class QuickrunResult:
 
         Returns
         -------
-        QuickrunResult
-            A QuickrunResult instance containing the data from ``file, co``.
+        _QuickrunResult
+            A _QuickrunResult instance containing the data from ``file, co``.
 
         """
         # similar to gufe.tokenization.from_json

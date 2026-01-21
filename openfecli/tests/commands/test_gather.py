@@ -17,7 +17,7 @@ from openfecli.commands.gather import (
 )
 from openfecli.commands.gather_abfe import gather_abfe
 from openfecli.commands.gather_septop import gather_septop
-from openfecli.commands.quickrun import QuickrunResult
+from openfecli.commands.quickrun import _QuickrunResult
 
 from ..conftest import HAS_INTERNET
 from ..utils import assert_click_success
@@ -73,13 +73,13 @@ def test_get_column(val, col):
 
 @pytest.fixture
 def min_valid_quickrun_result(min_result_json):
-    return QuickrunResult(**min_result_json)
+    return _QuickrunResult(**min_result_json)
 
 
 class TestResultLoading:
     def test_minimal_valid_results(self, capsys, min_valid_quickrun_result):
         with mock.patch(
-            "openfecli.commands.gather.QuickrunResult.from_json",
+            "openfecli.commands.gather._QuickrunResult.from_json",
             return_value=min_valid_quickrun_result,
         ):
             result = _load_valid_result_json(fpath="")
@@ -91,7 +91,7 @@ class TestResultLoading:
         min_valid_quickrun_result.unit_results = {}
 
         with mock.patch(
-            "openfecli.commands.gather.QuickrunResult.from_json",
+            "openfecli.commands.gather._QuickrunResult.from_json",
             return_value=min_valid_quickrun_result,
         ):
             result = _load_valid_result_json(fpath="")
@@ -103,7 +103,7 @@ class TestResultLoading:
         min_valid_quickrun_result.estimate = None
 
         with mock.patch(
-            "openfecli.commands.gather.QuickrunResult.from_json",
+            "openfecli.commands.gather._QuickrunResult.from_json",
             return_value=min_valid_quickrun_result,
         ):
             result = _load_valid_result_json(fpath="")
@@ -115,7 +115,7 @@ class TestResultLoading:
         min_valid_quickrun_result.uncertainty = None
 
         with mock.patch(
-            "openfecli.commands.gather.QuickrunResult.from_json",
+            "openfecli.commands.gather._QuickrunResult.from_json",
             return_value=min_valid_quickrun_result,
         ):
             result = _load_valid_result_json(fpath="")
@@ -126,7 +126,7 @@ class TestResultLoading:
     def test_skip_all_failed_runs(self, capsys, min_valid_quickrun_result):
         del min_valid_quickrun_result.unit_results["ProtocolUnitResult-e85"]
         with mock.patch(
-            "openfecli.commands.gather.QuickrunResult.from_json",
+            "openfecli.commands.gather._QuickrunResult.from_json",
             return_value=min_valid_quickrun_result,
         ):
             result = _load_valid_result_json(fpath="")
@@ -137,7 +137,7 @@ class TestResultLoading:
     def test_missing_pr_data(self, capsys, min_valid_quickrun_result):
         min_valid_quickrun_result.protocol_result["data"] = {}
         with mock.patch(
-            "openfecli.commands.gather.QuickrunResult.from_json",
+            "openfecli.commands.gather._QuickrunResult.from_json",
             return_value=min_valid_quickrun_result,
         ):
             result = _load_valid_result_json(fpath="")
@@ -150,7 +150,7 @@ class TestResultLoading:
         min_valid_quickrun_result.protocol_result["data"] = {}
 
         with mock.patch(
-            "openfecli.commands.gather.QuickrunResult.from_json",
+            "openfecli.commands.gather._QuickrunResult.from_json",
             return_value=min_valid_quickrun_result,
         ):
             result = _get_legs_from_result_jsons(result_fns=[""], report="dg")

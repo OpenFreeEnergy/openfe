@@ -11,7 +11,7 @@ import pandas as pd
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
-from openfecli.commands.quickrun import QuickrunResult
+from openfecli.commands.quickrun import _QuickrunResult
 
 FAIL_STR = "Error"  # string used to indicate a failed run in output tables.
 
@@ -182,7 +182,7 @@ def is_results_json(fpath: os.PathLike | str) -> bool:
     return "estimate" in open(fpath, "r").read(20)
 
 
-def _get_names(result: QuickrunResult) -> tuple[str, str]:
+def _get_names(result: _QuickrunResult) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
 
     Parameters
@@ -212,7 +212,7 @@ def _get_names(result: QuickrunResult) -> tuple[str, str]:
     return str(name_A), str(name_B)
 
 
-def _get_type(result: QuickrunResult) -> Literal["vacuum", "solvent", "complex"]:
+def _get_type(result: _QuickrunResult) -> Literal["vacuum", "solvent", "complex"]:
     """Determine the simulation type based on the component types."""
 
     protocol_data = list(result.protocol_result["data"].values())[0][0]
@@ -248,7 +248,7 @@ def _legacy_get_type(res_fn: os.PathLike | str) -> Literal["vacuum", "solvent", 
 
 
 def _get_result_id(
-    result: QuickrunResult, result_fn: os.PathLike | str
+    result: _QuickrunResult, result_fn: os.PathLike | str
 ) -> tuple[tuple[str, str], Literal["vacuum", "solvent", "complex"]]:
     """Extract the name and simulation type from a results dict.
 
@@ -274,7 +274,9 @@ def _get_result_id(
     return (ligA, ligB), simtype
 
 
-def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, QuickrunResult | None]:
+def _load_valid_result_json(
+    fpath: os.PathLike | str,
+) -> tuple[tuple | None, _QuickrunResult | None]:
     """Load the data from a results JSON into a dict.
 
     Parameters
@@ -291,7 +293,7 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, Qui
     """
     # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
     # for now though, it's not the bottleneck on performance
-    result = QuickrunResult.from_json(fpath)
+    result = _QuickrunResult.from_json(fpath)
 
     try:
         result_id = _get_result_id(result, fpath)
