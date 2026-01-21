@@ -1064,6 +1064,20 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         # Restarting doesn't need any setup, we just rebuild from storage.
         if restart:
             sampler = _SAMPLERS[sampler_method].from_storage(reporter)  # type: ignore[attr-defined]
+
+            # We also do some lightweight checks to make sure we are
+            # running the right system.
+            sampler_system = sampler._thermodynamic_states[0].get_system(remove_thermostat=True)
+            if (
+                    (simulation_settings.n_replicas != sampler.n_states != sampler.n_replicas) or
+                    (system.getNumForces() != sampler_system.getNumForces()) or
+                    (system.getNumParticles() != sampler_system.getNumParticles()) or
+                    (system.getNumConstraints() != sampler_system.getNumConstraints()) or
+                    (sampler.mcmc_moves[0].n_steps != steps_per_iteration) or
+                    (sampler.mcmc_moves[0].timestep != integrator.timestep)
+                ):
+                errmsg = "System in checkpoint does not match protocol system, cannot resume"
+                raise ValueError(errmsg)
         else:
             sampler = _SAMPLERS[sampler_method](**sampler_kwargs)
 
@@ -1286,25 +1300,29 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 dry=dry,
             )
         finally:
-            # close reporter when you're done, prevent
-            # file handle clashes
-            reporter.close()
-
-            # clear GPU contexts
-            # TODO: use cache.empty() calls when openmmtools #690 is resolved
-            # replace with above
-            for context in list(sampler.energy_context_cache._lru._data.keys()):
-                del sampler.energy_context_cache._lru._data[context]
-            for context in list(sampler.sampler_context_cache._lru._data.keys()):
-                del sampler.sampler_context_cache._lru._data[context]
-            # cautiously clear out the global context cache too
-            for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
-                del openmmtools.cache.global_context_cache._lru._data[context]
-
-            del sampler.sampler_context_cache, sampler.energy_context_cache
-
-            if not dry:
-                del integrator, sampler
+            # Have to wrap this in a try except, because we might
+            # be in a situation where reporter or sampler weren't created
+            try:
+                # Order is reporter, sampler, integrator
+                reporter.close()  # close to prevent file handle clashes
+    
+                # clear GPU contexts
+                # TODO: use cache.empty() calls when openmmtools #690 is resolved
+                # replace with above
+                for context in list(sampler.energy_context_cache._lru._data.keys()):
+                    del sampler.energy_context_cache._lru._data[context]
+                for context in list(sampler.sampler_context_cache._lru._data.keys()):
+                    del sampler.sampler_context_cache._lru._data[context]
+                # cautiously clear out the global context cache too
+                for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
+                    del openmmtools.cache.global_context_cache._lru._data[context]
+    
+                del sampler.sampler_context_cache, sampler.energy_context_cache
+    
+                if not dry:
+                    del integrator, sampler
+            except UnboundLocalError:
+                pass
 
         if not dry:  # pragma: no-cover
             return {
