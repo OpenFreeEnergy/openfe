@@ -49,15 +49,3 @@ class _QuickrunResult:
         if content:
             data = json.loads(content, cls=JSON_HANDLER.decoder)
         return cls(**data)
-
-    def _load_valid_result_json(self):
-        pass
-
-    def run_type(self):
-        pass
-
-    def stateA(self):
-        pass
-
-    def stateB(self):
-        pass
