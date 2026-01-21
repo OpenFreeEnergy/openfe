@@ -17,6 +17,7 @@ from openfecli.commands.gather import (
 )
 from openfecli.commands.gather_abfe import gather_abfe
 from openfecli.commands.gather_septop import gather_septop
+from openfecli.commands.quickrun import _QuickrunResult
 
 from ..conftest import HAS_INTERNET
 from ..utils import assert_click_success
@@ -68,62 +69,88 @@ def test_get_column(val, col):
     assert _get_column(val) == col
 
 
+@pytest.fixture
+def min_valid_quickrun_result(min_result_json):
+    return _QuickrunResult(**min_result_json)
+
+
 class TestResultLoading:
-    def test_minimal_valid_results(self, capsys, min_result_json):
-        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
+    def test_minimal_valid_results(self, capsys, min_valid_quickrun_result):
+        with mock.patch(
+            "openfecli.commands.gather._QuickrunResult.from_json",
+            return_value=min_valid_quickrun_result,
+        ):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), min_result_json)
+            assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), min_valid_quickrun_result)
             assert captured.err == ""
 
-    def test_skip_missing_unit_result(self, capsys, min_result_json):
-        min_result_json["unit_results"] = {}
+    def test_skip_missing_unit_result(self, capsys, min_valid_quickrun_result):
+        min_valid_quickrun_result.unit_results = {}
 
-        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
+        with mock.patch(
+            "openfecli.commands.gather._QuickrunResult.from_json",
+            return_value=min_valid_quickrun_result,
+        ):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
             assert "No 'unit_results' found" in captured.err
 
-    def test_skip_missing_estimate(self, capsys, min_result_json):
-        min_result_json["estimate"] = None
+    def test_skip_missing_estimate(self, capsys, min_valid_quickrun_result):
+        min_valid_quickrun_result.estimate = None
 
-        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
+        with mock.patch(
+            "openfecli.commands.gather._QuickrunResult.from_json",
+            return_value=min_valid_quickrun_result,
+        ):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
             assert "No 'estimate' found" in captured.err
 
-    def test_skip_missing_uncertainty(self, capsys, min_result_json):
-        min_result_json["uncertainty"] = None
+    def test_skip_missing_uncertainty(self, capsys, min_valid_quickrun_result):
+        min_valid_quickrun_result.uncertainty = None
 
-        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
+        with mock.patch(
+            "openfecli.commands.gather._QuickrunResult.from_json",
+            return_value=min_valid_quickrun_result,
+        ):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
             assert "No 'uncertainty' found" in captured.err
 
-    def test_skip_all_failed_runs(self, capsys, min_result_json):
-        del min_result_json["unit_results"]["ProtocolUnitResult-e85"]
-        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
+    def test_skip_all_failed_runs(self, capsys, min_valid_quickrun_result):
+        del min_valid_quickrun_result.unit_results["ProtocolUnitResult-e85"]
+        with mock.patch(
+            "openfecli.commands.gather._QuickrunResult.from_json",
+            return_value=min_valid_quickrun_result,
+        ):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((("lig_ejm_31", "lig_ejm_42"), "solvent"), None)
             assert "Exception found in all" in captured.err
 
-    def test_missing_pr_data(self, capsys, min_result_json):
-        min_result_json["protocol_result"]["data"] = {}
-        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
+    def test_missing_pr_data(self, capsys, min_valid_quickrun_result):
+        min_valid_quickrun_result.protocol_result["data"] = {}
+        with mock.patch(
+            "openfecli.commands.gather._QuickrunResult.from_json",
+            return_value=min_valid_quickrun_result,
+        ):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == (None, None)
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
 
-    def test_get_legs_from_result_jsons(self, capsys, min_result_json):
+    def test_get_legs_from_result_jsons(self, capsys, min_valid_quickrun_result):
         """Test that exceptions are handled correctly at the _get_legs_from_results_json level."""
-        min_result_json["protocol_result"]["data"] = {}
+        min_valid_quickrun_result.protocol_result["data"] = {}
 
-        with mock.patch("openfecli.commands.gather.load_json", return_value=min_result_json):
+        with mock.patch(
+            "openfecli.commands.gather._QuickrunResult.from_json",
+            return_value=min_valid_quickrun_result,
+        ):
             result = _get_legs_from_result_jsons(result_fns=[""], report="dg")
             captured = capsys.readouterr()
             assert result == {}
