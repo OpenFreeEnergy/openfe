@@ -441,3 +441,75 @@ def chloroethane_to_ethane_mapping_ghostly(chloroethane_to_ethane_mapping, chlor
         componentB=chloroethane_to_ethane_mapping.componentB,
         componentA_to_componentB=chloroethane_to_ethane_mapping.componentA_to_componentB
     )
+
+@pytest.fixture(scope="module")
+def tyk2_ghostly_modifications():
+    return {
+    "lambda_0": {
+        "removed_angles": [],
+        "removed_dihedrals": [
+            "33,20,21,36",
+            "19,20,21,36",
+            "17,19,21,36",
+            "31,19,21,36",
+            "20,19,21,36",
+            "32,20,21,36"
+        ],
+        "stiffened_angles": [],
+        "softened_angles": {
+            "19,21,36": {
+                "k": 5.0,
+                "theta0": 2.222322474687164
+            },
+            "34,21,36": {
+                "k": 5.0,
+                "theta0": 2.000809911756968
+            },
+            "20,21,36": {
+                "k": 5.0,
+                "theta0": 1.6181044310934367
+            }
+        }
+    },
+    "lambda_1": {
+        "removed_angles": [],
+        "removed_dihedrals": [
+            "33,20,21,35",
+            "19,20,21,35",
+            "17,19,21,35",
+            "31,19,21,35",
+            "20,19,21,35",
+            "32,20,21,35"
+        ],
+        "stiffened_angles": [],
+        "softened_angles": {
+            "19,21,35": {
+                "k": 5.0,
+                "theta0": 2.2915349600475916
+            },
+            "34,21,35": {
+                "k": 5.0,
+                "theta0": 1.6334317078992815
+            },
+            "20,21,35": {
+                "k": 5.0,
+                "theta0": 2.395734337620435
+            }
+        }
+    }
+}
+
+
+@pytest.fixture(scope="module")
+def tyk2_ghostly_mapping(tyk2_ghostly_modifications):
+    """Return a mapping from tyk2 ligand ejm_31 to ejm_32 with ghosted corrections stored on componentA."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        jmc_27 = openfe.SmallMoleculeComponent.from_sdf_file(f / "jmc_27.sdf")
+        ejm_46 = openfe.SmallMoleculeComponent.from_sdf_file(f / "ejm_46.sdf")
+    from kartograf import KartografAtomMapper
+
+    # we need to use the exact mappings we use in the hybrid topology so only map Hs to Hs
+    mapper = KartografAtomMapper(map_hydrogens_on_hydrogens_only=True)
+
+    tyk2_ghostly = jmc_27.copy_with_replacements(**{"molprops": {"ghostly_corrections": json.dumps(tyk2_ghostly_modifications)}})
+    return next(mapper.suggest_mappings(tyk2_ghostly, ejm_46))

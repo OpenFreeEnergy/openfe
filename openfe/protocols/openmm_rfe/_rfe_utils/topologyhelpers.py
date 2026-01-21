@@ -755,6 +755,7 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
     softened_hybrid_system = openmm.System()
     # add all the particles
     logger.info("Copying particles and constraints to new hybrid system.")
+    print("Copying particles and constraints to new hybrid system.")
     for i in range(htf.hybrid_system.getNumParticles()):
         softened_hybrid_system.addParticle(htf.hybrid_system.getParticleMass(i))
     # add all constraints
@@ -799,7 +800,9 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
         softened_harmonic_angle_force = openmm.HarmonicAngleForce()
         softened_hybrid_system.addForce(softened_harmonic_angle_force)
         logger.info("Processing dummy-core junction angles for softening.")
+        print("Processing dummy-core junction angles for softening.")
         logger.info("Adding softened angles to core_angle_force.")
+        print("Adding softened angles to core_angle_force.")
         default_hybrid_angle_force = hybrid_forces["standard_angle_force"]
         softened_custom_angle_force = new_hybrid_forces["CustomAngleForce"]
         for i in range(default_hybrid_angle_force.getNumAngles()):
@@ -812,12 +815,14 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
                 # add the term to the interpolated custom angle force
                 new_k = k * scale_factor
                 logger.info(f"Softening angle {angle} at lambda=0: original k = {k}, new k = {new_k}")
+                print(f"Softening angle {angle} at lambda=0: original k = {k}, new k = {new_k}")
                 softened_custom_angle_force.addAngle(p1, p2, p3, [theta_eq, new_k, theta_eq, k])
             elif 1 <= len(dummy_old_atoms.intersection(angle)) < 3:
                 # if we match an old unique atom the angle must be softened at lambda = 1
                 # add the term to the interpolated custom angle force
                 new_k = k * scale_factor
                 logger.info(f"Softening angle {angle} at lambda=1: original k = {k}, new k = {new_k}")
+                print(f"Softening angle {angle} at lambda=1: original k = {k}, new k = {new_k}")
                 softened_custom_angle_force.addAngle(p1, p2, p3, [theta_eq, k, theta_eq, new_k])
             else:
                 # the term does not involve any dummy atoms, so we can just copy it
@@ -825,7 +830,9 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
 
     # process torsions
     logger.info("Processing dummy-core junction torsions for softening.")
+    print("Processing dummy-core junction torsions for softening.")
     logger.info("Adding softened torsions to core_torsion_force.")
+    print("Adding softened torsions to core_torsion_force.")
     default_hybrid_torsion_force = hybrid_forces["unique_atom_torsion_force"]
     softened_custom_torsion_force = new_hybrid_forces["CustomTorsionForce"]
     for i in range(default_hybrid_torsion_force.getNumTorsions()):
@@ -838,6 +845,7 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
             # add the term to the interpolated custom torsion force
             new_k = k * scale_factor
             logger.info(f"Softening torsion {torsion} at lambda=0: original k = {k}, new k = {new_k}")
+            print(f"Softening torsion {torsion} at lambda=0: original k = {k}, new k = {new_k}")
             softened_custom_torsion_force.addTorsion(p1, p2, p3, p4,
                                                      [periodicity, phase,
                                             new_k, periodicity,
@@ -847,6 +855,7 @@ def _scale_angles_and_torsions(htf: HybridTopologyFactory, scale_factor: float =
             # add the term to the interpolated custom torsion force
             new_k = k * scale_factor
             logger.info(f"Softening torsion {torsion} at lambda=1: original k = {k}, new k = {new_k}")
+            print(f"Softening torsion {torsion} at lambda=1: original k = {k}, new k = {new_k}")
             softened_custom_torsion_force.addTorsion(p1, p2, p3, p4,
                                                      [periodicity, phase,
                                             k, periodicity,
@@ -885,6 +894,10 @@ def _load_ghostly_corrections(ghostly_output_string: str) -> dict:
 def _shift_ghostly_correction_indices(htf: HybridTopologyFactory, corrections: dict) -> dict:
     """Shift the atom indices in the ghostly corrections to account for the solvent environment in the HTF."""
     core_atoms = htf._atom_classes["core_atoms"]
+    unique_old_atoms = htf._atom_classes["unique_old_atoms"]
+    # get the maximum index of the core and unique old atoms all stateB atoms are after this
+    max_state_a_atom = max(core_atoms.union(unique_old_atoms))
+
 
     # we need the shift the indices of the atoms in the corrections to account for the solvent system
     # this involves shifting the unique new atoms to be after the last water atom
@@ -892,7 +905,11 @@ def _shift_ghostly_correction_indices(htf: HybridTopologyFactory, corrections: d
     if len(htf._atom_classes["environment_atoms"]) > 0:
         print("shifting ghostly correction atom indices to account for solvent environment.")
         last_water_atom = max(htf._atom_classes["environment_atoms"])
+        print("last water atom", last_water_atom)
         last_core_atom = max(htf._atom_classes["core_atoms"])
+        print("last core atom", last_core_atom)
+        print("old unique atoms", htf._atom_classes["unique_old_atoms"])
+        print("new unique atoms", htf._atom_classes["unique_new_atoms"])
         shifted_corrections = {}
         for lambda_key in corrections.keys():
             for correction_type in corrections[lambda_key].keys():
@@ -900,10 +917,10 @@ def _shift_ghostly_correction_indices(htf: HybridTopologyFactory, corrections: d
                     shifted_list = []
                     for angle in corrections[lambda_key][correction_type]:
                         shifted_angle = tuple(
-                            atom_idx + (last_water_atom - last_core_atom)
+                            atom_idx + (last_water_atom - max_state_a_atom)
                             # only shift if not a core atom and greater than last core atom
                             # else this is a unique old atom and should not be shifted
-                            if atom_idx not in core_atoms and atom_idx > last_core_atom else atom_idx
+                            if atom_idx not in core_atoms and atom_idx > max_state_a_atom else atom_idx
                             for atom_idx in angle
                         )
                         shifted_list.append(shifted_angle)
@@ -912,8 +929,8 @@ def _shift_ghostly_correction_indices(htf: HybridTopologyFactory, corrections: d
                     new_dict = {}
                     for angle, params in corrections[lambda_key][correction_type].items():
                         shifted_angle = tuple(
-                            atom_idx + (last_water_atom - last_core_atom)
-                            if atom_idx not in core_atoms and atom_idx > last_core_atom else atom_idx
+                            atom_idx + (last_water_atom - max_state_a_atom)
+                            if atom_idx not in core_atoms and atom_idx > max_state_a_atom else atom_idx
                             for atom_idx in angle
                         )
                         new_dict[shifted_angle] = params
@@ -974,6 +991,7 @@ def _apply_ghostly_corrections(htf: HybridTopologyFactory, corrections: dict) ->
         p1, p2, p3, theta_eq, k = old_hybrid_angle_force.getAngleParameters(i)
         # check if we have one ghost atom for this angle
         angle = (p1, p2, p3)
+        print(angle)
         if 1<= len(dummy_old_atoms.intersection(angle)) < 3 or 1<= len(dummy_new_atoms.intersection(angle)) < 3:
             angle_reversed = (p3, p2, p1)
             # set up containers for the end state values

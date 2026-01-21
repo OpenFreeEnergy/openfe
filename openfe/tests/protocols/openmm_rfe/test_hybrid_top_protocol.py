@@ -797,6 +797,32 @@ def test_apply_ghostly_corrections_torsions_chloro(chloroethane_to_ethane_mappin
             assert k == ethane_torsion.k[term_index].m_as(unit.kilojoule_per_mole) * omm_unit.kilojoule_per_mole
 
 
+def test_tyk2_ghostly_corrections(tyk2_ghostly_mapping, solv_settings, tmpdir, vac_settings):
+    """Test that the Tyk2 ligand transformation with ghostly corrections runs without error and applies corrections."""
+
+    state_a_dict = {"ligand": tyk2_ghostly_mapping.componentA}
+    state_b_dict = {"ligand": tyk2_ghostly_mapping.componentB}
+    # settings = vac_settings
+    settings = solv_settings
+    state_a_dict["solvent"] = openfe.SolventComponent()
+    state_b_dict["solvent"] = openfe.SolventComponent()
+
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem(state_a_dict),
+        stateB=openfe.ChemicalSystem(state_b_dict),
+        mapping=tyk2_ghostly_mapping,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        htf = sampler._hybrid_factory
+
+
 def test_dry_run_gaff_vacuum(
     benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmpdir
 ):
