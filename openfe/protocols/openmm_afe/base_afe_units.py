@@ -969,7 +969,9 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
                 if system.isVirtualSite(particle_idx):
                     errmsg = (
                         "Simulations with virtual sites without velocity "
-                        "reassignments are unstable with MCMC integrators."
+                        "reassignments are unstable with MCMC integrators. "
+                        "You can set `reassign_velocities` to ``True`` in the "
+                        "`integrator_settings` to avoid this issue."
                     )
                     raise ValueError(errmsg)
 
