@@ -126,22 +126,22 @@ def test_unit_tagging(benzene_solvation_dag, patcher, tmpdir):
         setup_results = {}
         sim_results = {}
         analysis_results = {}
-    
+
         setup_units = _get_units(dag_units, UNIT_TYPES[phase]["setup"])
         sim_units = _get_units(dag_units, UNIT_TYPES[phase]["sim"])
         a_units = _get_units(dag_units, UNIT_TYPES[phase]["analysis"])
-    
+
         for u in setup_units:
             rid = u.inputs["repeat_id"]
             setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
-    
+
         for u in sim_units:
             rid = u.inputs["repeat_id"]
             sim_results[rid] = u.execute(
                 context=gufe.Context(tmpdir, tmpdir),
                 setup_results=setup_results[rid],
             )
-    
+
         for u in a_units:
             rid = u.inputs["repeat_id"]
             analysis_results[rid] = u.execute(
@@ -149,12 +149,12 @@ def test_unit_tagging(benzene_solvation_dag, patcher, tmpdir):
                 setup_results=setup_results[rid],
                 simulation_results=sim_results[rid],
             )
-    
+
         for results in [setup_results, sim_results, analysis_results]:
             for ret in results.values():
                 assert isinstance(ret, gufe.ProtocolUnitResult)
                 assert ret.outputs["generation"] == 0
-    
+
         assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
 
 
