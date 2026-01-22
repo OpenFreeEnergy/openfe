@@ -816,14 +816,14 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
     """
 
     @staticmethod
-    def _check_restart(settings: dict[str, SettingsBaseModel], shared_path: pathlib.Path):
+    def _check_restart(output_settings: SettingsBaseModel, shared_path: pathlib.Path):
         """
         Check if we are doing a restart.
 
         Parameters
         ----------
-        settings : dict[str, SettingsBaseModel]
-          The settings for this transformation
+        output_settings : SettingsBaseModel
+          The simulation output settings
         shared_path : pathlib.Path
           The shared directory where we should be looking for existing files.
 
@@ -833,8 +833,8 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         shared directory but in the future this may expand depending on
         how warehouse works.
         """
-        trajectory = shared_path / settings["output_settings"].output_filename
-        checkpoint = shared_path / settings["output_settings"].checkpoint_storage_filename
+        trajectory = shared_path / output_settings.output_filename
+        checkpoint = shared_path / output_settings.checkpoint_storage_filename
 
         if trajectory.is_file() and checkpoint.is_file():
             return True
@@ -1242,7 +1242,10 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         settings = self._get_settings(self._inputs["protocol"].settings)
 
         # Check for a restart
-        self.restart = self._check_restart(settings=settings, shared_path=self.shared_basepath)
+        self.restart = self._check_restart(
+            output_settings=settings["output_settings"],
+            shared_path=self.shared_basepath
+        )
 
         # Get the lambda schedule
         # TODO - this should be better exposed to users

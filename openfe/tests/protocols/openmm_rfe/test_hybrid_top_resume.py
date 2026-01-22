@@ -13,6 +13,7 @@ from numpy.testing import assert_allclose
 from openff.units import unit as offunit
 from openff.units.openmm import from_openmm
 from openfe_analysis.utils.multistate import _determine_position_indices
+import openmm
 
 import openfe
 from openfe.protocols import openmm_rfe
@@ -56,24 +57,45 @@ def checkpoint_path():
     return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
 
 
+@pytest.fixture()
+def protocol_settings():
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding = None
+    settings.solvation_settings.number_of_solvent_molecules = 750
+    settings.solvation_settings.box_shape = "dodecahedron"
+    settings.protocol_repeats = 1
+    settings.simulation_settings.equilibration_length = 100 * offunit.picosecond
+    settings.simulation_settings.production_length = 200 * offunit.picosecond
+    settings.simulation_settings.time_per_iteration = 2.5 * offunit.picosecond
+    settings.output_settings.checkpoint_interval = 100 * offunit.picosecond
+    return settings
+
+
+@pytest.mark.skipif(
+    not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
+    reason="Internet unavailable and test data is not cached locally",
+)
+def test_check_restart(protocol_settings, trajectory_path):
+    assert openmm_rfe.HybridTopologyMultiStateSimulationUnit._check_restart(
+        output_settings=protocol_settings.output_settings,
+        shared_path=trajectory_path.parent,
+    )
+
+    assert not openmm_rfe.HybridTopologyMultiStateSimulationUnit._check_restart(
+        output_settings=protocol_settings.output_settings,
+        shared_path=pathlib.Path('.'),
+    )
+
+
 @pytest.mark.skipif(
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet unavailable and test data is not cached locally",
 )
 class TestCheckpointResuming:
-    @pytest.fixture(scope='class')
-    def protocol_dag(self, benzene_system, toluene_system, benzene_to_toluene_mapping):
-        settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-        settings.solvation_settings.solvent_padding = None
-        settings.solvation_settings.number_of_solvent_molecules = 750
-        settings.solvation_settings.box_shape = "dodecahedron"
-        settings.protocol_repeats = 1
-        settings.simulation_settings.equilibration_length = 100 * offunit.picosecond
-        settings.simulation_settings.production_length = 200 * offunit.picosecond
-        settings.simulation_settings.time_per_iteration = 2.5 * offunit.picosecond
-        settings.output_settings.checkpoint_interval = 100 * offunit.picosecond
-        protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
-
+    @pytest.fixture()
+    def protocol_dag(self, protocol_settings, benzene_system, toluene_system, benzene_to_toluene_mapping):
+        protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=protocol_settings)
+    
         return protocol.create(
             stateA=benzene_system,
             stateB=toluene_system,
@@ -101,21 +123,25 @@ class TestCheckpointResuming:
             )
         return positions
 
+    @staticmethod
+    def _copy_simfiles(cwd: pathlib.Path, trajectory_path, checkpoint_path):
+        shutil.copyfile(trajectory_path, f"{cwd}/{trajectory_path.name}")
+        shutil.copyfile(checkpoint_path, f"{cwd}/{checkpoint_path.name}")
+
+    @pytest.mark.integration
     def test_resume(self, protocol_dag, trajectory_path, checkpoint_path, tmpdir):
         """
         Attempt to resume a simulation unit with pre-existing checkpoint &
         trajectory files.
         """
-        # define a temp directory path
+        # define a temp directory path & copy files
         cwd = pathlib.Path(str(tmpdir))
-
-        shutil.copyfile(trajectory_path, f"{cwd}/{trajectory_path.name}")
-        shutil.copyfile(checkpoint_path, f"{cwd}/{checkpoint_path.name}")
+        self._copy_simfiles(cwd, trajectory_path, checkpoint_path)
 
         # 1. Check that the trajectory / checkpoint contain what we expect
         reporter = MultiStateReporter(
-            f"{cwd}/{trajectory_path.name}",
-            checkpoint_storage=checkpoint_path.name,
+            f"{cwd}/simulation.nc",
+            checkpoint_storage="checkpoint.chk",
         )
         sampler = HybridRepexSampler.from_storage(reporter)
 
@@ -161,8 +187,8 @@ class TestCheckpointResuming:
 
         # 3. Analyze the trajectory/checkpoint again
         reporter = MultiStateReporter(
-            f"{cwd}/{trajectory_path.name}",
-            checkpoint_storage=checkpoint_path.name,
+            f"{cwd}/simulation.nc",
+            checkpoint_storage="checkpoint.chk",
         )
         sampler = HybridRepexSampler.from_storage(reporter)
 
@@ -180,3 +206,31 @@ class TestCheckpointResuming:
 
         reporter.close()
         del sampler
+
+    def test_resume_fail(self, protocol_dag, trajectory_path, checkpoint_path, tmpdir):
+        """
+        Test that the run unit will fail with a system incompatible
+        to the one present in the trajectory/checkpoint files.
+        """
+        # define a temp directory path & copy files
+        cwd = pathlib.Path(str(tmpdir))
+        self._copy_simfiles(cwd, trajectory_path, checkpoint_path)
+
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
+        simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
+        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+
+        # Fake system should trigger a mismatch
+        with pytest.raises(ValueError, match="System in checkpoint does not"):
+            sim_results = simulation_unit.run(
+                system=openmm.System(),
+                positions=setup_results["hybrid_positions"],
+                selection_indices=setup_results["selection_indices"],
+                scratch_basepath=cwd,
+                shared_basepath=cwd,
+            )
+
