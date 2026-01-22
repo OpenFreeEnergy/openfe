@@ -52,4 +52,4 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/fatiando/pooch@main
+    - git+https://github.com/fatiando/pooch@main  # related to https://github.com/fatiando/pooch/issues/502
