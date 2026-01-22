@@ -63,8 +63,12 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 from ..openmm_utils import settings_validation, system_validation
 from .afe_protocol_results import AbsoluteSolvationProtocolResult
 from .ahfe_units import (
-    AbsoluteSolvationSolventUnit,
-    AbsoluteSolvationVacuumUnit,
+    AHFESolventAnalysisUnit,
+    AHFESolventSetupUnit,
+    AHFESolventSimUnit,
+    AHFEVacuumAnalysisUnit,
+    AHFEVacuumSetupUnit,
+    AHFEVacuumSimUnit,
 )
 
 due.cite(
@@ -445,36 +449,58 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Get the name of the alchemical species
         alchname = alchem_comps["stateA"][0].name
 
-        # Create list units for vacuum and solvent transforms
-        solvent_units = [
-            AbsoluteSolvationSolventUnit(
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                generation=0,
-                repeat_id=int(uuid.uuid4()),
-                name=(f"Absolute Solvation, {alchname} solvent leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
+        unit_classes = {
+            "solvent": {
+                "setup": AHFESolventSetupUnit,
+                "simulation": AHFESolventSimUnit,
+                "analysis": AHFESolventAnalysisUnit,
+            },
+            "vacuum": {
+                "setup": AHFEVacuumSetupUnit,
+                "simulation": AHFEVacuumSimUnit,
+                "analysis": AHFEVacuumAnalysisUnit,
+            },
+        }
 
-        vacuum_units = [
-            AbsoluteSolvationVacuumUnit(
-                # These don't really reflect the actual transform
-                # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                generation=0,
-                repeat_id=int(uuid.uuid4()),
-                name=(f"Absolute Solvation, {alchname} vacuum leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
+        protocol_units: dict[str, list[gufe.ProtocolUnit]] = {"solvent": [], "vacuum": []}
 
-        return solvent_units + vacuum_units
+        for phase in ["solvent", "vacuum"]:
+            for i in range(self.settings.protocol_repeats):
+                repeat_id = int(uuid.uuid4())
+
+                setup = unit_classes[phase]["setup"](
+                    protocol=self,
+                    stateA=stateA,
+                    stateB=stateB,
+                    alchemical_components=alchem_comps,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"AHFE Setup: {alchname} {phase} leg: repeat {i} generation 0",
+                )
+
+                simulation = unit_classes[phase]["simulation"](
+                    protocol=self,
+                    # only need state A & alchem comps
+                    stateA=stateA,
+                    alchemical_components=alchem_comps,
+                    setup_results=setup,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"AHFE Simulation: {alchname} {phase} leg: repeat {i} generation 0",
+                )
+
+                analysis = unit_classes[phase]["analysis"](
+                    protocol=self,
+                    setup_results=setup,
+                    simulation_results=simulation,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=f"AHFE Analysis: {alchname} {phase} leg, repeat {i} generation 0",
+                )
+
+                protocol_units[phase] += [setup, simulation, analysis]
+
+        return protocol_units["solvent"] + protocol_units["vacuum"]
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
@@ -486,7 +512,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         for d in protocol_dag_results:
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
-                if not pu.ok():
+                if ("Analysis" not in pu.name) or (not pu.ok()):
                     continue
                 if pu.outputs["simtype"] == "solvent":
                     unsorted_solvent_repeats[pu.outputs["repeat_id"]].append(pu)
