@@ -18,8 +18,8 @@ from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGe
 from .utils import UNIT_TYPES, _get_units
 
 
-def test_gather(benzene_complex_dag, tmpdir):
-    # check that .gather behaves as expected
+@pytest.fixture()
+def patcher():
     with (
         mock.patch(
             "openfe.protocols.openmm_afe.abfe_units.ABFESolventSetupUnit.run",
@@ -76,12 +76,17 @@ def test_gather(benzene_complex_dag, tmpdir):
             return_value={"foo": "bar"},
         ),
     ):
-        dagres = gufe.protocols.execute_DAG(
-            benzene_complex_dag,
-            shared_basedir=tmpdir,
-            scratch_basedir=tmpdir,
-            keep_shared=True,
-        )
+        yield
+
+
+def test_gather(benzene_complex_dag, patcher, tmpdir):
+    # check that .gather behaves as expected
+    dagres = gufe.protocols.execute_DAG(
+        benzene_complex_dag,
+        shared_basedir=tmpdir,
+        scratch_basedir=tmpdir,
+        keep_shared=True,
+    )
 
     protocol = openmm_afe.AbsoluteBindingProtocol(
         settings=openmm_afe.AbsoluteBindingProtocol.default_settings(),
@@ -92,101 +97,45 @@ def test_gather(benzene_complex_dag, tmpdir):
     assert isinstance(res, openmm_afe.AbsoluteBindingProtocolResult)
 
 
-def test_unit_tagging(benzene_complex_dag, tmpdir):
+def test_unit_tagging(benzene_complex_dag, patcher, tmpdir):
     # test that executing the units includes correct gen and repeat info
 
     dag_units = benzene_complex_dag.protocol_units
 
-    with (
-        mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFESolventSetupUnit.run",
-            return_value={
-                "system": Path("system.xml.bz2"),
-                "positions": Path("positions.npy"),
-                "pdb_structure": Path("hybrid_system.pdb"),
-                "selection_indices": np.zeros(100),
-                "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
-                "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
-                "restraint_geometry": None,
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexSetupUnit.run",
-            return_value={
-                "system": Path("system.xml.bz2"),
-                "positions": Path("positions.npy"),
-                "pdb_structure": Path("hybrid_system.pdb"),
-                "selection_indices": np.zeros(100),
-                "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
-                "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
-                "restraint_geometry": True,
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.base_afe_units.np.load",
-            return_value=np.zeros(100),
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.base_afe_units.deserialize",
-            return_value="foo",
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexSimUnit.run",
-            return_value={
-                "trajectory": Path("file.nc"),
-                "checkpoint": Path("chk.chk"),
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFESolventSimUnit.run",
-            return_value={
-                "trajectory": Path("file.nc"),
-                "checkpoint": Path("chk.chk"),
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFEComplexAnalysisUnit.run",
-            return_value={"foo": "bar"},
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_afe.abfe_units.ABFESolventAnalysisUnit.run",
-            return_value={"foo": "bar"},
-        ),
-    ):
-        for phase in ["solvent", "complex"]:
-            setup_results = {}
-            sim_results = {}
-            analysis_results = {}
+    for phase in ["solvent", "complex"]:
+        setup_results = {}
+        sim_results = {}
+        analysis_results = {}
 
-            setup_units = _get_units(dag_units, UNIT_TYPES[phase]["setup"])
-            sim_units = _get_units(dag_units, UNIT_TYPES[phase]["sim"])
-            a_units = _get_units(dag_units, UNIT_TYPES[phase]["analysis"])
+        setup_units = _get_units(dag_units, UNIT_TYPES[phase]["setup"])
+        sim_units = _get_units(dag_units, UNIT_TYPES[phase]["sim"])
+        a_units = _get_units(dag_units, UNIT_TYPES[phase]["analysis"])
 
-            for u in setup_units:
-                rid = u.inputs["repeat_id"]
-                setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
+        for u in setup_units:
+            rid = u.inputs["repeat_id"]
+            setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
 
-            for u in sim_units:
-                rid = u.inputs["repeat_id"]
-                sim_results[rid] = u.execute(
-                    context=gufe.Context(tmpdir, tmpdir),
-                    setup_results=setup_results[rid],
-                )
+        for u in sim_units:
+            rid = u.inputs["repeat_id"]
+            sim_results[rid] = u.execute(
+                context=gufe.Context(tmpdir, tmpdir),
+                setup_results=setup_results[rid],
+            )
 
-            for u in a_units:
-                rid = u.inputs["repeat_id"]
-                analysis_results[rid] = u.execute(
-                    context=gufe.Context(tmpdir, tmpdir),
-                    setup_results=setup_results[rid],
-                    simulation_results=sim_results[rid],
-                )
+        for u in a_units:
+            rid = u.inputs["repeat_id"]
+            analysis_results[rid] = u.execute(
+                context=gufe.Context(tmpdir, tmpdir),
+                setup_results=setup_results[rid],
+                simulation_results=sim_results[rid],
+            )
 
-            for results in [setup_results, sim_results, analysis_results]:
-                for ret in results.values():
-                    assert isinstance(ret, gufe.ProtocolUnitResult)
-                    assert ret.outputs["generation"] == 0
+        for results in [setup_results, sim_results, analysis_results]:
+            for ret in results.values():
+                assert isinstance(ret, gufe.ProtocolUnitResult)
+                assert ret.outputs["generation"] == 0
 
-            assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
+        assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
 
 
 class TestProtocolResult:
