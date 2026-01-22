@@ -33,7 +33,10 @@ def _get_name(result: dict) -> str:
     """
 
     solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
-    name = solvent_data["inputs"]["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
+    try:
+        name = solvent_data["inputs"]["setup_results"]["inputs"]["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
+    except KeyError:
+        name = solvent_data["inputs"]["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
 
     return str(name)
 
