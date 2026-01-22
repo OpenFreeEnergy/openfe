@@ -32,7 +32,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     stable_secondary_structure_selection,
 )
 
-from ...conftest import HAS_INTERNET
+from ...conftest import HAS_INTERNET, POOCH_CACHE
 
 
 @pytest.fixture(scope="module")
@@ -49,7 +49,6 @@ def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
     return mda.Merge(protein.atoms, lig.atoms)
 
 
-POOCH_CACHE = pooch.os_cache("openfe")
 zenodo_restraint_data = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.15212342",

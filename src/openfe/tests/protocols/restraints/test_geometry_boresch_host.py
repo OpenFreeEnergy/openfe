@@ -25,9 +25,8 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     is_collinear,
 )
 
-from ...conftest import HAS_INTERNET
+from ...conftest import HAS_INTERNET, POOCH_CACHE
 
-POOCH_CACHE = pooch.os_cache("openfe")
 zenodo_restraint_data = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.15212342",
