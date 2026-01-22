@@ -1069,13 +1069,13 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             # running the right system.
             sampler_system = sampler._thermodynamic_states[0].get_system(remove_thermostat=True)
             if (
-                    (simulation_settings.n_replicas != sampler.n_states != sampler.n_replicas) or
-                    (system.getNumForces() != sampler_system.getNumForces()) or
-                    (system.getNumParticles() != sampler_system.getNumParticles()) or
-                    (system.getNumConstraints() != sampler_system.getNumConstraints()) or
-                    (sampler.mcmc_moves[0].n_steps != steps_per_iteration) or
-                    (sampler.mcmc_moves[0].timestep != integrator.timestep)
-                ):
+                (simulation_settings.n_replicas != sampler.n_states != sampler.n_replicas)
+                or (system.getNumForces() != sampler_system.getNumForces())
+                or (system.getNumParticles() != sampler_system.getNumParticles())
+                or (system.getNumConstraints() != sampler_system.getNumConstraints())
+                or (sampler.mcmc_moves[0].n_steps != steps_per_iteration)
+                or (sampler.mcmc_moves[0].timestep != integrator.timestep)
+            ):
                 errmsg = "System in checkpoint does not match protocol system, cannot resume"
                 raise ValueError(errmsg)
         else:
@@ -1243,8 +1243,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
         # Check for a restart
         self.restart = self._check_restart(
-            output_settings=settings["output_settings"],
-            shared_path=self.shared_basepath
+            output_settings=settings["output_settings"], shared_path=self.shared_basepath
         )
 
         # Get the lambda schedule
@@ -1308,7 +1307,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             try:
                 # Order is reporter, sampler, integrator
                 reporter.close()  # close to prevent file handle clashes
-    
+
                 # clear GPU contexts
                 # TODO: use cache.empty() calls when openmmtools #690 is resolved
                 # replace with above
@@ -1319,9 +1318,9 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 # cautiously clear out the global context cache too
                 for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
                     del openmmtools.cache.global_context_cache._lru._data[context]
-    
+
                 del sampler.sampler_context_cache, sampler.energy_context_cache
-    
+
                 if not dry:
                     del integrator, sampler
             except UnboundLocalError:

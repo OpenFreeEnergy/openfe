@@ -1,45 +1,42 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import copy
 import os
 import pathlib
 import shutil
-import copy
 
 import numpy as np
+import openmm
 import pooch
 import pytest
 from gufe.protocols import execute_DAG
 from numpy.testing import assert_allclose
+from openfe_analysis.utils.multistate import _determine_position_indices
 from openff.units import unit as offunit
 from openff.units.openmm import from_openmm
-from openfe_analysis.utils.multistate import _determine_position_indices
-import openmm
+from openmmtools.multistate import MultiStateReporter
 
 import openfe
 from openfe.protocols import openmm_rfe
+from openfe.protocols.openmm_rfe._rfe_utils.multistate import HybridRepexSampler
 from openfe.protocols.openmm_rfe.hybridtop_units import (
     HybridTopologyMultiStateAnalysisUnit,
     HybridTopologyMultiStateSimulationUnit,
     HybridTopologySetupUnit,
 )
-from openmmtools.multistate import MultiStateReporter
-from openfe.protocols.openmm_rfe._rfe_utils.multistate import HybridRepexSampler
 
-from .test_hybrid_top_protocol import _get_units
 from ...conftest import HAS_INTERNET
-
+from .test_hybrid_top_protocol import _get_units
 
 POOCH_CACHE = pooch.os_cache("openfe")
 zenodo_resume_data = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.18331259",
-    registry={
-        "multistate_checkpoints.zip": "md5:2cf8aa417ac8311aca1551d4abf3b3ed"
-    },
+    registry={"multistate_checkpoints.zip": "md5:2cf8aa417ac8311aca1551d4abf3b3ed"},
 )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def trajectory_path():
     zenodo_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
     topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
@@ -48,7 +45,7 @@ def trajectory_path():
     return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def checkpoint_path():
     zenodo_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
     topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
@@ -83,7 +80,7 @@ def test_check_restart(protocol_settings, trajectory_path):
 
     assert not openmm_rfe.HybridTopologyMultiStateSimulationUnit._check_restart(
         output_settings=protocol_settings.output_settings,
-        shared_path=pathlib.Path('.'),
+        shared_path=pathlib.Path("."),
     )
 
 
@@ -93,13 +90,13 @@ def test_check_restart(protocol_settings, trajectory_path):
 )
 class TestCheckpointResuming:
     @pytest.fixture()
-    def protocol_dag(self, protocol_settings, benzene_system, toluene_system, benzene_to_toluene_mapping):
+    def protocol_dag(
+        self, protocol_settings, benzene_system, toluene_system, benzene_to_toluene_mapping
+    ):
         protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=protocol_settings)
-    
+
         return protocol.create(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping=benzene_to_toluene_mapping
+            stateA=benzene_system, stateB=toluene_system, mapping=benzene_to_toluene_mapping
         )
 
     @staticmethod
@@ -118,9 +115,7 @@ class TestCheckpointResuming:
         frame_list = _determine_position_indices(dataset)
         positions = []
         for frame in frame_list:
-            positions.append(
-                copy.deepcopy(dataset.variables["positions"][frame].data)
-            )
+            positions.append(copy.deepcopy(dataset.variables["positions"][frame].data))
         return positions
 
     @staticmethod
@@ -163,7 +158,7 @@ class TestCheckpointResuming:
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
-    
+
         # Now we run the simulation in resume mode
         sim_results = simulation_unit.run(
             system=setup_results["hybrid_system"],
@@ -233,4 +228,3 @@ class TestCheckpointResuming:
                 scratch_basepath=cwd,
                 shared_basepath=cwd,
             )
-
