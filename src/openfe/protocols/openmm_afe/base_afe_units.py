@@ -787,6 +787,32 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
 
 
 class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
+    @staticmethod
+    def _check_restart(output_settings: SettingsBaseModel, shared_path: pathlib.Path):
+        """
+        Check if we are doing a restart.
+
+        Parameters
+        ----------
+        output_settings : SettingsBaseModel
+          The simulation output settings
+        shared_path : pathlib.Path
+          The shared directory where we should be looking for existing files.
+
+        Notes
+        -----
+        For now this just checks if the netcdf files are present in the
+        shared directory but in the future this may expand depending on
+        how warehouse works.
+        """
+        trajectory = shared_path / output_settings.output_filename
+        checkpoint = shared_path / output_settings.checkpoint_storage_filename
+
+        if trajectory.is_file() and checkpoint.is_file():
+            return True
+
+        return False
+
     @abc.abstractmethod
     def _get_components(
         self,
@@ -1034,7 +1060,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             time_per_iteration=simulation_settings.time_per_iteration,
         )
 
-        reporter = multistate.MultiStateReporter(
+        return multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
@@ -1042,8 +1068,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             position_interval=pos_interval,
             velocity_interval=vel_interval,
         )
-
-        return reporter
 
     @staticmethod
     def _get_sampler(
