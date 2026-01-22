@@ -121,7 +121,7 @@ class TestAHFESolventAnalysisUnit(ModGufeTokenizableTestsMixin):
 
 class TestAHFEVacuumSetupUnit(ModGufeTokenizableTestsMixin):
     cls = AHFEVacuumSetupUnit
-    repr = "AHFEVacuumSetupUnit(AHFE Setup: benzene solvent leg"
+    repr = "AHFEVacuumSetupUnit(AHFE Setup: benzene vacuum leg"
     key = None
 
     @pytest.fixture()
@@ -131,7 +131,7 @@ class TestAHFEVacuumSetupUnit(ModGufeTokenizableTestsMixin):
 
 class TestAHFEVacuumSimUnit(ModGufeTokenizableTestsMixin):
     cls = AHFEVacuumSimUnit
-    repr = "AHFEVacuumSimUnit(AHFE Simulation: benzene solvent leg"
+    repr = "AHFEVacuumSimUnit(AHFE Simulation: benzene vacuum leg"
     key = None
 
     @pytest.fixture()
@@ -141,7 +141,7 @@ class TestAHFEVacuumSimUnit(ModGufeTokenizableTestsMixin):
 
 class TestAHFEVacuumAnalysisUnit(ModGufeTokenizableTestsMixin):
     cls = AHFEVacuumAnalysisUnit
-    repr = "AHFEVacuumAnalysisUnit(AHFE Analysis: benzene solvent leg"
+    repr = "AHFEVacuumAnalysisUnit(AHFE Analysis: benzene vacuum leg"
     key = None
 
     @pytest.fixture()
