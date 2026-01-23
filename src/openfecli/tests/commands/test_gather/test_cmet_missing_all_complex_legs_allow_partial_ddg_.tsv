@@ -1,0 +1,6 @@
+Loading results:
+ligand_i	ligand_j	DDG(i->j) (kcal/mol)	uncertainty (kcal/mol)
+lig_CHEMBL3402745_200_5	lig_CHEMBL3402744_300_4	Error	Error
+lig_CHEMBL3402745_200_5	lig_CHEMBL3402749_500_9	Error	Error
+lig_CHEMBL3402745_200_5	lig_CHEMBL3402754_40_14	Error	Error
+lig_CHEMBL3402754_40_14	lig_CHEMBL3402761_1_21	Error	Error

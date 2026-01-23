@@ -46,7 +46,7 @@ jobs:
 
       # TODO just checkout the repo where we need it?
       - name: Copy source code to recipe folder
-        run: cp -r openfe openfe-feedstock/recipe/openfe_source
+        run: cp -r src/openfe openfe-feedstock/recipe/openfe_source
       
       - name: Modify feedstock to use local path
         run: |
@@ -68,17 +68,19 @@ jobs:
           python build-locally.py
         continue-on-error: true
         id: build_test
+
+          # Uncomment if build_artifacts is needed to troubleshoot build
       
-      - name: Upload build logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: conda-build-logs
-          path: |
-            openfe-feedstock/build_artifacts/
-            openfe-feedstock/recipe/meta.yaml
-            openfe-feedstock/recipe/meta.yaml.bak
-          if-no-files-found: warn
+          #      - name: Upload build logs
+          #        if: always()
+          #        uses: actions/upload-artifact@v4
+          #        with:
+          #          name: conda-build-logs
+          #          path: |
+          #            openfe-feedstock/build_artifacts/
+          #            openfe-feedstock/recipe/meta.yaml
+          #            openfe-feedstock/recipe/meta.yaml.bak
+          #          if-no-files-found: warn
       
       - name: Check build status
         if: steps.build_test.outcome == 'failure'
