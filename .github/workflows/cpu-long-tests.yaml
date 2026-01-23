@@ -92,7 +92,7 @@ jobs:
           DUECREDIT_ENABLE: 'yes'
           OFE_INTEGRATION_TESTS: FALSE
         run: |
-          pytest -n logical -vv --durations=10 --runslow openfecli/tests/ openfe/tests/
+          pytest -n logical -vv --durations=10 --runslow src/openfecli/tests/ src/openfe/tests/
 
   stop-aws-runner:
     runs-on: ubuntu-latest
