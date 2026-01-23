@@ -2,8 +2,7 @@ name: openfe_env
 channels:
   - conda-forge
 dependencies:
-  # Issues with 11.8 on    lilac
-  - cudatoolkit==11.7
+  - cudatoolkit==11.8
   - jupyterlab
   - notebook
   - openfe
