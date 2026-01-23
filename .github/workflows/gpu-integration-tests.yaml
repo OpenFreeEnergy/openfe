@@ -96,7 +96,7 @@ jobs:
           OFE_INTEGRATION_TESTS: TRUE
         run: |
           # The -m flag will only run tests with @pytest.mark.integration
-          pytest -n logical -vv --durations=10 -m integration openfecli/tests/ openfe/tests/
+          pytest -n logical -vv --durations=10 -m integration src/openfecli/tests/ src/openfe/tests/
 
   stop-aws-runner:
     runs-on: ubuntu-latest

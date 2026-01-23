@@ -35,19 +35,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "macos-latest"]
+        os: ["ubuntu-latest"]
+        openeye: ["no"]
         python-version:
           - "3.11"
           - "3.12"
           - "3.13"
-        openeye: ["no"]
-        include: # NOTE: openeye does not yet support 3.13.
+        include:
           - os: "ubuntu-latest"
-            python-version: "3.11"
+            python-version: "3.13"
             openeye: "yes"
           - os: "macos-latest"
             python-version: "3.12"
-            openeye: "yes"
+            openeye: "no"
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
