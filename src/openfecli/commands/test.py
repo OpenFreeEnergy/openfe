@@ -10,8 +10,16 @@ from openfecli import OFECommandPlugin
 from openfecli.utils import write
 
 
-def retrieve_test_data():
-    pass
+def retrieve_all_test_data(path):
+    downloader = pooch.DOIDownloader(progressbar=True)
+    pooch.retrieve(
+        url="doi:10.5281/zenodo.15200083/cmet_results.tar.gz",
+        known_hash="md5:a4ca67a907f744c696b09660dc1eb8ec",
+        fname="cmet_results.tar.gz",
+        processor=pooch.Untar(),
+        downloader=downloader,
+        path=path,
+    )
 
 
 @click.command("test", short_help="Run the OpenFE test suite")
@@ -34,9 +42,11 @@ def test(long, download_only):
     terminals, these show as green or yellow. Warnings are not a concern.
     However, You should not see anything that fails or errors (red).
     """
+
     if download_only:
-        retrieve_test_data()
-        sys.exit()
+        retrieve_all_test_data(".")
+        sys.exit(0)
+
     try:
         old_env = dict(os.environ)
         os.environ["OFE_SLOW_TESTS"] = str(long)
