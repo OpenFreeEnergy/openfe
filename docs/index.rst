@@ -53,7 +53,7 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
 
         How-to guides for common tasks.
 
-    .. grid-item-card:: :fas:`code` API Docs
+    .. grid-item-card:: :fas:`code` API Reference
         :text-align: center
         :link: reference/index
         :link-type: doc
