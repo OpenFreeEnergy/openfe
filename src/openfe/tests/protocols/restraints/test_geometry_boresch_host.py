@@ -26,14 +26,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
 
 from ...conftest import HAS_INTERNET, POOCH_CACHE
 
-zenodo_restraint_data = pooch.create(
-    path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15212342",
-    registry={
-        "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
-    },
-)
-
 
 @pytest.fixture
 def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):

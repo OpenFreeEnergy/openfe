@@ -284,6 +284,15 @@ def septop_json() -> str:
         return f.read().decode()  # type: ignore
 
 
+zenodo_industry_benchmarks_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15212342",
+    registry={
+        "industry_benchmark_systems.zip": "sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd"
+    },
+)
+
+
 zenodo_restraint_data = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.15212342",
