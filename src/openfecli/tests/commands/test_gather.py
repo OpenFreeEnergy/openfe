@@ -17,8 +17,9 @@ from openfecli.commands.gather import (
 )
 from openfecli.commands.gather_abfe import gather_abfe
 from openfecli.commands.gather_septop import gather_septop
+from openfecli.utils import POOCH_CACHE
 
-from ..conftest import HAS_INTERNET, POOCH_CACHE
+from ..conftest import HAS_INTERNET
 from ..utils import assert_click_success
 
 ZENODO_RBFE_DATA = pooch.create(

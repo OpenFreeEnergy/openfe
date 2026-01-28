@@ -8,6 +8,9 @@ from datetime import datetime
 from typing import Callable, Optional
 
 import click
+import pooch
+
+POOCH_CACHE = pooch.os_cache("openfe")
 
 
 def import_thing(import_string: str):

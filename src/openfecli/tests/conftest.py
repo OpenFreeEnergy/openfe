@@ -9,5 +9,3 @@ except urllib.error.URLError:  # -no-cov-
     HAS_INTERNET = False
 else:
     HAS_INTERNET = True
-
-POOCH_CACHE = pooch.os_cache("openfe")
