@@ -4,7 +4,7 @@
    We have reproduced API documentation from the `gufe`_ package here for convenience.
    `gufe`_ serves as a foundation layer for openfe, providing abstract base classes and object models, and so might be more useful for developers.
 
-OpenFE API Reference
+Python API Reference
 ====================
 
 .. toctree::
