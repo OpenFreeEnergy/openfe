@@ -16,9 +16,8 @@ authors = [ { name = "The OpenFE developers", email = "openfreeenergy@omsf.io" }
 requires-python = ">=3.11"
 
 classifiers = [
-  "Development Status :: 1 - Planning",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
-  "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.11",
