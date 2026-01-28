@@ -28,7 +28,7 @@ from openfe.protocols.restraint_utils.settings import (
     FlatBottomRestraintSettings,
 )
 
-from ...conftest import HAS_INTERNET
+from ...conftest import HAS_INTERNET, POOCH_CACHE
 
 
 def test_parameter_state_default():
@@ -98,7 +98,6 @@ def test_verify_geometry():
         restraint._verify_geometry(geometry)
 
 
-POOCH_CACHE = pooch.os_cache("openfe")
 zenodo_restraint_data = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.15212342",
@@ -112,7 +111,7 @@ zenodo_restraint_data = pooch.create(
 def tyk2_protein_ligand_system():
     zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
+        POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
     )
     with open(str(cache_dir / "jacs_set" / "tyk2" / "protein_ligand_system.xml")) as xml:
         return openmm.XmlSerializer.deserialize(xml.read())
@@ -122,7 +121,7 @@ def tyk2_protein_ligand_system():
 def tyk2_rdkit_ligand():
     zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
+        POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
     )
     ligand = SmallMoleculeComponent.from_sdf_file(
         str(cache_dir / "jacs_set" / "tyk2" / "test_ligand.sdf")

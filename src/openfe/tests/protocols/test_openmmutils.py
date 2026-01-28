@@ -40,7 +40,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
-from openfe.tests.conftest import HAS_INTERNET
+from openfe.tests.conftest import HAS_INTERNET, POOCH_CACHE
 
 
 @pytest.mark.parametrize(
@@ -1033,7 +1033,6 @@ class TestOFFPartialCharge:
             )
 
 
-POOCH_CACHE = pooch.os_cache("openfe")
 RFE_OUTPUT = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.15375081",

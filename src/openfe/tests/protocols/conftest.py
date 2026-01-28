@@ -1,9 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
+import pathlib
 from importlib import resources
 from typing import Optional
 
+import MDAnalysis as mda
 import openmm
 import pooch
 import pytest
@@ -15,6 +17,8 @@ from rdkit import Chem
 from rdkit.Geometry import Point3D
 
 import openfe
+
+from ..conftest import POOCH_CACHE
 
 
 @pytest.fixture
@@ -280,8 +284,30 @@ def septop_json() -> str:
         return f.read().decode()  # type: ignore
 
 
+zenodo_restraint_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15212342",
+    registry={
+        "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
+    },
+)
+
+
+@pytest.fixture
+def t4_lysozyme_trajectory_universe():
+    zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        POOCH_CACHE / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
+    )
+    universe = mda.Universe(
+        str(cache_dir / "t4_toluene_complex.pdb"),
+        str(cache_dir / "t4_toluene_complex.xtc"),
+    )
+    return universe
+
+
 RFE_OUTPUT = pooch.create(
-    path=pooch.os_cache("openfe_analysis"),
+    path=POOCH_CACHE,
     base_url="doi:10.6084/m9.figshare.24101655",
     registry={
         "checkpoint.nc": "5af398cb14340fddf7492114998b244424b6c3f4514b2e07e4bd411484c08464",
