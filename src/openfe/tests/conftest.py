@@ -12,7 +12,6 @@ import mdtraj
 import numpy as np
 import openmm
 import pandas as pd
-import pooch
 import pytest
 from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
 from openff.toolkit import ForceField
@@ -22,12 +21,11 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 import openfe
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.tests.protocols.openmm_rfe.helpers import make_htf
-
-POOCH_CACHE = pooch.os_cache("openfe")
 
 
 class SlowTests:

@@ -5,8 +5,11 @@ import click
 import pytest
 
 from openfe.data import _downloader
+from openfe.data._registry import zenodo_data_registry as api_test_data_registry
 from openfecli import OFECommandPlugin
-from openfecli.utils import POOCH_CACHE, write
+from openfecli.data._registry import POOCH_CACHE
+from openfecli.data._registry import zenodo_data_registry as cli_test_data_registry
+from openfecli.utils import write
 
 
 @click.command("test", short_help="Run the OpenFE test suite")
@@ -31,7 +34,9 @@ def test(long, download_only):
     """
 
     if download_only:
-        _downloader.retrieve_all_test_data(POOCH_CACHE)
+        _downloader.retrieve_all_test_data(
+            [cli_test_data_registry, api_test_data_registry], POOCH_CACHE
+        )
         sys.exit(0)
 
     try:

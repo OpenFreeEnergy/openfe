@@ -3,7 +3,7 @@ import pooch
 from ._registry import zenodo_data_registry
 
 
-def retrieve_all_test_data(path: str) -> None:
+def retrieve_all_test_data(zenodo_registry: list[dict], path: str) -> None:
     """Helper function for pulling all test data up-front.
 
     Parameters
@@ -22,7 +22,7 @@ def retrieve_all_test_data(path: str) -> None:
         else:
             return None
 
-    for d in zenodo_data_registry:
+    for d in zenodo_registry:
         pooch.retrieve(
             url=d["base_url"] + d["fname"],
             known_hash=d["known_hash"],

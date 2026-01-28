@@ -23,6 +23,7 @@ from openmmtools import multistate
 from pymbar.utils import ParameterError
 
 import openfe
+from openfe.data._registry import POOCH_CACHE, zenodo_rfe_simulation_nc
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,
@@ -40,7 +41,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
-from openfe.tests.conftest import HAS_INTERNET, POOCH_CACHE
+from openfe.tests.conftest import HAS_INTERNET
 
 
 @pytest.mark.parametrize(
@@ -1033,22 +1034,13 @@ class TestOFFPartialCharge:
             )
 
 
-RFE_OUTPUT = pooch.create(
-    path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15375081",
-    registry={
-        "checkpoint.nc": "md5:3cfd70a4cbe463403d6ec7cca84fc31a",
-        "db.json": "md5:33c8c1a0b629a52dcc291beff59fabc6",
-        "hybrid_system.pdb": "md5:44a1e78294360037acf419b95be18fb3",
-        "simulation.nc": "md5:bc4e842b47de17704d804ae345b91599",
-        "simulation_real_time_analysis.yaml": "md5:68a7d81462c42353a91bbbe5e64fd418",
-    },
-)
-
-
 @pytest.fixture
 def simulation_nc():
-    return pooch.retrieve(url="simulation.nc", path=POOCH_CACHE)
+    return pooch.retrieve(
+        url=zenodo_rfe_simulation_nc["base_url"] + zenodo_rfe_simulation_nc["fname"],
+        known_hash=zenodo_rfe_simulation_nc["known_hash"],
+        path=POOCH_CACHE,
+    )
 
 
 @pytest.mark.slow
