@@ -12,14 +12,23 @@ from openfecli.utils import write
 
 def retrieve_all_test_data(path):
     downloader = pooch.DOIDownloader(progressbar=True)
-    pooch.retrieve(
-        url="doi:10.5281/zenodo.15200083/cmet_results.tar.gz",
-        known_hash="md5:a4ca67a907f744c696b09660dc1eb8ec",
+
+    zenodo_cmet_data = dict(
+        base_url="doi:10.5281/zenodo.15200083/",
         fname="cmet_results.tar.gz",
+        known_hash="md5:a4ca67a907f744c696b09660dc1eb8ec",
         processor=pooch.Untar(),
+    )
+    # ZENODO_CMET_DATA
+    pooch.retrieve(
+        url=zenodo_cmet_data["base_url"] + zenodo_cmet_data["fname"],
+        known_hash=zenodo_cmet_data["known_hash"],
+        fname=zenodo_cmet_data["fname"],
+        processor=zenodo_cmet_data["processor"],
         downloader=downloader,
         path=path,
     )
+    # ZENODO_RBFE_DATA
 
 
 @click.command("test", short_help="Run the OpenFE test suite")
