@@ -17,23 +17,34 @@ from openfecli.commands.gather import (
 )
 from openfecli.commands.gather_abfe import gather_abfe
 from openfecli.commands.gather_septop import gather_septop
-from openfecli.utils import POOCH_CACHE
+from openfecli.data._registry import (
+    POOCH_CACHE,
+    zenodo_abfe_data,
+    zenodo_cmet_data,
+    zenodo_rbfe_parallel_data,
+    zenodo_rbfe_serial_data,
+    zenodo_septop_data,
+)
 
 from ..conftest import HAS_INTERNET
 from ..utils import assert_click_success
 
-ZENODO_RBFE_DATA = pooch.create(
+pooch_rbfe_serial = pooch.create(
     path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15042470",
-    registry={
-        "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
-        "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181",
-    },
+    base_url=zenodo_rbfe_serial_data["base_url"],
+    registry={zenodo_rbfe_serial_data["fname"]: zenodo_rbfe_serial_data["known_hash"]},
 )
-ZENODO_CMET_DATA = pooch.create(
+
+pooch_rbfe_parallel = pooch.create(
     path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15200083",
-    registry={"cmet_results.tar.gz": "md5:a4ca67a907f744c696b09660dc1eb8ec"},
+    base_url=zenodo_rbfe_parallel_data["base_url"],
+    registry={zenodo_rbfe_parallel_data["fname"]: zenodo_rbfe_parallel_data["known_hash"]},
+)
+
+pooch_cmet = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_cmet_data["base_url"],
+    registry={zenodo_cmet_data["fname"]: zenodo_cmet_data["known_hash"]},
 )
 
 
@@ -227,18 +238,8 @@ solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 
 
 @pytest.fixture
-def rbfe_result_dir() -> pathlib.Path:
-    def _rbfe_result_dir(dataset) -> str:
-        ZENODO_RBFE_DATA.fetch(f"{dataset}.tar.gz", processor=pooch.Untar())
-        cache_dir = pathlib.Path(POOCH_CACHE) / f"{dataset}.tar.gz.untar/{dataset}/"
-        return cache_dir
-
-    return _rbfe_result_dir
-
-
-@pytest.fixture
 def cmet_result_dir() -> pathlib.Path:
-    ZENODO_CMET_DATA.fetch("cmet_results.tar.gz", processor=pooch.Untar())
+    pooch_cmet.fetch("cmet_results.tar.gz", processor=pooch.Untar())
     result_dir = pathlib.Path(POOCH_CACHE) / "cmet_results.tar.gz.untar/cmet_results/"
 
     return result_dir
@@ -347,14 +348,34 @@ class TestGatherCMET:
             assert pathlib.Path(fname).is_file()
 
 
+@pytest.fixture
+def rbfe_results_serial_dir() -> pathlib.Path:
+    pooch_rbfe_serial.fetch("rbfe_results_serial_repeats.tar.gz", processor=pooch.Untar())
+    result_dir = (
+        pathlib.Path(POOCH_CACHE)
+        / "rbfe_results_serial_repeats.tar.gz.untar/rbfe_results_serial_repeats/"
+    )
+    return result_dir
+
+
+@pytest.fixture
+def rbfe_results_parallel_dir() -> pathlib.Path:
+    pooch_rbfe_parallel.fetch("rbfe_results_parallel_repeats.tar.gz", processor=pooch.Untar())
+    result_dir = (
+        pathlib.Path(POOCH_CACHE)
+        / "rbfe_results_parallel_repeats.tar.gz.untar/rbfe_results_parallel_repeats/"
+    )
+    return result_dir
+
+
 @pytest.mark.skipif(
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet seems to be unavailable and test data is not cached locally.",
 )
-@pytest.mark.parametrize("dataset", ["rbfe_results_serial_repeats", "rbfe_results_parallel_repeats"])  # fmt: skip
+@pytest.mark.parametrize("dataset", ["rbfe_results_serial_dir", "rbfe_results_parallel_dir"])  # fmt: skip
 @pytest.mark.parametrize("report", ["", "dg", "ddg", "raw"])
 @pytest.mark.parametrize("input_mode", ["directory", "filepaths"])
-def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
+def test_rbfe_gather(request, dataset, report, input_mode):
     expected = {
         "": _RBFE_EXPECTED_DG,
         "dg": _RBFE_EXPECTED_DG,
@@ -368,7 +389,7 @@ def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
     else:
         args = []
 
-    results = rbfe_result_dir(dataset)
+    results = request.getfixturevalue(dataset)
     if input_mode == "directory":
         results = [str(results)]
     elif input_mode == "filepaths":
@@ -383,11 +404,11 @@ def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
     assert set(expected.split(b"\n")) == actual_lines
 
 
-def test_rbfe_gather_single_repeats_dg_error(rbfe_result_dir):
+def test_rbfe_gather_single_repeats_dg_error(rbfe_results_parallel_dir):
     """A single repeat is insufficient for a dg calculation - should fail cleanly."""
 
     runner = CliRunner()
-    results = rbfe_result_dir("rbfe_results_parallel_repeats")
+    results = rbfe_results_parallel_dir
     args = ["report", "dg"]
     cli_result = runner.invoke(gather, [f"{results}/replicate_0"] + args + ["--tsv"])
     assert cli_result.exit_code == 1
@@ -399,9 +420,9 @@ def test_rbfe_gather_single_repeats_dg_error(rbfe_result_dir):
 )
 class TestRBFEGatherFailedEdges:
     @pytest.fixture()
-    def results_paths_serial_missing_legs(self, rbfe_result_dir) -> str:
+    def results_paths_serial_missing_legs(self, rbfe_results_serial_dir) -> str:
         """Example output data, with replicates run in serial and two missing results JSONs."""
-        result_dir = rbfe_result_dir("rbfe_results_serial_repeats")
+        result_dir = rbfe_results_serial_dir
         results = glob.glob(f"{result_dir}/*", recursive=True)
 
         files_to_skip = [
@@ -442,13 +463,13 @@ class TestRBFEGatherFailedEdges:
 
 ZENODO_ABFE_DATA = pooch.create(
     path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.17348229",
-    registry={"abfe_results.zip": "md5:547f896e867cce61979d75b7e082f6ba"},
+    base_url=zenodo_abfe_data["base_url"],
+    registry={zenodo_abfe_data["fname"]: zenodo_abfe_data["known_hash"]},
 )
 ZENODO_SEPTOP_DATA = pooch.create(
     path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.17435569",
-    registry={"septop_results.zip": "md5:2cfa18da59a20228f5c75a1de6ec879e"},
+    base_url=zenodo_septop_data["base_url"],
+    registry={zenodo_septop_data["fname"]: zenodo_septop_data["known_hash"]},
 )
 
 
