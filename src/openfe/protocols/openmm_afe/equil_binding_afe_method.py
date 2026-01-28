@@ -32,6 +32,7 @@ from typing import Any, Iterable
 
 import gufe
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
     SmallMoleculeComponent,
@@ -171,7 +172,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
             solvent_solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
+            solvent_integrator_settings=IntegratorSettings(),
+            complex_integrator_settings=IntegratorSettings(),
             restraint_settings=BoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
@@ -229,7 +231,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         ------
         ValueError
           If stateA & stateB do not contain a ProteinComponent.
-          If stateA & stateB do not contain a SolventComponent.
+          If stateA & stateB do not contain a BaseSolventComponent.
           If stateA has more than one unique Component.
           If the stateA unique Component is not a SmallMoleculeComponent.
           If stateB contains any unique Components.
@@ -239,8 +241,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             errmsg = "No ProteinComponent found"
             raise ValueError(errmsg)
 
-        if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
-            errmsg = "No SolventComponent found"
+        if not (stateA.contains(BaseSolventComponent) and stateB.contains(BaseSolventComponent)):
+            errmsg = "No solvent found"
             raise ValueError(errmsg)
 
         # Needs gufe 1.3
@@ -400,6 +402,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Use the more complete system validation solvent checks
         system_validation.validate_solvent(stateA, nonbonded_method)
 
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_protein_barostat(stateA, self.settings.complex_integrator_settings.barostat)
+
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvent_solvation_settings
@@ -411,7 +416,11 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Validate integrator things
         settings_validation.validate_timestep(
             self.settings.forcefield_settings.hydrogen_mass,
-            self.settings.integrator_settings.timestep,
+            self.settings.complex_integrator_settings.timestep,
+        )
+        settings_validation.validate_timestep(
+            self.settings.forcefield_settings.hydrogen_mass,
+            self.settings.solvent_integrator_settings.timestep,
         )
 
     def _create(
