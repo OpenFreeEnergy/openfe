@@ -2,11 +2,10 @@ import os
 import sys
 
 import click
-import pooch
 import pytest
 
+from openfe.data import _downloader
 from openfecli import OFECommandPlugin
-from openfecli.data import _downloader
 from openfecli.utils import POOCH_CACHE, write
 
 
