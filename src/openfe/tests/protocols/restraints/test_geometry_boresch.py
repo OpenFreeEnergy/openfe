@@ -9,13 +9,13 @@ import pytest
 from openff.units import unit
 from rdkit import Chem
 
-from openfe.data._registry import POOCH_CACHE, zenodo_industry_benchmark_systems
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.geometry.boresch.geometry import (
     BoreschRestraintGeometry,
     find_boresch_restraint,
 )
 
-from ...conftest import HAS_INTERNET
+from ...conftest import HAS_INTERNET, POOCH_CACHE
 
 
 @pytest.fixture()
@@ -234,26 +234,6 @@ def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     assert 2.56825286 == pytest.approx(restraint_geometry.phi_A0.to("radians").m)
     assert -1.60162692 == pytest.approx(restraint_geometry.phi_B0.to("radians").m)
     assert -0.02396901 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
-
-
-pooch_industry_benchmark_systems = pooch.create(
-    path=POOCH_CACHE,
-    base_url=zenodo_industry_benchmark_systems["base_url"],
-    registry={
-        zenodo_industry_benchmark_systems["fname"]: zenodo_industry_benchmark_systems["known_hash"]
-    },
-)
-
-
-@pytest.fixture
-def industry_benchmark_files():
-    pooch_industry_benchmark_systems.fetch(
-        "industry_benchmark_systems.zip", processor=pooch.Unzip()
-    )
-    cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
-    )
-    return cache_dir
 
 
 @pytest.mark.skipif(

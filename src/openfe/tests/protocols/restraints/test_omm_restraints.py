@@ -2,16 +2,14 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import os
-import pathlib
 
 import openmm
-import pooch
 import pytest
 from gufe import SmallMoleculeComponent
 from openff.units import unit
 from openmmtools.states import ThermodynamicState
 
-from openfe.data._registry import POOCH_CACHE, zenodo_industry_benchmark_systems
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     BoreschRestraintGeometry,
@@ -99,38 +97,18 @@ def test_verify_geometry():
         restraint._verify_geometry(geometry)
 
 
-# TODO: duplicate - move to conftest.py
-pooch_industry_benchmark_systems = pooch.create(
-    path=POOCH_CACHE,
-    base_url=zenodo_industry_benchmark_systems["base_url"],
-    registry={
-        zenodo_industry_benchmark_systems["fname"]: zenodo_industry_benchmark_systems["known_hash"]
-    },
-)
-
-
 @pytest.fixture
-def tyk2_protein_ligand_system():
-    pooch_industry_benchmark_systems.fetch(
-        "industry_benchmark_systems.zip", processor=pooch.Unzip()
-    )
-    cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
-    )
-    with open(str(cache_dir / "jacs_set" / "tyk2" / "protein_ligand_system.xml")) as xml:
+def tyk2_protein_ligand_system(industry_benchmark_files):
+    with open(
+        str(industry_benchmark_files / "jacs_set" / "tyk2" / "protein_ligand_system.xml")
+    ) as xml:
         return openmm.XmlSerializer.deserialize(xml.read())
 
 
 @pytest.fixture
-def tyk2_rdkit_ligand():
-    pooch_industry_benchmark_systems.fetch(
-        "industry_benchmark_systems.zip", processor=pooch.Unzip()
-    )
-    cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
-    )
+def tyk2_rdkit_ligand(industry_benchmark_files):
     ligand = SmallMoleculeComponent.from_sdf_file(
-        str(cache_dir / "jacs_set" / "tyk2" / "test_ligand.sdf")
+        str(industry_benchmark_files / "jacs_set" / "tyk2" / "test_ligand.sdf")
     )
     return ligand.to_rdkit()
 

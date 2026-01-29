@@ -1,8 +1,6 @@
 import urllib.error
 import urllib.request
 
-import pooch
-
 try:
     urllib.request.urlopen("https://www.google.com")
 except urllib.error.URLError:  # -no-cov-

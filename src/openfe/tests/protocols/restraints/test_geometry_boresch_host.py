@@ -2,7 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import os
-import pathlib
 
 import MDAnalysis as mda
 import numpy as np
@@ -11,7 +10,7 @@ import pytest
 from numpy.testing import assert_equal
 from openff.units import unit
 
-from openfe.data._registry import POOCH_CACHE, zenodo_t4_lysozyme_traj
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.geometry.boresch.host import (
     EvaluateBoreschAtoms,
     EvaluateHostAtoms1,
@@ -27,27 +26,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
 )
 
 from ...conftest import HAS_INTERNET
-
-pooch_t4_lysozyme = pooch.create(
-    path=POOCH_CACHE,
-    base_url=zenodo_t4_lysozyme_traj["base_url"],
-    registry={zenodo_t4_lysozyme_traj["fname"]: zenodo_t4_lysozyme_traj["known_hash"]},
-)
-
-
-@pytest.fixture(scope="module")
-def t4_lysozyme_trajectory_universe():
-    pooch_t4_lysozyme.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
-    cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
-    )
-    universe = mda.Universe(
-        str(cache_dir / "t4_toluene_complex.pdb"),
-        str(cache_dir / "t4_toluene_complex.xtc"),
-    )
-    # guess bonds for the protein atoms
-    universe.select_atoms("protein").guess_bonds()
-    return universe
 
 
 @pytest.fixture
@@ -356,7 +334,10 @@ class TestFindAnchorBondedTrajectory(TestFindAnchorMulti):
 
     @pytest.fixture(scope="class")
     def universe(self, t4_lysozyme_trajectory_universe):
-        return t4_lysozyme_trajectory_universe
+        universe = t4_lysozyme_trajectory_universe
+        # guess bonds for the protein atoms
+        universe.select_atoms("protein").guess_bonds()
+        return universe
 
     @pytest.fixture(scope="class")
     def host_anchor(self, universe):

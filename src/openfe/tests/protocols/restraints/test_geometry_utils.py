@@ -3,17 +3,15 @@
 
 import itertools
 import os
-import pathlib
 from importlib import resources
 
 import MDAnalysis as mda
 import numpy as np
-import pooch
 import pytest
 from openff.units import unit
 from rdkit import Chem
 
-from openfe.data._registry import POOCH_CACHE, zenodo_t4_lysozyme_traj
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.geometry.utils import (
     CentroidDistanceSort,
     FindHostAtoms,
@@ -33,7 +31,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     stable_secondary_structure_selection,
 )
 
-from ...conftest import HAS_INTERNET
+from ...conftest import HAS_INTERNET, POOCH_CACHE
 
 
 @pytest.fixture(scope="module")
@@ -48,27 +46,6 @@ def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
     # add the residue name of the ligand
     lig.add_TopologyAttr("resname", ["LIG"])
     return mda.Merge(protein.atoms, lig.atoms)
-
-
-# TODO: duplicate - move to conftest.py
-pooch_t4_lysozyme = pooch.create(
-    path=POOCH_CACHE,
-    base_url=zenodo_t4_lysozyme_traj["base_url"],
-    registry={zenodo_t4_lysozyme_traj["fname"]: zenodo_t4_lysozyme_traj["known_hash"]},
-)
-
-
-@pytest.fixture
-def t4_lysozyme_trajectory_universe():
-    pooch_t4_lysozyme.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
-    cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
-    )
-    universe = mda.Universe(
-        str(cache_dir / "t4_toluene_complex.pdb"),
-        str(cache_dir / "t4_toluene_complex.xtc"),
-    )
-    return universe
 
 
 @pytest.fixture

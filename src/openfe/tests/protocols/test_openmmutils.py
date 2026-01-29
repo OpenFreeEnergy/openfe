@@ -23,7 +23,7 @@ from openmmtools import multistate
 from pymbar.utils import ParameterError
 
 import openfe
-from openfe.data._registry import POOCH_CACHE, zenodo_rfe_simulation_nc
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,
@@ -41,7 +41,8 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
-from openfe.tests.conftest import HAS_INTERNET
+
+from ..conftest import HAS_INTERNET
 
 
 @pytest.mark.parametrize(
@@ -1032,15 +1033,6 @@ class TestOFFPartialCharge:
                 generate_n_conformers=None,
                 nagl_model=None,
             )
-
-
-@pytest.fixture
-def simulation_nc():
-    return pooch.retrieve(
-        url=zenodo_rfe_simulation_nc["base_url"] + zenodo_rfe_simulation_nc["fname"],
-        known_hash=zenodo_rfe_simulation_nc["known_hash"],
-        path=POOCH_CACHE,
-    )
 
 
 @pytest.mark.slow
