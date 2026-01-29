@@ -23,6 +23,7 @@ from openmmtools import multistate
 from pymbar.utils import ParameterError
 
 import openfe
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,
@@ -40,7 +41,8 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
-from openfe.tests.conftest import HAS_INTERNET, POOCH_CACHE
+
+from ..conftest import HAS_INTERNET
 
 
 @pytest.mark.parametrize(
