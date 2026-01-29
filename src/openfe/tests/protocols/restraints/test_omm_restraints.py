@@ -2,10 +2,8 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import os
-import pathlib
 
 import openmm
-import pooch
 import pytest
 from gufe import SmallMoleculeComponent
 from openff.units import unit
@@ -29,7 +27,6 @@ from openfe.protocols.restraint_utils.settings import (
 )
 
 from ...conftest import HAS_INTERNET, POOCH_CACHE
-from ..conftest import zenodo_industry_benchmarks_data
 
 
 def test_parameter_state_default():
@@ -100,23 +97,17 @@ def test_verify_geometry():
 
 
 @pytest.fixture
-def tyk2_protein_ligand_system():
-    zenodo_industry_benchmarks_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
-    cache_dir = pathlib.Path(
-        POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
-    )
-    with open(str(cache_dir / "jacs_set" / "tyk2" / "protein_ligand_system.xml")) as xml:
+def tyk2_protein_ligand_system(industry_benchmark_files):
+    with open(
+        str(industry_benchmark_files / "jacs_set" / "tyk2" / "protein_ligand_system.xml")
+    ) as xml:
         return openmm.XmlSerializer.deserialize(xml.read())
 
 
 @pytest.fixture
-def tyk2_rdkit_ligand():
-    zenodo_industry_benchmarks_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
-    cache_dir = pathlib.Path(
-        POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
-    )
+def tyk2_rdkit_ligand(industry_benchmark_files):
     ligand = SmallMoleculeComponent.from_sdf_file(
-        str(cache_dir / "jacs_set" / "tyk2" / "test_ligand.sdf")
+        str(industry_benchmark_files / "jacs_set" / "tyk2" / "test_ligand.sdf")
     )
     return ligand.to_rdkit()
 

@@ -293,6 +293,15 @@ zenodo_industry_benchmarks_data = pooch.create(
 )
 
 
+@pytest.fixture
+def industry_benchmark_files():
+    zenodo_industry_benchmarks_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
+    )
+    return cache_dir
+
+
 zenodo_restraint_data = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.15212342",

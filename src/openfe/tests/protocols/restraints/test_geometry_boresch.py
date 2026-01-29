@@ -15,7 +15,6 @@ from openfe.protocols.restraint_utils.geometry.boresch.geometry import (
 )
 
 from ...conftest import HAS_INTERNET, POOCH_CACHE
-from ..conftest import zenodo_industry_benchmarks_data
 
 
 @pytest.fixture()
@@ -234,15 +233,6 @@ def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     assert 2.56825286 == pytest.approx(restraint_geometry.phi_A0.to("radians").m)
     assert -1.60162692 == pytest.approx(restraint_geometry.phi_B0.to("radians").m)
     assert -0.02396901 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
-
-
-@pytest.fixture
-def industry_benchmark_files():
-    zenodo_industry_benchmarks_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
-    cache_dir = pathlib.Path(
-        POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
-    )
-    return cache_dir
 
 
 @pytest.mark.skipif(
