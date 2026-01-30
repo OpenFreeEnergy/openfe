@@ -1,8 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
 import click
 
+from openfe.storage.warehouse import FileSystemWarehouse
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
     COFACTORS,
@@ -12,6 +12,7 @@ from openfecli.parameters import (
     OUTPUT_DIR,
     OVERWRITE,
     PROTEIN,
+    WAREHOUSE,
     YAML_OPTIONS,
 )
 from openfecli.utils import print_duration, write
@@ -130,6 +131,7 @@ def plan_rbfe_network_main(
 @N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])  # fmt: skip
 @NCORES.parameter(help=NCORES.kwargs["help"], default=1)
 @OVERWRITE.parameter(help=OVERWRITE.kwargs["help"], default=OVERWRITE.kwargs["default"], is_flag=True)  # fmt: skip
+@WAREHOUSE.parameter(help=WAREHOUSE.kwargs["help"], is_flag=True)
 @print_duration
 def plan_rbfe_network(
     molecules: list[str],
@@ -140,6 +142,7 @@ def plan_rbfe_network(
     n_protocol_repeats: int,
     n_cores: int,
     overwrite_charges: bool,
+    warehouse: bool,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for use by
@@ -243,10 +246,15 @@ def plan_rbfe_network(
     # OUTPUT
     write("Output:")
     write("\tSaving to: " + str(output_dir))
+    warehouse_object = None
+    if warehouse:
+        warehouse_object = FileSystemWarehouse()
+
     plan_alchemical_network_output(
         alchemical_network=alchemical_network,
         ligand_network=ligand_network,
         folder_path=OUTPUT_DIR.get(output_dir),
+        warehouse=warehouse_object,
     )
 
 
