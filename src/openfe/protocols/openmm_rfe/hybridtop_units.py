@@ -816,6 +816,32 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
     """
 
     @staticmethod
+    def _check_restart(output_settings: SettingsBaseModel, shared_path: pathlib.Path):
+        """
+        Check if we are doing a restart.
+
+        Parameters
+        ----------
+        output_settings : SettingsBaseModel
+          The simulation output settings
+        shared_path : pathlib.Path
+          The shared directory where we should be looking for existing files.
+
+        Notes
+        -----
+        For now this just checks if the netcdf files are present in the
+        shared directory but in the future this may expand depending on
+        how warehouse works.
+        """
+        trajectory = shared_path / output_settings.output_filename
+        checkpoint = shared_path / output_settings.checkpoint_storage_filename
+
+        if trajectory.is_file() and checkpoint.is_file():
+            return True
+
+        return False
+
+    @staticmethod
     def _get_integrator(
         integrator_settings: IntegratorSettings,
         simulation_settings: MultiStateSimulationSettings,
@@ -890,8 +916,16 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
           Settings defining how outputs should be written.
         simulation_settings : MultiStateSimulationSettings
           Settings defining out the simulation should be run.
+
+        Notes
+        -----
+        All this does is create the reporter, it works for both
+        new reporters and if we are doing a restart.
         """
+        # Define the trajectory & checkpoint files
         nc = storage_path / output_settings.output_filename
+        # The checkpoint file in openmmtools is taken as a file relative
+        # to the location of the nc file, so you only want the filename
         chk = output_settings.checkpoint_storage_filename
 
         if output_settings.positions_write_frequency is not None:
@@ -939,6 +973,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         thermo_settings: ThermoSettings,
         alchem_settings: AlchemicalSettings,
         platform: openmm.Platform,
+        restart: bool,
         dry: bool,
     ) -> multistate.MultiStateSampler:
         """
@@ -964,6 +999,8 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
           The alchemical transformation settings.
         platform : openmm.Platform
           The compute platform to use.
+        restart : bool
+          ``True`` if we are doing a simulation restart.
         dry : bool
           Whether or not this is a dry run.
 
@@ -972,8 +1009,29 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         sampler : multistate.MultiStateSampler
           The requested sampler.
         """
+        _SAMPLERS = {
+            "repex": _rfe_utils.multistate.HybridRepexSampler,
+            "sams": _rfe_utils.multistate.HybridSAMSSampler,
+            "independent": _rfe_utils.multistate.HybridMultiStateSampler,
+        }
+
+        sampler_method = simulation_settings.sampler_method.lower()
+
+        # Get the real time analysis values to use
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
             simulation_settings=simulation_settings,
+        )
+
+        # Get the number of production iterations to run for
+        steps_per_iteration = integrator.n_steps
+        timestep = from_openmm(integrator.timestep)
+        number_of_iterations = int(
+            settings_validation.get_simsteps(
+                sim_length=simulation_settings.production_length,
+                timestep=timestep,
+                mc_steps=steps_per_iteration,
+            )
+            / steps_per_iteration
         )
 
         # convert early_termination_target_error from kcal/mol to kT
@@ -984,51 +1042,56 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             )
         )
 
-        if simulation_settings.sampler_method.lower() == "repex":
-            sampler = _rfe_utils.multistate.HybridRepexSampler(
-                mcmc_moves=integrator,
-                hybrid_system=system,
-                hybrid_positions=positions,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=early_termination_target_error,
-                online_analysis_minimum_iterations=rta_min_its,
-            )
+        sampler_kwargs = {
+            "mcmc_moves": integrator,
+            "hybrid_system": system,
+            "hybrid_positions": positions,
+            "online_analysis_interval": rta_its,
+            "online_analysis_target_error": early_termination_target_error,
+            "online_analysis_minimum_iterations": rta_min_its,
+            "number_of_iterations": number_of_iterations,
+        }
 
-        elif simulation_settings.sampler_method.lower() == "sams":
-            sampler = _rfe_utils.multistate.HybridSAMSSampler(
-                mcmc_moves=integrator,
-                hybrid_system=system,
-                hybrid_positions=positions,
-                online_analysis_interval=rta_its,
-                online_analysis_minimum_iterations=rta_min_its,
-                flatness_criteria=simulation_settings.sams_flatness_criteria,
-                gamma0=simulation_settings.sams_gamma0,
-            )
+        if sampler_method == "sams":
+            sampler_kwargs |= {
+                "flatness_criteria": simulation_settings.sams_flatness_criteria,
+                "gamma0": simulation_settings.sams_gamma0,
+            }
 
-        elif simulation_settings.sampler_method.lower() == "independent":
-            sampler = _rfe_utils.multistate.HybridMultiStateSampler(
-                mcmc_moves=integrator,
-                hybrid_system=system,
-                hybrid_positions=positions,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=early_termination_target_error,
-                online_analysis_minimum_iterations=rta_min_its,
-            )
+        if sampler_method == "repex":
+            sampler_kwargs |= {"replica_mixing_scheme": "swap-all"}
 
+        # Restarting doesn't need any setup, we just rebuild from storage.
+        if restart:
+            sampler = _SAMPLERS[sampler_method].from_storage(reporter)  # type: ignore[attr-defined]
+
+            # We also do some lightweight checks to make sure we are
+            # running the right system.
+            sampler_system = sampler._thermodynamic_states[0].get_system(remove_thermostat=True)
+            if (
+                (simulation_settings.n_replicas != sampler.n_states != sampler.n_replicas)
+                or (system.getNumForces() != sampler_system.getNumForces())
+                or (system.getNumParticles() != sampler_system.getNumParticles())
+                or (system.getNumConstraints() != sampler_system.getNumConstraints())
+                or (sampler.mcmc_moves[0].n_steps != steps_per_iteration)
+                or (sampler.mcmc_moves[0].timestep != integrator.timestep)
+            ):
+                errmsg = "System in checkpoint does not match protocol system, cannot resume"
+                raise ValueError(errmsg)
         else:
-            raise AttributeError(f"Unknown sampler {simulation_settings.sampler_method}")
+            sampler = _SAMPLERS[sampler_method](**sampler_kwargs)
 
-        sampler.setup(
-            n_replicas=simulation_settings.n_replicas,
-            reporter=reporter,
-            lambda_protocol=lambdas,
-            temperature=to_openmm(thermo_settings.temperature),
-            endstates=alchem_settings.endstate_dispersion_correction,
-            minimization_platform=platform.getName(),
-            # Set minimization steps to None when running in dry mode
-            # otherwise do a very small one to avoid NaNs
-            minimization_steps=100 if not dry else None,
-        )
+            sampler.setup(
+                n_replicas=simulation_settings.n_replicas,
+                reporter=reporter,
+                lambda_protocol=lambdas,
+                temperature=to_openmm(thermo_settings.temperature),
+                endstates=alchem_settings.endstate_dispersion_correction,
+                minimization_platform=platform.getName(),
+                # Set minimization steps to None when running in dry mode
+                # otherwise do a very small one to avoid NaNs
+                minimization_steps=100 if not dry else None,
+            )
 
         # Get and set the context caches
         sampler.energy_context_cache = openmmtools.cache.ContextCache(
@@ -1089,23 +1152,28 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         )
 
         if not dry:  # pragma: no-cover
-            # minimize
-            if self.verbose:
-                self.logger.info("minimizing systems")
+            # No productions steps have been taken, so start from scratch
+            if sampler._iteration == 0:
+                # minimize
+                if self.verbose:
+                    self.logger.info("minimizing systems")
 
-            sampler.minimize(max_iterations=simulation_settings.minimization_steps)
+                sampler.minimize(max_iterations=simulation_settings.minimization_steps)
 
-            # equilibrate
-            if self.verbose:
-                self.logger.info("equilibrating systems")
+                # equilibrate
+                if self.verbose:
+                    self.logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps / mc_steps))
+                sampler.equilibrate(int(equil_steps / mc_steps))
 
-            # production
+            # At this point we are ready for production
             if self.verbose:
                 self.logger.info("running production phase")
 
-            sampler.extend(int(prod_steps / mc_steps))
+            # We use `run` so that we're limited by the number of iterations
+            # we passed when we built the sampler.
+            # TODO: I'm being extra prudent by passing in n_iterations here - remove?
+            sampler.run(n_iterations=int(prod_steps / mc_steps) - sampler._iteration)
 
             if self.verbose:
                 self.logger.info("production phase complete")
@@ -1173,6 +1241,11 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
 
+        # Check for a restart
+        self.restart = self._check_restart(
+            output_settings=settings["output_settings"], shared_path=self.shared_basepath
+        )
+
         # Get the lambda schedule
         # TODO - this should be better exposed to users
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
@@ -1204,7 +1277,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 simulation_settings=settings["simulation_settings"],
             )
 
-            # Get sampler
+            # Get the sampler
             sampler = self._get_sampler(
                 system=system,
                 positions=positions,
@@ -1215,9 +1288,11 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 thermo_settings=settings["thermo_settings"],
                 alchem_settings=settings["alchemical_settings"],
                 platform=platform,
+                restart=self.restart,
                 dry=dry,
             )
 
+            # Run the simulation
             self._run_simulation(
                 sampler=sampler,
                 reporter=reporter,
@@ -1227,25 +1302,29 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 dry=dry,
             )
         finally:
-            # close reporter when you're done, prevent
-            # file handle clashes
-            reporter.close()
+            # Have to wrap this in a try except, because we might
+            # be in a situation where reporter or sampler weren't created
+            try:
+                # Order is reporter, sampler, integrator
+                reporter.close()  # close to prevent file handle clashes
 
-            # clear GPU contexts
-            # TODO: use cache.empty() calls when openmmtools #690 is resolved
-            # replace with above
-            for context in list(sampler.energy_context_cache._lru._data.keys()):
-                del sampler.energy_context_cache._lru._data[context]
-            for context in list(sampler.sampler_context_cache._lru._data.keys()):
-                del sampler.sampler_context_cache._lru._data[context]
-            # cautiously clear out the global context cache too
-            for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
-                del openmmtools.cache.global_context_cache._lru._data[context]
+                # clear GPU contexts
+                # TODO: use cache.empty() calls when openmmtools #690 is resolved
+                # replace with above
+                for context in list(sampler.energy_context_cache._lru._data.keys()):
+                    del sampler.energy_context_cache._lru._data[context]
+                for context in list(sampler.sampler_context_cache._lru._data.keys()):
+                    del sampler.sampler_context_cache._lru._data[context]
+                # cautiously clear out the global context cache too
+                for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
+                    del openmmtools.cache.global_context_cache._lru._data[context]
 
-            del sampler.sampler_context_cache, sampler.energy_context_cache
+                del sampler.sampler_context_cache, sampler.energy_context_cache
 
-            if not dry:
-                del integrator, sampler
+                if not dry:
+                    del integrator, sampler
+            except UnboundLocalError:
+                pass
 
         if not dry:  # pragma: no-cover
             return {
