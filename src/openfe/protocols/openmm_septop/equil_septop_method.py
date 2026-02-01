@@ -2021,8 +2021,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             "topology": topology_file,
             "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
             "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
-            "restraint_geometry_A": restraint_geom_A.dict(),
-            "restraint_geometry_B": restraint_geom_B.dict(),
+            "restraint_geometry_A": restraint_geom_A.model_dump(),
+            "restraint_geometry_B": restraint_geom_B.model_dump(),
         }
 
     def _execute(
