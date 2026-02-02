@@ -314,7 +314,7 @@ def assign_offmol_partial_charges(
       ``am1bccelf10`` partial charge methods.
     generate_n_conformers : Optional[int]
       Number of conformers to generate for partial charge generation.
-      If ``None`` (default), the input conformer will be used.
+      If ``None``, the input conformer will be used.
       Values greater than 1 can only be used alongside ``am1bccelf10``.
     nagl_model : Optional[str]
       The NAGL model to use for charge assignment if method is ``nagl``.
@@ -470,7 +470,7 @@ def bulk_assign_partial_charges(
       ``am1bccelf10`` partial charge methods.
     generate_n_conformers : Optional[int]
       Number of conformers to generate for partial charge generation.
-      If ``None`` (default), the input conformer will be used.
+      If ``None``, the input conformer will be used.
       Values greater than 1 can only be used alongside ``am1bccelf10``.
     nagl_model : Optional[str]
       The NAGL model to use for charge assignment if method is ``nagl``.
