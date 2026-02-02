@@ -167,6 +167,6 @@ def plot_atommapping_network(network: LigandNetwork):
     Returns
     -------
     :class:`matplotlib.figure.Figure` :
-        the matplotlib figure containing the iteractive visualization
+        the matplotlib figure containing the interactive visualization
     """
     return AtomMappingNetworkDrawing(network.graph).fig
