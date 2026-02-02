@@ -28,7 +28,6 @@ def view_ligand_network(ligand_network: os.PathLike):
 
     network = LigandNetwork.from_graphml(graphml)
     fig = plot_atommapping_network(network)
-
     matplotlib.pyplot.show()
 
 
