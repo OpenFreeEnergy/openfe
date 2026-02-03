@@ -11,7 +11,7 @@ dependencies:
   - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
-  - numpy<2.3
+  - numpy>=2.3  # tmp for testing
   - openfe-analysis>=0.3.1
   - openff-interchange-base
   - openff-nagl-base >=0.3.3
@@ -20,7 +20,7 @@ dependencies:
   - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
   - openmm ~=8.2.0  # omit 8.3.0 and 8.3.1 due to https://github.com/openmm/openmm/pull/5069, unpin once we've qualified 8.3.2
   - openmmforcefields >=0.15.0  # min needed for https://github.com/OpenFreeEnergy/openfe/pull/1695
-  - openmmtools >=0.25.0
+  - openmmtools >=0.25.3
   - packaging
   - pandas
   - perses>=0.10.3
