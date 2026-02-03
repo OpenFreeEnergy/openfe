@@ -77,20 +77,17 @@ def quickrun(transformation, work_dir, output):
     logging.captureWarnings(True)
 
     if work_dir is None:
-        work_dir = pathlib.Path(os.getcwd())
+        work_dir = pathlib.Path(os.getcwd()) / "warehouse"
     else:
         work_dir.mkdir(exist_ok=True, parents=True)
 
+    # Setup the warehouse
     warehouse = FileSystemWarehouse()
-
     trans: Transformation = warehouse.load_setup_tokenizable(transformation)
 
     write("Loading file...")
 
-    if output is None:
-        output = work_dir / (str(trans.key) + "_results.json")
-    else:
-        output.parent.mkdir(exist_ok=True, parents=True)
+    output = work_dir / (str(trans.key) + "_results.json")
 
     write("Planning simulations for this edge...")
     dag = trans.create()
@@ -103,6 +100,17 @@ def quickrun(transformation, work_dir, output):
         raise_error=False,
         n_retries=2,
     )
+    # How this would change with new context
+    # dagresult = execute_DAG(
+    #     dag,
+    #     shared_storage=warehouse.shared,
+    #     perm_storage=warehouse.perm
+    #     scratch_basedir=work_dir,
+    #     keep_shared=True,
+    #     raise_error=False,
+    #     n_retries=2,
+    # )
+    warehouse.store_result_tokenizable(dagresult)
     write("Done with all simulations! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
