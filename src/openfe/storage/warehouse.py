@@ -166,6 +166,7 @@ class WarehouseBaseClass:
         ValueError
             If the key is not found in any store.
         """
+        print(key)
         for name in self.stores:
             if key in self.stores[name]:
                 return self.stores[name]
@@ -313,7 +314,14 @@ class FileSystemWarehouse(WarehouseBaseClass):
     """
 
     def __init__(self, root_dir: str = "warehouse"):
+        self.root_dir = root_dir
         setup_store = FileStorage(f"{root_dir}/setup")
         result_store = FileStorage(f"{root_dir}/result")
         stores = WarehouseStores(setup=setup_store, result=result_store)
         super().__init__(stores)
+
+    def dump(self):
+        print(self.root_dir)
+        print(self.setup_store)
+        for item in self.setup_store:
+            print(item)
