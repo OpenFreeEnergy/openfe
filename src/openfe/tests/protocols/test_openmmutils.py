@@ -203,6 +203,7 @@ def test_multiple_proteins(T4_protein_component):
     with pytest.raises(ValueError, match="Multiple ProteinComponent"):
         system_validation.validate_protein(state)
 
+
 def test_membrane_protein_warns_with_non_membrane_barostat(a2a_protein_membrane_component):
     state = openfe.ChemicalSystem({"A": a2a_protein_membrane_component})
     with pytest.warns(UserWarning, match="ProteinMembraneComponent"):
@@ -211,6 +212,7 @@ def test_membrane_protein_warns_with_non_membrane_barostat(a2a_protein_membrane_
             barostat="MonteCarloBarostat",
         )
 
+
 def test_non_membrane_protein_warns_with_membrane_barostat(T4_protein_component):
     state = openfe.ChemicalSystem({"A": T4_protein_component})
     with pytest.warns(UserWarning, match="MonteCarloMembraneBarostat"):
@@ -218,6 +220,7 @@ def test_non_membrane_protein_warns_with_membrane_barostat(T4_protein_component)
             state,
             barostat="MonteCarloMembraneBarostat",
         )
+
 
 def test_get_components_gas(benzene_modifications):
     state = openfe.ChemicalSystem(

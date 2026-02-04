@@ -238,7 +238,10 @@ def validate_protein_barostat(state: ChemicalSystem, barostat: str):
             "integrator_settings.barostat='MonteCarloMembraneBarostat'."
         )
         warnings.warn(wmsg)
-    if not isinstance(protein, ProteinMembraneComponent) and barostat == "MonteCarloMembraneBarostat":
+    if (
+        not isinstance(protein, ProteinMembraneComponent)
+        and barostat == "MonteCarloMembraneBarostat"
+    ):
         wmsg = (
             "A MonteCarloMembraneBarostat is specified, but no "
             "ProteinMembraneComponent is present. If you are not simulating a "
@@ -253,6 +256,7 @@ ParseCompRet = Tuple[
     Optional[ProteinComponent],
     list[SmallMoleculeComponent],
 ]
+
 
 def get_components(state: ChemicalSystem) -> ParseCompRet:
     """
