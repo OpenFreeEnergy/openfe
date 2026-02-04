@@ -138,6 +138,8 @@ jobs:
 
       - name: "Run slow tests"
         if: github.event_name != 'pull_request'
+        env:
+          OFE_SLOW_TESTS: "true"
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10 -m slow
   
