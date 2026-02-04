@@ -40,7 +40,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
-from openfe.tests.conftest import HAS_INTERNET
+from openfe.tests.conftest import HAS_INTERNET, POOCH_CACHE
 
 
 @pytest.mark.parametrize(
@@ -1101,25 +1101,6 @@ class TestOFFPartialCharge:
                 generate_n_conformers=None,
                 nagl_model=None,
             )
-
-
-POOCH_CACHE = pooch.os_cache("openfe")
-RFE_OUTPUT = pooch.create(
-    path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15375081",
-    registry={
-        "checkpoint.nc": "md5:3cfd70a4cbe463403d6ec7cca84fc31a",
-        "db.json": "md5:33c8c1a0b629a52dcc291beff59fabc6",
-        "hybrid_system.pdb": "md5:44a1e78294360037acf419b95be18fb3",
-        "simulation.nc": "md5:bc4e842b47de17704d804ae345b91599",
-        "simulation_real_time_analysis.yaml": "md5:68a7d81462c42353a91bbbe5e64fd418",
-    },
-)
-
-
-@pytest.fixture
-def simulation_nc():
-    return RFE_OUTPUT.fetch("simulation.nc")
 
 
 @pytest.mark.slow

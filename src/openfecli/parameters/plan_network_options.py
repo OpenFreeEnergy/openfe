@@ -205,7 +205,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 
 # TODO: do we want this in the docs anywhere?
 DEFAULT_YAML = """
-    mapper: KartografAtomMapper
+    mapper: kartograf
         settings:
             atom_max_distance: 0.95
             atom_map_hydrogens: true
