@@ -50,9 +50,12 @@ import openmm
 import openmm.unit
 import openmm.unit as omm_units
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -227,6 +230,11 @@ class SepTopComplexMixin:
         small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         small_mols = small_mols | small_mols_B
 
+        # If there is an SolvatedPDBComponent, we set the solv_comp
+        # in the complex to None, as it is only used in the solvent leg
+        if isinstance(prot_comp, SolvatedPDBComponent):
+            solv_comp = None
+
         return alchem_comps, solv_comp, prot_comp, small_mols
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
@@ -261,7 +269,7 @@ class SepTopComplexMixin:
             "alchemical_settings": prot_settings.alchemical_settings,
             "lambda_settings": prot_settings.complex_lambda_settings,
             "engine_settings": prot_settings.engine_settings,
-            "integrator_settings": prot_settings.integrator_settings,
+            "integrator_settings": prot_settings.complex_integrator_settings,
             "equil_simulation_settings": prot_settings.complex_equil_simulation_settings,
             "equil_output_settings": prot_settings.complex_equil_output_settings,
             "simulation_settings": prot_settings.complex_simulation_settings,
@@ -347,7 +355,7 @@ class SepTopSolventMixin:
             "alchemical_settings": prot_settings.alchemical_settings,
             "lambda_settings": prot_settings.solvent_lambda_settings,
             "engine_settings": prot_settings.engine_settings,
-            "integrator_settings": prot_settings.integrator_settings,
+            "integrator_settings": prot_settings.solvent_integrator_settings,
             "equil_simulation_settings": prot_settings.solvent_equil_simulation_settings,
             "equil_output_settings": prot_settings.solvent_equil_output_settings,
             "simulation_settings": prot_settings.solvent_simulation_settings,
@@ -1078,7 +1086,8 @@ class SepTopProtocol(gufe.Protocol):
                 solvent_padding=1.0 * unit.nanometer,
             ),
             engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
+            solvent_integrator_settings=IntegratorSettings(),
+            complex_integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
                 equilibration_length=0.1 * unit.nanosecond,
@@ -1160,13 +1169,13 @@ class SepTopProtocol(gufe.Protocol):
             errmsg = "No ProteinComponent found in stateB"
             raise ValueError(errmsg)
 
-        # check that there is a solvent component
-        if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
-            errmsg = "No SolventComponent found in stateA"
+        # check that there is a BaseSolvent component
+        if not any(isinstance(comp, BaseSolventComponent) for comp in stateA.values()):
+            errmsg = "No BaseSolventComponent found in stateA"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, SolventComponent) for comp in stateB.values()):
-            errmsg = "No SolventComponent found in stateB"
+        if not any(isinstance(comp, BaseSolventComponent) for comp in stateB.values()):
+            errmsg = "No BaseSolventComponent found in stateB"
             raise ValueError(errmsg)
 
     @staticmethod
@@ -1327,7 +1336,7 @@ class SepTopProtocol(gufe.Protocol):
 
         # Check nonbonded and solvent compatibility
         nonbonded_method = self.settings.forcefield_settings.nonbonded_method
-        # Use the more complete system validation solvent checks
+        # Validate solvent component
         system_validation.validate_solvent(stateA, nonbonded_method)
 
         # Validate solvation settings
@@ -1337,6 +1346,11 @@ class SepTopProtocol(gufe.Protocol):
 
         # Validate protein component
         system_validation.validate_protein(stateA)
+
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_protein_barostat(
+            stateA, self.settings.complex_integrator_settings.barostat
+        )
 
         # Create list units for complex and solvent transforms
         def create_setup_units(unit_cls, leg):
@@ -2002,6 +2016,14 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             self.logger,
         )
 
+        omm_topology_AB.setPeriodicBoxVectors(box_AB)
+
+        # ToDo: also apply REST
+        system_outfile = self.shared_basepath / "system.xml.bz2"
+
+        # Serialize system, state and integrator
+        serialize(system, system_outfile)
+
         topology_file = self.shared_basepath / "topology.pdb"
         openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_AB,
@@ -2009,21 +2031,31 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             open(topology_file, "w"),
         )
 
-        # ToDo: also apply REST
+        if not dry:
+            return {
+                "system": system_outfile,
+                "topology": topology_file,
+                "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
+                "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
+                "restraint_geometry_A": restraint_geom_A.dict(),
+                "restraint_geometry_B": restraint_geom_B.dict(),
+            }
 
-        system_outfile = self.shared_basepath / "system.xml.bz2"
-
-        # Serialize system, state and integrator
-        serialize(system, system_outfile)
-
-        return {
-            "system": system_outfile,
-            "topology": topology_file,
-            "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
-            "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
-            "restraint_geometry_A": restraint_geom_A.dict(),
-            "restraint_geometry_B": restraint_geom_B.dict(),
-        }
+        else:
+            return {
+                # Add in various objects we can used to test the system
+                "debug": {
+                    "system": system_outfile,
+                    "topology": topology_file,
+                    "system_A": omm_system_A,
+                    "system_B": omm_system_B,
+                    "system_AB": omm_system_AB,
+                    "restrained_system": system,
+                    "alchem_system": alchemical_system,
+                    "alchem_factory": alchemical_factory,
+                    "positions": equil_positions_AB,
+                }
+            }
 
     def _execute(
         self,
@@ -2286,11 +2318,25 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # Serialize system, state and integrator
         serialize(system, system_outfile)
 
-        return {
-            "system": system_outfile,
-            "topology": topology_file,
-            "standard_state_correction": corr.to("kilocalorie_per_mole"),
-        }
+        if not dry:
+            return {
+                "system": system_outfile,
+                "topology": topology_file,
+                "standard_state_correction": corr.to("kilocalorie_per_mole"),
+            }
+        else:
+            return {
+                # Add in various objects we can used to test the system
+                "debug": {
+                    "system": system_outfile,
+                    "topology": topology_file,
+                    "system_AB": omm_system_AB,
+                    "restrained_system": system,
+                    "alchem_system": alchemical_system,
+                    "alchem_factory": alchemical_factory,
+                    "positions": positions_AB,
+                }
+            }
 
     def _execute(
         self,
@@ -2369,7 +2415,7 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
 
 class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
     """
-    Protocol Unit for the complex phase of an relative SepTop free energy
+    Protocol Unit for the complex phase of a relative SepTop free energy
     """
 
     def _get_lambda_schedule(
