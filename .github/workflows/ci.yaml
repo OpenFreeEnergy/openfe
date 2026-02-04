@@ -130,14 +130,17 @@ jobs:
           # the key is pooch-${{ matrix.os }}-1 change it to pooch-${{ matrix.os }}-2
           key: pooch-${{ matrix.os }}-1
 
-      - name: "Run tests"
+      - name: "Run fast tests"
         env:
-          # Set the OFE_SLOW_TESTS to True if running a Cron job
-          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
-          DUECREDIT_ENABLE: 'yes'
+          OFE_SLOW_TESTS: "false"
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
+      - name: "Run slow tests"
+        if: github.event_name != 'pull_request'
+        run: |
+          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10 -m slow
+  
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
                 && github.event_name == 'pull_request' }}
