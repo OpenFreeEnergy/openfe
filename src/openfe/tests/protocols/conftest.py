@@ -311,7 +311,7 @@ zenodo_restraint_data = pooch.create(
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def t4_lysozyme_trajectory_universe():
     zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
