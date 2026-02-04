@@ -437,7 +437,7 @@ class TestT4LysozymeDryRun:
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(
-                setup_results["system"], "complex", settings=settings
+                setup_results["standard_system"], "complex", settings=settings
             )
             self._test_dodecahedron_vectors(setup_results["standard_system"])
 
