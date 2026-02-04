@@ -311,17 +311,14 @@ zenodo_restraint_data = pooch.create(
 )
 
 
+# session scope for downstream reuse
 @pytest.fixture(scope="session")
-def t4_lysozyme_trajectory_universe():
+def t4_lysozyme_trajectory_dir():
     zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
         POOCH_CACHE / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
     )
-    universe = mda.Universe(
-        str(cache_dir / "t4_toluene_complex.pdb"),
-        str(cache_dir / "t4_toluene_complex.xtc"),
-    )
-    return universe
+    return cache_dir
 
 
 RFE_OUTPUT = pooch.create(

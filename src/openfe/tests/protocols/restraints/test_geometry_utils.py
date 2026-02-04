@@ -400,6 +400,16 @@ def test_atomgroup_has_bonds(eg5_protein_pdb):
     assert _atomgroup_has_bonds(ag)
 
 
+@pytest.fixture()
+def t4_lysozyme_trajectory_universe(t4_lysozyme_trajectory_dir):
+    cache_dir = t4_lysozyme_trajectory_dir
+    universe = mda.Universe(
+        str(cache_dir / "t4_toluene_complex.pdb"),
+        str(cache_dir / "t4_toluene_complex.xtc"),
+    )
+    return universe
+
+
 @pytest.mark.skipif(
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet seems to be unavailable and test data is not cached locally.",
