@@ -832,9 +832,21 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         For now this just checks if the netcdf files are present in the
         shared directory but in the future this may expand depending on
         how warehouse works.
+
+        Raises
+        ------
+        IOError
+          If either the checkpoint or trajectory files don't exist.
         """
         trajectory = shared_path / output_settings.output_filename
         checkpoint = shared_path / output_settings.checkpoint_storage_filename
+
+        if trajectory.is_file() ^ checkpoint.is_file():
+            errmsg = (
+                "One of either the trajectory or checkpoint files are missing but "
+                "the other is not. This should not happen under normal circumstances."
+            )
+            raise IOError(errmsg)
 
         if trajectory.is_file() and checkpoint.is_file():
             return True

@@ -119,9 +119,8 @@ class TestCheckpointResuming:
         return positions
 
     @staticmethod
-    def _copy_simfiles(cwd: pathlib.Path, trajectory_path, checkpoint_path):
-        shutil.copyfile(trajectory_path, f"{cwd}/{trajectory_path.name}")
-        shutil.copyfile(checkpoint_path, f"{cwd}/{checkpoint_path.name}")
+    def _copy_simfiles(cwd: pathlib.Path, filepath):
+        shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
 
     @pytest.mark.integration
     def test_resume(self, protocol_dag, trajectory_path, checkpoint_path, tmpdir):
@@ -131,7 +130,8 @@ class TestCheckpointResuming:
         """
         # define a temp directory path & copy files
         cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, trajectory_path, checkpoint_path)
+        self._copy_simfiles(cwd, trajectory_path)
+        self._copy_simfiles(cwd, checkpoint_path)
 
         # 1. Check that the trajectory / checkpoint contain what we expect
         reporter = MultiStateReporter(
@@ -209,7 +209,8 @@ class TestCheckpointResuming:
         """
         # define a temp directory path & copy files
         cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, trajectory_path, checkpoint_path)
+        self._copy_simfiles(cwd, trajectory_path)
+        self._copy_simfiles(cwd, checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
@@ -228,3 +229,80 @@ class TestCheckpointResuming:
                 scratch_basepath=cwd,
                 shared_basepath=cwd,
             )
+
+    @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
+    def test_resume_bad_files(self, protocol_dag, trajectory_path, checkpoint_path, bad_file, tmpdir):
+        """
+        Test what happens when you have a bad trajectory and/or checkpoint
+        files.
+        """
+        # define a temp directory path & copy files
+        cwd = pathlib.Path(str(tmpdir))
+
+        if bad_file == "trajectory":
+            with open(f"{cwd}/simulation.nc", "w") as f:
+                f.write("foo")
+        else:
+            self._copy_simfiles(cwd, trajectory_path)
+
+        if bad_file == "checkpoint":
+            with open(f"{cwd}/checkpoint.chk", "w") as f:
+                f.write("bar")
+        else:
+            self._copy_simfiles(cwd, checkpoint_path)
+
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
+        simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
+        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+
+        with pytest.raises(OSError, match="Unknown file format"):
+            sim_results = simulation_unit.run(
+                system=setup_results["hybrid_system"],
+                positions=setup_results["hybrid_positions"],
+                selection_indices=setup_results["selection_indices"],
+                scratch_basepath=cwd,
+                shared_basepath=cwd,
+            )
+
+    @pytest.mark.parametrize("missing_file", ["trajectory", "checkpoint"])
+    def test_missing_file(self, protocol_dag, trajectory_path, checkpoint_path, missing_file, tmpdir):
+        """
+        Test that an error is thrown if either file is missing but the other isn't.
+        """
+        # define a temp directory path & copy files
+        cwd = pathlib.Path(str(tmpdir))
+
+        if missing_file == "trajectory":
+            pass
+        else:
+            self._copy_simfiles(cwd, trajectory_path)
+
+        if missing_file == "checkpoint":
+            pass
+        else:
+            self._copy_simfiles(cwd, checkpoint_path)
+
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
+        simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
+        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+
+        errmsg = "One of either the trajectory or checkpoint files are missing"
+        with pytest.raises(IOError, match=errmsg):
+            sim_results = simulation_unit.run(
+                system=setup_results["hybrid_system"],
+                positions=setup_results["hybrid_positions"],
+                selection_indices=setup_results["selection_indices"],
+                scratch_basepath=cwd,
+                shared_basepath=cwd,
+            )
+
+
+
