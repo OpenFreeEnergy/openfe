@@ -1,9 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
+import pathlib
 from importlib import resources
 from typing import Optional
 
+import MDAnalysis as mda
 import openmm
 import pooch
 import pytest
@@ -15,6 +17,8 @@ from rdkit import Chem
 from rdkit.Geometry import Point3D
 
 import openfe
+
+from ..conftest import POOCH_CACHE
 
 
 @pytest.fixture
@@ -280,15 +284,48 @@ def septop_json() -> str:
         return f.read().decode()  # type: ignore
 
 
+zenodo_industry_benchmarks_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15212342",
+    registry={
+        "industry_benchmark_systems.zip": "sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd"
+    },
+)
+
+
+@pytest.fixture
+def industry_benchmark_files():
+    zenodo_industry_benchmarks_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
+    )
+    return cache_dir
+
+
+zenodo_restraint_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15212342",
+    registry={
+        "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
+    },
+)
+
+
+# session scope for downstream reuse
+@pytest.fixture(scope="session")
+def t4_lysozyme_trajectory_dir():
+    zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        POOCH_CACHE / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
+    )
+    return cache_dir
+
+
 RFE_OUTPUT = pooch.create(
-    path=pooch.os_cache("openfe_analysis"),
+    path=POOCH_CACHE,
     base_url="doi:10.6084/m9.figshare.24101655",
     registry={
-        "checkpoint.nc": "5af398cb14340fddf7492114998b244424b6c3f4514b2e07e4bd411484c08464",
-        "db.json": "b671f9eb4daf9853f3e1645f9fd7c18150fd2a9bf17c18f23c5cf0c9fd5ca5b3",
-        "hybrid_system.pdb": "07203679cb14b840b36e4320484df2360f45e323faadb02d6eacac244fddd517",
         "simulation.nc": "92361a0864d4359a75399470135f56642b72c605069a4c33dbc4be6f91f28b31",
-        "simulation_real_time_analysis.yaml": "65706002f371fafba96037f29b054fd7e050e442915205df88567f48f5e5e1cf",
     },
 )
 
