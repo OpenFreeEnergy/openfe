@@ -231,7 +231,9 @@ class TestCheckpointResuming:
             )
 
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
-    def test_resume_bad_files(self, protocol_dag, trajectory_path, checkpoint_path, bad_file, tmpdir):
+    def test_resume_bad_files(
+        self, protocol_dag, trajectory_path, checkpoint_path, bad_file, tmpdir
+    ):
         """
         Test what happens when you have a bad trajectory and/or checkpoint
         files.
@@ -269,7 +271,9 @@ class TestCheckpointResuming:
             )
 
     @pytest.mark.parametrize("missing_file", ["trajectory", "checkpoint"])
-    def test_missing_file(self, protocol_dag, trajectory_path, checkpoint_path, missing_file, tmpdir):
+    def test_missing_file(
+        self, protocol_dag, trajectory_path, checkpoint_path, missing_file, tmpdir
+    ):
         """
         Test that an error is thrown if either file is missing but the other isn't.
         """
@@ -303,6 +307,3 @@ class TestCheckpointResuming:
                 scratch_basepath=cwd,
                 shared_basepath=cwd,
             )
-
-
-
