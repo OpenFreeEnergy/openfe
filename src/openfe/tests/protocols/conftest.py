@@ -17,8 +17,12 @@ from rdkit import Chem
 from rdkit.Geometry import Point3D
 
 import openfe
-
-from ..conftest import POOCH_CACHE
+from openfe.data._registry import (
+    POOCH_CACHE,
+    zenodo_industry_benchmark_systems,
+    zenodo_rfe_simulation_nc,
+    zenodo_t4_lysozyme_traj,
+)
 
 
 @pytest.fixture
@@ -284,55 +288,50 @@ def septop_json() -> str:
         return f.read().decode()  # type: ignore
 
 
-zenodo_industry_benchmarks_data = pooch.create(
+pooch_industry_benchmark_systems = pooch.create(
     path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15212342",
+    base_url=zenodo_industry_benchmark_systems["base_url"],
     registry={
-        "industry_benchmark_systems.zip": "sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd"
+        zenodo_industry_benchmark_systems["fname"]: zenodo_industry_benchmark_systems["known_hash"]
     },
 )
 
 
 @pytest.fixture
 def industry_benchmark_files():
-    zenodo_industry_benchmarks_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
+    pooch_industry_benchmark_systems.fetch(
+        "industry_benchmark_systems.zip", processor=pooch.Unzip()
+    )
     cache_dir = pathlib.Path(
         POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
     )
     return cache_dir
 
 
-zenodo_restraint_data = pooch.create(
+pooch_t4_lysozyme = pooch.create(
     path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15212342",
-    registry={
-        "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
-    },
+    base_url=zenodo_t4_lysozyme_traj["base_url"],
+    registry={zenodo_t4_lysozyme_traj["fname"]: zenodo_t4_lysozyme_traj["known_hash"]},
 )
 
 
 # session scope for downstream reuse
 @pytest.fixture(scope="session")
 def t4_lysozyme_trajectory_dir():
-    zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
+    pooch_t4_lysozyme.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
         POOCH_CACHE / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
     )
     return cache_dir
 
 
-RFE_OUTPUT = pooch.create(
-    path=POOCH_CACHE,
-    base_url="doi:10.6084/m9.figshare.24101655",
-    registry={
-        "simulation.nc": "92361a0864d4359a75399470135f56642b72c605069a4c33dbc4be6f91f28b31",
-    },
-)
-
-
 @pytest.fixture
 def simulation_nc():
-    return RFE_OUTPUT.fetch("simulation.nc")
+    return pooch.retrieve(
+        url=zenodo_rfe_simulation_nc["base_url"] + zenodo_rfe_simulation_nc["fname"],
+        known_hash=zenodo_rfe_simulation_nc["known_hash"],
+        path=POOCH_CACHE,
+    )
 
 
 @pytest.fixture
