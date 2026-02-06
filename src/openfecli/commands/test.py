@@ -18,7 +18,7 @@ from openfecli.utils import write
     "--download-only",
     is_flag=True,
     default=False,
-    help="Download data to the cache (this is helpful if internet is unreliable).",
+    help="Download data to the cache if not already present (this is helpful if internet is unreliable). If all data exists in the cache, only the cache location is shown.",
 )
 def test(long, download_only):
     """
