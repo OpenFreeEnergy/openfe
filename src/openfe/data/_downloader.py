@@ -3,7 +3,7 @@ import pooch
 from ._registry import zenodo_data_registry
 
 
-def retrieve_all_test_data(zenodo_registry: list[dict], path: str) -> None:
+def retrieve_registry_data(zenodo_registry: list[dict], path: str) -> None:
     """Helper function for pulling all test data up-front.
 
     Parameters

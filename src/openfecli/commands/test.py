@@ -18,7 +18,7 @@ from openfecli.utils import write
     "--download-only",
     is_flag=True,
     default=False,
-    help="Download data to the cache (this is helpful if internet is flaky).",
+    help="Download data to the cache (this is helpful if internet is unreliable).",
 )
 def test(long, download_only):
     """
@@ -34,8 +34,9 @@ def test(long, download_only):
     """
 
     if download_only:
-        _downloader.retrieve_all_test_data(
-            [cli_test_data_registry, api_test_data_registry], POOCH_CACHE
+        click.echo(f"Checking for test data in cache location:\n{POOCH_CACHE}")
+        _downloader.retrieve_registry_data(
+            cli_test_data_registry + api_test_data_registry, POOCH_CACHE
         )
         sys.exit(0)
 
