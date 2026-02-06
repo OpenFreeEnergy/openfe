@@ -333,8 +333,12 @@ class TestFindAnchorBondedTrajectory(TestFindAnchorMulti):
     ref_h1h2_distance = 1.55881
 
     @pytest.fixture(scope="class")
-    def universe(self, t4_lysozyme_trajectory_universe):
-        universe = t4_lysozyme_trajectory_universe
+    def universe(self, t4_lysozyme_trajectory_dir):
+        cache_dir = t4_lysozyme_trajectory_dir
+        universe = mda.Universe(
+            str(cache_dir / "t4_toluene_complex.pdb"),
+            str(cache_dir / "t4_toluene_complex.xtc"),
+        )
         # guess bonds for the protein atoms
         universe.select_atoms("protein").guess_bonds()
         return universe

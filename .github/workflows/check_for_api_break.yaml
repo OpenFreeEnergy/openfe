@@ -27,8 +27,8 @@ jobs:
       id: check
       run: |
         pip install griffe
-        griffe check "src/openfe" --verbose -a origin/main
-        griffe check "src/openfecli" --verbose -a origin/main
+        griffe check "openfe" --verbose -a origin/main
+        griffe check "openfecli" --verbose -a origin/main
 
     - name: Manage PR Comments
       uses: actions/github-script@v7

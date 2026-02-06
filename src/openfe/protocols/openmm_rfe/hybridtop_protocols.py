@@ -173,7 +173,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # use initial settings or default settings
         # this is needed for the CLI so we don't override user settings
         if initial_settings is not None:
-            protocol_settings = initial_settings.copy(deep=True)
+            protocol_settings = initial_settings.model_copy(deep=True)
         else:
             protocol_settings = cls.default_settings()
 

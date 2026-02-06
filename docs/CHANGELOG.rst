@@ -4,6 +4,23 @@ Changelog
 
 .. current developments
 
+v1.8.1
+====================
+
+**Added:**
+
+* Added a progress bar for ``openfe gather`` JSON loading (`PR #1786 <https://github.com/OpenFreeEnergy/openfe/pull/1786>`_).
+
+**Fixed:**
+
+* Due to issues with OpenFF's handling of toolkit registries
+  with NAGL, the use of NAGL models (e.g. AshGC) when OpenEye
+  is installed but not requested as the charge backend has been
+  disabled (Issue #1760, `PR #1762 <https://github.com/OpenFreeEnergy/openfe/pull/1762>`_).
+* Fixed bug in ligand network visualization (such as with ``openfe view-ligand-network``) so that ligand names are no longer cut off by the plot border (`PR #1822 <https://github.com/OpenFreeEnergy/openfe/pull/1822>`_).
+
+
+
 v1.8.0
 ====================
 
