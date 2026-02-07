@@ -20,17 +20,34 @@ class TestWarehouseBaseClass:
         pytest.skip("Not implemented yet")
 
     @staticmethod
+    def _build_stores() -> WarehouseStores:
+        return WarehouseStores(
+            setup=MemoryStorage(),
+            result=MemoryStorage(),
+            shared=MemoryStorage(),
+            tasks=MemoryStorage(),
+        )
+
+    @staticmethod
+    def _get_protocol_unit(transformation):
+        dag = transformation.create()
+        return next(iter(dag.protocol_units))
+
+    @staticmethod
     def _test_store_load_same_process(
-        obj, store_func_name, load_func_name, store_name: Literal["setup", "result"]
+        obj,
+        store_func_name,
+        load_func_name,
+        store_name: Literal["setup", "result", "tasks"],
     ):
-        setup_store = MemoryStorage()
-        result_store = MemoryStorage()
-        stores = WarehouseStores(setup=setup_store, result=result_store)
+        stores = TestWarehouseBaseClass._build_stores()
         client = WarehouseBaseClass(stores)
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
-        assert setup_store._data == {}
-        assert result_store._data == {}
+        assert stores["setup"]._data == {}
+        assert stores["result"]._data == {}
+        assert stores["shared"]._data == {}
+        assert stores["tasks"]._data == {}
         store_func(obj)
         store_under_test: MemoryStorage = stores[store_name]
         assert store_under_test._data != {}
@@ -43,16 +60,16 @@ class TestWarehouseBaseClass:
         obj: GufeTokenizable,
         store_func_name,
         load_func_name,
-        store_name: Literal["setup", "result"],
+        store_name: Literal["setup", "result", "tasks"],
     ):
-        setup_store = MemoryStorage()
-        result_store = MemoryStorage()
-        stores = WarehouseStores(setup=setup_store, result=result_store)
+        stores = TestWarehouseBaseClass._build_stores()
         client = WarehouseBaseClass(stores)
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
-        assert setup_store._data == {}
-        assert result_store._data == {}
+        assert stores["setup"]._data == {}
+        assert stores["result"]._data == {}
+        assert stores["shared"]._data == {}
+        assert stores["tasks"]._data == {}
         store_func(obj)
         store_under_test: MemoryStorage = stores[store_name]
         assert store_under_test._data != {}
@@ -64,6 +81,45 @@ class TestWarehouseBaseClass:
             reload = load_func(key)
             assert reload == obj
             assert reload is not obj
+
+    def test_store_load_task_same_process(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        self._test_store_load_same_process(unit, "store_task", "load_task", "tasks")
+
+    def test_store_load_task_different_process(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        self._test_store_load_different_process(unit, "store_task", "load_task", "tasks")
+
+    def test_store_task_writes_to_tasks_store(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores)
+        client.store_task(unit)
+
+        assert stores["tasks"]._data != {}
+        assert stores["setup"]._data == {}
+        assert stores["result"]._data == {}
+        assert stores["shared"]._data == {}
+
+    def test_exists_finds_task_key(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores)
+
+        client.store_task(unit)
+
+        assert client.exists(unit.key)
+
+    def test_load_task_returns_object(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores)
+
+        client.store_task(unit)
+        loaded = client.load_task(unit.key)
+
+        assert loaded is not None
+        assert isinstance(loaded, GufeTokenizable)
 
     @pytest.mark.parametrize(
         "fixture",
@@ -163,6 +219,22 @@ class TestFileSystemWarehouse:
             "store_setup_tokenizable",
             "load_setup_tokenizable",
         )
+
+    def test_filesystemwarehouse_has_shared_and_tasks_stores(self, absolute_transformation):
+        unit = TestWarehouseBaseClass._get_protocol_unit(absolute_transformation)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            client = FileSystemWarehouse(tmpdir)
+
+            assert "shared" in client.stores
+            assert "tasks" in client.stores
+
+            client.stores["shared"].store_bytes("sentinel", b"shared-data")
+            with client.stores["shared"].load_stream("sentinel") as f:
+                assert f.read() == b"shared-data"
+
+            client.store_task(unit)
+            assert client.exists(unit.key)
 
     @pytest.mark.parametrize(
         "fixture",
