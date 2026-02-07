@@ -90,8 +90,11 @@ class WarehouseBaseClass:
     def store_task(self, obj: ProtocolUnit):
         self._store_gufe_tokenizable("tasks", obj)
 
-    def load_task(self, obj: GufeKey):
-        self._load_gufe_tokenizable(obj)
+    def load_task(self, obj: GufeKey) -> ProtocolUnit:
+        unit = self._load_gufe_tokenizable(obj)
+        if not isinstance(unit, ProtocolUnit):
+            raise ValueError("Unable to load ProtocolUnit")
+        return unit
 
     def store_setup_tokenizable(self, obj: GufeTokenizable):
         """Store a GufeTokenizable object in the setup store.
