@@ -12,6 +12,7 @@ from unittest import mock
 import gufe
 import mdtraj as mdt
 import numpy as np
+import openmm
 import pytest
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
@@ -1154,9 +1155,8 @@ def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapp
     )
 
 
-def test_unit_tagging(solvent_protocol_dag, tmpdir):
-    # test that executing the Units includes correct generation and repeat info
-    dag_units = solvent_protocol_dag.protocol_units
+@pytest.fixture()
+def unit_mock_patcher():
     with (
         mock.patch(
             "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologySetupUnit.run",
@@ -1165,6 +1165,9 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
                 "positions": Path("positions.npy"),
                 "pdb_structure": Path("hybrid_system.pdb"),
                 "selection_indices": np.zeros(100),
+                "gufe_version": gufe.__version__,
+                "openfe_version": openfe.__version__,
+                "openmm_version": openmm.__version__,
             },
         ),
         mock.patch(
@@ -1191,31 +1194,39 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
             },
         ),
     ):
-        setup_results = {}
-        sim_results = {}
-        analysis_results = {}
+        yield
 
-        setup_units = _get_units(dag_units, HybridTopologySetupUnit)
-        sim_units = _get_units(dag_units, HybridTopologyMultiStateSimulationUnit)
-        analysis_units = _get_units(dag_units, HybridTopologyMultiStateAnalysisUnit)
 
-        for u in setup_units:
-            rid = u.inputs["repeat_id"]
-            setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
+def test_unit_tagging(solvent_protocol_dag, unit_mock_patcher, tmpdir):
+    # test that executing the Units includes correct generation and repeat info
+    dag_units = solvent_protocol_dag.protocol_units
 
-        for u in sim_units:
-            rid = u.inputs["repeat_id"]
-            sim_results[rid] = u.execute(
-                context=gufe.Context(tmpdir, tmpdir), setup_results=setup_results[rid]
-            )
+    setup_results = {}
+    sim_results = {}
+    analysis_results = {}
 
-        for u in analysis_units:
-            rid = u.inputs["repeat_id"]
-            analysis_results[rid] = u.execute(
-                context=gufe.Context(tmpdir, tmpdir),
-                setup_results=setup_results[rid],
-                simulation_results=sim_results[rid],
-            )
+    setup_units = _get_units(dag_units, HybridTopologySetupUnit)
+    sim_units = _get_units(dag_units, HybridTopologyMultiStateSimulationUnit)
+    analysis_units = _get_units(dag_units, HybridTopologyMultiStateAnalysisUnit)
+
+    for u in setup_units:
+        rid = u.inputs["repeat_id"]
+        setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
+
+    for u in sim_units:
+        rid = u.inputs["repeat_id"]
+        sim_results[rid] = u.execute(
+            context=gufe.Context(tmpdir, tmpdir), setup_results=setup_results[rid]
+        )
+
+    for u in analysis_units:
+        rid = u.inputs["repeat_id"]
+        analysis_results[rid] = u.execute(
+            context=gufe.Context(tmpdir, tmpdir),
+            setup_results=setup_results[rid],
+            simulation_results=sim_results[rid],
+        )
+
     for results in [setup_results, sim_results, analysis_results]:
         for ret in results.values():
             assert isinstance(ret, gufe.ProtocolUnitResult)
@@ -1225,48 +1236,14 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
     assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
 
 
-def test_gather(solvent_protocol_dag, tmpdir):
+def test_gather(solvent_protocol_dag, unit_mock_patcher, tmpdir):
     # check .gather behaves as expected
-    with (
-        mock.patch(
-            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologySetupUnit.run",
-            return_value={
-                "system": Path("system.xml.bz2"),
-                "positions": Path("positions.npy"),
-                "pdb_structure": Path("hybrid_system.pdb"),
-                "selection_indices": np.zeros(100),
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_rfe.hybridtop_units.np.load",
-            return_value=np.zeros(100),
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_rfe.hybridtop_units.deserialize",
-            return_value={
-                "item": "foo",
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateSimulationUnit.run",
-            return_value={
-                "nc": Path("file.nc"),
-                "checkpoint": Path("chk.chk"),
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit.run",
-            return_value={
-                "foo": "bar",
-            },
-        ),
-    ):
-        dagres = gufe.protocols.execute_DAG(
-            solvent_protocol_dag,
-            shared_basedir=tmpdir,
-            scratch_basedir=tmpdir,
-            keep_shared=True,
-        )
+    dagres = gufe.protocols.execute_DAG(
+        solvent_protocol_dag,
+        shared_basedir=tmpdir,
+        scratch_basedir=tmpdir,
+        keep_shared=True,
+    )
 
     prot = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
