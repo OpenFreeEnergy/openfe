@@ -44,6 +44,7 @@ from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
 
+import openfe
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
