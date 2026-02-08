@@ -18,6 +18,7 @@ from itertools import chain
 from typing import Any
 
 import gufe
+from gufe.protocols.errors import ProtocolUnitExecutionError
 import matplotlib.pyplot as plt
 import mdtraj
 import numpy as np
@@ -142,6 +143,22 @@ class HybridTopologyUnitMixin:
         protocol_settings["integrator_settings"] = settings.integrator_settings
         protocol_settings["engine_settings"] = settings.engine_settings
         return protocol_settings
+
+    @staticmethod
+    def _verify_execution_environment(
+        setup_outputs: dict[Any],
+    ) -> None:
+        """
+        Check that the Python environment hasn't changed based on the
+        relevant Python library versions stored in the setup outputs.
+        """
+        if (
+            (gufe.__version__ != setup_outputs["gufe_version"]) or
+            (openfe.__version__ != setup_outputs["openfe_version"]) or
+            (openmm.__version__ != setup_outputs["openmm_version"])
+        ):
+            errmsg = "Python environment has changed, cannot continue Protocol execution."
+            raise ProtocolUnitExecutionError(errmsg)
 
 
 class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
@@ -781,6 +798,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
             "selection_indices": selection_indices,
+            "openmm_version": openmm.__version__,
+            "openfe_version": openfe.__version__,
+            "gufe_version": gufe.__version__,
         }
 
         if dry:
@@ -1461,7 +1481,10 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-        # Get the relevant inputs
+        # Ensure that we the environment hasn't changed
+        self._verify_execution_environment(setup_results.outputs)
+
+        # Get the relevant inputs for running the unit
         system = deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nm)
         selection_indices = setup_results.outputs["selection_indices"]
@@ -1688,6 +1711,9 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        # Ensure that we the environment hasn't changed
+        self._verify_execution_environment(setup_results.outputs)
 
         pdb_file = setup_results.outputs["pdb_structure"]
         selection_indices = setup_results.outputs["selection_indices"]
