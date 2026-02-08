@@ -12,6 +12,7 @@ from unittest import mock
 import gufe
 import mdtraj as mdt
 import numpy as np
+import openmm
 import pytest
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
@@ -19,7 +20,6 @@ from numpy.testing import assert_allclose
 from openff.toolkit import Molecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
-import openmm
 from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce, XmlSerializer, app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -1200,7 +1200,7 @@ def unit_mock_patcher():
 def test_unit_tagging(solvent_protocol_dag, unit_mock_patcher, tmpdir):
     # test that executing the Units includes correct generation and repeat info
     dag_units = solvent_protocol_dag.protocol_units
-    
+
     setup_results = {}
     sim_results = {}
     analysis_results = {}
