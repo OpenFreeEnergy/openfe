@@ -40,7 +40,7 @@ dependencies:
   - pyyaml
   - rdkit
   - rich
-  - setuptools <82
+  - setuptools <82  # https://github.com/openforcefield/smirnoff99Frosst/issues/109
   - tqdm
   - typing-extensions
   - zstandard
