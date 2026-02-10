@@ -4,6 +4,32 @@ Changelog
 
 .. current developments
 
+v1.9.0
+====================
+
+**Added:**
+
+* The `validate` method for the RelativeHybridTopologyProtocol has been
+  implemented. This means that settings and system validation can mostly
+  be done prior to Protocol execution by calling
+  `RelativeHybridTopologyProtocol.validate(stateA, stateB, mapping)`.
+
+**Changed:**
+
+* The absolute free energy protocols have been broken into multiple
+  protocol units, allowing for setup, run, and analysis to happen
+  separately in the future when relevant changes to protocol execution are
+  made (PR #1776).
+
+**Fixed:**
+
+* Fixed bug in ligand network visualization (such as with ``openfe view-ligand-network``) so that ligand names are no longer cut off by the plot border (`PR 1822 <https://github.com/OpenFreeEnergy/openfe/pull/1822>`_).
+* Endstates in the RelativeHybridTopologyProtocol are now being created
+  in a manner that allows for isomorphic molecules that differ between
+  endstates to have different parameters (Issue #1120).
+
+
+
 v1.8.1
 ====================
 
