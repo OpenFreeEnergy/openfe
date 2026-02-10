@@ -14,11 +14,13 @@ v1.9.0
 
 **Changed:**
 
-* The absolute free energy protocols have been broken into multiple
+* The absolute free energy protocols (AbsoluteBindingProtocol and AbsoluteSolvationProtocol) have been broken into multiple
   protocol units, allowing for setup, run, and analysis to happen
   separately in the future when relevant changes to protocol execution are
   made (`PR 1776 <https://github.com/OpenFreeEnergy/openfe/pull/1776>`_).
-
+* The relative free energy protocol (RelativeHybridTopologyProtocol) has been
+  broken into multiple protocol units, allowing for the setup, run, analysis to happen
+  separately (`PR 1773 <https://github.com/OpenFreeEnergy/openfe/pull/1773>`_).
 **Fixed:**
 
 * Fixed bug in ligand network visualization (such as with ``openfe view-ligand-network``) so that ligand names are no longer cut off by the plot border (`PR 1822 <https://github.com/OpenFreeEnergy/openfe/pull/1822>`_).
