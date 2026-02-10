@@ -32,9 +32,9 @@ class Worker:
         # The format for the taskid is going to "Transformation-<HASH>:Unit<HASH>"
         taskid = db.check_out_task()
         # Load the unit from warehouse and return
-        unit = taskid.split(":")
+        _, protocol_unit_key = taskid.split(":", maxsplit=1)
 
-        return self.warehouse.load_task(unit)
+        return self.warehouse.load_task(GufeKey(protocol_unit_key))
 
     def execute_unit(self, scratch: Path):
         # 1. Get task/unit
