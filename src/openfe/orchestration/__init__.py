@@ -23,12 +23,10 @@ from .exorcist_utils import (
 @dataclass
 class Worker:
     warehouse: FileSystemWarehouse
+    task_db_path: Path = Path("./warehouse/tasks.db")
 
     def _get_task(self) -> ProtocolUnit:
-        # Right now, we are just going to assume it exists in the warehouse folder
-        location = Path("./warehouse/tasks.db")
-
-        db: TaskStatusDB = TaskStatusDB.from_filename(location)
+        db: TaskStatusDB = TaskStatusDB.from_filename(self.task_db_path)
         # The format for the taskid is going to "Transformation-<HASH>:Unit<HASH>"
         taskid = db.check_out_task()
         # Load the unit from warehouse and return
@@ -43,7 +41,7 @@ class Worker:
         # NOTE: On changes to context, this can easily be replaced with external storage objects
         # However, to satisfy the current work, we will use this implementation where we
         # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
-        shared_store: FileStorage = self.warehouse.stores["shared"]
+        shared_store: FileStorage = self.warehouse.shared_store.root_dir
         shared_root_dir = shared_store.root_dir
         ctx = Context(scratch, shared=shared_root_dir)
         results: dict[GufeKey, ProtocolUnitResult] = {}
