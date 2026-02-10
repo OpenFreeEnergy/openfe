@@ -18,17 +18,14 @@ def alchemical_network_to_task_graph(
     for transformation in alchemical_network.edges:
         dag = transformation.create()
         for unit in dag.protocol_units:
-            node_id = f"{transformation.name}-{transformation.key}:{unit.name}-{unit.key}"
+            node_id = f"{str(transformation.key)}:{str(unit.key)}"
             global_dag.add_node(
                 node_id,
-                label=f"{transformation.name}\n{unit.name}",
-                transformation_key=str(transformation.key),
-                protocol_unit_key=str(unit.key),
             )
             warehouse.store_task(unit)
         for u, v in dag.graph.edges:
-            u_id = f"{transformation.key}:{u.key}"
-            v_id = f"{transformation.key}:{v.key}"
+            u_id = f"{str(transformation.key)}:{str(u.key)}"
+            v_id = f"{str(transformation.key)}:{str(v.key)}"
             global_dag.add_edge(u_id, v_id)
 
     if not nx.is_directed_acyclic_graph(global_dag):
