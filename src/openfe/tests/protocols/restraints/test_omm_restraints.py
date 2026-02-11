@@ -9,6 +9,7 @@ from gufe import SmallMoleculeComponent
 from openff.units import unit
 from openmmtools.states import ThermodynamicState
 
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     BoreschRestraintGeometry,
@@ -26,7 +27,7 @@ from openfe.protocols.restraint_utils.settings import (
     FlatBottomRestraintSettings,
 )
 
-from ...conftest import HAS_INTERNET, POOCH_CACHE
+from ...conftest import HAS_INTERNET
 
 
 def test_parameter_state_default():
