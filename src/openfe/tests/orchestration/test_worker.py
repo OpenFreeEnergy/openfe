@@ -95,20 +95,26 @@ def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_r
 
 
 def test_execute_unit_stores_real_result(worker_with_executable_task_db, tmp_path):
-    worker, warehouse, _, _ = worker_with_executable_task_db
+    worker, warehouse, db, _ = worker_with_executable_task_db
     before = _result_store_files(warehouse)
 
-    worker.execute_unit(scratch=tmp_path / "scratch")
+    execution = worker.execute_unit(scratch=tmp_path / "scratch")
+    assert execution is not None
+    taskid, _ = execution
 
     after = _result_store_files(warehouse)
     assert len(after) > len(before)
+    rows = list(db.get_all_tasks())
+    status_by_taskid = {row.taskid: row.status for row in rows}
+    assert status_by_taskid[taskid] == exorcist.TaskStatus.COMPLETED.value
 
 
 def test_execute_unit_propagates_execute_error_without_store(
     worker_with_executable_task_db, tmp_path
 ):
-    worker, warehouse, _, unit = worker_with_executable_task_db
+    worker, warehouse, db, unit = worker_with_executable_task_db
     before = _result_store_files(warehouse)
+    taskid = list(db.get_all_tasks())[0].taskid
 
     with mock.patch.object(
         type(unit),
@@ -121,3 +127,28 @@ def test_execute_unit_propagates_execute_error_without_store(
 
     after = _result_store_files(warehouse)
     assert after == before
+    rows = list(db.get_all_tasks())
+    status_by_taskid = {row.taskid: row.status for row in rows}
+    assert status_by_taskid[taskid] == exorcist.TaskStatus.TOO_MANY_RETRIES.value
+
+
+def test_checkout_task_returns_none_when_no_available_tasks(tmp_path):
+    warehouse_root = tmp_path / "warehouse"
+    db_path = warehouse_root / "tasks.db"
+    warehouse_root.mkdir(parents=True, exist_ok=True)
+    warehouse = FileSystemWarehouse(str(warehouse_root))
+    exorcist.TaskStatusDB.from_filename(db_path)
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+
+    assert worker._checkout_task() is None
+
+
+def test_execute_unit_returns_none_when_no_available_tasks(tmp_path):
+    warehouse_root = tmp_path / "warehouse"
+    db_path = warehouse_root / "tasks.db"
+    warehouse_root.mkdir(parents=True, exist_ok=True)
+    warehouse = FileSystemWarehouse(str(warehouse_root))
+    exorcist.TaskStatusDB.from_filename(db_path)
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+
+    assert worker.execute_unit(scratch=tmp_path / "scratch") is None
