@@ -9,6 +9,15 @@ v1.9.0
 
 **Added:**
 
+* Added ``openfe test --download-only`` flag, which caches all test data stored remotely.
+
+
+
+v1.9.0
+====================
+
+**Added:**
+
 * The ``validate`` method for the RelativeHybridTopologyProtocol has been implemented.
   This means that settings and system validation can mostly be done prior to Protocol execution by calling ``RelativeHybridTopologyProtocol.validate(stateA, stateB, mapping)`` (`PR 1740 <https://github.com/OpenFreeEnergy/openfe/pull/1740>`_).
 
