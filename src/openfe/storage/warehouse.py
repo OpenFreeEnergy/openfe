@@ -314,6 +314,17 @@ class WarehouseBaseClass:
         """
         return self.stores["result"]
 
+    @property
+    def shared_store(self):
+        """Get the shared store.
+
+        Returns
+        -------
+        ExternalStorage
+            The shared storage location
+        """
+        return self.stores["shared"]
+
 
 class FileSystemWarehouse(WarehouseBaseClass):
     """Warehouse implementation using local filesystem storage.
