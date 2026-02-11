@@ -7,6 +7,7 @@ dependencies:
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
   - duecredit<0.10
+  - gufe==1.8.0
   - kartograf>=1.2.0
   - konnektor~=0.2.0
   - lomap2>=3.2.1
@@ -51,5 +52,3 @@ dependencies:
   - sphinx-toolbox
   # Control blas/openmp threads
   - threadpoolctl
-  - pip:
-    - git+https://github.com/OpenFreeEnergy/gufe@main
