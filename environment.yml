@@ -53,3 +53,4 @@ dependencies:
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
     - git+https://github.com/fatiando/pooch@main  # related to https://github.com/fatiando/pooch/issues/502
+    - git+https://github.com/OpenFreeEnergy/exorcist@main
