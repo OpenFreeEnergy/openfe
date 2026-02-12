@@ -11,6 +11,7 @@ dependencies:
   - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
+  - numba
   - numpy<2.3
   - openfe-analysis>=0.3.1
   - openff-interchange-base
@@ -53,3 +54,4 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/choderalab/pymbar.git@ed40ec3bbef03bb08938ad1a74d459b0d1ab81f7
