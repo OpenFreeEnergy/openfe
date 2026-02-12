@@ -7,6 +7,8 @@ import pytest
 from openfecli.cli import OpenFECLI, main
 from openfecli.plugins import OFECommandPlugin
 
+from .utils import assert_click_success
+
 
 @click.command("null-command", short_help="Do nothing (testing)")
 def null_command():
@@ -65,7 +67,7 @@ class TestCLI:
         assert len(plugins) > 0
 
 
-@pytest.mark.parametrize("with_log", [True, False])
+@pytest.mark.parametrize("with_log", [False, True])
 def test_main_log(with_log):
     logged_text = "Running null command\n"
     logfile_text = "\n".join(
@@ -105,6 +107,7 @@ def test_main_log(with_log):
 
         with null_command_context(main):
             result = runner.invoke(main, invocation)
+            assert_click_success(result)
 
     found = result.stdout_bytes
     assert found.decode("utf-8") == expected
