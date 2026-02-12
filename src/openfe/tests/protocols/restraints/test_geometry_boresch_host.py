@@ -10,6 +10,7 @@ import pytest
 from numpy.testing import assert_equal
 from openff.units import unit
 
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.geometry.boresch.host import (
     EvaluateBoreschAtoms,
     EvaluateHostAtoms1,
@@ -24,7 +25,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     is_collinear,
 )
 
-from ...conftest import HAS_INTERNET, POOCH_CACHE
+from ...conftest import HAS_INTERNET
 
 
 @pytest.fixture
