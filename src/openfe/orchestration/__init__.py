@@ -1,3 +1,5 @@
+"""Task orchestration utilities backed by Exorcist and a warehouse."""
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,10 +23,29 @@ from .exorcist_utils import (
 
 @dataclass
 class Worker:
+    """Execute protocol units from an Exorcist task database.
+
+    Parameters
+    ----------
+    warehouse : FileSystemWarehouse
+        Warehouse used to load queued tasks and store execution results.
+    task_db_path : pathlib.Path, default=Path("./warehouse/tasks.db")
+        Path to the Exorcist SQLite task database.
+    """
+
     warehouse: FileSystemWarehouse
     task_db_path: Path = Path("./warehouse/tasks.db")
 
     def _checkout_task(self) -> tuple[str, ProtocolUnit] | None:
+        """Check out one available task and load its protocol unit.
+
+        Returns
+        -------
+        tuple[str, ProtocolUnit] or None
+            The checked-out task ID and corresponding protocol unit, or
+            ``None`` if no task is currently available.
+        """
+
         db: TaskStatusDB = TaskStatusDB.from_filename(self.task_db_path)
         # The format for the taskid is "Transformation-<HASH>:ProtocolUnit-<HASH>"
         taskid = db.check_out_task()
@@ -36,6 +57,19 @@ class Worker:
         return taskid, unit
 
     def _get_task(self) -> ProtocolUnit:
+        """Return the next available protocol unit.
+
+        Returns
+        -------
+        ProtocolUnit
+            A protocol unit loaded from the warehouse.
+
+        Raises
+        ------
+        RuntimeError
+            Raised when no task is available in the task database.
+        """
+
         task = self._checkout_task()
         if task is None:
             raise RuntimeError("No AVAILABLE tasks found in the task database.")
@@ -43,6 +77,26 @@ class Worker:
         return unit
 
     def execute_unit(self, scratch: Path) -> tuple[str, ProtocolUnitResult] | None:
+        """Execute one checked-out protocol unit and persist its result.
+
+        Parameters
+        ----------
+        scratch : pathlib.Path
+            Scratch directory passed to the protocol execution context.
+
+        Returns
+        -------
+        tuple[str, ProtocolUnitResult] or None
+            The task ID and execution result for the processed task, or
+            ``None`` if no task is currently available.
+
+        Raises
+        ------
+        Exception
+            Re-raises any exception thrown during protocol unit execution after
+            marking the task as failed.
+        """
+
         # 1. Get task/unit
         task = self._checkout_task()
         if task is None:

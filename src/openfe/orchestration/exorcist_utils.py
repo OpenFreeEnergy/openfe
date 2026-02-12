@@ -1,4 +1,8 @@
-"""Utilities for building Exorcist task graphs and task databases."""
+"""Utilities for building Exorcist task graphs and task databases.
+
+This module translates an :class:`gufe.AlchemicalNetwork` into Exorcist task
+structures and can initialize an Exorcist task database from that graph.
+"""
 
 from pathlib import Path
 
@@ -12,7 +16,28 @@ from openfe.storage.warehouse import WarehouseBaseClass
 def alchemical_network_to_task_graph(
     alchemical_network: AlchemicalNetwork, warehouse: WarehouseBaseClass
 ) -> nx.DiGraph:
-    """Build a global task DAG from an AlchemicalNetwork."""
+    """Build a global task DAG from an alchemical network.
+
+    Parameters
+    ----------
+    alchemical_network : AlchemicalNetwork
+        Network containing transformations to execute.
+    warehouse : WarehouseBaseClass
+        Warehouse used to persist protocol units as tasks while the graph is
+        constructed.
+
+    Returns
+    -------
+    nx.DiGraph
+        A directed acyclic graph where each node is a task ID in the form
+        ``"<transformation_key>:<protocol_unit_key>"`` and edges encode
+        protocol-unit dependencies.
+
+    Raises
+    ------
+    ValueError
+        Raised if the assembled task graph is not acyclic.
+    """
 
     global_dag = nx.DiGraph()
     for transformation in alchemical_network.edges:
@@ -40,7 +65,27 @@ def build_task_db_from_alchemical_network(
     db_path: Path | None = None,
     max_tries: int = 1,
 ) -> exorcist.TaskStatusDB:
-    """Create an Exorcist TaskStatusDB from an AlchemicalNetwork."""
+    """Create and populate a task database from an alchemical network.
+
+    Parameters
+    ----------
+    alchemical_network : AlchemicalNetwork
+        Network containing transformations to convert into task records.
+    warehouse : WarehouseBaseClass
+        Warehouse used to persist protocol units while building the task DAG.
+    db_path : pathlib.Path or None, optional
+        Location of the SQLite-backed Exorcist database. If ``None``, defaults
+        to ``Path("tasks.db")`` in the current working directory.
+    max_tries : int, default=1
+        Maximum number of retries for each task before Exorcist marks it as
+        ``TOO_MANY_RETRIES``.
+
+    Returns
+    -------
+    exorcist.TaskStatusDB
+        Initialized task database populated with graph nodes and dependency
+        edges derived from ``alchemical_network``.
+    """
     if db_path is None:
         db_path = Path("tasks.db")
 
