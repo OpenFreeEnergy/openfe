@@ -12,7 +12,7 @@ dependencies:
   - lomap2>=3.2.1
   - networkx
   - numba
-  - numpy<2.3
+  - numpy
   - openfe-analysis>=0.3.1
   - openff-interchange-base
   - openff-nagl-base >=0.3.3
@@ -21,14 +21,15 @@ dependencies:
   - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
   - openmm ~=8.2.0  # omit 8.3.0 and 8.3.1 due to https://github.com/openmm/openmm/pull/5069, unpin once we've qualified 8.3.2
   - openmmforcefields >=0.15.0  # min needed for https://github.com/OpenFreeEnergy/openfe/pull/1695
-  - openmmtools >=0.25.0
+  - openmmtools >=0.25.3  # fix to support numpy >=2.3: https://github.com/choderalab/openmmtools/pull/793
   - packaging
   - pandas
+  - parmed >=4.3.1  # fix to support numpy >=2.3: https://github.com/ParmEd/ParmEd/pull/1387
   - perses>=0.10.3
   - plugcli
   - pint>=0.24.0
   - pip
-  - pooch
+  - pooch >= 1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
   - py3dmol
   - pydantic >= 2.0.0, <2.12.0  # https://github.com/openforcefield/openff-interchange/issues/1346
   - pygraphviz
@@ -55,3 +56,6 @@ dependencies:
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
     - git+https://github.com/choderalab/pymbar.git@ed40ec3bbef03bb08938ad1a74d459b0d1ab81f7
+  - run_constrained:
+    # drop this pin when handled upstream in espaloma-feedstock
+    - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
