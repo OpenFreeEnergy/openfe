@@ -78,6 +78,7 @@ def get_alchemical_components(
 
     return alchemical_components
 
+
 def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     """
     Checks that the ChemicalSystem component has the right solvent

@@ -204,11 +204,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         if stateA.contains(ProteinMembraneComponent) and stateB.contains(ProteinMembraneComponent):
             protocol_settings.integrator_settings.barostat = "MonteCarloMembraneBarostat"
             protocol_settings.forcefield_settings.forcefields = [
-                'amber/ff14SB.xml',
-                'amber/tip3p_standard.xml',
-                'amber/tip3p_HFE_multivalent.xml',
+                "amber/ff14SB.xml",
+                "amber/tip3p_standard.xml",
+                "amber/tip3p_HFE_multivalent.xml",
                 "amber/lipid17_merged.xml",
-                'amber/phosaa10.xml',
+                "amber/phosaa10.xml",
             ]
 
         return protocol_settings
