@@ -26,7 +26,7 @@ dependencies:
 - threadpoolctl
 - tqdm
 - pip:
-  - git+https://github.com/OpenFreeEnergy/gufe@membrane_prototype
+  - git+https://github.com/OpenFreeEnergy/gufe@main
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.3.1
   # pip install these so that we can make sure docs build on main while these packages' docs are under development
   - git+https://github.com/OpenFreeEnergy/kartograf@main
