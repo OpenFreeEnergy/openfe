@@ -5,13 +5,17 @@ Reusable utility methods to validate input systems to OpenMM-based alchemical
 Protocols.
 """
 
+import warnings
 from typing import Optional, Tuple
 
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     Component,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
 )
 from openff.toolkit import Molecule as OFFMol
@@ -80,6 +84,11 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     Checks that the ChemicalSystem component has the right solvent
     composition for an input nonbonded_methtod.
 
+    Supported configurations are:
+      * Vacuum (no BaseSolventComponent)
+      * One BaseSolventComponent
+      * One SolventComponent paired with one SolvatedPDBComponent
+
     Parameters
     ----------
     state : ChemicalSystem
@@ -90,29 +99,39 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     Raises
     ------
     ValueError
+      * If there are more than two BaseSolventComponents in the ChemicalSystem.
       * If there are multiple SolventComponents in the ChemicalSystem.
-      * If there is a SolventComponent and the `nonbonded_method` is
-        `nocutoff`.
+      * If `nocutoff` is requested with any BaseSolventComponent present.
+      * If there is no BaseSolventComponent and the `nonbonded_method` is `pme`.
       * If the SolventComponent solvent is not water.
     """
-    solv_comps = state.get_components_of_type(SolventComponent)
+    nonbonded_method = nonbonded_method.lower()
+    base_solv_comps = state.get_components_of_type(BaseSolventComponent)
 
-    if len(solv_comps) > 0:
-        if nonbonded_method.lower() == "nocutoff":
-            errmsg = "nocutoff cannot be used for solvent transformations"
-            raise ValueError(errmsg)
+    if len(base_solv_comps) > 2:
+        raise ValueError("At most one SolventComponent and one SolvatedPDBComponent are supported")
 
-        if len(solv_comps) > 1:
-            errmsg = "Multiple SolventComponent found, only one is supported"
-            raise ValueError(errmsg)
+    solvent_comps = [c for c in base_solv_comps if isinstance(c, SolventComponent)]
 
-        if solv_comps[0].smiles != "O":
-            errmsg = "Non water solvent is not currently supported"
-            raise ValueError(errmsg)
-    else:
-        if nonbonded_method.lower() == "pme":
-            errmsg = "PME cannot be used for vacuum transform"
-            raise ValueError(errmsg)
+    if len(solvent_comps) > 1:
+        raise ValueError("Multiple SolventComponent found, only one is supported")
+
+    # Any BaseSolventComponent present → nocutoff is invalid
+    if base_solv_comps and nonbonded_method == "nocutoff":
+        raise ValueError("nocutoff cannot be used for solvent transformations")
+
+    # Vacuum transform
+    if not base_solv_comps:
+        if nonbonded_method == "pme":
+            raise ValueError("PME cannot be used for vacuum transform")
+        return
+
+    # Solvent-specific checks
+    if solvent_comps:
+        solvent = solvent_comps[0]
+
+        if solvent.smiles != "O":
+            raise ValueError("Non water solvent is not currently supported")
 
 
 def validate_protein(state: ChemicalSystem):
@@ -135,6 +154,49 @@ def validate_protein(state: ChemicalSystem):
     if len(prot_comps) > 1:
         errmsg = "Multiple ProteinComponent found, only one is supported"
         raise ValueError(errmsg)
+
+
+def validate_protein_barostat(state: ChemicalSystem, barostat: str):
+    """
+    Warn if there is a mismatch between the protein component type and barostat.
+
+    A ProteinMembraneComponent should generally be simulated with a
+    MonteCarloMembraneBarostat, while non-membrane protein systems should
+    use a MonteCarloBarostat.
+
+    Parameters
+    ----------
+    state : ChemicalSystem
+      The chemical system to inspect.
+    barostat: str
+      The barostat to be applied to the simulation
+    """
+    prot_comps = state.get_components_of_type(ProteinComponent)
+
+    if not prot_comps:
+        return
+
+    protein = prot_comps[0]
+
+    if isinstance(protein, ProteinMembraneComponent) and barostat != "MonteCarloMembraneBarostat":
+        wmsg = (
+            "A ProteinMembraneComponent is present, but a membrane-specific "
+            "barostat (MonteCarloMembraneBarostat) is not specified. If you "
+            "are simulating a system with a membrane, consider using "
+            "integrator_settings.barostat='MonteCarloMembraneBarostat'."
+        )
+        warnings.warn(wmsg)
+    if (
+        not isinstance(protein, ProteinMembraneComponent)
+        and barostat == "MonteCarloMembraneBarostat"
+    ):
+        wmsg = (
+            "A MonteCarloMembraneBarostat is specified, but no "
+            "ProteinMembraneComponent is present. If you are not simulating a "
+            "membrane system, consider using "
+            "integrator_settings.barostat='MonteCarloBarostat'."
+        )
+        warnings.warn(wmsg)
 
 
 ParseCompRet = Tuple[
