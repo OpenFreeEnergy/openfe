@@ -396,7 +396,7 @@ def test_validate_complex_endstates_nosolvcomp(
     system_B,
     fail_endstate,
 ):
-    with pytest.raises(ValueError, match="No BaseSolventComponent found"):
+    with pytest.raises(ValueError, match="No SolventComponent found"):
         SepTopProtocol._validate_complex_endstates(
             request.getfixturevalue(system_A),
             request.getfixturevalue(system_B),
