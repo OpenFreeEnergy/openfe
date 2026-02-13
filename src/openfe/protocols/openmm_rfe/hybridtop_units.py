@@ -32,6 +32,7 @@ from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
 )
+from gufe.protocols.errors import ProtocolUnitExecutionError
 from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
@@ -43,6 +44,7 @@ from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
 
+import openfe
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
@@ -142,6 +144,22 @@ class HybridTopologyUnitMixin:
         protocol_settings["integrator_settings"] = settings.integrator_settings
         protocol_settings["engine_settings"] = settings.engine_settings
         return protocol_settings
+
+    @staticmethod
+    def _verify_execution_environment(
+        setup_outputs: dict[Any],
+    ) -> None:
+        """
+        Check that the Python environment hasn't changed based on the
+        relevant Python library versions stored in the setup outputs.
+        """
+        if (
+            (gufe.__version__ != setup_outputs["gufe_version"])
+            or (openfe.__version__ != setup_outputs["openfe_version"])
+            or (openmm.__version__ != setup_outputs["openmm_version"])
+        ):
+            errmsg = "Python environment has changed, cannot continue Protocol execution."
+            raise ProtocolUnitExecutionError(errmsg)
 
 
 class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
@@ -781,6 +799,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
             "selection_indices": selection_indices,
+            "openmm_version": openmm.__version__,
+            "openfe_version": openfe.__version__,
+            "gufe_version": gufe.__version__,
         }
 
         if dry:
@@ -809,11 +830,139 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         }
 
 
+def _assert_system_equality(
+    ref_system: openmm.System,
+    stored_system: openmm.System,
+):
+    """
+    Verify the equality of a MultiStateReporter
+    stored system, with that of a pre-exisiting
+    standard system.
+
+
+    Raises
+    ------
+    ValueError
+      * If the particles in the two System don't match.
+      * If the constraints in the two System don't match.
+      * If the forces in the two systems don't match.
+    """
+
+    # Assert particle equality
+    def _get_masses(system):
+        return [
+            system.getParticleMass(i).value_in_unit(openmm.unit.dalton)
+            for i in range(system.getNumParticles())
+        ]
+
+    if not np.allclose(_get_masses(ref_system), _get_masses(stored_system)):
+        errmsg = "Stored checkpoint System particles do not match those of the simulated System"
+        raise ValueError(errmsg)
+
+    # Assert constraint equality
+    def _get_constraints(system):
+        constraints = []
+        for index in range(system.getNumConstraints()):
+            i, j, d = system.getConstraintParameters(index)
+            constraints.append([i, j, d.value_in_unit(openmm.unit.nanometer)])
+
+        return constraints
+
+    if not np.allclose(_get_constraints(ref_system), _get_constraints(stored_system)):
+        errmsg = "Stored checkpoint System constraints do not match those of the simulation System"
+        raise ValueError(errmsg)
+
+    # Assert force equality
+    # Notes:
+    # * Store forces are in different order
+    # * The barostat doesn't exactly match because seeds have changed
+
+    # Create dictionaries of forces keyed by their hash
+    # Note: we can't rely on names because they may clash
+    ref_force_dict = {hash(openmm.XmlSerializer.serialize(f)): f for f in ref_system.getForces()}
+    stored_force_dict = {
+        hash(openmm.XmlSerializer.serialize(f)): f for f in stored_system.getForces()
+    }
+
+    # Assert the number of forces is equal
+    if len(ref_force_dict) != len(stored_force_dict):
+        errmsg = "Number of forces stored in checkpoint System does not match simulation System"
+        raise ValueError(errmsg)
+
+    # Loop through forces and check for equality
+    for sfhash, sforce in stored_force_dict.items():
+        errmsg = (
+            f"Force {sforce.getName()} in the stored checkpoint System "
+            "does not match the same force in the simulated System"
+        )
+
+        # Barostat case - seed changed so we need to check manually
+        barostats = [openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat]
+
+        if any(isinstance(sforce, forcetype) for forcetype in barostats):
+            # Find the equivalent force in the reference
+            rforce = [
+                f
+                for f in ref_force_dict.values()
+                if any(isinstance(f, forcetype) for forcetype in barostats)
+            ][0]
+
+            if (
+                (sforce.getFrequency() != rforce.getFrequency())
+                or (sforce.getForceGroup() != rforce.getForceGroup())
+                or (sforce.getDefaultPressure() != rforce.getDefaultPressure())
+                or (sforce.getDefaultTemperature() != rforce.getDefaultTemperature())
+            ):
+                raise ValueError(errmsg)
+
+        else:
+            if sfhash not in ref_force_dict:
+                raise ValueError(errmsg)
+
+
 class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
     Multi-state simulation (e.g. multi replica methods like hamiltonian
     replica exchange) unit for Hybrid Topology Protocol transformations.
     """
+
+    @staticmethod
+    def _check_restart(output_settings: SettingsBaseModel, shared_path: pathlib.Path):
+        """
+        Check if we are doing a restart.
+
+        Parameters
+        ----------
+        output_settings : SettingsBaseModel
+          The simulation output settings
+        shared_path : pathlib.Path
+          The shared directory where we should be looking for existing files.
+
+        Notes
+        -----
+        For now this just checks if the netcdf files are present in the
+        shared directory but in the future this may expand depending on
+        how warehouse works.
+
+        Raises
+        ------
+        IOError
+          If either the checkpoint or trajectory files don't exist.
+        """
+        trajectory = shared_path / output_settings.output_filename
+        checkpoint = shared_path / output_settings.checkpoint_storage_filename
+
+        if trajectory.is_file() ^ checkpoint.is_file():
+            errmsg = (
+                "One of either the trajectory or checkpoint files are missing but "
+                "the other is not. This should not happen under normal circumstances."
+            )
+            raise IOError(errmsg)
+
+        if trajectory.is_file() and checkpoint.is_file():
+            return True
+
+        return False
 
     @staticmethod
     def _get_integrator(
@@ -890,8 +1039,16 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
           Settings defining how outputs should be written.
         simulation_settings : MultiStateSimulationSettings
           Settings defining out the simulation should be run.
+
+        Notes
+        -----
+        All this does is create the reporter, it works for both
+        new reporters and if we are doing a restart.
         """
+        # Define the trajectory & checkpoint files
         nc = storage_path / output_settings.output_filename
+        # The checkpoint file in openmmtools is taken as a file relative
+        # to the location of the nc file, so you only want the filename
         chk = output_settings.checkpoint_storage_filename
 
         if output_settings.positions_write_frequency is not None:
@@ -939,6 +1096,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         thermo_settings: ThermoSettings,
         alchem_settings: AlchemicalSettings,
         platform: openmm.Platform,
+        restart: bool,
         dry: bool,
     ) -> multistate.MultiStateSampler:
         """
@@ -964,6 +1122,8 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
           The alchemical transformation settings.
         platform : openmm.Platform
           The compute platform to use.
+        restart : bool
+          ``True`` if we are doing a simulation restart.
         dry : bool
           Whether or not this is a dry run.
 
@@ -972,8 +1132,29 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         sampler : multistate.MultiStateSampler
           The requested sampler.
         """
+        _SAMPLERS = {
+            "repex": _rfe_utils.multistate.HybridRepexSampler,
+            "sams": _rfe_utils.multistate.HybridSAMSSampler,
+            "independent": _rfe_utils.multistate.HybridMultiStateSampler,
+        }
+
+        sampler_method = simulation_settings.sampler_method.lower()
+
+        # Get the real time analysis values to use
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
             simulation_settings=simulation_settings,
+        )
+
+        # Get the number of production iterations to run for
+        steps_per_iteration = integrator.n_steps
+        timestep = from_openmm(integrator.timestep)
+        number_of_iterations = int(
+            settings_validation.get_simsteps(
+                sim_length=simulation_settings.production_length,
+                timestep=timestep,
+                mc_steps=steps_per_iteration,
+            )
+            / steps_per_iteration
         )
 
         # convert early_termination_target_error from kcal/mol to kT
@@ -984,51 +1165,57 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             )
         )
 
-        if simulation_settings.sampler_method.lower() == "repex":
-            sampler = _rfe_utils.multistate.HybridRepexSampler(
-                mcmc_moves=integrator,
-                hybrid_system=system,
-                hybrid_positions=positions,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=early_termination_target_error,
-                online_analysis_minimum_iterations=rta_min_its,
+        sampler_kwargs = {
+            "mcmc_moves": integrator,
+            "hybrid_system": system,
+            "hybrid_positions": positions,
+            "online_analysis_interval": rta_its,
+            "online_analysis_target_error": early_termination_target_error,
+            "online_analysis_minimum_iterations": rta_min_its,
+            "number_of_iterations": number_of_iterations,
+        }
+
+        if sampler_method == "sams":
+            sampler_kwargs |= {
+                "flatness_criteria": simulation_settings.sams_flatness_criteria,
+                "gamma0": simulation_settings.sams_gamma0,
+            }
+
+        if sampler_method == "repex":
+            sampler_kwargs |= {"replica_mixing_scheme": "swap-all"}
+
+        # Restarting doesn't need any setup, we just rebuild from storage.
+        if restart:
+            sampler = _SAMPLERS[sampler_method].from_storage(reporter)  # type: ignore[attr-defined]
+
+            # We do some checks to make sure we are running the same system
+            _assert_system_equality(
+                ref_system=system,
+                stored_system=sampler._thermodynamic_states[0].get_system(remove_thermostat=True),
             )
 
-        elif simulation_settings.sampler_method.lower() == "sams":
-            sampler = _rfe_utils.multistate.HybridSAMSSampler(
-                mcmc_moves=integrator,
-                hybrid_system=system,
-                hybrid_positions=positions,
-                online_analysis_interval=rta_its,
-                online_analysis_minimum_iterations=rta_min_its,
-                flatness_criteria=simulation_settings.sams_flatness_criteria,
-                gamma0=simulation_settings.sams_gamma0,
-            )
-
-        elif simulation_settings.sampler_method.lower() == "independent":
-            sampler = _rfe_utils.multistate.HybridMultiStateSampler(
-                mcmc_moves=integrator,
-                hybrid_system=system,
-                hybrid_positions=positions,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=early_termination_target_error,
-                online_analysis_minimum_iterations=rta_min_its,
-            )
+            if (
+                (simulation_settings.n_replicas != sampler.n_states != sampler.n_replicas)
+                or (sampler.mcmc_moves[0].n_steps != steps_per_iteration)
+                or (sampler.mcmc_moves[0].timestep != integrator.timestep)
+            ):
+                errmsg = "Sampler in checkpoint does not match Protocol settings, cannot resume."
+                raise ValueError(errmsg)
 
         else:
-            raise AttributeError(f"Unknown sampler {simulation_settings.sampler_method}")
+            sampler = _SAMPLERS[sampler_method](**sampler_kwargs)
 
-        sampler.setup(
-            n_replicas=simulation_settings.n_replicas,
-            reporter=reporter,
-            lambda_protocol=lambdas,
-            temperature=to_openmm(thermo_settings.temperature),
-            endstates=alchem_settings.endstate_dispersion_correction,
-            minimization_platform=platform.getName(),
-            # Set minimization steps to None when running in dry mode
-            # otherwise do a very small one to avoid NaNs
-            minimization_steps=100 if not dry else None,
-        )
+            sampler.setup(
+                n_replicas=simulation_settings.n_replicas,
+                reporter=reporter,
+                lambda_protocol=lambdas,
+                temperature=to_openmm(thermo_settings.temperature),
+                endstates=alchem_settings.endstate_dispersion_correction,
+                minimization_platform=platform.getName(),
+                # Set minimization steps to None when running in dry mode
+                # otherwise do a very small one to avoid NaNs
+                minimization_steps=100 if not dry else None,
+            )
 
         # Get and set the context caches
         sampler.energy_context_cache = openmmtools.cache.ContextCache(
@@ -1089,23 +1276,28 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         )
 
         if not dry:  # pragma: no-cover
-            # minimize
-            if self.verbose:
-                self.logger.info("minimizing systems")
+            # No productions steps have been taken, so start from scratch
+            if sampler._iteration == 0:
+                # minimize
+                if self.verbose:
+                    self.logger.info("minimizing systems")
 
-            sampler.minimize(max_iterations=simulation_settings.minimization_steps)
+                sampler.minimize(max_iterations=simulation_settings.minimization_steps)
 
-            # equilibrate
-            if self.verbose:
-                self.logger.info("equilibrating systems")
+                # equilibrate
+                if self.verbose:
+                    self.logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps / mc_steps))
+                sampler.equilibrate(int(equil_steps / mc_steps))
 
-            # production
+            # At this point we are ready for production
             if self.verbose:
                 self.logger.info("running production phase")
 
-            sampler.extend(int(prod_steps / mc_steps))
+            # We use `run` so that we're limited by the number of iterations
+            # we passed when we built the sampler.
+            # TODO: I'm being extra prudent by passing in n_iterations here - remove?
+            sampler.run(n_iterations=int(prod_steps / mc_steps) - sampler._iteration)
 
             if self.verbose:
                 self.logger.info("production phase complete")
@@ -1173,6 +1365,11 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
 
+        # Check for a restart
+        self.restart = self._check_restart(
+            output_settings=settings["output_settings"], shared_path=self.shared_basepath
+        )
+
         # Get the lambda schedule
         # TODO - this should be better exposed to users
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
@@ -1204,7 +1401,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 simulation_settings=settings["simulation_settings"],
             )
 
-            # Get sampler
+            # Get the sampler
             sampler = self._get_sampler(
                 system=system,
                 positions=positions,
@@ -1215,9 +1412,11 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 thermo_settings=settings["thermo_settings"],
                 alchem_settings=settings["alchemical_settings"],
                 platform=platform,
+                restart=self.restart,
                 dry=dry,
             )
 
+            # Run the simulation
             self._run_simulation(
                 sampler=sampler,
                 reporter=reporter,
@@ -1227,25 +1426,29 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 dry=dry,
             )
         finally:
-            # close reporter when you're done, prevent
-            # file handle clashes
-            reporter.close()
+            # Have to wrap this in a try except, because we might
+            # be in a situation where reporter or sampler weren't created
+            try:
+                # Order is reporter, sampler, integrator
+                reporter.close()  # close to prevent file handle clashes
 
-            # clear GPU contexts
-            # TODO: use cache.empty() calls when openmmtools #690 is resolved
-            # replace with above
-            for context in list(sampler.energy_context_cache._lru._data.keys()):
-                del sampler.energy_context_cache._lru._data[context]
-            for context in list(sampler.sampler_context_cache._lru._data.keys()):
-                del sampler.sampler_context_cache._lru._data[context]
-            # cautiously clear out the global context cache too
-            for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
-                del openmmtools.cache.global_context_cache._lru._data[context]
+                # clear GPU contexts
+                # TODO: use cache.empty() calls when openmmtools #690 is resolved
+                # replace with above
+                for context in list(sampler.energy_context_cache._lru._data.keys()):
+                    del sampler.energy_context_cache._lru._data[context]
+                for context in list(sampler.sampler_context_cache._lru._data.keys()):
+                    del sampler.sampler_context_cache._lru._data[context]
+                # cautiously clear out the global context cache too
+                for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
+                    del openmmtools.cache.global_context_cache._lru._data[context]
 
-            del sampler.sampler_context_cache, sampler.energy_context_cache
+                del sampler.sampler_context_cache, sampler.energy_context_cache
 
-            if not dry:
-                del integrator, sampler
+                if not dry:
+                    del integrator, sampler
+            except UnboundLocalError:
+                pass
 
         if not dry:  # pragma: no-cover
             return {
@@ -1267,7 +1470,10 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-        # Get the relevant inputs
+        # Ensure that we the environment hasn't changed
+        self._verify_execution_environment(setup_results.outputs)
+
+        # Get the relevant inputs for running the unit
         system = deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nm)
         selection_indices = setup_results.outputs["selection_indices"]
@@ -1494,6 +1700,9 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        # Ensure that we the environment hasn't changed
+        self._verify_execution_environment(setup_results.outputs)
 
         pdb_file = setup_results.outputs["pdb_structure"]
         selection_indices = setup_results.outputs["selection_indices"]
