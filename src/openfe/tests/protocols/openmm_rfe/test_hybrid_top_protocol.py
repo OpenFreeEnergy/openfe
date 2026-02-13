@@ -1141,10 +1141,18 @@ def test_dry_run_membrane_complex(
         stateB=systemB,
         mapping=mapping,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
+        setup_results = dag_setup_unit.run(dry=True)
+        sim_results = dag_sim_unit.run(
+            system=setup_results["hybrid_system"],
+            positions=setup_results["hybrid_positions"],
+            selection_indices=setup_results["selection_indices"],
+            dry=True,
+        )
+        sampler = sim_results["sampler"]
 
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
@@ -1153,7 +1161,7 @@ def test_dry_run_membrane_complex(
 
         # Check we have the right number of atoms in the PDB
         pdb = mdt.load_pdb("hybrid_system.pdb")
-        assert pdb.n_atoms == 4667
+        assert pdb.n_atoms == 4690
         box = sampler._thermodynamic_states[0].system.getDefaultPeriodicBoxVectors()
         vectors = from_openmm(box)  # convert to a Quantity array
 

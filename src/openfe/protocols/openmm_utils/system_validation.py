@@ -85,7 +85,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
 
     Supported configurations are:
       * Vacuum (no BaseSolventComponent)
-      * One SolventComponent
+      * One BaseSolventComponent
       * One SolventComponent paired with one SolvatedPDBComponent
 
     Parameters
@@ -100,8 +100,6 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     ValueError
       * If there are more than two BaseSolventComponents in the ChemicalSystem.
       * If there are multiple SolventComponents in the ChemicalSystem.
-      * If a SolvatedPDBComponent is present without an accompanying
-        SolventComponent.
       * If `nocutoff` is requested with any BaseSolventComponent present.
       * If there is no BaseSolventComponent and the `nonbonded_method` is `pme`.
       * If the SolventComponent solvent is not water.
@@ -113,18 +111,9 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         raise ValueError("At most one SolventComponent and one SolvatedPDBComponent are supported")
 
     solvent_comps = [c for c in base_solv_comps if isinstance(c, SolventComponent)]
-    solvated_pdb_comps = [c for c in base_solv_comps if isinstance(c, SolvatedPDBComponent)]
 
     if len(solvent_comps) > 1:
         raise ValueError("Multiple SolventComponent found, only one is supported")
-
-    # SolvatedPDBComponent must be paired with a SolventComponent
-    if solvated_pdb_comps and not solvent_comps:
-        raise ValueError(
-            "SolvatedPDBComponent requires an accompanying SolventComponent."
-            "The SolvatedPDBComponent is used in the complex leg, the SolventComponent"
-            "in the solvent leg."
-        )
 
     # Any BaseSolventComponent present → nocutoff is invalid
     if base_solv_comps and nonbonded_method == "nocutoff":

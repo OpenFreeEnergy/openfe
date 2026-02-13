@@ -1170,12 +1170,12 @@ class SepTopProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
         # check that there is a BaseSolvent component
-        if not any(isinstance(comp, BaseSolventComponent) for comp in stateA.values()):
-            errmsg = "No BaseSolventComponent found in stateA"
+        if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
+            errmsg = "No SolventComponent found in stateA"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, BaseSolventComponent) for comp in stateB.values()):
-            errmsg = "No BaseSolventComponent found in stateB"
+        if not any(isinstance(comp, SolventComponent) for comp in stateB.values()):
+            errmsg = "No SolventComponent found in stateB"
             raise ValueError(errmsg)
 
     @staticmethod
