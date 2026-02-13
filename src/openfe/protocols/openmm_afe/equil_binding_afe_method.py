@@ -231,7 +231,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         ------
         ValueError
           If stateA & stateB do not contain a ProteinComponent.
-          If stateA & stateB do not contain a BaseSolventComponent.
+          If stateA & stateB do not contain a SolventComponent.
           If stateA has more than one unique Component.
           If the stateA unique Component is not a SmallMoleculeComponent.
           If stateB contains any unique Components.
