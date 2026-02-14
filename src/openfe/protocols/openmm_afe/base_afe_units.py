@@ -1322,7 +1322,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             # Have to wrap this in a try/except, because we might
             # be in a situation where the reporter or sampler weren't created
             try:
-                # Order is reporter, contexts, integrator, sampler
+                # Order is reporter, contexts, sampler, integrator
                 reporter.close()  # close to prevent file handle clashes
 
                 # clear GPU context
@@ -1339,6 +1339,8 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
 
                 # Keep these around in a dry run so we can inspect things
                 if not dry:
+                    # At this point we know the sampler exists, so we del the integrator
+                    # first since it's associated with the sampler
                     del integrator, sampler
             except UnboundLocalError:
                 pass
