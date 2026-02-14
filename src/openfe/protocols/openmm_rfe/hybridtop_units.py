@@ -1227,25 +1227,31 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 dry=dry,
             )
         finally:
-            # close reporter when you're done, prevent
-            # file handle clashes
-            reporter.close()
+            # Have to wrap this in a try/except, because we might
+            # be in a situation where the reporter or sampler wasn't created
+            try:
+                # Order is reporter, contexts, sampler, integrator
+                reporter.close()  # close to prevent file handle clashes
 
-            # clear GPU contexts
-            # TODO: use cache.empty() calls when openmmtools #690 is resolved
-            # replace with above
-            for context in list(sampler.energy_context_cache._lru._data.keys()):
-                del sampler.energy_context_cache._lru._data[context]
-            for context in list(sampler.sampler_context_cache._lru._data.keys()):
-                del sampler.sampler_context_cache._lru._data[context]
-            # cautiously clear out the global context cache too
-            for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
-                del openmmtools.cache.global_context_cache._lru._data[context]
+                # clear GPU context
+                # Note: use cache.empty() when openmmtools #690 is resolved
+                for context in list(sampler.energy_context_cache._lru._data.keys()):
+                    del sampler.energy_context_cache._lru._data[context]
+                for context in list(sampler.sampler_context_cache._lru._data.keys()):
+                    del sampler.sampler_context_cache._lru._data[context]
+                # cautiously clear out the global context cache too
+                for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
+                    del openmmtools.cache.global_context_cache._lru._data[context]
 
-            del sampler.sampler_context_cache, sampler.energy_context_cache
+                del sampler.sampler_context_cache, sampler.energy_context_cache
 
-            if not dry:
-                del integrator, sampler
+                # Keep these around in a dry run so we can inspect things
+                if not dry:
+                    # At this point we know the sampler exists, so we del the integrator
+                    # first since it's associated with the sampler
+                    del integrator, sampler
+            except UnboundLocalError:
+                pass
 
         if not dry:  # pragma: no-cover
             return {
