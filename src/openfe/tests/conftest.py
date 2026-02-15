@@ -12,7 +12,6 @@ import mdtraj
 import numpy as np
 import openmm
 import pandas as pd
-import pooch
 import pytest
 from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
 from openff.toolkit import ForceField

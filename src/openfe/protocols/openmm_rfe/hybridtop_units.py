@@ -147,7 +147,7 @@ class HybridTopologyUnitMixin:
 
     @staticmethod
     def _verify_execution_environment(
-        setup_outputs: dict[str. Any],
+        setup_outputs: dict[str, Any],
     ) -> None:
         """
         Check that the Python environment hasn't changed based on the

@@ -24,34 +24,10 @@ from openfe.protocols.openmm_rfe.hybridtop_units import (
     HybridTopologyMultiStateSimulationUnit,
     HybridTopologySetupUnit,
 )
+from openfe.data._registry import POOCH_CACHE
 
 from ...conftest import HAS_INTERNET
 from .test_hybrid_top_protocol import _get_units
-
-POOCH_CACHE = pooch.os_cache("openfe")
-zenodo_resume_data = pooch.create(
-    path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.18331259",
-    registry={"multistate_checkpoints.zip": "md5:6addeabbfa37fd5f9114e3b043bfa568"},
-)
-
-
-@pytest.fixture(scope="module")
-def trajectory_path():
-    zenodo_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
-    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
-    subdir = "hybrid_top"
-    filename = "simulation.nc"
-    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
-
-
-@pytest.fixture(scope="module")
-def checkpoint_path():
-    zenodo_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
-    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
-    subdir = "hybrid_top"
-    filename = "checkpoint.chk"
-    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
 
 
 @pytest.fixture()
@@ -72,10 +48,10 @@ def protocol_settings():
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet unavailable and test data is not cached locally",
 )
-def test_check_restart(protocol_settings, trajectory_path):
+def test_check_restart(protocol_settings, htop_trajectory_path):
     assert openmm_rfe.HybridTopologyMultiStateSimulationUnit._check_restart(
         output_settings=protocol_settings.output_settings,
-        shared_path=trajectory_path.parent,
+        shared_path=htop_trajectory_path.parent,
     )
 
     assert not openmm_rfe.HybridTopologyMultiStateSimulationUnit._check_restart(
@@ -123,15 +99,15 @@ class TestCheckpointResuming:
         shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
 
     @pytest.mark.integration
-    def test_resume(self, protocol_dag, trajectory_path, checkpoint_path, tmpdir):
+    def test_resume(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
         """
         Attempt to resume a simulation unit with pre-existing checkpoint &
         trajectory files.
         """
         # define a temp directory path & copy files
         cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, trajectory_path)
-        self._copy_simfiles(cwd, checkpoint_path)
+        self._copy_simfiles(cwd, htop_trajectory_path)
+        self._copy_simfiles(cwd, htop_checkpoint_path)
 
         # 1. Check that the trajectory / checkpoint contain what we expect
         reporter = MultiStateReporter(
@@ -202,15 +178,15 @@ class TestCheckpointResuming:
         reporter.close()
         del sampler
 
-    def test_resume_fail(self, protocol_dag, trajectory_path, checkpoint_path, tmpdir):
+    def test_resume_fail(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
         """
         Test that the run unit will fail with a system incompatible
         to the one present in the trajectory/checkpoint files.
         """
         # define a temp directory path & copy files
         cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, trajectory_path)
-        self._copy_simfiles(cwd, checkpoint_path)
+        self._copy_simfiles(cwd, htop_trajectory_path)
+        self._copy_simfiles(cwd, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
@@ -232,7 +208,7 @@ class TestCheckpointResuming:
 
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
     def test_resume_bad_files(
-        self, protocol_dag, trajectory_path, checkpoint_path, bad_file, tmpdir
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, bad_file, tmpdir
     ):
         """
         Test what happens when you have a bad trajectory and/or checkpoint
@@ -245,13 +221,13 @@ class TestCheckpointResuming:
             with open(f"{cwd}/simulation.nc", "w") as f:
                 f.write("foo")
         else:
-            self._copy_simfiles(cwd, trajectory_path)
+            self._copy_simfiles(cwd, htop_trajectory_path)
 
         if bad_file == "checkpoint":
             with open(f"{cwd}/checkpoint.chk", "w") as f:
                 f.write("bar")
         else:
-            self._copy_simfiles(cwd, checkpoint_path)
+            self._copy_simfiles(cwd, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
@@ -272,7 +248,7 @@ class TestCheckpointResuming:
 
     @pytest.mark.parametrize("missing_file", ["trajectory", "checkpoint"])
     def test_missing_file(
-        self, protocol_dag, trajectory_path, checkpoint_path, missing_file, tmpdir
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, missing_file, tmpdir
     ):
         """
         Test that an error is thrown if either file is missing but the other isn't.
@@ -283,12 +259,12 @@ class TestCheckpointResuming:
         if missing_file == "trajectory":
             pass
         else:
-            self._copy_simfiles(cwd, trajectory_path)
+            self._copy_simfiles(cwd, htop_trajectory_path)
 
         if missing_file == "checkpoint":
             pass
         else:
-            self._copy_simfiles(cwd, checkpoint_path)
+            self._copy_simfiles(cwd, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
