@@ -203,10 +203,12 @@ class TestCheckpointResuming:
         reporter.close()
         del sampler
 
-    def test_resume_fail(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+    def test_resume_fail_particles(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
         """
         Test that the run unit will fail with a system incompatible
         to the one present in the trajectory/checkpoint files.
+
+        Here we check that we don't have the same particles / mass.
         """
         # define a temp directory path & copy files
         cwd = pathlib.Path(str(tmpdir))
@@ -226,6 +228,133 @@ class TestCheckpointResuming:
         with pytest.raises(ValueError, match=errmsg):
             sim_results = simulation_unit.run(
                 system=openmm.System(),
+                positions=setup_results["hybrid_positions"],
+                selection_indices=setup_results["selection_indices"],
+                scratch_basepath=cwd,
+                shared_basepath=cwd,
+            )
+
+    def test_resume_fail_constraints(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+        """
+        Test that the run unit will fail with a system incompatible
+        to the one present in the trajectory/checkpoint files.
+
+        Here we check that we don't have the same constraints.
+        """
+        # define a temp directory path & copy files
+        cwd = pathlib.Path(str(tmpdir))
+        self._copy_simfiles(cwd, htop_trajectory_path)
+        self._copy_simfiles(cwd, htop_checkpoint_path)
+
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
+        simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
+        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+
+        # Create a fake system without constraints
+        fake_system = copy.deepcopy(setup_results["hybrid_system"])
+
+        for i in reversed(range(fake_system.getNumConstraints())):
+            fake_system.removeConstraint(i)
+
+        # Fake system should trigger a mismatch
+        errmsg = "Stored checkpoint System constraints do not"
+        with pytest.raises(ValueError, match=errmsg):
+            sim_results = simulation_unit.run(
+                system=fake_system,
+                positions=setup_results["hybrid_positions"],
+                selection_indices=setup_results["selection_indices"],
+                scratch_basepath=cwd,
+                shared_basepath=cwd,
+            )
+
+
+    def test_resume_fail_forces(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+        """
+        Test that the run unit will fail with a system incompatible
+        to the one present in the trajectory/checkpoint files.
+
+        Here we check we don't have the same forces.
+        """
+        # define a temp directory path & copy files
+        cwd = pathlib.Path(str(tmpdir))
+        self._copy_simfiles(cwd, htop_trajectory_path)
+        self._copy_simfiles(cwd, htop_checkpoint_path)
+
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
+        simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
+        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+
+        # Create a fake system without the last force
+        fake_system = copy.deepcopy(setup_results["hybrid_system"])
+        fake_system.removeForce(fake_system.getNumForces() - 1)
+
+        # Fake system should trigger a mismatch
+        errmsg = "Number of forces stored in checkpoint System"
+        with pytest.raises(ValueError, match=errmsg):
+            sim_results = simulation_unit.run(
+                system=fake_system,
+                positions=setup_results["hybrid_positions"],
+                selection_indices=setup_results["selection_indices"],
+                scratch_basepath=cwd,
+                shared_basepath=cwd,
+            )
+
+    @pytest.mark.parametrize('forcetype', [openmm.NonbondedForce, openmm.MonteCarloBarostat])
+    def test_resume_differ_forces(self, forcetype, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+        """
+        Test that the run unit will fail with a system incompatible
+        to the one present in the trajectory/checkpoint files.
+
+        Here we check we have a different force
+        """
+        # define a temp directory path & copy files
+        cwd = pathlib.Path(str(tmpdir))
+        self._copy_simfiles(cwd, htop_trajectory_path)
+        self._copy_simfiles(cwd, htop_checkpoint_path)
+
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
+        simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
+        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+
+        # Create a fake system with the fake forcetype
+        fake_system = copy.deepcopy(setup_results["hybrid_system"])
+
+        # Loop through forces and remove the force matching forcetype
+        for i, f in enumerate(fake_system.getForces()):
+            if isinstance(f, forcetype):
+                findex = i
+
+        fake_system.removeForce(findex)
+        
+        # Now add a fake force
+        if forcetype == openmm.MonteCarloBarostat:
+            new_force = forcetype(
+                1*openmm.unit.atmosphere,
+                300*openmm.unit.kelvin,
+                100
+            )
+        else:
+            new_force = forcetype()
+
+        fake_system.addForce(new_force)
+
+        # Fake system should trigger a mismatch
+        errmsg = "stored checkpoint System does not match the same force"
+        with pytest.raises(ValueError, match=errmsg):
+            sim_results = simulation_unit.run(
+                system=fake_system,
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
                 scratch_basepath=cwd,
