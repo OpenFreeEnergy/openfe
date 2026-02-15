@@ -43,6 +43,7 @@ def protocol_settings():
     settings.simulation_settings.production_length = 200 * offunit.picosecond
     settings.simulation_settings.time_per_iteration = 2.5 * offunit.picosecond
     settings.output_settings.checkpoint_interval = 100 * offunit.picosecond
+    settings.engine_settings.compute_platform = None
     return settings
 
 
@@ -203,6 +204,7 @@ class TestCheckpointResuming:
         reporter.close()
         del sampler
 
+    @pytest.mark.slow
     def test_resume_fail_particles(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
         """
         Test that the run unit will fail with a system incompatible
@@ -234,6 +236,7 @@ class TestCheckpointResuming:
                 shared_basepath=cwd,
             )
 
+    @pytest.mark.slow
     def test_resume_fail_constraints(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
         """
         Test that the run unit will fail with a system incompatible
@@ -271,7 +274,7 @@ class TestCheckpointResuming:
                 shared_basepath=cwd,
             )
 
-
+    @pytest.mark.slow
     def test_resume_fail_forces(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
         """
         Test that the run unit will fail with a system incompatible
@@ -307,6 +310,7 @@ class TestCheckpointResuming:
                 shared_basepath=cwd,
             )
 
+    @pytest.mark.slow
     @pytest.mark.parametrize('forcetype', [openmm.NonbondedForce, openmm.MonteCarloBarostat])
     def test_resume_differ_forces(self, forcetype, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
         """
@@ -361,6 +365,7 @@ class TestCheckpointResuming:
                 shared_basepath=cwd,
             )
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
     def test_resume_bad_files(
         self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, bad_file, tmpdir
@@ -401,6 +406,7 @@ class TestCheckpointResuming:
                 shared_basepath=cwd,
             )
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("missing_file", ["trajectory", "checkpoint"])
     def test_missing_file(
         self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, missing_file, tmpdir
