@@ -9,7 +9,9 @@ import numpy as np
 import openmm
 import pooch
 import pytest
+import gufe
 from gufe.protocols import execute_DAG
+from gufe.protocols.errors import ProtocolUnitExecutionError
 from numpy.testing import assert_allclose
 from openfe_analysis.utils.multistate import _determine_position_indices
 from openff.units import unit as offunit
@@ -42,6 +44,29 @@ def protocol_settings():
     settings.simulation_settings.time_per_iteration = 2.5 * offunit.picosecond
     settings.output_settings.checkpoint_interval = 100 * offunit.picosecond
     return settings
+
+
+def test_verify_execution_environment():
+    # Verification should pass
+    openmm_rfe.HybridTopologyMultiStateSimulationUnit._verify_execution_environment(
+        setup_outputs={
+            "gufe_version": gufe.__version__,
+            "openfe_version": openfe.__version__,
+            "openmm_version": openmm.__version__,
+        },
+    )
+
+
+def test_verify_execution_environment_fail():
+    # Passing a bad version should fail
+    with pytest.raises(ProtocolUnitExecutionError, match="Python environment"):
+        openmm_rfe.HybridTopologyMultiStateSimulationUnit._verify_execution_environment(
+            setup_outputs={
+                "gufe_version": 0.1,
+                "openfe_version": openfe.__version__,
+                "openmm_version": openmm.__version__,
+            },
+        )
 
 
 @pytest.mark.skipif(
@@ -197,7 +222,8 @@ class TestCheckpointResuming:
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
 
         # Fake system should trigger a mismatch
-        with pytest.raises(ValueError, match="System in checkpoint does not"):
+        errmsg = "Stored checkpoint System particles do not"
+        with pytest.raises(ValueError, match=errmsg):
             sim_results = simulation_unit.run(
                 system=openmm.System(),
                 positions=setup_results["hybrid_positions"],

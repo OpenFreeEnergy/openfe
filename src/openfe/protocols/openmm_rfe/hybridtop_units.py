@@ -830,96 +830,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         }
 
 
-def _assert_system_equality(
-    ref_system: openmm.System,
-    stored_system: openmm.System,
-):
-    """
-    Verify the equality of a MultiStateReporter
-    stored system, with that of a pre-exisiting
-    standard system.
-
-
-    Raises
-    ------
-    ValueError
-      * If the particles in the two System don't match.
-      * If the constraints in the two System don't match.
-      * If the forces in the two systems don't match.
-    """
-
-    # Assert particle equality
-    def _get_masses(system):
-        return [
-            system.getParticleMass(i).value_in_unit(openmm.unit.dalton)
-            for i in range(system.getNumParticles())
-        ]
-
-    if not np.allclose(_get_masses(ref_system), _get_masses(stored_system)):
-        errmsg = "Stored checkpoint System particles do not match those of the simulated System"
-        raise ValueError(errmsg)
-
-    # Assert constraint equality
-    def _get_constraints(system):
-        constraints = []
-        for index in range(system.getNumConstraints()):
-            i, j, d = system.getConstraintParameters(index)
-            constraints.append([i, j, d.value_in_unit(openmm.unit.nanometer)])
-
-        return constraints
-
-    if not np.allclose(_get_constraints(ref_system), _get_constraints(stored_system)):
-        errmsg = "Stored checkpoint System constraints do not match those of the simulation System"
-        raise ValueError(errmsg)
-
-    # Assert force equality
-    # Notes:
-    # * Store forces are in different order
-    # * The barostat doesn't exactly match because seeds have changed
-
-    # Create dictionaries of forces keyed by their hash
-    # Note: we can't rely on names because they may clash
-    ref_force_dict = {hash(openmm.XmlSerializer.serialize(f)): f for f in ref_system.getForces()}
-    stored_force_dict = {
-        hash(openmm.XmlSerializer.serialize(f)): f for f in stored_system.getForces()
-    }
-
-    # Assert the number of forces is equal
-    if len(ref_force_dict) != len(stored_force_dict):
-        errmsg = "Number of forces stored in checkpoint System does not match simulation System"
-        raise ValueError(errmsg)
-
-    # Loop through forces and check for equality
-    for sfhash, sforce in stored_force_dict.items():
-        errmsg = (
-            f"Force {sforce.getName()} in the stored checkpoint System "
-            "does not match the same force in the simulated System"
-        )
-
-        # Barostat case - seed changed so we need to check manually
-        barostats = [openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat]
-
-        if any(isinstance(sforce, forcetype) for forcetype in barostats):
-            # Find the equivalent force in the reference
-            rforce = [
-                f
-                for f in ref_force_dict.values()
-                if any(isinstance(f, forcetype) for forcetype in barostats)
-            ][0]
-
-            if (
-                (sforce.getFrequency() != rforce.getFrequency())
-                or (sforce.getForceGroup() != rforce.getForceGroup())
-                or (sforce.getDefaultPressure() != rforce.getDefaultPressure())
-                or (sforce.getDefaultTemperature() != rforce.getDefaultTemperature())
-            ):
-                raise ValueError(errmsg)
-
-        else:
-            if sfhash not in ref_force_dict:
-                raise ValueError(errmsg)
-
-
 class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
     Multi-state simulation (e.g. multi replica methods like hamiltonian
@@ -1189,7 +1099,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             sampler = _SAMPLERS[sampler_method].from_storage(reporter)  # type: ignore[attr-defined]
 
             # We do some checks to make sure we are running the same system
-            _assert_system_equality(
+            system_validation.assert_multistate_system_equality(
                 ref_system=system,
                 stored_system=sampler._thermodynamic_states[0].get_system(remove_thermostat=True),
             )
