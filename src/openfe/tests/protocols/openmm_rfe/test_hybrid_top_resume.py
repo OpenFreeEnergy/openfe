@@ -32,7 +32,7 @@ POOCH_CACHE = pooch.os_cache("openfe")
 zenodo_resume_data = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.18331259",
-    registry={"multistate_checkpoints.zip": "md5:2cf8aa417ac8311aca1551d4abf3b3ed"},
+    registry={"multistate_checkpoints.zip": "md5:6addeabbfa37fd5f9114e3b043bfa568"},
 )
 
 
