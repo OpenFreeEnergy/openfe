@@ -9,6 +9,7 @@ import pytest
 from openff.units import unit
 from rdkit import Chem
 
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.geometry.boresch.geometry import (
     BoreschRestraintGeometry,
     find_boresch_restraint,
