@@ -17,6 +17,7 @@ from openff.units.openmm import from_openmm
 from openmmtools.multistate import MultiStateReporter
 
 import openfe
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe._rfe_utils.multistate import HybridRepexSampler
 from openfe.protocols.openmm_rfe.hybridtop_units import (
@@ -24,7 +25,6 @@ from openfe.protocols.openmm_rfe.hybridtop_units import (
     HybridTopologyMultiStateSimulationUnit,
     HybridTopologySetupUnit,
 )
-from openfe.data._registry import POOCH_CACHE
 
 from ...conftest import HAS_INTERNET
 from .test_hybrid_top_protocol import _get_units

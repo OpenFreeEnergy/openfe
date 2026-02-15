@@ -20,9 +20,9 @@ import openfe
 from openfe.data._registry import (
     POOCH_CACHE,
     zenodo_industry_benchmark_systems,
+    zenodo_resume_data,
     zenodo_rfe_simulation_nc,
     zenodo_t4_lysozyme_traj,
-    zenodo_resume_data,
 )
 
 
