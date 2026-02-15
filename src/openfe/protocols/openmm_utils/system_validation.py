@@ -7,6 +7,8 @@ Protocols.
 
 from typing import Optional, Tuple
 
+import numpy as np
+import openmm
 from gufe import (
     ChemicalSystem,
     Component,
@@ -14,9 +16,7 @@ from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
 )
-import numpy as np
 from openff.toolkit import Molecule as OFFMol
-import openmm
 
 
 def get_alchemical_components(
@@ -211,10 +211,7 @@ def assert_multistate_system_equality(
     ref_masses = _get_masses(ref_system)
     stored_masses = _get_masses(stored_system)
 
-    if not (
-        (ref_masses.shape == stored_masses.shape) and
-        (np.allclose(ref_masses, stored_masses))
-    ):
+    if not ((ref_masses.shape == stored_masses.shape) and (np.allclose(ref_masses, stored_masses))):
         errmsg = "Stored checkpoint System particles do not match those of the simulated System"
         raise ValueError(errmsg)
 
@@ -229,10 +226,10 @@ def assert_multistate_system_equality(
 
     ref_constraints = _get_constraints(ref_system)
     stored_constraints = _get_constraints(stored_system)
-    
+
     if not (
-        (ref_constraints.shape == stored_constraints.shape) and
-        (np.allclose(ref_constraints, stored_constraints))
+        (ref_constraints.shape == stored_constraints.shape)
+        and (np.allclose(ref_constraints, stored_constraints))
     ):
         errmsg = "Stored checkpoint System constraints do not match those of the simulation System"
         raise ValueError(errmsg)
@@ -265,7 +262,8 @@ def assert_multistate_system_equality(
         if isinstance(sforce, (openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat)):
             # Find the equivalent force in the reference
             rforce = [
-                f for f in ref_force_dict.values()
+                f
+                for f in ref_force_dict.values()
                 if isinstance(f, (openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat))
             ][0]
 

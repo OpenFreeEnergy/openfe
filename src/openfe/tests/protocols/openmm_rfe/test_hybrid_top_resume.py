@@ -5,11 +5,11 @@ import os
 import pathlib
 import shutil
 
+import gufe
 import numpy as np
 import openmm
 import pooch
 import pytest
-import gufe
 from gufe.protocols import execute_DAG
 from gufe.protocols.errors import ProtocolUnitExecutionError
 from numpy.testing import assert_allclose
@@ -205,7 +205,9 @@ class TestCheckpointResuming:
         del sampler
 
     @pytest.mark.slow
-    def test_resume_fail_particles(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+    def test_resume_fail_particles(
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir
+    ):
         """
         Test that the run unit will fail with a system incompatible
         to the one present in the trajectory/checkpoint files.
@@ -237,7 +239,9 @@ class TestCheckpointResuming:
             )
 
     @pytest.mark.slow
-    def test_resume_fail_constraints(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+    def test_resume_fail_constraints(
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir
+    ):
         """
         Test that the run unit will fail with a system incompatible
         to the one present in the trajectory/checkpoint files.
@@ -275,7 +279,9 @@ class TestCheckpointResuming:
             )
 
     @pytest.mark.slow
-    def test_resume_fail_forces(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+    def test_resume_fail_forces(
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir
+    ):
         """
         Test that the run unit will fail with a system incompatible
         to the one present in the trajectory/checkpoint files.
@@ -311,8 +317,10 @@ class TestCheckpointResuming:
             )
 
     @pytest.mark.slow
-    @pytest.mark.parametrize('forcetype', [openmm.NonbondedForce, openmm.MonteCarloBarostat])
-    def test_resume_differ_forces(self, forcetype, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+    @pytest.mark.parametrize("forcetype", [openmm.NonbondedForce, openmm.MonteCarloBarostat])
+    def test_resume_differ_forces(
+        self, forcetype, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir
+    ):
         """
         Test that the run unit will fail with a system incompatible
         to the one present in the trajectory/checkpoint files.
@@ -341,14 +349,10 @@ class TestCheckpointResuming:
                 findex = i
 
         fake_system.removeForce(findex)
-        
+
         # Now add a fake force
         if forcetype == openmm.MonteCarloBarostat:
-            new_force = forcetype(
-                1*openmm.unit.atmosphere,
-                300*openmm.unit.kelvin,
-                100
-            )
+            new_force = forcetype(1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100)
         else:
             new_force = forcetype()
 
