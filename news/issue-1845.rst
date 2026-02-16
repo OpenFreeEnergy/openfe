@@ -17,7 +17,7 @@
 **Fixed:**
 
 * Fixed a bug in Protocol termination for the HybridTop and AFE Protocols
-  which would unecessary declare an UnboundLocalError.
+  which would unnecessarily declare an ``UnboundLocalError``.
 
 **Security:**
 
