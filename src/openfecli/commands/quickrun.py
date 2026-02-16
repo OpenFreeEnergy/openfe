@@ -49,9 +49,11 @@ def quickrun(transformation, work_dir, output):
     for each repeat of the sampling process (by default 3).
     """
     import logging
+    from json import JSONDecodeError
     import os
     import sys
 
+    from gufe import ProtocolDAG
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
     from gufe.transformations.transformation import Transformation
@@ -94,13 +96,26 @@ def quickrun(transformation, work_dir, output):
     else:
         output.parent.mkdir(exist_ok=True, parents=True)
 
-    write("Planning simulations for this edge...")
-    dag = trans.create()
+    # Attempt to either deserialize or freshly create DAG
+    if (work_dir / "protocol_dag.json").is_file():
+        write("Attempting to recover edge simulations from file")
+        try:
+            dag = ProtocolDAG.from_json(work_dir / "protocol_dag.json")
+        except JSONDecodeError:
+            errmsg = "Recovery failed, please clean workdir before continuing"
+            raise click.ClickException(errmsg)
+    else:
+        # Create the DAG instead and then serialize for later resuming
+        write("Planning simulations for this edge...")
+        dag = trans.create()
+        dag.to_json(work_dir / "protocol_dag.json")
+
     write("Starting the simulations for this edge...")
     dagresult = execute_DAG(
         dag,
         shared_basedir=work_dir,
         scratch_basedir=work_dir,
+        unitresults_basedir=work_dir,
         keep_shared=True,
         raise_error=False,
         n_retries=2,
