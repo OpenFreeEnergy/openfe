@@ -1295,7 +1295,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     assert len(complex_repeats) == len(solv_repeats) == 2
 
 
-def test_gather(benzene_toluene_dag, tmpdir):
+def test_gather(benzene_toluene_dag, tmp_path):
     # check that .gather behaves as expected
     with (
         mock.patch(
@@ -1339,8 +1339,8 @@ def test_gather(benzene_toluene_dag, tmpdir):
     ):
         dagres = gufe.protocols.execute_DAG(
             benzene_toluene_dag,
-            shared_basedir=tmpdir,
-            scratch_basedir=tmpdir,
+            shared_basedir=tmp_path,
+            scratch_basedir=tmp_path,
             keep_shared=True,
         )
 
