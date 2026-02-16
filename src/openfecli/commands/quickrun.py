@@ -49,9 +49,9 @@ def quickrun(transformation, work_dir, output):
     for each repeat of the sampling process (by default 3).
     """
     import logging
-    from json import JSONDecodeError
     import os
     import sys
+    from json import JSONDecodeError
 
     from gufe import ProtocolDAG
     from gufe.protocols.protocoldag import execute_DAG
