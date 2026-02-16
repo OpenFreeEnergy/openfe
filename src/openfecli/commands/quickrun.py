@@ -63,6 +63,7 @@ def quickrun(transformation, work_dir, output, resume):
     for each repeat of the sampling process (by default 3).
     """
     import logging
+    from json import JSONDecodeError
     import os
     import sys
     from json import JSONDecodeError
