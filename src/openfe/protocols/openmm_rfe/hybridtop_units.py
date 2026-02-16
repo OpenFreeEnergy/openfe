@@ -1336,15 +1336,14 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 dry=dry,
             )
         finally:
-            # Have to wrap this in a try except, because we might
-            # be in a situation where reporter or sampler weren't created
+            # Have to wrap this in a try/except, because we might
+            # be in a situation where the reporter or sampler wasn't created
             try:
-                # Order is reporter, sampler, integrator
+                # Order is reporter, contexts, sampler, integrator
                 reporter.close()  # close to prevent file handle clashes
 
-                # clear GPU contexts
-                # TODO: use cache.empty() calls when openmmtools #690 is resolved
-                # replace with above
+                # clear GPU context
+                # Note: use cache.empty() when openmmtools #690 is resolved
                 for context in list(sampler.energy_context_cache._lru._data.keys()):
                     del sampler.energy_context_cache._lru._data[context]
                 for context in list(sampler.sampler_context_cache._lru._data.keys()):
@@ -1355,7 +1354,10 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
                 del sampler.sampler_context_cache, sampler.energy_context_cache
 
+                # Keep these around in a dry run so we can inspect things
                 if not dry:
+                    # At this point we know the sampler exists, so we del the integrator
+                    # first since it's associated with the sampler
                     del integrator, sampler
             except UnboundLocalError:
                 pass
