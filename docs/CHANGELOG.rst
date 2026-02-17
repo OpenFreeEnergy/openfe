@@ -4,6 +4,13 @@ Changelog
 
 .. current developments
 
+v1.9.1
+====================
+
+**Fixed:**
+
+* Fixed a bug in Protocol termination for the HybridTop and AFE Protocols
+  which would unnecessarily declare an ``UnboundLocalError``.
 
 
 
