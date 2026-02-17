@@ -1506,6 +1506,7 @@ class TestProtocolResult:
         assert pytest.approx(geom[0][0].phi_C0) == -1.068226 * offunit.radian
 
 
+@pytest.mark.slow
 class TestA2AMembraneDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 16116

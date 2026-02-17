@@ -613,6 +613,7 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
             assert pytest.approx(prop_chgs[i]) == offsets[2]
 
 
+@pytest.mark.slow
 class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 16080
