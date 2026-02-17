@@ -464,7 +464,7 @@ class TestT4LysozymeDryRun:
         with tmpdir.as_cwd():
             setup_results = solvent_setup_units[0].run(dry=True, verbose=True)
             sim_results = solvent_sim_units[0].run(
-                system=setup_results["standard_system"],
+                system=setup_results["alchemical_system"],
                 positions=setup_results["debug_positions"],
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
