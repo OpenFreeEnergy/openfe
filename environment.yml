@@ -57,3 +57,4 @@ dependencies:
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
+    - pytorch >=2.3.1 
