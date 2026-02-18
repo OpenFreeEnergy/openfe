@@ -5,6 +5,8 @@ import json
 import re
 from typing import Literal, TypedDict
 
+from gufe.protocols.protocoldag import ProtocolDAG
+from gufe.protocols.protocolunit import ProtocolUnit
 from gufe.storage.externalresource import ExternalStorage, FileStorage
 from gufe.tokenization import (
     JSON_HANDLER,
@@ -35,6 +37,8 @@ class WarehouseStores(TypedDict):
 
     setup: ExternalStorage
     result: ExternalStorage
+    shared: ExternalStorage
+    tasks: ExternalStorage
 
 
 class WarehouseBaseClass:
@@ -82,6 +86,15 @@ class WarehouseBaseClass:
         """
         store: ExternalStorage = self.stores[store_name]
         store.delete(location)
+
+    def store_task(self, obj: ProtocolUnit):
+        self._store_gufe_tokenizable("tasks", obj)
+
+    def load_task(self, obj: GufeKey) -> ProtocolUnit:
+        unit = self._load_gufe_tokenizable(obj)
+        if not isinstance(unit, ProtocolUnit):
+            raise ValueError("Unable to load ProtocolUnit")
+        return unit
 
     def store_setup_tokenizable(self, obj: GufeTokenizable):
         """Store a GufeTokenizable object in the setup store.
@@ -134,7 +147,7 @@ class WarehouseBaseClass:
         return self._load_gufe_tokenizable(gufe_key=obj)
 
     def exists(self, key: GufeKey) -> bool:
-        """Check if an object with the given key exists in any store.
+        """Check if an object with the given key exists in any store that holds tokenizables.
 
         Parameters
         ----------
@@ -166,12 +179,18 @@ class WarehouseBaseClass:
         ValueError
             If the key is not found in any store.
         """
+        print(key)
         for name in self.stores:
             if key in self.stores[name]:
                 return self.stores[name]
         raise ValueError(f"GufeKey {key} is not stored")
 
-    def _store_gufe_tokenizable(self, store_name: Literal["setup", "result"], obj: GufeTokenizable):
+    def _store_gufe_tokenizable(
+        self,
+        store_name: Literal["setup", "result", "tasks"],
+        obj: GufeTokenizable,
+        name: str | None = None,
+    ):
         """Store a GufeTokenizable object with deduplication.
 
             Parameters
@@ -197,7 +216,10 @@ class WarehouseBaseClass:
                 data = json.dumps(keyed_dict, cls=JSON_HANDLER.encoder, sort_keys=True).encode(
                     "utf-8"
                 )
-                target.store_bytes(gufe_key, data)
+                if name:
+                    target.store_bytes(name, data)
+                else:
+                    target.store_bytes(gufe_key, data)
 
     def _load_gufe_tokenizable(self, gufe_key: GufeKey) -> GufeTokenizable:
         """Load a deduplicated object from a GufeKey.
@@ -293,6 +315,17 @@ class WarehouseBaseClass:
         """
         return self.stores["result"]
 
+    @property
+    def shared_store(self):
+        """Get the shared store.
+
+        Returns
+        -------
+        ExternalStorage
+            The shared storage location
+        """
+        return self.stores["shared"]
+
 
 class FileSystemWarehouse(WarehouseBaseClass):
     """Warehouse implementation using local filesystem storage.
@@ -313,7 +346,12 @@ class FileSystemWarehouse(WarehouseBaseClass):
     """
 
     def __init__(self, root_dir: str = "warehouse"):
+        self.root_dir = root_dir
         setup_store = FileStorage(f"{root_dir}/setup")
         result_store = FileStorage(f"{root_dir}/result")
-        stores = WarehouseStores(setup=setup_store, result=result_store)
+        shared_store = FileStorage(f"{root_dir}/shared")
+        tasks_store = FileStorage(f"{root_dir}/tasks")
+        stores = WarehouseStores(
+            setup=setup_store, result=result_store, shared=shared_store, tasks=tasks_store
+        )
         super().__init__(stores)
