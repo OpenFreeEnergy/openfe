@@ -142,7 +142,7 @@ class LigandNode(Node):
 
 class AtomMappingNetworkDrawing(GraphDrawing):
     """
-    Class for drawing atom mappings from a provided ligang network.
+    Class for drawing atom mappings from a provided ligand network.
 
     Parameters
     ----------
@@ -167,6 +167,12 @@ def plot_atommapping_network(network: LigandNetwork):
     Returns
     -------
     :class:`matplotlib.figure.Figure` :
-        the matplotlib figure containing the iteractive visualization
+        the matplotlib figure containing the interactive visualization
     """
-    return AtomMappingNetworkDrawing(network.graph).fig
+    fig = AtomMappingNetworkDrawing(network.graph).fig
+    axes = fig.axes
+    for ax in axes:
+        ax.set_frame_on(False)  # remove the black frame
+        for t in ax.texts:
+            t.set_clip_on(False)  # do not clip the label in the network plot
+    return fig

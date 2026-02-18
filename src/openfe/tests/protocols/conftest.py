@@ -1,9 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
+import pathlib
 from importlib import resources
 from typing import Optional
 
+import MDAnalysis as mda
 import openmm
 import pooch
 import pytest
@@ -15,6 +17,12 @@ from rdkit import Chem
 from rdkit.Geometry import Point3D
 
 import openfe
+from openfe.data._registry import (
+    POOCH_CACHE,
+    zenodo_industry_benchmark_systems,
+    zenodo_rfe_simulation_nc,
+    zenodo_t4_lysozyme_traj,
+)
 
 
 @pytest.fixture
@@ -280,22 +288,50 @@ def septop_json() -> str:
         return f.read().decode()  # type: ignore
 
 
-RFE_OUTPUT = pooch.create(
-    path=pooch.os_cache("openfe_analysis"),
-    base_url="doi:10.6084/m9.figshare.24101655",
+pooch_industry_benchmark_systems = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_industry_benchmark_systems["base_url"],
     registry={
-        "checkpoint.nc": "5af398cb14340fddf7492114998b244424b6c3f4514b2e07e4bd411484c08464",
-        "db.json": "b671f9eb4daf9853f3e1645f9fd7c18150fd2a9bf17c18f23c5cf0c9fd5ca5b3",
-        "hybrid_system.pdb": "07203679cb14b840b36e4320484df2360f45e323faadb02d6eacac244fddd517",
-        "simulation.nc": "92361a0864d4359a75399470135f56642b72c605069a4c33dbc4be6f91f28b31",
-        "simulation_real_time_analysis.yaml": "65706002f371fafba96037f29b054fd7e050e442915205df88567f48f5e5e1cf",
+        zenodo_industry_benchmark_systems["fname"]: zenodo_industry_benchmark_systems["known_hash"]
     },
 )
 
 
 @pytest.fixture
+def industry_benchmark_files():
+    pooch_industry_benchmark_systems.fetch(
+        "industry_benchmark_systems.zip", processor=pooch.Unzip()
+    )
+    cache_dir = pathlib.Path(
+        POOCH_CACHE / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
+    )
+    return cache_dir
+
+
+pooch_t4_lysozyme = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_t4_lysozyme_traj["base_url"],
+    registry={zenodo_t4_lysozyme_traj["fname"]: zenodo_t4_lysozyme_traj["known_hash"]},
+)
+
+
+# session scope for downstream reuse
+@pytest.fixture(scope="session")
+def t4_lysozyme_trajectory_dir():
+    pooch_t4_lysozyme.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        POOCH_CACHE / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
+    )
+    return cache_dir
+
+
+@pytest.fixture
 def simulation_nc():
-    return RFE_OUTPUT.fetch("simulation.nc")
+    return pooch.retrieve(
+        url=zenodo_rfe_simulation_nc["base_url"] + zenodo_rfe_simulation_nc["fname"],
+        known_hash=zenodo_rfe_simulation_nc["known_hash"],
+        path=POOCH_CACHE,
+    )
 
 
 @pytest.fixture

@@ -2,7 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import os
-import pathlib
 
 import MDAnalysis as mda
 import numpy as np
@@ -11,6 +10,7 @@ import pytest
 from numpy.testing import assert_equal
 from openff.units import unit
 
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.geometry.boresch.host import (
     EvaluateBoreschAtoms,
     EvaluateHostAtoms1,
@@ -26,30 +26,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
 )
 
 from ...conftest import HAS_INTERNET
-
-POOCH_CACHE = pooch.os_cache("openfe")
-zenodo_restraint_data = pooch.create(
-    path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15212342",
-    registry={
-        "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
-    },
-)
-
-
-@pytest.fixture(scope="module")
-def t4_lysozyme_trajectory_universe():
-    zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
-    cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
-    )
-    universe = mda.Universe(
-        str(cache_dir / "t4_toluene_complex.pdb"),
-        str(cache_dir / "t4_toluene_complex.xtc"),
-    )
-    # guess bonds for the protein atoms
-    universe.select_atoms("protein").guess_bonds()
-    return universe
 
 
 @pytest.fixture
@@ -357,8 +333,15 @@ class TestFindAnchorBondedTrajectory(TestFindAnchorMulti):
     ref_h1h2_distance = 1.55881
 
     @pytest.fixture(scope="class")
-    def universe(self, t4_lysozyme_trajectory_universe):
-        return t4_lysozyme_trajectory_universe
+    def universe(self, t4_lysozyme_trajectory_dir):
+        cache_dir = t4_lysozyme_trajectory_dir
+        universe = mda.Universe(
+            str(cache_dir / "t4_toluene_complex.pdb"),
+            str(cache_dir / "t4_toluene_complex.xtc"),
+        )
+        # guess bonds for the protein atoms
+        universe.select_atoms("protein").guess_bonds()
+        return universe
 
     @pytest.fixture(scope="class")
     def host_anchor(self, universe):
