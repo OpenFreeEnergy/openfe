@@ -1,23 +1,16 @@
-# This code is part of OpenFE and is licensed under the MIT license.
-# For details, see https://github.com/OpenFreeEnergy/openfe
-
 import json
 import pathlib
+from typing import Optional
 
 import click
 
-from openfecli import OFECommandPlugin
-from openfecli.parameters import WAREHOUSE
+from openfe.storage.warehouse import FileSystemWarehouse, WarehouseBaseClass
+from openfecli.commands.quickrun import _format_exception
+from openfecli.plugins import OFECommandPlugin
 from openfecli.utils import configure_logger, print_duration, write
 
 
-def _format_exception(exception) -> str:
-    """Takes the exception as stored by Gufe and reformats it."""
-    return f"{exception[0]}: {exception[1][0]}"
-
-
-@click.command("quickrun", short_help="Run a given transformation, saved as a JSON file")
-@click.argument("transformation", type=click.File(mode="r"), required=True)
+@click.command("warehouse-quickrun", short_help="Run a given transformation, saved as a JSON file")
 @click.option(
     "--work-dir", "-d", default=None,
     type=click.Path(dir_okay=True, file_okay=False, writable=True, path_type=pathlib.Path),
@@ -31,6 +24,7 @@ def _format_exception(exception) -> str:
     type=click.Path(dir_okay=False, file_okay=False, path_type=pathlib.Path),
     help="Filepath at which to create and write the JSON-formatted results.",
 )  # fmt: skip
+@click.argument("transformation", type=click.STRING, required=True)
 @print_duration
 def quickrun(transformation, work_dir, output):
     """Run the transformation (edge) in the given JSON file.
@@ -83,17 +77,17 @@ def quickrun(transformation, work_dir, output):
     logging.captureWarnings(True)
 
     if work_dir is None:
-        work_dir = pathlib.Path(os.getcwd())
+        work_dir = pathlib.Path(os.getcwd()) / "warehouse"
     else:
         work_dir.mkdir(exist_ok=True, parents=True)
 
-    write("Loading file...")
-    trans = Transformation.from_json(transformation)
+    # Setup the warehouse
+    warehouse = FileSystemWarehouse()
+    trans: Transformation = warehouse.load_setup_tokenizable(transformation)
 
-    if output is None:
-        output = work_dir / (str(trans.key) + "_results.json")
-    else:
-        output.parent.mkdir(exist_ok=True, parents=True)
+    write("Loading file...")
+
+    output = work_dir / (str(trans.key) + "_results.json")
 
     write("Planning simulations for this edge...")
     dag = trans.create()
@@ -106,6 +100,17 @@ def quickrun(transformation, work_dir, output):
         raise_error=False,
         n_retries=2,
     )
+    # How this would change with new context
+    # dagresult = execute_DAG(
+    #     dag,
+    #     shared_storage=warehouse.shared,
+    #     perm_storage=warehouse.perm
+    #     scratch_basedir=work_dir,
+    #     keep_shared=True,
+    #     raise_error=False,
+    #     n_retries=2,
+    # )
+    warehouse.store_result_tokenizable(dagresult)
     write("Done with all simulations! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
