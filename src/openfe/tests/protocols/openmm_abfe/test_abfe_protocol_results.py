@@ -79,12 +79,12 @@ def patcher():
         yield
 
 
-def test_gather(benzene_complex_dag, patcher, tmpdir):
+def test_gather(benzene_complex_dag, patcher, tmp_path):
     # check that .gather behaves as expected
     dagres = gufe.protocols.execute_DAG(
         benzene_complex_dag,
-        shared_basedir=tmpdir,
-        scratch_basedir=tmpdir,
+        shared_basedir=tmp_path,
+        scratch_basedir=tmp_path,
         keep_shared=True,
     )
 
