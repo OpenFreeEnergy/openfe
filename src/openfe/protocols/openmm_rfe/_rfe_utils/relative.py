@@ -551,8 +551,10 @@ class HybridTopologyFactory:
         """
         # Check that if there is a barostat in the old system,
         # it is added to the hybrid system
-        known_barostats = ["MonteCarloBarostat", "MonteCarloMembraneBarostat"]
-        present_barostat = [i for i in self._old_system_forces.keys() if i in known_barostats]
+        present_barostat = [
+            i for i in self._old_system_forces.keys()
+            if i in ["MonteCarloBarostat", "MonteCarloMembraneBarostat"]
+        ]
         if len(present_barostat) == 1:
             barostat = copy.deepcopy(
                 self._old_system_forces[present_barostat[0]])
