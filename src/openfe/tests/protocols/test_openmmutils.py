@@ -209,7 +209,7 @@ def test_multiple_proteins(T4_protein_component):
 def test_membrane_protein_warns_with_non_membrane_barostat(a2a_protein_membrane_component):
     state = openfe.ChemicalSystem({"A": a2a_protein_membrane_component})
     with pytest.warns(UserWarning, match="ProteinMembraneComponent"):
-        system_validation.validate_protein_barostat(
+        system_validation.validate_barostat(
             state,
             barostat="MonteCarloBarostat",
         )
@@ -218,7 +218,7 @@ def test_membrane_protein_warns_with_non_membrane_barostat(a2a_protein_membrane_
 def test_non_membrane_protein_warns_with_membrane_barostat(T4_protein_component):
     state = openfe.ChemicalSystem({"A": T4_protein_component})
     with pytest.warns(UserWarning, match="MonteCarloMembraneBarostat"):
-        system_validation.validate_protein_barostat(
+        system_validation.validate_barostat(
             state,
             barostat="MonteCarloMembraneBarostat",
         )
@@ -450,7 +450,7 @@ class TestSystemCreation:
         intsets.barostat = "MonteCarloMembraneBarostat"
         intsets.barostat_frequency = 200 * unit.timestep
         generator = system_creation.get_system_generator(
-            ffsets, thermosets, intsets, Path("./db.json"), False
+            ffsets, thermosets, intsets, Path("./db.json"), True
         )
 
         # Check barostat conditions
@@ -511,7 +511,7 @@ class TestSystemCreation:
             "amber/lipid17_merged.xml",
             "amber/phosaa10.xml",
         ]
-        generator = system_creation.get_system_generator(ffsets, thermosets, intsets, None, False)
+        generator = system_creation.get_system_generator(ffsets, thermosets, intsets, None, True)
 
         smc = a2a_ligands[0]
         mol = smc.to_openff()
@@ -519,7 +519,7 @@ class TestSystemCreation:
 
         model, comp_resids = system_creation.get_omm_modeller(
             a2a_protein_membrane_component,
-            None,
+            a2a_protein_membrane_component,
             {smc: mol},
             generator.forcefield,
             OpenMMSolvationSettings(),

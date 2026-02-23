@@ -289,8 +289,9 @@ def T4_protein_component():
 
 @pytest.fixture(scope="session")
 def a2a_protein_membrane_component():
-    pdb_path = resources.files("openfe.tests.data.a2a") / "protein.pdb.gz"
-    return openfe.ProteinMembraneComponent.from_pdb_file(pdb_path, name="a2a")
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        with gzip.open(d / "a2a/protein.pdb.gz", "rb") as f:
+            yield openfe.ProteinMembraneComponent.from_pdb_file(f, name="a2a")
 
 
 @pytest.fixture(scope="session")
@@ -335,7 +336,7 @@ def a2a_ligands_sdf():
 @pytest.fixture(scope="session")
 def a2a_ligands(a2a_ligands_sdf) -> list[SmallMoleculeComponent]:
     with gzip.open(a2a_ligands_sdf, "rb") as gzf:
-        yield [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(gzf, removeHs=False)]
+        yield [SmallMoleculeComponent(m) for m in Chem.ForwardSDMolSupplier(gzf, removeHs=False)]
 
 
 @pytest.fixture()
