@@ -427,7 +427,7 @@ class TestT4LysozymeDryRun:
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
-                setup_results["alchem_system"], "complex", settings=settings
+                setup_results["alchem_system"], phase="complex", settings=settings
             )
             self._check_box_vectors(setup_results["alchem_system"])
 
