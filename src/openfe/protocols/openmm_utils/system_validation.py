@@ -156,7 +156,7 @@ def validate_protein(state: ChemicalSystem):
         raise ValueError(errmsg)
 
 
-def validate_protein_barostat(state: ChemicalSystem, barostat: str):
+def validate_barostat(state: ChemicalSystem, barostat: str):
     """
     Warn if there is a mismatch between the protein component type and barostat.
 
