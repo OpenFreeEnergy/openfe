@@ -1,13 +1,13 @@
 import copy
-from openff.units import unit as offunit
-import openmm
-from openmm import app, unit
-import pytest
 
-from openfe.protocols.openmm_rfe import _rfe_utils
+import openmm
+import pytest
+from openff.units import unit as offunit
+from openmm import app, unit
+
+from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol, _rfe_utils
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
 from openfe.tests.protocols.openmm_rfe.helpers import _make_system_with_cmap, make_htf
-from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 
 
 def test_cmap_system_no_dummy_pme_energy(htf_cmap_chlorobenzene_to_fluorobenzene):
@@ -231,12 +231,7 @@ def test_cmap_in_alchemical_region_error():
         )
 
 
-@pytest.mark.parametrize(
-    "softcore_alpha", [
-        pytest.param(0.5),
-        pytest.param(0.75)
-    ]
-)
+@pytest.mark.parametrize("softcore_alpha", [pytest.param(0.5), pytest.param(0.75)])
 def test_softcore_parameters(chloroethane_to_fluoroethane_mapping, softcore_alpha):
     """
     Make sure the softcore parameters are correctly set by the HTF
@@ -288,7 +283,7 @@ def test_particle_mass_dummy(htf_chloro_ethane):
     assert hybrid_system.getNumParticles() == 9
     expected_mass = [
         35.4532 * unit.dalton,  # CL mass
-        7.0306475 * unit.dalton, # Average mass of Carbon with 2Hs and 3Hs with HMR
+        7.0306475 * unit.dalton,  # Average mass of Carbon with 2Hs and 3Hs with HMR
         6.034621 * unit.dalton,  # Carbon with 3Hs and HMR
         3 * unit.dalton,  # HMR Hydrogen
         3 * unit.dalton,
@@ -375,18 +370,17 @@ def test_bond_force_no_dummy(htf_chloro_fluoroethane):
         # make sure the initial parameters match chloroethane
         # this also implicitly checks the per bond parameters have been entered in the expected order
         assert params[0] == chloro_bond.length.m_as(offunit.nanometer)
-        assert params[1] == chloro_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer ** 2)
+        assert params[1] == chloro_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer**2)
         # then check the fluoro parameters
         # map the index first
         f1 = mapping.componentA_to_componentB[p1]
         f2 = mapping.componentA_to_componentB[p2]
         fluoro_bond = fluoro_labels["Bonds"][(f1, f2)]
         assert params[2] == fluoro_bond.length.m_as(offunit.nanometer)
-        assert params[3] == fluoro_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer ** 2)
+        assert params[3] == fluoro_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer**2)
 
 
 def test_bond_force_dummy(htf_chloro_ethane):
-
     forces = htf_chloro_ethane["forces"]
     mapping = htf_chloro_ethane["mapping"]
     chloro_labels = htf_chloro_ethane["chloro_labels"]
@@ -403,7 +397,12 @@ def test_bond_force_dummy(htf_chloro_ethane):
         # make sure they correspond to the expected values in stateA chloroethane
         chloro_bond = chloro_labels["Bonds"][(p1, p2)]
         assert length == chloro_bond.length.m_as(offunit.nanometer) * unit.nanometer
-        assert k == chloro_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer ** 2) * unit.kilojoule_per_mole / unit.nanometer**2
+        assert (
+            k
+            == chloro_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer**2)
+            * unit.kilojoule_per_mole
+            / unit.nanometer**2
+        )
 
     # there should then be one interpolated (fully mapped) bond force for the central carbons
     custom_bond_force = forces["CustomBondForce"]
@@ -421,14 +420,14 @@ def test_bond_force_dummy(htf_chloro_ethane):
         # make sure the initial parameters match chloroethane
         # this also implicitly checks the per bond parameters have been entered in the expected order
         assert params[0] == chloro_bond.length.m_as(offunit.nanometer)
-        assert params[1] == chloro_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer ** 2)
+        assert params[1] == chloro_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer**2)
         # then check the ethane parameters
         # map the index first
         e1 = mapping.componentA_to_componentB[p1]
         e2 = mapping.componentA_to_componentB[p2]
         ethane_bond = ethane_labels["Bonds"][(e1, e2)]
         assert params[2] == ethane_bond.length.m_as(offunit.nanometer)
-        assert params[3] == ethane_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer ** 2)
+        assert params[3] == ethane_bond.k.m_as(offunit.kilojoule_per_mole / offunit.nanometer**2)
 
 
 def test_angle_force_no_dummy(htf_chloro_fluoroethane):
@@ -460,7 +459,7 @@ def test_angle_force_no_dummy(htf_chloro_fluoroethane):
         # make sure the initial parameters match chloroethane
         # this also implicitly checks the per angle parameters have been entered in the expected order
         assert params[0] == chloro_angle.angle.m_as(offunit.radian)
-        assert params[1] == chloro_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian ** 2)
+        assert params[1] == chloro_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian**2)
         # then check the fluoro parameters
         # map the index first
         f1 = mapping.componentA_to_componentB[p1]
@@ -468,7 +467,7 @@ def test_angle_force_no_dummy(htf_chloro_fluoroethane):
         f3 = mapping.componentA_to_componentB[p3]
         fluoro_angle = fluoro_labels["Angles"][(f1, f2, f3)]
         assert params[2] == fluoro_angle.angle.m_as(offunit.radian)
-        assert params[3] == fluoro_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian ** 2)
+        assert params[3] == fluoro_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian**2)
 
 
 def test_angle_force_dummy(htf_chloro_ethane):
@@ -486,10 +485,15 @@ def test_angle_force_dummy(htf_chloro_ethane):
     for i in range(num_angles):
         p1, p2, p3, angle, k = standard_angle_force.getAngleParameters(i)
         # if the starting atom index is 0 it is a chloroethane angle else ethane
-        if p1 == 0 or p3 ==0:
+        if p1 == 0 or p3 == 0:
             chloro_angle = chloro_labels["Angles"][(p1, p2, p3)]
             assert angle == chloro_angle.angle.m_as(offunit.radian) * unit.radian
-            assert k == chloro_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian ** 2) * unit.kilojoule_per_mole / unit.radian**2
+            assert (
+                k
+                == chloro_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian**2)
+                * unit.kilojoule_per_mole
+                / unit.radian**2
+            )
         else:
             # manually map the Cl - H
             e1 = 0
@@ -497,7 +501,12 @@ def test_angle_force_dummy(htf_chloro_ethane):
             e3 = mapping.componentA_to_componentB[p3]
             ethane_angle = ethane_labels["Angles"][(e1, e2, e3)]
             assert angle == ethane_angle.angle.m_as(offunit.radian) * unit.radian
-            assert k == ethane_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian ** 2) * unit.kilojoule_per_mole / unit.radian**2
+            assert (
+                k
+                == ethane_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian**2)
+                * unit.kilojoule_per_mole
+                / unit.radian**2
+            )
 
     # there should then be 9 interpolated (fully mapped) angle terms
     custom_angle_force = forces["CustomAngleForce"]
@@ -515,7 +524,7 @@ def test_angle_force_dummy(htf_chloro_ethane):
         # make sure the initial parameters match chloroethane
         # this also implicitly checks the per angle parameters have been entered in the expected order
         assert params[0] == chloro_angle.angle.m_as(offunit.radian)
-        assert params[1] == chloro_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian ** 2)
+        assert params[1] == chloro_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian**2)
         # then check the ethane parameters
         # map the index first
         e1 = mapping.componentA_to_componentB[p1]
@@ -523,7 +532,7 @@ def test_angle_force_dummy(htf_chloro_ethane):
         e3 = mapping.componentA_to_componentB[p3]
         ethane_angle = ethane_labels["Angles"][(e1, e2, e3)]
         assert params[2] == ethane_angle.angle.m_as(offunit.radian)
-        assert params[3] == ethane_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian ** 2)
+        assert params[3] == ethane_angle.k.m_as(offunit.kilojoule_per_mole / offunit.radian**2)
 
 
 def test_torsion_force_no_dummy(htf_chloro_fluoroethane):
@@ -630,7 +639,11 @@ def test_torsion_force_dummy(htf_chloro_ethane):
             assert periodicity in chloro_torsion.periodicity
             term_index = chloro_torsion.periodicity.index(periodicity)
             assert phase == chloro_torsion.phase[term_index].m_as(offunit.radian) * unit.radian
-            assert k == chloro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
+            assert (
+                k
+                == chloro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole)
+                * unit.kilojoule_per_mole
+            )
         elif p1 == 8:
             # unique ethane torsion
             e1 = 0
@@ -641,7 +654,11 @@ def test_torsion_force_dummy(htf_chloro_ethane):
             assert periodicity in ethane_torsion.periodicity
             term_index = ethane_torsion.periodicity.index(periodicity)
             assert phase == ethane_torsion.phase[term_index].m_as(offunit.radian) * unit.radian
-            assert k == ethane_torsion.k[term_index].m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
+            assert (
+                k
+                == ethane_torsion.k[term_index].m_as(offunit.kilojoule_per_mole)
+                * unit.kilojoule_per_mole
+            )
 
         else:
             # we have a mapped torsion so check the parameters are the same in both molecules
@@ -654,12 +671,20 @@ def test_torsion_force_dummy(htf_chloro_ethane):
             assert periodicity in chloro_torsion.periodicity
             term_index = chloro_torsion.periodicity.index(periodicity)
             assert phase == chloro_torsion.phase[term_index].m_as(offunit.radian) * unit.radian
-            assert k == chloro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
+            assert (
+                k
+                == chloro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole)
+                * unit.kilojoule_per_mole
+            )
             # check ethane parameters match
             assert periodicity in ethane_torsion.periodicity
             term_index = ethane_torsion.periodicity.index(periodicity)
             assert phase == ethane_torsion.phase[term_index].m_as(offunit.radian) * unit.radian
-            assert k == ethane_torsion.k[term_index].m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
+            assert (
+                k
+                == ethane_torsion.k[term_index].m_as(offunit.kilojoule_per_mole)
+                * unit.kilojoule_per_mole
+            )
 
 
 def test_nonbonded_force_no_dummy(htf_chloro_fluoroethane):
@@ -679,10 +704,10 @@ def test_nonbonded_force_no_dummy(htf_chloro_fluoroethane):
         "lambda_sterics_core",
     }
     actual_global_params = {
-        nonbonded_force.getGlobalParameterName(i) for i in range(nonbonded_force.getNumGlobalParameters())
+        nonbonded_force.getGlobalParameterName(i)
+        for i in range(nonbonded_force.getNumGlobalParameters())
     }
     assert actual_global_params == expected_global_params
-
 
     # as the particles are fully mapped we should have just 8 particles
     num_atoms = nonbonded_force.getNumParticles()
@@ -714,7 +739,8 @@ def test_nonbonded_force_dummy(htf_chloro_ethane):
         "lambda_sterics_core",
     }
     actual_global_params = {
-        nonbonded_force.getGlobalParameterName(i) for i in range(nonbonded_force.getNumGlobalParameters())
+        nonbonded_force.getGlobalParameterName(i)
+        for i in range(nonbonded_force.getNumGlobalParameters())
     }
     assert actual_global_params == expected_global_params
 
@@ -737,7 +763,9 @@ def test_nonbonded_force_dummy(htf_chloro_ethane):
             # unique ethane hydrogen atom
             e1 = 0
             ethane_vdw = ethane_labels["vdW"][(e1,)]
-            assert charge == 0.0 * unit.elementary_charge  # this should be zero and be scaled to the ethane value via particle offsets
+            assert (
+                charge == 0.0 * unit.elementary_charge
+            )  # this should be zero and be scaled to the ethane value via particle offsets
             assert sigma == ethane_vdw.sigma.m_as(offunit.nanometer) * unit.nanometer
             # we use soft core for vdW so epsilon is zero
             assert epsilon == 0.0 * unit.kilojoule_per_mole
@@ -763,11 +791,13 @@ def test_nonbonded_offsets_no_dummy(htf_chloro_fluoroethane):
     fluoro_charges = htf_chloro_fluoroethane["fluoro_charges"]
     # We scale the nonbonded electrostatics with lambda so check the offsets
     # there should be 8 offsets one for each particle
-    num_offsets =  nonbonded_force.getNumParticleParameterOffsets()
+    num_offsets = nonbonded_force.getNumParticleParameterOffsets()
     assert num_offsets == 8
     for i in range(num_offsets):
         offset_params = nonbonded_force.getParticleParameterOffset(i)
-        assert offset_params[0] == "lambda_electrostatics_core"  # Make sure only the electrostatics core lambda is used
+        assert (
+            offset_params[0] == "lambda_electrostatics_core"
+        )  # Make sure only the electrostatics core lambda is used
         particle_index = offset_params[1]
         # make sure the epsilon and sigma scales are zero
         assert offset_params[3] == offset_params[4] == 0.0
@@ -784,7 +814,7 @@ def test_nonbonded_offsets_dummy(htf_chloro_ethane):
 
     nonbonded_force = forces["NonbondedForce"]
     # there should be 9 offsets one for each particle
-    num_offsets =  nonbonded_force.getNumParticleParameterOffsets()
+    num_offsets = nonbonded_force.getNumParticleParameterOffsets()
     assert num_offsets == 9
     chloro_charges = htf_chloro_ethane["chloro_charges"]
     ethane_charges = htf_chloro_ethane["ethane_charges"]
@@ -848,17 +878,25 @@ def test_nonbonded_exceptions_no_dummy(htf_chloro_fluoroethane):
         if (p1, p2) in exception_1_4s or (p2, p1) in exception_1_4s:
             charge1 = chloro_charges[p1]
             charge2 = chloro_charges[p2]
-            expected_charge_prod = charge1 * charge2 * electro_scale # get the scaled charge product
+            expected_charge_prod = (
+                charge1 * charge2 * electro_scale
+            )  # get the scaled charge product
             chloro_vdw1 = chloro_labels["vdW"][(p1,)]
             chloro_vdw2 = chloro_labels["vdW"][(p2,)]
             # Lorentz-Berthelot combining rules
             expected_sigma = (chloro_vdw1.sigma + chloro_vdw2.sigma) / 2.0
-            expected_epsilon = ((chloro_vdw1.epsilon * chloro_vdw2.epsilon) ** 0.5) * vdw_scale  # scaled epsilon by the 1-4 scale for the ff
-            assert expected_charge_prod == pytest.approx(charge_prod.value_in_unit(unit.elementary_charge**2), rel=1e-5)  # charge product
+            expected_epsilon = (
+                (chloro_vdw1.epsilon * chloro_vdw2.epsilon) ** 0.5
+            ) * vdw_scale  # scaled epsilon by the 1-4 scale for the ff
+            assert expected_charge_prod == pytest.approx(
+                charge_prod.value_in_unit(unit.elementary_charge**2), rel=1e-5
+            )  # charge product
             assert sigma == expected_sigma.m_as(offunit.nanometer) * unit.nanometer  # sigma
-            assert expected_epsilon.m_as(offunit.kilojoule_per_mole) == pytest.approx(epsilon.value_in_unit(unit.kilojoule_per_mole), rel=1e-5)  # epsilon
+            assert expected_epsilon.m_as(offunit.kilojoule_per_mole) == pytest.approx(
+                epsilon.value_in_unit(unit.kilojoule_per_mole), rel=1e-5
+            )  # epsilon
             # track how many non-zero exceptions we have found
-            non_zero_exceptions +=1
+            non_zero_exceptions += 1
         # not a 1-4 so this should be set to zero
         else:
             assert charge_prod == 0.0 * unit.elementary_charge**2  # charge product
@@ -909,7 +947,9 @@ def test_nonbonded_exceptions_dummy(htf_chloro_ethane):
             if p1 == 0 or p2 == 0 or p1 == 8 or p2 == 8:
                 # this is a dummy atom exception which should be interpolated in the custom steric bond force
                 # make sure the parameters are set to zero
-                assert charge_prod == 0.0 * unit.elementary_charge**2  # charge product should always be zero
+                assert (
+                    charge_prod == 0.0 * unit.elementary_charge**2
+                )  # charge product should always be zero
                 assert epsilon == 0.0 * unit.kilojoule_per_mole  # epsilon, should always be zero
                 # sigma will use a dummy value this is not important as epsilon is 0.0
                 zeroed_dummy_exceptions += 1
@@ -917,20 +957,30 @@ def test_nonbonded_exceptions_dummy(htf_chloro_ethane):
                 # this is a mapped exception so check the parameters match chloroethane
                 charge1 = chloro_charges[p1]
                 charge2 = chloro_charges[p2]
-                expected_charge_prod = charge1 * charge2 * electro_scale  # get the scaled charge product
+                expected_charge_prod = (
+                    charge1 * charge2 * electro_scale
+                )  # get the scaled charge product
                 chloro_vdw1 = chloro_labels["vdW"][(p1,)]
                 chloro_vdw2 = chloro_labels["vdW"][(p2,)]
                 # Lorentz-Berthelot combining rules
                 expected_sigma = (chloro_vdw1.sigma + chloro_vdw2.sigma) / 2.0
-                expected_epsilon = ((chloro_vdw1.epsilon * chloro_vdw2.epsilon) ** 0.5) * vdw_scale # scaled epsilon by the 1-4 scale for the ff
-                assert expected_charge_prod ==  pytest.approx(charge_prod.value_in_unit(unit.elementary_charge**2), rel=1e-5)  # charge product
+                expected_epsilon = (
+                    (chloro_vdw1.epsilon * chloro_vdw2.epsilon) ** 0.5
+                ) * vdw_scale  # scaled epsilon by the 1-4 scale for the ff
+                assert expected_charge_prod == pytest.approx(
+                    charge_prod.value_in_unit(unit.elementary_charge**2), rel=1e-5
+                )  # charge product
                 assert sigma == expected_sigma.m_as(offunit.nanometer) * unit.nanometer  # sigma
-                assert expected_epsilon.m_as(offunit.kilojoule_per_mole) ==pytest.approx(epsilon.value_in_unit(unit.kilojoule_per_mole), rel=1e-5)  # epsilon
+                assert expected_epsilon.m_as(offunit.kilojoule_per_mole) == pytest.approx(
+                    epsilon.value_in_unit(unit.kilojoule_per_mole), rel=1e-5
+                )  # epsilon
                 # track how many non-zero exceptions we have found
                 non_zero_exceptions += 1
         # not a 1-4 so this should be set to zero
         else:
-            assert charge_prod == 0.0 * unit.elementary_charge**2  # charge product should always be zero
+            assert (
+                charge_prod == 0.0 * unit.elementary_charge**2
+            )  # charge product should always be zero
             assert sigma == 1.0 * unit.nanometer  # sigma, dummy value of 1 used
             assert epsilon == 0.0 * unit.kilojoule_per_mole  # epsilon, should always be zero
 
@@ -970,7 +1020,9 @@ def test_nonbonded_exception_offsets_no_dummy(htf_chloro_fluoroethane):
     # 3 from sterics (3 torsions with Cl/F as all hydrogen vdW remain the same)
     non_zero_offsets = 0
     for i in range(num_offsets):
-        parameter, exception_index, charge_prod_scale, sigma_scale, epsilon_scale = nonbonded_force.getExceptionParameterOffset(i)
+        parameter, exception_index, charge_prod_scale, sigma_scale, epsilon_scale = (
+            nonbonded_force.getExceptionParameterOffset(i)
+        )
         # get the index of the particles in the exception
         p1, p2, _, _, _ = nonbonded_force.getExceptionParameters(exception_index)
         # if this is not an expected exception it should not be scaled
@@ -993,7 +1045,9 @@ def test_nonbonded_exception_offsets_no_dummy(htf_chloro_fluoroethane):
                 fluoro_charge1 = fluoro_charges[f1]
                 fluoro_charge2 = fluoro_charges[f2]
                 # must use the 1-4 scale factor defined in the force field
-                expected_scale = ((fluoro_charge1 * fluoro_charge2) - (chloro_charge1 * chloro_charge2)) * electro_scale
+                expected_scale = (
+                    (fluoro_charge1 * fluoro_charge2) - (chloro_charge1 * chloro_charge2)
+                ) * electro_scale
                 assert expected_scale == pytest.approx(charge_prod_scale, rel=1e-5)
                 # sigma and epsilon should be zero
                 assert sigma_scale == 0.0
@@ -1014,9 +1068,14 @@ def test_nonbonded_exception_offsets_no_dummy(htf_chloro_fluoroethane):
                 fluoro_sigma = (fluoro_vdw1.sigma + fluoro_vdw2.sigma) / 2.0
                 fluoro_epsilon = (fluoro_vdw1.epsilon * fluoro_vdw2.epsilon) ** 0.5
                 # now get the scales
-                expected_sigma_scale = fluoro_sigma.m_as(offunit.nanometer) - chloro_sigma.m_as(offunit.nanometer)
+                expected_sigma_scale = fluoro_sigma.m_as(offunit.nanometer) - chloro_sigma.m_as(
+                    offunit.nanometer
+                )
                 # must use the 1-4 scale factor defined in the force field
-                expected_epsilon_scale = (fluoro_epsilon.m_as(offunit.kilojoule_per_mole) - chloro_epsilon.m_as(offunit.kilojoule_per_mole)) * vdw_scale
+                expected_epsilon_scale = (
+                    fluoro_epsilon.m_as(offunit.kilojoule_per_mole)
+                    - chloro_epsilon.m_as(offunit.kilojoule_per_mole)
+                ) * vdw_scale
                 assert sigma_scale == expected_sigma_scale
                 assert expected_epsilon_scale == pytest.approx(epsilon_scale, rel=1e-5)
     # make sure we found all non-zero offsets
@@ -1062,7 +1121,9 @@ def test_nonbonded_exception_offsets_dummy(htf_chloro_ethane):
     non_zero_offsets = 0
 
     for i in range(num_offsets):
-        parameter, exception_index, charge_prod_scale, sigma_scale, epsilon_scale = nonbonded_force.getExceptionParameterOffset(i)
+        parameter, exception_index, charge_prod_scale, sigma_scale, epsilon_scale = (
+            nonbonded_force.getExceptionParameterOffset(i)
+        )
         # get the index of the particles in the exception
         p1, p2, _, _, _ = nonbonded_force.getExceptionParameters(exception_index)
         # if this is not an expected exception it should not be scaled
@@ -1085,7 +1146,9 @@ def test_nonbonded_exception_offsets_dummy(htf_chloro_ethane):
                 ethane_charge1 = ethane_charges[e1]
                 ethane_charge2 = ethane_charges[e2]
                 # must use the 1-4 scale factor defined in the force field
-                expected_scale = ((ethane_charge1 * ethane_charge2) - (chloro_charge1 * chloro_charge2)) * electro_scale
+                expected_scale = (
+                    (ethane_charge1 * ethane_charge2) - (chloro_charge1 * chloro_charge2)
+                ) * electro_scale
                 # we see some rounding issues here so use approx
                 assert expected_scale == pytest.approx(charge_prod_scale, rel=1e-5)
                 # sigma and epsilon should be zero
@@ -1107,9 +1170,14 @@ def test_nonbonded_exception_offsets_dummy(htf_chloro_ethane):
                 ethane_sigma = (ethane_vdw1.sigma + ethane_vdw2.sigma) / 2.0
                 ethane_epsilon = (ethane_vdw1.epsilon * ethane_vdw2.epsilon) ** 0.5
                 # now get the scales
-                expected_sigma_scale = ethane_sigma.m_as(offunit.nanometer) - chloro_sigma.m_as(offunit.nanometer)
+                expected_sigma_scale = ethane_sigma.m_as(offunit.nanometer) - chloro_sigma.m_as(
+                    offunit.nanometer
+                )
                 # must use the 1-4 scale factor defined in the force field
-                expected_epsilon_scale = (ethane_epsilon.m_as(offunit.kilojoule_per_mole) - chloro_epsilon.m_as(offunit.kilojoule_per_mole)) * vdw_scale
+                expected_epsilon_scale = (
+                    ethane_epsilon.m_as(offunit.kilojoule_per_mole)
+                    - chloro_epsilon.m_as(offunit.kilojoule_per_mole)
+                ) * vdw_scale
                 assert sigma_scale == expected_sigma_scale
                 assert epsilon_scale == expected_epsilon_scale
     # make sure we found all non-zero offsets
@@ -1137,7 +1205,8 @@ def test_custom_nb_force_no_dummy(htf_chloro_fluoroethane):
         "softcore_alpha",
     }
     actual_global_params = {
-        custom_nb_force.getGlobalParameterName(i) for i in range(custom_nb_force.getNumGlobalParameters())
+        custom_nb_force.getGlobalParameterName(i)
+        for i in range(custom_nb_force.getNumGlobalParameters())
     }
     assert actual_global_params == expected_global_params
 
@@ -1178,7 +1247,8 @@ def test_custom_nb_force_dummy(htf_chloro_ethane):
         "softcore_alpha",
     }
     actual_global_params = {
-        custom_nb_force.getGlobalParameterName(i) for i in range(custom_nb_force.getNumGlobalParameters())
+        custom_nb_force.getGlobalParameterName(i)
+        for i in range(custom_nb_force.getNumGlobalParameters())
     }
     assert actual_global_params == expected_global_params
 
@@ -1358,7 +1428,8 @@ def test_custom_sterics_force_no_dummy(htf_chloro_fluoroethane):
         "softcore_alpha",
     }
     actual_global_params = {
-        custom_sterics_force.getGlobalParameterName(i) for i in range(custom_sterics_force.getNumGlobalParameters())
+        custom_sterics_force.getGlobalParameterName(i)
+        for i in range(custom_sterics_force.getNumGlobalParameters())
     }
     assert actual_global_params == expected_global_params
 
@@ -1392,7 +1463,8 @@ def test_custom_sterics_force_dummy(htf_chloro_ethane):
         "softcore_alpha",
     }
     actual_global_params = {
-        custom_sterics_force.getGlobalParameterName(i) for i in range(custom_sterics_force.getNumGlobalParameters())
+        custom_sterics_force.getGlobalParameterName(i)
+        for i in range(custom_sterics_force.getNumGlobalParameters())
     }
     assert actual_global_params == expected_global_params
 
@@ -1434,7 +1506,9 @@ def test_custom_sterics_force_dummy(htf_chloro_ethane):
             expected_sigma = (chloro_vdw1.sigma + chloro_vdw2.sigma) / 2.0
             expected_epsilon = ((chloro_vdw1.epsilon * chloro_vdw2.epsilon) ** 0.5) * vdw_scale
             assert params[1] == expected_sigma.m_as(offunit.nanometer)
-            assert expected_epsilon.m_as(offunit.kilojoule_per_mole) == pytest.approx(params[2], rel=1e-5)
+            assert expected_epsilon.m_as(offunit.kilojoule_per_mole) == pytest.approx(
+                params[2], rel=1e-5
+            )
             # check the vdw go to zero at lambda=1
             assert params[4] == 0.0  # epsilon at lambda=1
             # sigma doesn't matter if epsilon is zero
@@ -1445,7 +1519,9 @@ def test_custom_sterics_force_dummy(htf_chloro_ethane):
             ethane_charge1 = ethane_charges[e1]
             ethane_charge2 = ethane_charges[e2]
             # check the charge product at lambda=1
-            assert ethane_charge1 * ethane_charge2 * electro_scale == pytest.approx(params[0], rel=1e-5)
+            assert ethane_charge1 * ethane_charge2 * electro_scale == pytest.approx(
+                params[0], rel=1e-5
+            )
             # this is scaled by the unique flags make sure unique_old is 0 and unique_new is 1
             assert params[5] == 0  # unique_old
             assert params[6] == 1  # unique_new
@@ -1455,7 +1531,9 @@ def test_custom_sterics_force_dummy(htf_chloro_ethane):
             expected_sigma = (ethane_vdw1.sigma + ethane_vdw2.sigma) / 2.0
             expected_epsilon = ((ethane_vdw1.epsilon * ethane_vdw2.epsilon) ** 0.5) * vdw_scale
             assert params[3] == expected_sigma.m_as(offunit.nanometer)
-            assert  expected_epsilon.m_as(offunit.kilojoule_per_mole) == pytest.approx(params[4], rel=1e-5)
+            assert expected_epsilon.m_as(offunit.kilojoule_per_mole) == pytest.approx(
+                params[4], rel=1e-5
+            )
             # check the vdw are zero at lambda=0
             assert params[2] == 0.0  # epsilon at lambda=0
 
@@ -1465,7 +1543,9 @@ def test_vacuum_system_energy_no_dummy(htf_chloro_fluoroethane):
     Test that the hybrid system energy is the same at lambda=0 and lambda=1 as the pure systems.
     All individual force components should match as there are no dummy atoms.
     """
-    integrator = openmm.LangevinIntegrator(300*unit.kelvin, 1.0/unit.picosecond, 0.002*unit.picoseconds)
+    integrator = openmm.LangevinIntegrator(
+        300 * unit.kelvin, 1.0 / unit.picosecond, 0.002 * unit.picoseconds
+    )
     platform = openmm.Platform.getPlatformByName("CPU")
     default_lambda = _rfe_utils.lambdaprotocol.LambdaProtocol()
     htf = htf_chloro_fluoroethane["htf"]
@@ -1480,11 +1560,11 @@ def test_vacuum_system_energy_no_dummy(htf_chloro_fluoroethane):
         topology=htf.omm_hybrid_topology,
         system=hybrid_system,
         integrator=integrator,
-        platform=platform
+        platform=platform,
     )
     for end_state, ref_system, ref_top, pos in [
         (0, htf._old_system, htf._old_topology, htf._old_positions),
-        (1, htf._new_system, htf._new_topology, htf._new_positions)
+        (1, htf._new_system, htf._new_topology, htf._new_positions),
     ]:
         for force in ref_system.getForces():
             if isinstance(force, openmm.NonbondedForce):
@@ -1504,7 +1584,7 @@ def test_vacuum_system_energy_no_dummy(htf_chloro_fluoroethane):
             topology=ref_top,
             system=ref_system,
             integrator=copy.deepcopy(integrator),
-            platform=platform
+            platform=platform,
         )
         ref_simulation.context.setPositions(pos)
         ref_state = ref_simulation.context.getState(getEnergy=True)
@@ -1520,7 +1600,9 @@ def test_vacuum_system_energy_dummy(htf_chloro_ethane):
     Test that the hybrid system nonbonded energy is the same at lambda=0 and lambda=1 as the pure systems.
     All individual force components will not match due to the presence of dummy atoms, only the total nonbonded energy should be the same.
     """
-    integrator = openmm.LangevinIntegrator(300*unit.kelvin, 1.0/unit.picosecond, 0.002*unit.picoseconds)
+    integrator = openmm.LangevinIntegrator(
+        300 * unit.kelvin, 1.0 / unit.picosecond, 0.002 * unit.picoseconds
+    )
     platform = openmm.Platform.getPlatformByName("CPU")
     default_lambda = _rfe_utils.lambdaprotocol.LambdaProtocol()
     htf = htf_chloro_ethane["htf"]
@@ -1534,7 +1616,11 @@ def test_vacuum_system_energy_dummy(htf_chloro_ethane):
 
     # set the nonbonded forces to group 1 to easily extract their energies and all others to 0
     for force in hybrid_system.getForces():
-        if force.getName() in ["NonbondedForce", "CustomNonbondedForce", "CustomBondForce_exceptions"]:
+        if force.getName() in [
+            "NonbondedForce",
+            "CustomNonbondedForce",
+            "CustomBondForce_exceptions",
+        ]:
             force.setForceGroup(1)
         else:
             force.setForceGroup(0)
@@ -1543,12 +1629,12 @@ def test_vacuum_system_energy_dummy(htf_chloro_ethane):
         topology=htf.omm_hybrid_topology,
         system=hybrid_system,
         integrator=integrator,
-        platform=platform
+        platform=platform,
     )
 
     for end_state, ref_system, ref_top, pos in [
         (0, htf._old_system, htf._old_topology, htf._old_positions),
-        (1, htf._new_system, htf._new_topology, htf._new_positions)
+        (1, htf._new_system, htf._new_topology, htf._new_positions),
     ]:
         # set lambda
         # set all lambda values to the current end state
@@ -1572,7 +1658,7 @@ def test_vacuum_system_energy_dummy(htf_chloro_ethane):
             topology=ref_top,
             system=ref_system,
             integrator=copy.deepcopy(integrator),
-            platform=platform
+            platform=platform,
         )
         ref_simulation.context.setPositions(pos)
         ref_state = ref_simulation.context.getState(getEnergy=True, groups={1})
@@ -1589,7 +1675,9 @@ def test_system_energy_pme_no_dummy(htf_chlorobenzene_fluorobenzene):
     Test that the hybrid system energy is the same at lambda=0 and lambda=1 as the pure systems using PME,
     for a fully mapped system.
     """
-    integrator = openmm.LangevinIntegrator(300 * unit.kelvin, 1.0 / unit.picosecond, 0.002 * unit.picoseconds)
+    integrator = openmm.LangevinIntegrator(
+        300 * unit.kelvin, 1.0 / unit.picosecond, 0.002 * unit.picoseconds
+    )
     platform = openmm.Platform.getPlatformByName("CPU")
     default_lambda = _rfe_utils.lambdaprotocol.LambdaProtocol()
     htf = htf_chlorobenzene_fluorobenzene["htf"]
@@ -1599,11 +1687,11 @@ def test_system_energy_pme_no_dummy(htf_chlorobenzene_fluorobenzene):
         topology=htf.omm_hybrid_topology,
         system=hybrid_system,
         integrator=integrator,
-        platform=platform
+        platform=platform,
     )
     for end_state, ref_system, ref_top, pos in [
         (0, htf._old_system, htf._old_topology, htf._old_positions),
-        (1, htf._new_system, htf._new_topology, htf._new_positions)
+        (1, htf._new_system, htf._new_topology, htf._new_positions),
     ]:
         # set lambda
         # set all lambda values to the current end state
@@ -1620,7 +1708,7 @@ def test_system_energy_pme_no_dummy(htf_chlorobenzene_fluorobenzene):
             topology=ref_top,
             system=ref_system,
             integrator=copy.deepcopy(integrator),
-            platform=platform
+            platform=platform,
         )
         ref_simulation.context.setPositions(pos)
         ref_state = ref_simulation.context.getState(getEnergy=True)
@@ -1700,7 +1788,9 @@ def test_system_energy_pme_dummy(htf_chlorobenzene_benzene):
     Test that the hybrid system nonbonded energy is the same at lambda=0 and lambda=1 as the pure systems using PME,
     for a system with dummy atoms.
     """
-    integrator = openmm.LangevinIntegrator(300 * unit.kelvin, 1.0 / unit.picosecond, 0.002 * unit.picoseconds)
+    integrator = openmm.LangevinIntegrator(
+        300 * unit.kelvin, 1.0 / unit.picosecond, 0.002 * unit.picoseconds
+    )
     platform = openmm.Platform.getPlatformByName("CPU")
     default_lambda = _rfe_utils.lambdaprotocol.LambdaProtocol()
     htf = htf_chlorobenzene_benzene["htf"]
@@ -1708,7 +1798,11 @@ def test_system_energy_pme_dummy(htf_chlorobenzene_benzene):
 
     # set the nonbonded forces to group 1 to easily extract their energies and all others to 0
     for force in hybrid_system.getForces():
-        if force.getName() in ["NonbondedForce", "CustomNonbondedForce", "CustomBondForce_exceptions"]:
+        if force.getName() in [
+            "NonbondedForce",
+            "CustomNonbondedForce",
+            "CustomBondForce_exceptions",
+        ]:
             force.setForceGroup(1)
         else:
             force.setForceGroup(0)
@@ -1717,12 +1811,12 @@ def test_system_energy_pme_dummy(htf_chlorobenzene_benzene):
         topology=htf.omm_hybrid_topology,
         system=hybrid_system,
         integrator=integrator,
-        platform=platform
+        platform=platform,
     )
 
     for end_state, ref_system, ref_top, pos in [
         (0, htf._old_system, htf._old_topology, htf._old_positions),
-        (1, htf._new_system, htf._new_topology, htf._new_positions)
+        (1, htf._new_system, htf._new_topology, htf._new_positions),
     ]:
         # set lambda
         # set all lambda values to the current end state
@@ -1745,7 +1839,7 @@ def test_system_energy_pme_dummy(htf_chlorobenzene_benzene):
             topology=ref_top,
             system=ref_system,
             integrator=copy.deepcopy(integrator),
-            platform=platform
+            platform=platform,
         )
         ref_simulation.context.setPositions(pos)
         ref_state = ref_simulation.context.getState(getEnergy=True, groups={1})
@@ -1753,5 +1847,5 @@ def test_system_energy_pme_dummy(htf_chlorobenzene_benzene):
         # energies should be the same
         # this is only true if we correctly interpolate the 1-4 interactions involving dummy atoms
         # make sure the energy is non-zero to avoid false positives
-        assert  0.0 != pytest.approx(hybrid_energy)
+        assert 0.0 != pytest.approx(hybrid_energy)
         assert hybrid_energy == pytest.approx(ref_energy, rel=1e-5)
