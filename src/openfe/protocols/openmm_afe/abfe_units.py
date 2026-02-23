@@ -73,7 +73,7 @@ class ComplexComponentsMixin:
         # If there is an SolvatedPDBComponent, we set the solv_comp
         # in the complex to None, as it is only used in the solvent leg
         if isinstance(prot_comp, SolvatedPDBComponent):
-            solv_comp = None
+            solv_comp = prot_comp
 
         return alchem_comps, solv_comp, prot_comp, off_comps
 

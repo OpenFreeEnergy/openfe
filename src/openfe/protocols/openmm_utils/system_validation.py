@@ -107,14 +107,17 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     """
     nonbonded_method = nonbonded_method.lower()
     base_solv_comps = state.get_components_of_type(BaseSolventComponent)
+    solvation_comps = state.get_components_of_type(SolventComponent)
+    solvated_comps = state.get_components_of_type(SolvatedPDBComponent)
 
-    if len(base_solv_comps) > 2:
-        raise ValueError("At most one SolventComponent and one SolvatedPDBComponent are supported")
+    if len(solvated_comps) > 1:
+        raise ValueError("Multiple SolvatedPDBComponent found, only one is supported")
 
-    solvent_comps = [c for c in base_solv_comps if isinstance(c, SolventComponent)]
-
-    if len(solvent_comps) > 1:
+    if len(solvation_comps) > 1:
         raise ValueError("Multiple SolventComponent found, only one is supported")
+
+    if len(base_solv_comps) != len(solvation_comps) + len(solvated_comps):
+        raise ValueError("At most one SolventComponent and one SolvatedPDBComponent are supported")
 
     # Any BaseSolventComponent present → nocutoff is invalid
     if base_solv_comps and nonbonded_method == "nocutoff":
@@ -127,8 +130,8 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         return
 
     # Solvent-specific checks
-    if solvent_comps:
-        solvent = solvent_comps[0]
+    if solvation_comps:
+        solvent = solvation_comps[0]
 
         if solvent.smiles != "O":
             raise ValueError("Non water solvent is not currently supported")
@@ -172,24 +175,22 @@ def validate_protein_barostat(state: ChemicalSystem, barostat: str):
       The barostat to be applied to the simulation
     """
     prot_comps = state.get_components_of_type(ProteinComponent)
+    protein_membrane = state.get_components_of_type(ProteinMembraneComponent)
 
     if not prot_comps:
         return
 
-    protein = prot_comps[0]
+    if protein_membrane:
+        if barostat != "MonteCarloMembraneBarostat":
+            wmsg = (
+                "A ProteinMembraneComponent is present, but a membrane-specific "
+                "barostat (MonteCarloMembraneBarostat) is not specified. If you "
+                "are simulating a system with a membrane, consider using "
+                "integrator_settings.barostat='MonteCarloMembraneBarostat'."
+            )
+            warnings.warn(wmsg)
 
-    if isinstance(protein, ProteinMembraneComponent) and barostat != "MonteCarloMembraneBarostat":
-        wmsg = (
-            "A ProteinMembraneComponent is present, but a membrane-specific "
-            "barostat (MonteCarloMembraneBarostat) is not specified. If you "
-            "are simulating a system with a membrane, consider using "
-            "integrator_settings.barostat='MonteCarloMembraneBarostat'."
-        )
-        warnings.warn(wmsg)
-    if (
-        not isinstance(protein, ProteinMembraneComponent)
-        and barostat == "MonteCarloMembraneBarostat"
-    ):
+    elif barostat == "MonteCarloMembraneBarostat":
         wmsg = (
             "A MonteCarloMembraneBarostat is specified, but no "
             "ProteinMembraneComponent is present. If you are not simulating a "
