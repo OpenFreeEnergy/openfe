@@ -334,8 +334,8 @@ def a2a_ligands_sdf():
 
 @pytest.fixture(scope="session")
 def a2a_ligands(a2a_ligands_sdf) -> list[SmallMoleculeComponent]:
-    with gzip.open(a2a_ligands_sdf, "rt") as gzf:
-        return [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(gzf, removeHs=False)]
+    with gzip.open(a2a_ligands_sdf, "rb") as gzf:
+        yield [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(gzf, removeHs=False)]
 
 
 @pytest.fixture()
