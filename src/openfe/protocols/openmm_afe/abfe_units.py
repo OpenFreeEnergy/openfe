@@ -71,7 +71,8 @@ class ComplexComponentsMixin:
         # Similarly we don't need to check prot_comp
 
         # If there is an SolvatedPDBComponent, we set the solv_comp
-        # in the complex to None, as it is only used in the solvent leg
+        # in the complex to the SolvatedPDBComponent, as the SolventComponent
+        # is only used in the solvent leg
         if isinstance(prot_comp, SolvatedPDBComponent):
             solv_comp = prot_comp
 
