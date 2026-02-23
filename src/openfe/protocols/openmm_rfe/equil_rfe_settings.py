@@ -76,11 +76,11 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     softcore_alpha: float = 0.85
     """Softcore alpha parameter. Default 0.85"""
-    turn_off_core_unique_exceptions: bool = False
+    turn_off_core_unique_exceptions: bool = True
     """
     Whether to turn off interactions for new exceptions (not just 1,4s)
     at lambda 0 and old exceptions at lambda 1 between unique atoms and core
-    atoms. If False they are present in the nonbonded force. Default False.
+    atoms. If False they are present in the nonbonded force. Default True.
     """
     explicit_charge_correction: bool = False
     """
