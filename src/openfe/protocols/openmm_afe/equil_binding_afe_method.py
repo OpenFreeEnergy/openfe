@@ -420,6 +420,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             self.settings.forcefield_settings.hydrogen_mass,
             self.settings.complex_integrator_settings.timestep,
         )
+
         settings_validation.validate_timestep(
             self.settings.forcefield_settings.hydrogen_mass,
             self.settings.solvent_integrator_settings.timestep,
