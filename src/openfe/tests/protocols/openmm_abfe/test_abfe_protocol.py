@@ -477,7 +477,7 @@ class TestT4LysozymeDryRun:
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
-                setup_results["alchem_system"], "solvent", settings=settings
+                setup_results["alchem_system"], phase="solvent", settings=settings
             )
             self._test_cubic_vectors(setup_results["alchem_system"])
 
