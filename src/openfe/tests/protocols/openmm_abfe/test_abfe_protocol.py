@@ -473,7 +473,7 @@ class TestT4LysozymeDryRun:
             )
 
             # Check the sampler
-            self._verify_sampler(sim_results["sampler"], "solvent", settings=settings)
+            self._verify_sampler(sim_results["sampler"], phase="solvent", settings=settings)
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
