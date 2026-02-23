@@ -7,6 +7,7 @@ Protocols.
 
 import warnings
 from typing import Optional, Tuple
+import logging
 
 from gufe import (
     BaseSolventComponent,
@@ -20,6 +21,7 @@ from gufe import (
 )
 from openff.toolkit import Molecule as OFFMol
 
+logger = logging.getLogger(__name__)
 
 def get_alchemical_components(
     stateA: ChemicalSystem,
@@ -105,7 +107,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
       * If there is no BaseSolventComponent and the `nonbonded_method` is `pme`.
       * If the SolventComponent solvent is not water.
     """
-    nonbonded_method = nonbonded_method.lower()
+    nb_method = nonbonded_method.lower()
     base_solv_comps = state.get_components_of_type(BaseSolventComponent)
     solvation_comps = state.get_components_of_type(SolventComponent)
     solvated_comps = state.get_components_of_type(SolvatedPDBComponent)
@@ -120,12 +122,12 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         raise ValueError("At most one SolventComponent and one SolvatedPDBComponent are supported")
 
     # Any BaseSolventComponent present → nocutoff is invalid
-    if base_solv_comps and nonbonded_method == "nocutoff":
+    if base_solv_comps and nb_method == "nocutoff":
         raise ValueError("nocutoff cannot be used for solvent transformations")
 
     # Vacuum transform
     if not base_solv_comps:
-        if nonbonded_method == "pme":
+        if nb_method == "pme":
             raise ValueError("PME cannot be used for vacuum transform")
         return
 
@@ -189,6 +191,7 @@ def validate_barostat(state: ChemicalSystem, barostat: str):
                 "integrator_settings.barostat='MonteCarloMembraneBarostat'."
             )
             warnings.warn(wmsg)
+            logger.warning(wmsg)
 
     elif barostat == "MonteCarloMembraneBarostat":
         wmsg = (
@@ -198,6 +201,7 @@ def validate_barostat(state: ChemicalSystem, barostat: str):
             "integrator_settings.barostat='MonteCarloBarostat'."
         )
         warnings.warn(wmsg)
+        logger.warning(wmsg)
 
 
 ParseCompRet = Tuple[

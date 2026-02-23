@@ -293,9 +293,14 @@ class TestT4LysozymeDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(
-            settings.complex_integrator_settings.barostat_frequency.m
+        expected_frequency = int(
+            (
+                settings.complex_integrator_settings
+                if phase == "complex"
+                else settings.solvent_integrator_settings
+            ).barostat_frequency.m
         )
+        assert barostat[0].getFrequency() == expected_frequency
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
@@ -326,9 +331,15 @@ class TestT4LysozymeDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(
-            settings.complex_integrator_settings.barostat_frequency.m
+        expected_frequency = int(
+            (
+                settings.complex_integrator_settings
+                if phase == "complex"
+                else settings.solvent_integrator_settings
+            ).barostat_frequency.m
         )
+        assert barostat[0].getFrequency() == expected_frequency
+
         assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
@@ -340,7 +351,8 @@ class TestT4LysozymeDryRun:
         """
         assert sampler.is_periodic
         assert isinstance(sampler, MultiStateSampler)
-        assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
+        barostat_type = self.barostat_by_phase[phase]
+        assert isinstance(sampler._thermodynamic_states[0].barostat, barostat_type)
         assert sampler._thermodynamic_states[1].pressure == to_openmm(
             settings.thermo_settings.pressure
         )
@@ -668,21 +680,6 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
 
     def _check_box_vectors(self, system):
         self._test_orthogonal_vectors(system)
-
-    def _verify_sampler(self, sampler, phase: str, settings):
-        """
-        Utility to verify the contents of the sampler.
-        """
-        assert sampler.is_periodic
-        assert isinstance(sampler, MultiStateSampler)
-        barostat_type = self.barostat_by_phase[phase]
-        assert isinstance(sampler._thermodynamic_states[0].barostat, barostat_type)
-        assert sampler._thermodynamic_states[1].pressure == to_openmm(
-            settings.thermo_settings.pressure
-        )
-        for state in sampler._thermodynamic_states:
-            system = state.get_system(remove_thermostat=True)
-            self._assert_expected_alchemical_forces(system, phase, settings)
 
     @staticmethod
     def _test_orthogonal_vectors(system):

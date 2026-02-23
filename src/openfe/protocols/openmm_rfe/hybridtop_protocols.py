@@ -197,11 +197,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             protocol_settings.lambda_settings.lambda_windows = 22
 
         # adapt the solvation padding based on the system components
-        if stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent):
+        if stateA.contains(ProteinComponent):
             protocol_settings.solvation_settings.solvent_padding = 1 * offunit.nanometer
 
         # adapt the barostat based on the system components
-        if stateA.contains(ProteinMembraneComponent) and stateB.contains(ProteinMembraneComponent):
+        if stateA.contains(ProteinMembraneComponent):
             protocol_settings.integrator_settings.barostat = "MonteCarloMembraneBarostat"
             protocol_settings.forcefield_settings.forcefields = [
                 "amber/ff14SB.xml",
@@ -552,7 +552,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         system_validation.validate_protein(stateA)
 
         # Validate the barostat used in combination with the protein component
-        system_validation.validate_protein_barostat(
+        system_validation.validate_barostat(
             stateA, self.settings.integrator_settings.barostat
         )
 

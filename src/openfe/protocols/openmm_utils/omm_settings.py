@@ -446,6 +446,11 @@ class IntegratorSettings(SettingsBaseModel):
             raise ValueError(
                 "surface_tension must be set (may be zero) when using MonteCarloMembraneBarostat"
             )
+        if self.barostat == "MonteCarloBarostat" and self.surface_tension:
+            raise ValueError(
+                "Got a nonzero surface_tension which is not allowed when using "
+                f"the MonteCarloBarostat. Got surface_tension {self.surface_tension}"
+            )
         return self
 
 
