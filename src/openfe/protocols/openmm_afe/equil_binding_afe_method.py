@@ -416,6 +416,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         )
 
         # Validate integrator things
+        # We validate the timstep for both the complex & solvent settings
         settings_validation.validate_timestep(
             self.settings.forcefield_settings.hydrogen_mass,
             self.settings.complex_integrator_settings.timestep,
