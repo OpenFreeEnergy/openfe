@@ -58,7 +58,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
-from openfe.protocols.openmm_utils.serialization import deserialize, make_vec3_box
+from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import without_oechem_backend
 
 from ..openmm_utils import (
@@ -68,7 +68,6 @@ from ..openmm_utils import (
     system_creation,
 )
 from .utils import SepTopParameterState
-from ..openmm_utils.serialization import make_vec3_box
 
 logger = logging.getLogger(__name__)
 
