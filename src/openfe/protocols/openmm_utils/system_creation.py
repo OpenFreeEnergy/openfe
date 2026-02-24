@@ -133,7 +133,7 @@ def get_system_generator(
                 ensure_quantity(thermo_settings.pressure, "openmm"),
                 ensure_quantity(thermo_settings.temperature, "openmm"),
                 integrator_settings.barostat_frequency.m,
-        )
+            )
     else:
         barostat = None
 
