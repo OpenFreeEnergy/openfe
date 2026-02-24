@@ -1139,10 +1139,10 @@ class SepTopProtocol(gufe.Protocol):
 
     @classmethod
     def _adaptive_settings(
-            cls,
-            stateA: ChemicalSystem,
-            stateB: ChemicalSystem,
-            initial_settings: None | SepTopSettings = None,
+        cls,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        initial_settings: None | SepTopSettings = None,
     ) -> SepTopSettings:
         """
         Get the recommended OpenFE settings for this protocol based on the input states involved in the

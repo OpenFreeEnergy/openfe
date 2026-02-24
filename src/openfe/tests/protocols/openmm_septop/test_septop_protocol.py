@@ -1730,7 +1730,10 @@ class TestA2AMembraneDryRun:
             # Get adaptive settings
             adaptive_settings = complex_setup_units[0]._inputs["protocol"].settings
             # Check that adaptive settings changed the barostat to membrane barostat
-            assert adaptive_settings.complex_integrator_settings.barostat == 'MonteCarloMembraneBarostat'
+            assert (
+                adaptive_settings.complex_integrator_settings.barostat
+                == "MonteCarloMembraneBarostat"
+            )
             complex_setup_output = complex_setup_units[0].run(dry=True)["debug"]
             serialized_topology = complex_setup_output["topology"]
             serialized_system = complex_setup_output["system"]
