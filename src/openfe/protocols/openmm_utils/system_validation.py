@@ -102,7 +102,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     ------
     ValueError
       * If there are more than two BaseSolventComponents in the ChemicalSystem.
-      * If there are multiple SolventComponents in the ChemicalSystem.
+      * If there are multiple SolventComponents or SolvatedPDBComponents in the ChemicalSystem.
       * If `nocutoff` is requested with any BaseSolventComponent present.
       * If there is no BaseSolventComponent and the `nonbonded_method` is `pme`.
       * If the SolventComponent solvent is not water.
