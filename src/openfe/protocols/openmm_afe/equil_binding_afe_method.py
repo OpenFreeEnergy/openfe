@@ -213,10 +213,10 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
     @classmethod
     def _adaptive_settings(
-            cls,
-            stateA: ChemicalSystem,
-            stateB: ChemicalSystem,
-            initial_settings: None | AbsoluteBindingSettings = None,
+        cls,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        initial_settings: None | AbsoluteBindingSettings = None,
     ) -> AbsoluteBindingSettings:
         """
         Get the recommended OpenFE settings for this protocol based on the input states involved in the
