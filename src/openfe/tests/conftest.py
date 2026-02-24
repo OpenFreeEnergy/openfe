@@ -125,11 +125,6 @@ def mol_from_smiles(smiles: str) -> Chem.Mol:
 
 
 @pytest.fixture(scope="session")
-def ethane():
-    return SmallMoleculeComponent(mol_from_smiles("CC"))
-
-
-@pytest.fixture(scope="session")
 def simple_mapping():
     """Disappearing oxygen on end
 
