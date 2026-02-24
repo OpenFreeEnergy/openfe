@@ -1796,9 +1796,7 @@ class TestA2AMembraneDryRun:
 
 def test_adaptive_settings_no_protein_membrane(toluene_complex_system, default_settings):
     settings = SepTopProtocol._adaptive_settings(
-        toluene_complex_system,
-        toluene_complex_system,
-        default_settings
+        toluene_complex_system, toluene_complex_system, default_settings
     )
 
     assert isinstance(settings, SepTopSettings)

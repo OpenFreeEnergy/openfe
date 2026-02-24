@@ -2,11 +2,11 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 
+from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
     AbsoluteBindingSettings,
 )
-from openfe import ChemicalSystem, SolventComponent
 
 
 @pytest.fixture()

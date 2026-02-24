@@ -1126,9 +1126,7 @@ def test_dry_run_membrane_complex(
     )
 
     adaptive_settings = openmm_rfe.RelativeHybridTopologyProtocol._adaptive_settings(
-        stateA=systemA,
-        stateB=systemB,
-        initial_settings=settings
+        stateA=systemA, stateB=systemB, initial_settings=settings
     )
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=adaptive_settings,
