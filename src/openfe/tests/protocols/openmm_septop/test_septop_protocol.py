@@ -1725,7 +1725,7 @@ class TestA2AMembraneDryRun:
             from_openmm(vectors),
         )
 
-    def test_complex_dry_run(self, complex_setup_units, complex_run_units, settings, tmpdir):
+    def test_complex_dry_run(self, complex_setup_units, complex_run_units, tmpdir):
         with tmpdir.as_cwd():
             # Get adaptive settings
             adaptive_settings = complex_setup_units[0]._inputs["protocol"].settings

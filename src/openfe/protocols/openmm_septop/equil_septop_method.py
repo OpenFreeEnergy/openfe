@@ -148,7 +148,6 @@ def _get_mdtraj_from_openmm(
     positions_in_mdtraj_format = omm_positions.value_in_unit(omm_units.nanometers)
 
     box = omm_topology.getPeriodicBoxVectors()
-    print('box', box)
     x, y, z = [np.array(b._value) for b in box]
     lx = np.linalg.norm(x)
     ly = np.linalg.norm(y)
@@ -1942,7 +1941,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 settings,
             )
         )  # fmt: skip
-        print('box1', omm_topology_A.getPeriodicBoxVectors())
 
         omm_system_B, omm_topology_B, positions_B, modeller_B, comp_resids_B = (
             self.get_system(
