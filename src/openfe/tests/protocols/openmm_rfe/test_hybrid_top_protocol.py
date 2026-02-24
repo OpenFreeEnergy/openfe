@@ -1113,20 +1113,8 @@ def test_dry_run_membrane_complex(
 
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.protocol_repeats = 1
-    settings.integrator_settings.barostat = "MonteCarloMembraneBarostat"
     settings.engine_settings.compute_platform = "cpu"
-    settings.forcefield_settings.forcefields = [
-        "amber/ff14SB.xml",
-        "amber/tip3p_standard.xml",
-        "amber/tip3p_HFE_multivalent.xml",
-        "amber/lipid17_merged.xml",
-        "amber/phosaa10.xml",
-    ]
     settings.output_settings.output_indices = "protein or resname  UNK"
-
-    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=settings,
-    )
 
     systemA = openfe.ChemicalSystem(
         {"ligand": mapping.componentA, "protein": a2a_protein_membrane_component},
@@ -1135,6 +1123,15 @@ def test_dry_run_membrane_complex(
     systemB = openfe.ChemicalSystem(
         {"ligand": mapping.componentB, "protein": a2a_protein_membrane_component},
         name=f"{mapping.componentB.name}_{a2a_protein_membrane_component.name}",
+    )
+
+    adaptive_settings = openmm_rfe.RelativeHybridTopologyProtocol._adaptive_settings(
+        stateA=systemA,
+        stateB=systemB,
+        initial_settings=settings
+    )
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=adaptive_settings,
     )
     dag = protocol.create(
         stateA=systemA,

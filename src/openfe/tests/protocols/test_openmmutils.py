@@ -10,6 +10,7 @@ from unittest import mock
 import numpy as np
 import pooch
 import pytest
+from gufe import BaseSolventComponent
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
 from openff.toolkit import Molecule as OFFMol
@@ -187,6 +188,19 @@ def test_validate_solvent_multiple_solvent(benzene_modifications):
     )
 
     with pytest.raises(ValueError, match="Multiple SolventComponent"):
+        system_validation.validate_solvent(state, "pme")
+
+
+def test_validate_solvent_multiple_solvated(benzene_modifications, a2a_protein_membrane_component):
+    state = openfe.ChemicalSystem(
+        {
+            "A": benzene_modifications["toluene"],
+            "S": a2a_protein_membrane_component,
+            "S2": a2a_protein_membrane_component,
+        }
+    )
+
+    with pytest.raises(ValueError, match="Multiple SolvatedPDBComponent"):
         system_validation.validate_solvent(state, "pme")
 
 

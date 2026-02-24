@@ -9,7 +9,6 @@ from unittest import mock
 import gufe
 import mdtraj as md
 import numpy as np
-import numpy.typing as npt
 import openmm
 import openmm.app
 import openmm.unit
@@ -28,14 +27,8 @@ from openmm import (
     NonbondedForce,
     PeriodicTorsionForce,
 )
-from openmm import unit as omm_unit
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
-from openmmtools.tests.test_alchemy import (
-    check_interacting_energy_components,
-    check_noninteracting_energy_components,
-    compare_system_energies,
-)
 
 import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
@@ -50,6 +43,7 @@ from openfe.protocols.openmm_septop import (
 from openfe.protocols.openmm_septop.equil_septop_method import (
     _check_alchemical_charge_difference,
 )
+from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -1798,3 +1792,34 @@ class TestA2AMembraneDryRun:
             # Check the PDB
             pdb = md.load_pdb("alchemical_system.pdb")
             assert pdb.n_atoms == (self.num_ligand_atoms_A + self.num_ligand_atoms_B)
+
+
+def test_adaptive_settings_no_protein_membrane(toluene_complex_system, default_settings):
+    settings = SepTopProtocol._adaptive_settings(
+        toluene_complex_system,
+        toluene_complex_system,
+        default_settings
+    )
+
+    assert isinstance(settings, SepTopSettings)
+    # Should use default barostat since no ProteinMembraneComponent
+    assert settings.complex_integrator_settings.barostat == "MonteCarloBarostat"
+
+
+def test_adaptive_settings_with_protein_membrane(a2a_protein_membrane_component, a2a_ligands):
+    stateA = ChemicalSystem(
+        {
+            "ligandA": a2a_ligands[0],
+            "protein": a2a_protein_membrane_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    settings = SepTopProtocol._adaptive_settings(stateA, stateA)
+    assert isinstance(settings, SepTopSettings)
+    # Barostat should have been updated
+    assert settings.complex_integrator_settings.barostat == "MonteCarloMembraneBarostat"
+
+    # Forcefields should include the lipid forcefields
+    ff = settings.forcefield_settings.forcefields
+    assert "amber/lipid17_merged.xml" in ff

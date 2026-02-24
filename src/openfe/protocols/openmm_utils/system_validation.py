@@ -119,9 +119,6 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     if len(solvation_comps) > 1:
         raise ValueError("Multiple SolventComponent found, only one is supported")
 
-    if len(base_solv_comps) != len(solvation_comps) + len(solvated_comps):
-        raise ValueError("At most one SolventComponent and one SolvatedPDBComponent are supported")
-
     # Any BaseSolventComponent present → nocutoff is invalid
     if base_solv_comps and nb_method == "nocutoff":
         raise ValueError("nocutoff cannot be used for solvent transformations")
