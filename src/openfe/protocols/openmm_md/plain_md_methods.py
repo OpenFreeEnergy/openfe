@@ -644,12 +644,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # f. Save pdb of entire system
         if output_settings.preminimized_structure:
+            # roundtrip box vectors to remove vec3 issues
+            box = to_openmm(from_openmm(stateA_system.getDefaultPeriodicBoxVectors()))
+            stateA_topology.setPeriodicBoxVectors(box)
             with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
-                # roundtrip box vectors to remove vec3 issues
-                box = to_openmm(from_openmm(
-                    stateA_system.getDefaultPeriodicBoxVectors()
-                ))
-                stateA_topology.setPeriodicBoxVectors(box)
                 openmm.app.PDBFile.writeFile(
                     stateA_topology, stateA_positions, file=f, keepIds=True
                 )

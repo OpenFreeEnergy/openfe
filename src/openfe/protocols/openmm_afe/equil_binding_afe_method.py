@@ -35,6 +35,7 @@ from gufe import (
     BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     settings,
@@ -209,6 +210,53 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
         )
         # fmt: on
+
+    @classmethod
+    def _adaptive_settings(
+            cls,
+            stateA: ChemicalSystem,
+            stateB: ChemicalSystem,
+            initial_settings: None | AbsoluteBindingSettings = None,
+    ) -> AbsoluteBindingSettings:
+        """
+        Get the recommended OpenFE settings for this protocol based on the input states involved in the
+        transformation.
+
+        These are intended as a suitable starting point for creating an instance of this protocol, which can be further
+        customized before performing a Protocol.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+            The initial state of the transformation.
+        stateB : ChemicalSystem
+            The final state of the transformation.
+        initial_settings : None | AbsoluteBindingSettings, optional
+            Initial settings to base the adaptive settings on. If None, default settings are used.
+
+        Returns
+        -------
+        AbsoluteBindingSettings
+            The recommended settings for this protocol based on the input states.
+        """
+        # use initial settings or default settings
+        if initial_settings is not None:
+            protocol_settings = initial_settings.model_copy(deep=True)
+        else:
+            protocol_settings = cls.default_settings()
+
+        # adapt the barostat and lipid forcefield based on the ProteinComponent
+        if stateA.contains(ProteinMembraneComponent):
+            protocol_settings.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
+            protocol_settings.forcefield_settings.forcefields = [
+                "amber/ff14SB.xml",
+                "amber/tip3p_standard.xml",
+                "amber/tip3p_HFE_multivalent.xml",
+                "amber/lipid17_merged.xml",
+                "amber/phosaa10.xml",
+            ]
+
+        return protocol_settings
 
     @staticmethod
     def _validate_endstates(

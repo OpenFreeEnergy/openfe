@@ -148,6 +148,7 @@ def _get_mdtraj_from_openmm(
     positions_in_mdtraj_format = omm_positions.value_in_unit(omm_units.nanometers)
 
     box = omm_topology.getPeriodicBoxVectors()
+    print('box', box)
     x, y, z = [np.array(b._value) for b in box]
     lx = np.linalg.norm(x)
     ly = np.linalg.norm(y)
@@ -230,10 +231,10 @@ class SepTopComplexMixin:
         small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         small_mols = small_mols | small_mols_B
 
-        # If there is an SolvatedPDBComponent, we set the solv_comp
-        # in the complex to None, as it is only used in the solvent leg
+        # If there is a SolvatedPDBComponent, we set the solv_comp in the
+        # complex to that, as the SolventComponent is only used in the solvent leg
         if isinstance(prot_comp, SolvatedPDBComponent):
-            solv_comp = None
+            solv_comp = prot_comp
 
         return alchem_comps, solv_comp, prot_comp, small_mols
 
@@ -1137,6 +1138,53 @@ class SepTopProtocol(gufe.Protocol):
             complex_restraint_settings=BoreschRestraintSettings(),
         )
 
+    @classmethod
+    def _adaptive_settings(
+            cls,
+            stateA: ChemicalSystem,
+            stateB: ChemicalSystem,
+            initial_settings: None | SepTopSettings = None,
+    ) -> SepTopSettings:
+        """
+        Get the recommended OpenFE settings for this protocol based on the input states involved in the
+        transformation.
+
+        These are intended as a suitable starting point for creating an instance of this protocol, which can be further
+        customized before performing a Protocol.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+            The initial state of the transformation.
+        stateB : ChemicalSystem
+            The final state of the transformation.
+        initial_settings : None | SepTopSettings, optional
+            Initial settings to base the adaptive settings on. If None, default settings are used.
+
+        Returns
+        -------
+        SepTopSettings
+            The recommended settings for this protocol based on the input states.
+        """
+        # use initial settings or default settings
+        if initial_settings is not None:
+            protocol_settings = initial_settings.model_copy(deep=True)
+        else:
+            protocol_settings = cls.default_settings()
+
+        # adapt the barostat and lipid forcefield based on the ProteinComponent
+        if stateA.contains(ProteinMembraneComponent):
+            protocol_settings.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
+            protocol_settings.forcefield_settings.forcefields = [
+                "amber/ff14SB.xml",
+                "amber/tip3p_standard.xml",
+                "amber/tip3p_HFE_multivalent.xml",
+                "amber/lipid17_merged.xml",
+                "amber/phosaa10.xml",
+            ]
+
+        return protocol_settings
+
     @staticmethod
     def _validate_complex_endstates(
         stateA: ChemicalSystem,
@@ -1894,6 +1942,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 settings,
             )
         )  # fmt: skip
+        print('box1', omm_topology_A.getPeriodicBoxVectors())
 
         omm_system_B, omm_topology_B, positions_B, modeller_B, comp_resids_B = (
             self.get_system(

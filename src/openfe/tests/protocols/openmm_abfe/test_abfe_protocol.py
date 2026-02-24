@@ -645,18 +645,10 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
         s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.solvent_solvation_settings.box_shape = "cube"
-        s.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
-        s.forcefield_settings.forcefields = [
-            "amber/ff14SB.xml",
-            "amber/tip3p_standard.xml",
-            "amber/tip3p_HFE_multivalent.xml",
-            "amber/lipid17_merged.xml",
-            "amber/phosaa10.xml",
-        ]
         return s
 
     @pytest.fixture(scope="class")
-    def dag(self, protocol, a2a_ligands, a2a_protein_membrane_component):
+    def dag(self, settings, a2a_ligands, a2a_protein_membrane_component):
         stateA = ChemicalSystem(
             {
                 "ligand": a2a_ligands[0],
@@ -671,6 +663,14 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
                 "solvent": self.solvent,
             }
         )
+
+        adaptive_settings = AbsoluteBindingProtocol._adaptive_settings(
+            stateA=stateA,
+            stateB=stateB,
+            initial_settings=settings,
+        )
+
+        protocol = AbsoluteBindingProtocol(settings=adaptive_settings)
 
         return protocol.create(
             stateA=stateA,

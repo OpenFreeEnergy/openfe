@@ -1515,12 +1515,6 @@ class TestA2AMembraneDryRun:
     num_ligand_atoms_B = 36
 
     @pytest.fixture(scope="class")
-    def protocol(self, settings):
-        return SepTopProtocol(
-            settings=settings,
-        )
-
-    @pytest.fixture(scope="class")
     def settings(self):
         s = SepTopProtocol.default_settings()
         s.protocol_repeats = 1
@@ -1529,20 +1523,10 @@ class TestA2AMembraneDryRun:
         s.complex_solvation_settings.box_shape = "dodecahedron"
         s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
         s.solvent_solvation_settings.box_shape = "cube"
-        s.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
-        s.forcefield_settings.forcefields = [
-            "amber/ff14SB.xml",
-            "amber/tip3p_standard.xml",
-            "amber/tip3p_HFE_multivalent.xml",
-            "amber/lipid17_merged.xml",
-            "amber/phosaa10.xml",
-        ]
         return s
 
     @pytest.fixture(scope="function")
-    def dag(self, protocol, a2a_ligands, a2a_protein_membrane_component):
-        print("atoms", len(a2a_ligands[0]._to_dict()["atoms"]))
-        print("atomsB", len(a2a_ligands[1]._to_dict()["atoms"]))
+    def dag(self, settings, a2a_ligands, a2a_protein_membrane_component):
         stateA = ChemicalSystem(
             {
                 "ligandA": a2a_ligands[0],
@@ -1558,6 +1542,14 @@ class TestA2AMembraneDryRun:
                 "solvent": self.solvent,
             }
         )
+
+        # adaptive settings
+        protocol_settings = SepTopProtocol._adaptive_settings(
+            stateA=stateA,
+            stateB=stateB,
+            initial_settings=settings,
+        )
+        protocol = SepTopProtocol(settings=protocol_settings)
 
         return protocol.create(
             stateA=stateA,
@@ -1734,39 +1726,43 @@ class TestA2AMembraneDryRun:
         )
 
     def test_complex_dry_run(self, complex_setup_units, complex_run_units, settings, tmpdir):
-        # with tmpdir.as_cwd():
-        complex_setup_output = complex_setup_units[0].run(dry=True)["debug"]
-        serialized_topology = complex_setup_output["topology"]
-        serialized_system = complex_setup_output["system"]
-        data = complex_run_units[0].run(
-            serialized_system, serialized_topology, dry=True
-        )["debug"]  # fmt: skip
-        # Check the sampler
-        self._verify_sampler(data["sampler"], complexed=True, settings=settings)
+        with tmpdir.as_cwd():
+            # Get adaptive settings
+            adaptive_settings = complex_setup_units[0]._inputs["protocol"].settings
+            # Check that adaptive settings changed the barostat to membrane barostat
+            assert adaptive_settings.complex_integrator_settings.barostat == 'MonteCarloMembraneBarostat'
+            complex_setup_output = complex_setup_units[0].run(dry=True)["debug"]
+            serialized_topology = complex_setup_output["topology"]
+            serialized_system = complex_setup_output["system"]
+            data = complex_run_units[0].run(
+                serialized_system, serialized_topology, dry=True
+            )["debug"]  # fmt: skip
+            # Check the sampler
+            self._verify_sampler(data["sampler"], complexed=True, settings=adaptive_settings)
 
-        # Check the alchemical system
-        self._assert_expected_alchemical_forces(
-            data["alchem_system"], complexed=True, settings=settings
-        )
-        self._test_orthogonal_vectors(data["alchem_system"])
+            # Check the alchemical system
+            self._assert_expected_alchemical_forces(
+                data["alchem_system"], complexed=True, settings=adaptive_settings
+            )
+            self._test_orthogonal_vectors(data["alchem_system"])
 
-        # Check the non-alchemical system
-        self._assert_expected_nonalchemical_forces(
-            complex_setup_output["system_AB"], complexed=True, settings=settings
-        )
-        self._test_orthogonal_vectors(complex_setup_output["system_AB"])
-        # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
-        assert_allclose(
-            from_openmm(data["alchem_system"].getDefaultPeriodicBoxVectors()),
-            from_openmm(complex_setup_output["system_AB"].getDefaultPeriodicBoxVectors()),
-        )
+            # Check the non-alchemical system
+            self._assert_expected_nonalchemical_forces(
+                complex_setup_output["system_AB"], complexed=True, settings=adaptive_settings
+            )
+            self._test_orthogonal_vectors(complex_setup_output["system_AB"])
+            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+            assert_allclose(
+                from_openmm(data["alchem_system"].getDefaultPeriodicBoxVectors()),
+                from_openmm(complex_setup_output["system_AB"].getDefaultPeriodicBoxVectors()),
+            )
 
-        # Check the PDB
-        pdb = md.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == self.num_all_not_water
+            # Check the PDB
+            pdb = md.load_pdb("alchemical_system.pdb")
+            assert pdb.n_atoms == self.num_all_not_water
 
-        full_pdb = md.load_pdb("topology.pdb")
-        assert full_pdb.n_atoms == self.num_complex_atoms
+            full_pdb = md.load_pdb("topology.pdb")
+            assert full_pdb.n_atoms == self.num_complex_atoms
 
     def test_solvent_dry_run(self, solvent_setup_units, solvent_run_units, settings, tmpdir):
         with tmpdir.as_cwd():
