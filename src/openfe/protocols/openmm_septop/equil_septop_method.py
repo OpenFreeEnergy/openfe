@@ -2015,6 +2015,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             self.verbose,
             self.logger,
         )
+        # roundtrip box vectors to remove vec3 issues
         box_AB = to_openmm(from_openmm(box_AB))
         omm_topology_AB.setPeriodicBoxVectors(box_AB)
 
