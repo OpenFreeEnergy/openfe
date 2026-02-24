@@ -5,9 +5,9 @@ Reusable utility methods to validate input systems to OpenMM-based alchemical
 Protocols.
 """
 
+import logging
 import warnings
 from typing import Optional, Tuple
-import logging
 
 from gufe import (
     BaseSolventComponent,
@@ -22,6 +22,7 @@ from gufe import (
 from openff.toolkit import Molecule as OFFMol
 
 logger = logging.getLogger(__name__)
+
 
 def get_alchemical_components(
     stateA: ChemicalSystem,
