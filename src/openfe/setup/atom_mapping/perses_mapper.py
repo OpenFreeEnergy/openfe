@@ -78,7 +78,7 @@ class PersesAtomMapper(LigandAtomMapper):
 
         """
         warnings.warn(
-            "PersesAtomMapper is deprecated and is planned to be removed in openfe v2.0.",
+            "PersesAtomMapper is deprecated and is planned to be removed in openfe v2.0. If you have questions related to this, please open an issue at https://github.com/OpenFreeEnergy/openfe/issues.",
             DeprecationWarning,
         )
         self.allow_ring_breaking = allow_ring_breaking

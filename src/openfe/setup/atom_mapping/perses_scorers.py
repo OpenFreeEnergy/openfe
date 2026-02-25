@@ -69,7 +69,7 @@ def default_perses_scorer(
         float
     """
     warnings.warn(
-        "default_perses_scorer is deprecated and is planned to be removed in openfe v2.0.",
+        "default_perses_scorer is deprecated and is planned to be removed in openfe v2.0. If you have questions related to this, please open an issue at https://github.com/OpenFreeEnergy/openfe/issues",
         DeprecationWarning,
     )
 
