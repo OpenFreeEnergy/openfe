@@ -1568,9 +1568,13 @@ class HybridTopologyFactory:
         """
         old_system_torsion_force = self._old_system_forces['PeriodicTorsionForce']
         new_system_torsion_force = self._new_system_forces['PeriodicTorsionForce']
+        # local variables for speed while doing many lookups
+        unique_old_atoms = self._atom_classes["unique_old_atoms"]
+        unique_new_atoms = self._atom_classes["unique_new_atoms"]
 
-        auxiliary_custom_torsion_force = []
-        old_custom_torsions_to_standard = []
+        # use sets to keep membership checks quick as systems have many torsions
+        auxiliary_custom_torsion_force = set()
+        old_custom_torsions_to_standard = set()
 
         # We need to keep track of what torsions we added so that we do not
         # double count
@@ -1590,7 +1594,7 @@ class HybridTopologyFactory:
 
             # If all atoms are in the core, we'll need to find the
             # corresponding parameters in the old system and interpolate
-            if hybrid_index_set.intersection(self._atom_classes['unique_old_atoms']):
+            if hybrid_index_set.intersection(unique_old_atoms):
                 # Then it goes to a standard force...
                 self._hybrid_system_forces['unique_atom_torsion_force'].addTorsion(
                     hybrid_index_list[0], hybrid_index_list[1],
@@ -1603,13 +1607,13 @@ class HybridTopologyFactory:
                 # core/env term; in any case, it goes to the core torsion_force
                 # TODO - why are we even adding the 0.0, 0.0, 0.0 section?
                 hybrid_force_parameters = [
-                    torsion_parameters[4], torsion_parameters[5],
-                    torsion_parameters[6], 0.0, 0.0, 0.0
+                    torsion_parameters[4], torsion_parameters[5].value_in_unit(unit.radian),
+                    torsion_parameters[6].value_in_unit(unit.kilojoule_per_mole), 0.0, 0.0, 0.0
                 ]
-                auxiliary_custom_torsion_force.append(
-                    [hybrid_index_list[0], hybrid_index_list[1],
+                auxiliary_custom_torsion_force.add(
+                    (hybrid_index_list[0], hybrid_index_list[1],
                      hybrid_index_list[2], hybrid_index_list[3],
-                     hybrid_force_parameters[:3]]
+                     *hybrid_force_parameters[:3])
                 )
 
         for torsion_index in range(new_system_torsion_force.getNumTorsions()):
@@ -1620,7 +1624,7 @@ class HybridTopologyFactory:
                 self._new_to_hybrid_map[new_index] for new_index in torsion_parameters[:4]]
             hybrid_index_set = set(hybrid_index_list)
 
-            if hybrid_index_set.intersection(self._atom_classes['unique_new_atoms']):
+            if hybrid_index_set.intersection(unique_new_atoms):
                 # Then it goes to the custom torsion force (scaled to zero)
                 self._hybrid_system_forces['unique_atom_torsion_force'].addTorsion(
                     hybrid_index_list[0], hybrid_index_list[1],
@@ -1631,16 +1635,15 @@ class HybridTopologyFactory:
             else:
                 hybrid_force_parameters = [
                     0.0, 0.0, 0.0, torsion_parameters[4],
-                    torsion_parameters[5], torsion_parameters[6]]
+                    torsion_parameters[5].value_in_unit(unit.radian), torsion_parameters[6].value_in_unit(unit.kilojoule_per_mole)]
 
                 # Check to see if this term is in the olds...
-                term = [hybrid_index_list[0], hybrid_index_list[1],
+                term = (hybrid_index_list[0], hybrid_index_list[1],
                         hybrid_index_list[2], hybrid_index_list[3],
-                        hybrid_force_parameters[3:]]
+                        *hybrid_force_parameters[3:])
                 if term in auxiliary_custom_torsion_force:
                     # Then this terms has to go to standard and be deleted...
-                    old_index = auxiliary_custom_torsion_force.index(term)
-                    old_custom_torsions_to_standard.append(old_index)
+                    old_custom_torsions_to_standard.add(term)
                     self._hybrid_system_forces['unique_atom_torsion_force'].addTorsion(
                         hybrid_index_list[0], hybrid_index_list[1],
                         hybrid_index_list[2], hybrid_index_list[3],
@@ -1656,16 +1659,15 @@ class HybridTopologyFactory:
                     )
 
         # Now we have to loop through the aux custom torsion force
-        for index in [q for q in range(len(auxiliary_custom_torsion_force))
-                      if q not in old_custom_torsions_to_standard]:
-            terms = auxiliary_custom_torsion_force[index]
-            hybrid_index_list = terms[:4]
-            hybrid_force_parameters = terms[4] + [0., 0., 0.]
-            self._hybrid_system_forces['custom_torsion_force'].addTorsion(
-                hybrid_index_list[0], hybrid_index_list[1],
-                hybrid_index_list[2], hybrid_index_list[3],
-                hybrid_force_parameters
-            )
+        for term in auxiliary_custom_torsion_force:
+            if term not in old_custom_torsions_to_standard:
+                hybrid_index_list = term[:4]
+                hybrid_force_parameters = term[4:] + (0., 0., 0.)
+                self._hybrid_system_forces['custom_torsion_force'].addTorsion(
+                    hybrid_index_list[0], hybrid_index_list[1],
+                    hybrid_index_list[2], hybrid_index_list[3],
+                    hybrid_force_parameters
+                )
 
     def _handle_nonbonded(self):
         """
@@ -1825,8 +1827,9 @@ class HybridTopologyFactory:
         self._handle_interaction_groups()
 
         self._handle_hybrid_exceptions()
-
+        t2 = time.perf_counter()
         self._handle_original_exceptions()
+        print(f"Time to handle original exceptions {time.perf_counter() - t2:.2f} seconds")
 
     def _handle_interaction_groups(self):
         """
@@ -2092,9 +2095,7 @@ class HybridTopologyFactory:
                 index1_new = hybrid_to_new_map[index1_hybrid]
                 index2_new = hybrid_to_new_map[index2_hybrid]
                 # Get the exception parameters:
-                new_exception_parms= self._find_exception(
-                                         new_system_nonbonded_force,
-                                         index1_new, index2_new)
+                new_exception_parms = self._new_system_exceptions.get((index1_new, index2_new), [])
 
                 # If there's no new exception, then we should just set the
                 # exception parameters to be the nonbonded parameters
@@ -2106,7 +2107,7 @@ class HybridTopologyFactory:
                     sigma_new = 0.5 * (sigma1_new + sigma2_new)
                     epsilon_new = unit.sqrt(epsilon1_new*epsilon2_new)
                 else:
-                    [index1_new, index2_new, chargeProd_new, sigma_new, epsilon_new] = new_exception_parms
+                    [chargeProd_new, sigma_new, epsilon_new] = new_exception_parms
 
                 # Interpolate between old and new
                 exception_index = self._hybrid_system_forces['standard_nonbonded_force'].addException(
@@ -2179,7 +2180,8 @@ class HybridTopologyFactory:
 
                 # See if it's also in the old nonbonded force. if it is, then we don't need to add it.
                 # But if it's not, we need to interpolate
-                if not self._find_exception(old_system_nonbonded_force, index1_old, index2_old):
+                old_exception_parms = self._old_system_exceptions.get((index1_old, index2_old), [])
+                if not old_exception_parms:
 
                     [charge1_old, sigma1_old, epsilon1_old] = old_system_nonbonded_force.getParticleParameters(index1_old)
                     [charge2_old, sigma2_old, epsilon2_old] = old_system_nonbonded_force.getParticleParameters(index2_old)
