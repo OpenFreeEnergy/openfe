@@ -1827,9 +1827,8 @@ class HybridTopologyFactory:
         self._handle_interaction_groups()
 
         self._handle_hybrid_exceptions()
-        t2 = time.perf_counter()
+
         self._handle_original_exceptions()
-        print(f"Time to handle original exceptions {time.perf_counter() - t2:.2f} seconds")
 
     def _handle_interaction_groups(self):
         """
