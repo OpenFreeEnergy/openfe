@@ -11,6 +11,7 @@ dependencies:
   - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
+  - numba
   - numpy
   - openfe-analysis>=0.4.0 # min pin https://github.com/OpenFreeEnergy/openfe/issues/1834#issuecomment-3920079481, no max to check issues with new versions
   - openff-interchange-base
@@ -54,6 +55,7 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/choderalab/pymbar.git@ed40ec3bbef03bb08938ad1a74d459b0d1ab81f7
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
