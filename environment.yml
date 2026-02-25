@@ -12,7 +12,7 @@ dependencies:
   - lomap2>=3.2.1
   - networkx
   - numpy
-  - openfe-analysis>=0.3.1
+  - openfe-analysis>=0.4.0 # min pin https://github.com/OpenFreeEnergy/openfe/issues/1834#issuecomment-3920079481, no max to check issues with new versions
   - openff-interchange-base
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
