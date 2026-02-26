@@ -408,7 +408,7 @@ class HybridTopologyFactory:
         """
         Convenience method to invert a dictionary (since we do it so often).
 
-        Paramters:
+        Parameters:
         ----------
         dictionary : dict
             Dictionary you want to invert
@@ -421,6 +421,8 @@ class HybridTopologyFactory:
         ----------
         old_to_new_map : dict of int : int
             Dictionary mapping atoms between the old and new systems.
+        core_old_to_new_map: dict[int,int]
+            Dictionary mapping core atoms between the old and new systems. This is a subset of the old_to_new_map.
 
         Notes
         -----
@@ -670,42 +672,29 @@ class HybridTopologyFactory:
         """
         This method adds relevant constraints from the old and new systems.
 
-        First, all constraints from the old systenm are added.
+        First, all constraints from the old system are added.
         Then, constraints to atoms unique to the new system are added.
-
-        TODO: condense duplicated code
         """
         # lengths of constraints already added
         constraint_lengths = dict()
 
-        # old system
-        hybrid_map = self._old_to_hybrid_map
-        for const_idx in range(self._old_system.getNumConstraints()):
-            at1, at2, length = self._old_system.getConstraintParameters(
-                const_idx)
-            hybrid_atoms = tuple(sorted([hybrid_map[at1], hybrid_map[at2]]))
-            if hybrid_atoms not in constraint_lengths.keys():
-                self._hybrid_system.addConstraint(hybrid_atoms[0],
-                                                  hybrid_atoms[1], length)
-                constraint_lengths[hybrid_atoms] = length
-            else:
+        for system, hybrid_map in (
+            (self._old_system, self._old_to_hybrid_map),
+            (self._new_system, self._new_to_hybrid_map),
+        ):
+            for const_idx in range(system.getNumConstraints()):
+                at1, at2, length = system.getConstraintParameters(const_idx)
+                hybrid_atoms = tuple(sorted([hybrid_map[at1], hybrid_map[at2]]))
+                if hybrid_atoms not in constraint_lengths.keys():
+                    # add to the system
+                    self._hybrid_system.addConstraint(hybrid_atoms[0],
+                                                      hybrid_atoms[1], length)
+                    # store for later checks
+                    constraint_lengths[hybrid_atoms] = length
+                else:
+                    if constraint_lengths[hybrid_atoms] != length:
+                        raise AssertionError('constraint length is changing')
 
-                if constraint_lengths[hybrid_atoms] != length:
-                    raise AssertionError('constraint length is changing')
-
-        # new system
-        hybrid_map = self._new_to_hybrid_map
-        for const_idx in range(self._new_system.getNumConstraints()):
-            at1, at2, length = self._new_system.getConstraintParameters(
-                const_idx)
-            hybrid_atoms = tuple(sorted([hybrid_map[at1], hybrid_map[at2]]))
-            if hybrid_atoms not in constraint_lengths.keys():
-                self._hybrid_system.addConstraint(hybrid_atoms[0],
-                                                  hybrid_atoms[1], length)
-                constraint_lengths[hybrid_atoms] = length
-            else:
-                if constraint_lengths[hybrid_atoms] != length:
-                    raise AssertionError('constraint length is changing')
 
     @staticmethod
     def _copy_threeparticleavg(atm_map, env_atoms, vs):
@@ -1519,40 +1508,6 @@ class HybridTopologyFactory:
                           "fit into a canonical atom set")
                 raise ValueError(errmsg)
 
-    @staticmethod
-    def _find_torsion_parameters(torsion_force, indices):
-        """
-        Convenience function to find the torsion parameters corresponding to a
-        particular set of indices.
-
-        Parameters
-        ----------
-        torsion_force : openmm.PeriodicTorsionForce
-            torsion force where the torsion of interest may be found
-        indices : list of int
-            The indices of the atoms of the torsion
-
-        Returns
-        -------
-        torsion_parameters : list
-            torsion parameters
-        """
-        indices_reversed = indices[::-1]
-
-        torsion_params_list = list()
-
-        # Now loop through and try to find the torsion:
-        for torsion_idx in range(torsion_force.getNumTorsions()):
-            torsion_params = torsion_force.getTorsionParameters(torsion_idx)
-
-            # Get a set representing the torsion indices:
-            torsion_param_indices = torsion_params[:4]
-
-            if (indices == torsion_param_indices or
-                    indices_reversed == torsion_param_indices):
-                torsion_params_list.append(torsion_params)
-
-        return torsion_params_list
 
     def _handle_periodic_torsion_force(self):
         """
@@ -2002,34 +1957,6 @@ class HybridTopologyFactory:
             # If it's not handled by an exception in the original system, we
             # just add the regular parameters as an exception
 
-    @staticmethod
-    def _find_exception(force, index1, index2):
-        """
-        Find the exception that corresponds to the given indices in the given
-        system
-
-        Parameters
-        ----------
-        force : openmm.NonbondedForce object
-            System containing the exceptions
-        index1 : int
-            The index of the first atom (order is unimportant)
-        index2 : int
-            The index of the second atom (order is unimportant)
-
-        Returns
-        -------
-        exception_parameters : list
-            List of exception parameters
-        """
-        index_set = {index1, index2}
-
-        # Loop through the exceptions and try to find one matching the criteria
-        for exception_idx in range(force.getNumExceptions()):
-            exception_parameters = force.getExceptionParameters(exception_idx)
-            if index_set==set(exception_parameters[:2]):
-                return exception_parameters
-        return []
 
     def _handle_original_exceptions(self):
         """
