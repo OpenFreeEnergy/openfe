@@ -615,12 +615,18 @@ class HybridTopologyFactory:
         -------
         exceptions_dict : dict
             Dictionary of exceptions
+
+        Note
+        ----
+        * The keys of the dictionary are sorted tuples of the particle indices
+          to make it easier to search for exceptions between two particles
+          without worrying about order.
         """
         exceptions_dict = {}
 
         for exception_index in range(force.getNumExceptions()):
             [index1, index2, chargeProd, sigma, epsilon] = force.getExceptionParameters(exception_index)
-            exceptions_dict[(index1, index2)] = [chargeProd, sigma, epsilon]
+            exceptions_dict[tuple(sorted([index1, index2]))] = [chargeProd, sigma, epsilon]
 
         return exceptions_dict
 
@@ -2093,8 +2099,8 @@ class HybridTopologyFactory:
                 # First get the new indices.
                 index1_new = hybrid_to_new_map[index1_hybrid]
                 index2_new = hybrid_to_new_map[index2_hybrid]
-                # Get the exception parameters:
-                new_exception_parms = self._new_system_exceptions.get((index1_new, index2_new), [])
+                # Get the exception parameters: make sure to sort the keys to match how they are stored
+                new_exception_parms = self._new_system_exceptions.get(tuple(sorted([index1_new, index2_new])), [])
 
                 # If there's no new exception, then we should just set the
                 # exception parameters to be the nonbonded parameters
@@ -2179,7 +2185,7 @@ class HybridTopologyFactory:
 
                 # See if it's also in the old nonbonded force. if it is, then we don't need to add it.
                 # But if it's not, we need to interpolate
-                old_exception_parms = self._old_system_exceptions.get((index1_old, index2_old), [])
+                old_exception_parms = self._old_system_exceptions.get(tuple(sorted([index1_old, index2_old])), [])
                 if not old_exception_parms:
 
                     [charge1_old, sigma1_old, epsilon1_old] = old_system_nonbonded_force.getParticleParameters(index1_old)
