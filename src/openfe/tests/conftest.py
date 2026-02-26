@@ -125,11 +125,6 @@ def mol_from_smiles(smiles: str) -> Chem.Mol:
 
 
 @pytest.fixture(scope="session")
-def ethane():
-    return SmallMoleculeComponent(mol_from_smiles("CC"))
-
-
-@pytest.fixture(scope="session")
 def simple_mapping():
     """Disappearing oxygen on end
 
@@ -399,6 +394,34 @@ def fluorobenzene():
 
 
 @pytest.fixture(scope="module")
+def ethane():
+    """Load ethane with partial charges from sdf file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        yield SmallMoleculeComponent.from_sdf_file(f / "ethane.sdf")
+
+
+@pytest.fixture(scope="module")
+def chloroethane():
+    """Load chloroethane with partial charges from sdf file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        yield SmallMoleculeComponent.from_sdf_file(f / "chloroethane.sdf")
+
+
+@pytest.fixture(scope="module")
+def fluoroethane():
+    """Load fluoroethane with partial charges from sdf file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        yield SmallMoleculeComponent.from_sdf_file(f / "fluoroethane.sdf")
+
+
+@pytest.fixture(scope="module")
+def benzene():
+    """Load fluoroethane with partial charges from sdf file."""
+    with resources.as_file(resources.files("openfe.tests.data.htf")) as f:
+        yield SmallMoleculeComponent.from_sdf_file(f / "t4_lysozyme_data" / "benzene.sdf")
+
+
+@pytest.fixture(scope="module")
 def chlorobenzene_to_fluorobenzene_mapping(chlorobenzene, fluorobenzene):
     """Return a mapping from chlorobenzene to fluorobenzene."""
     return LigandAtomMapping(
@@ -407,6 +430,68 @@ def chlorobenzene_to_fluorobenzene_mapping(chlorobenzene, fluorobenzene):
         componentA_to_componentB={
             # perfect one-to-one mapping
             0: 0,
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+            10: 10,
+            11: 11,
+        },
+    )
+
+
+@pytest.fixture(scope="module")
+def chloroethane_to_ethane_mapping(chloroethane, ethane):
+    """Return a mapping from chloroethane to ethane."""
+    return LigandAtomMapping(
+        componentA=chloroethane,
+        componentB=ethane,
+        componentA_to_componentB={
+            # Cl-H not mapped, all others one-to-one
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+        },
+    )
+
+
+@pytest.fixture(scope="module")
+def chloroethane_to_fluoroethane_mapping(chloroethane, fluoroethane):
+    """Return a mapping from chloroethane to fluoroethane."""
+    return LigandAtomMapping(
+        componentA=chloroethane,
+        componentB=fluoroethane,
+        componentA_to_componentB={
+            # perfect one-to-one mapping
+            0: 0,
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+        },
+    )
+
+
+@pytest.fixture(scope="module")
+def chlorobenzene_to_benzene_mapping(chlorobenzene, benzene):
+    """Return a mapping from chlorobenzene to benzene."""
+    return LigandAtomMapping(
+        componentA=chlorobenzene,
+        componentB=benzene,
+        componentA_to_componentB={
+            # Cl-H not mapped, all others one-to-one
             1: 1,
             2: 2,
             3: 3,
@@ -485,8 +570,6 @@ def htf_cmap_chlorobenzene_to_fluorobenzene(
 ):
     """Generate the htf for chlorobenzene to fluorobenzene with a CMAP term."""
     settings = RelativeHybridTopologyProtocol.default_settings()
-    # make sure we interpolate the 1-4 exceptions involving dummy atoms if present
-    settings.alchemical_settings.turn_off_core_unique_exceptions = True
     small_ff = settings.forcefield_settings.small_molecule_forcefield
     if ".offxml" not in small_ff:
         small_ff += ".offxml"
@@ -515,6 +598,164 @@ def htf_cmap_chlorobenzene_to_fluorobenzene(
         "mapping": chlorobenzene_to_fluorobenzene_mapping,
         "chlorobenzene": chlorobenzene_to_fluorobenzene_mapping.componentA,
         "fluorobenzene": chlorobenzene_to_fluorobenzene_mapping.componentB,
+        "electrostatic_scale": ff.get_parameter_handler("Electrostatics").scale14,
+        "vdW_scale": ff.get_parameter_handler("vdW").scale14,
+        "force_field": ff,
+    }
+
+
+@pytest.fixture(scope="module")
+def htf_chloro_fluoroethane(chloroethane, fluoroethane, chloroethane_to_fluoroethane_mapping):
+    """Generate the htf for chloroethane to fluoroethane in vacuum."""
+    settings = RelativeHybridTopologyProtocol.default_settings()
+    small_ff = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in small_ff:
+        small_ff += ".offxml"
+    ff = ForceField(small_ff)
+    chloro_openff = chloroethane.to_openff()
+    chloro_charges = chloro_openff.partial_charges.m_as(offunit.elementary_charge)
+    chloro_labels = ff.label_molecules(chloro_openff.to_topology())[0]
+    fluoro_openff = fluoroethane.to_openff()
+    fluoro_charges = fluoro_openff.partial_charges.m_as(offunit.elementary_charge)
+    fluoro_labels = ff.label_molecules(fluoro_openff.to_topology())[0]
+    htf = make_htf(mapping=chloroethane_to_fluoroethane_mapping, settings=settings)
+    hybrid_system = htf.hybrid_system
+    forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+    return {
+        "htf": htf,
+        "hybrid_system": hybrid_system,
+        "forces": forces,
+        "chloro_labels": chloro_labels,
+        "fluoro_labels": fluoro_labels,
+        "mapping": chloroethane_to_fluoroethane_mapping,
+        "chloroethane": chloroethane,
+        "fluoroethane": fluoroethane,
+        "chloro_charges": chloro_charges,
+        "fluoro_charges": fluoro_charges,
+        "electrostatic_scale": ff.get_parameter_handler("Electrostatics").scale14,
+        "vdW_scale": ff.get_parameter_handler("vdW").scale14,
+        "force_field": ff,
+    }
+
+
+@pytest.fixture(scope="module")
+def htf_chloro_ethane(chloroethane, ethane, chloroethane_to_ethane_mapping):
+    """Generate the htf for chloroethane to ethane in vacuum."""
+    settings = RelativeHybridTopologyProtocol.default_settings()
+    small_ff = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in small_ff:
+        small_ff += ".offxml"
+    ff = ForceField(small_ff)
+
+    chloro_openff = chloroethane.to_openff()
+    chloro_charges = chloro_openff.partial_charges.m_as(offunit.elementary_charge)
+    chloro_labels = ff.label_molecules(chloro_openff.to_topology())[0]
+    ethane_openff = ethane.to_openff()
+    ethane_charges = ethane_openff.partial_charges.m_as(offunit.elementary_charge)
+    ethane_labels = ff.label_molecules(ethane_openff.to_topology())[0]
+    htf = make_htf(mapping=chloroethane_to_ethane_mapping, settings=settings)
+    hybrid_system = htf.hybrid_system
+    forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+    return {
+        "htf": htf,
+        "hybrid_system": hybrid_system,
+        "forces": forces,
+        "chloro_labels": chloro_labels,
+        "ethane_labels": ethane_labels,
+        "mapping": chloroethane_to_ethane_mapping,
+        "chloroethane": chloroethane,
+        "ethane": ethane,
+        "chloro_charges": chloro_charges,
+        "ethane_charges": ethane_charges,
+        "electrostatic_scale": ff.get_parameter_handler("Electrostatics").scale14,
+        "vdW_scale": ff.get_parameter_handler("vdW").scale14,
+        "force_field": ff,
+    }
+
+
+@pytest.fixture(scope="module")
+def htf_chlorobenzene_fluorobenzene(
+    chlorobenzene, fluorobenzene, chlorobenzene_to_fluorobenzene_mapping, t4_lysozyme_solvated
+):
+    """Generate the htf for chlorobenzene to fluorobenzene in complex with t4-lysozyme solvated."""
+    settings = RelativeHybridTopologyProtocol.default_settings()
+    small_ff = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in small_ff:
+        small_ff += ".offxml"
+    ff = ForceField(small_ff)
+    chloro_openff = chlorobenzene.to_openff()
+    chloro_charges = chloro_openff.partial_charges.m_as(offunit.elementary_charge)
+    chloro_labels = ff.label_molecules(chloro_openff.to_topology())[0]
+    fluoro_openff = fluorobenzene.to_openff()
+    fluoro_charges = fluoro_openff.partial_charges.m_as(offunit.elementary_charge)
+    fluoro_labels = ff.label_molecules(fluoro_openff.to_topology())[0]
+    htf = make_htf(
+        mapping=chlorobenzene_to_fluorobenzene_mapping,
+        settings=settings,
+        protein=t4_lysozyme_solvated,
+    )
+    hybrid_system = htf.hybrid_system
+
+    apply_box_vectors_and_fix_nb_force(hybrid_topology_factory=htf, force_field=ff)
+
+    forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+    return {
+        "htf": htf,
+        "hybrid_system": hybrid_system,
+        "forces": forces,
+        "chloro_labels": chloro_labels,
+        "fluoro_labels": fluoro_labels,
+        "mapping": chlorobenzene_to_fluorobenzene_mapping,
+        "chlorobenzene": chlorobenzene,
+        "fluorobenzene": fluorobenzene,
+        "chloro_charges": chloro_charges,
+        "fluoro_charges": fluoro_charges,
+        "electrostatic_scale": ff.get_parameter_handler("Electrostatics").scale14,
+        "vdW_scale": ff.get_parameter_handler("vdW").scale14,
+        "force_field": ff,
+    }
+
+
+@pytest.fixture(scope="module")
+def htf_chlorobenzene_benzene(
+    chlorobenzene, benzene, chlorobenzene_to_benzene_mapping, t4_lysozyme_solvated
+):
+    """Generate the htf for chlorobenzene to benzene with interpolate 1-4s on in complex with t4-lysozyme solvated."""
+    settings = RelativeHybridTopologyProtocol.default_settings()
+    small_ff = settings.forcefield_settings.small_molecule_forcefield
+    if ".offxml" not in small_ff:
+        small_ff += ".offxml"
+    ff = ForceField(small_ff)
+
+    chloro_openff = chlorobenzene.to_openff()
+    chloro_charges = chloro_openff.partial_charges.m_as(offunit.elementary_charge)
+    chloro_labels = ff.label_molecules(chloro_openff.to_topology())[0]
+    benzene_openff = benzene.to_openff()
+    benzene_charges = benzene_openff.partial_charges.m_as(offunit.elementary_charge)
+    benzene_labels = ff.label_molecules(benzene_openff.to_topology())[0]
+    htf = make_htf(
+        mapping=chlorobenzene_to_benzene_mapping, settings=settings, protein=t4_lysozyme_solvated
+    )
+    hybrid_system = htf.hybrid_system
+
+    apply_box_vectors_and_fix_nb_force(hybrid_topology_factory=htf, force_field=ff)
+
+    forces = {force.getName(): force for force in hybrid_system.getForces()}
+
+    return {
+        "htf": htf,
+        "hybrid_system": hybrid_system,
+        "forces": forces,
+        "chloro_labels": chloro_labels,
+        "benzene_labels": benzene_labels,
+        "mapping": chlorobenzene_to_benzene_mapping,
+        "chlorobenzene": chlorobenzene,
+        "benzene": benzene,
+        "chloro_charges": chloro_charges,
+        "benzene_charges": benzene_charges,
         "electrostatic_scale": ff.get_parameter_handler("Electrostatics").scale14,
         "vdW_scale": ff.get_parameter_handler("vdW").scale14,
         "force_field": ff,
