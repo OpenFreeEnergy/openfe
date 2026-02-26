@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import warnings
 from typing import Callable
 
 from openfe.utils import requires_package
@@ -67,6 +68,11 @@ def default_perses_scorer(
     -------
         float
     """
+    warnings.warn(
+        "default_perses_scorer is deprecated and is planned to be removed in openfe v2.0. If you have questions related to this, please open an issue at https://github.com/OpenFreeEnergy/openfe/issues",
+        DeprecationWarning,
+    )
+
     score = AtomMapper(use_positions=use_positions).score_mapping(
         AtomMapping(
             old_mol=mapping.componentA.to_openff(),
