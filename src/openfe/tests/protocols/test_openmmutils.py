@@ -10,14 +10,15 @@ from unittest import mock
 import numpy as np
 import pooch
 import pytest
+from gufe import BaseSolventComponent
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
-from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import MonteCarloBarostat, NonbondedForce, app
+from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat, NonbondedForce, app
 from openmm import unit as ommunit
 from openmmtools import multistate
 from pymbar.utils import ParameterError
@@ -190,6 +191,19 @@ def test_validate_solvent_multiple_solvent(benzene_modifications):
         system_validation.validate_solvent(state, "pme")
 
 
+def test_validate_solvent_multiple_solvated(benzene_modifications, a2a_protein_membrane_component):
+    state = openfe.ChemicalSystem(
+        {
+            "A": benzene_modifications["toluene"],
+            "S": a2a_protein_membrane_component,
+            "S2": a2a_protein_membrane_component,
+        }
+    )
+
+    with pytest.raises(ValueError, match="Multiple SolvatedPDBComponent"):
+        system_validation.validate_solvent(state, "pme")
+
+
 def test_not_water_solvent(benzene_modifications):
     state = openfe.ChemicalSystem(
         {"A": benzene_modifications["toluene"], "S": openfe.SolventComponent(smiles="C")}
@@ -204,6 +218,24 @@ def test_multiple_proteins(T4_protein_component):
 
     with pytest.raises(ValueError, match="Multiple ProteinComponent"):
         system_validation.validate_protein(state)
+
+
+def test_membrane_protein_warns_with_non_membrane_barostat(a2a_protein_membrane_component):
+    state = openfe.ChemicalSystem({"A": a2a_protein_membrane_component})
+    with pytest.warns(UserWarning, match="ProteinMembraneComponent"):
+        system_validation.validate_barostat(
+            state,
+            barostat="MonteCarloBarostat",
+        )
+
+
+def test_non_membrane_protein_warns_with_membrane_barostat(T4_protein_component):
+    state = openfe.ChemicalSystem({"A": T4_protein_component})
+    with pytest.warns(UserWarning, match="MonteCarloMembraneBarostat"):
+        system_validation.validate_barostat(
+            state,
+            barostat="MonteCarloMembraneBarostat",
+        )
 
 
 def test_get_components_gas(benzene_modifications):
@@ -424,6 +456,28 @@ class TestSystemCreation:
         # Check cache file
         assert generator.template_generator._cache == "db.json"
 
+    def test_system_generator_membrane(self, get_settings):
+        ffsets, intsets, thermosets = get_settings
+
+        thermosets.temperature = 320 * unit.kelvin
+        thermosets.pressure = 1.25 * unit.bar
+        intsets.barostat = "MonteCarloMembraneBarostat"
+        intsets.barostat_frequency = 200 * unit.timestep
+        generator = system_creation.get_system_generator(
+            ffsets, thermosets, intsets, Path("./db.json"), True
+        )
+
+        # Check barostat conditions
+        assert isinstance(generator.barostat, MonteCarloMembraneBarostat)
+
+        pressure = ensure_quantity(generator.barostat.getDefaultPressure(), "openff")
+        temperature = ensure_quantity(generator.barostat.getDefaultTemperature(), "openff")
+        assert pressure.m == pytest.approx(1.25)
+        assert pressure.units == unit.bar
+        assert temperature.m == pytest.approx(320)
+        assert temperature.units == unit.kelvin
+        assert generator.barostat.getFrequency() == 200
+
     def test_get_omm_modeller_complex(
         self,
         T4_protein_component,
@@ -455,6 +509,39 @@ class TestSystemCreation:
             comp_resids[openfe.SolventComponent()],
             np.linspace(165, len(resids) - 1, len(resids) - 165),
         )
+
+    def test_get_omm_modeller_membrane_box(
+        self,
+        a2a_protein_membrane_component,
+        a2a_ligands,
+        get_settings,
+    ):
+        ffsets, intsets, thermosets = get_settings
+        intsets.barostat = "MonteCarloMembraneBarostat"
+        ffsets.forcefields = [
+            "amber/ff14SB.xml",
+            "amber/tip3p_standard.xml",
+            "amber/tip3p_HFE_multivalent.xml",
+            "amber/lipid17_merged.xml",
+            "amber/phosaa10.xml",
+        ]
+        generator = system_creation.get_system_generator(ffsets, thermosets, intsets, None, True)
+
+        smc = a2a_ligands[0]
+        mol = smc.to_openff()
+        generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
+
+        model, comp_resids = system_creation.get_omm_modeller(
+            a2a_protein_membrane_component,
+            a2a_protein_membrane_component,
+            {smc: mol},
+            generator.forcefield,
+            OpenMMSolvationSettings(),
+        )
+        box_modeller = model.topology.getPeriodicBoxVectors()
+        box_protein = a2a_protein_membrane_component.box_vectors
+
+        assert np.allclose(box_modeller, to_openmm(box_protein), atol=1e-6)
 
     @pytest.fixture(scope="module")
     def ligand_mol_and_generator(self, get_settings):

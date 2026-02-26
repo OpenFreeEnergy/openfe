@@ -19,7 +19,14 @@ from numpy.testing import assert_allclose
 from openff.toolkit import Molecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
-from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce, XmlSerializer, app
+from openmm import (
+    CustomNonbondedForce,
+    MonteCarloBarostat,
+    MonteCarloMembraneBarostat,
+    NonbondedForce,
+    XmlSerializer,
+    app,
+)
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openmmtools.multistate.multistatesampler import MultiStateSampler
@@ -1087,6 +1094,90 @@ def test_dry_run_complex(
         # Check we have the right number of atoms in the PDB
         pdb = mdt.load_pdb("hybrid_system.pdb")
         assert pdb.n_atoms == 2629
+
+
+@pytest.mark.slow
+def test_dry_run_membrane_complex(
+    a2a_protein_membrane_component,
+    a2a_ligands,
+    tmpdir,
+):
+    ligA = next(c for c in a2a_ligands if c.name == "4g")
+    ligB = next(c for c in a2a_ligands if c.name == "4h")
+
+    mapping = openfe.LigandAtomMapping(
+        componentA=ligA,
+        componentB=ligB,
+        componentA_to_componentB={i: i for i in range(36)},
+    )
+
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.protocol_repeats = 1
+    settings.engine_settings.compute_platform = "cpu"
+    settings.output_settings.output_indices = "protein or resname  UNK"
+
+    systemA = openfe.ChemicalSystem(
+        {"ligand": mapping.componentA, "protein": a2a_protein_membrane_component},
+        name=f"{mapping.componentA.name}_{a2a_protein_membrane_component.name}",
+    )
+    systemB = openfe.ChemicalSystem(
+        {"ligand": mapping.componentB, "protein": a2a_protein_membrane_component},
+        name=f"{mapping.componentB.name}_{a2a_protein_membrane_component.name}",
+    )
+
+    adaptive_settings = openmm_rfe.RelativeHybridTopologyProtocol._adaptive_settings(
+        stateA=systemA, stateB=systemB, initial_settings=settings
+    )
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=adaptive_settings,
+    )
+    dag = protocol.create(
+        stateA=systemA,
+        stateB=systemB,
+        mapping=mapping,
+    )
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
+
+    with tmpdir.as_cwd():
+        setup_results = dag_setup_unit.run(dry=True)
+        sim_results = dag_sim_unit.run(
+            system=setup_results["hybrid_system"],
+            positions=setup_results["hybrid_positions"],
+            selection_indices=setup_results["selection_indices"],
+            dry=True,
+        )
+        sampler = sim_results["sampler"]
+
+        assert isinstance(sampler, MultiStateSampler)
+        assert sampler.is_periodic
+        assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloMembraneBarostat)
+        assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
+
+        # Check we have the right number of atoms in the PDB
+        pdb = mdt.load_pdb("hybrid_system.pdb")
+        assert pdb.n_atoms == 4690
+        box = sampler._thermodynamic_states[0].system.getDefaultPeriodicBoxVectors()
+        vectors = from_openmm(box)  # convert to a Quantity array
+
+        # Extract box lengths in nanometers
+        width_x, width_y, width_z = [v[i].to("nanometer").m for i, v in enumerate(vectors)]
+
+        # Expected orthogonal box (axis-aligned)
+        expected_vectors = (
+            np.array(
+                [
+                    [width_x, 0, 0],
+                    [0, width_y, 0],
+                    [0, 0, width_z],
+                ]
+            )
+            * unit.nanometer
+        )
+
+        assert_allclose(
+            vectors, expected_vectors, atol=1e-5, err_msg=f"Box is not orthogonal:\n{vectors}"
+        )
 
 
 def test_lambda_schedule_default():

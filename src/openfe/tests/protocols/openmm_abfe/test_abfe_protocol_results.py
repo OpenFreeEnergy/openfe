@@ -157,7 +157,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-21.35, abs=0.01)
+        assert est.m == pytest.approx(-19.74, abs=0.01)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -165,7 +165,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(1.04, abs=0.01)
+        assert est.m == pytest.approx(0.85, abs=0.01)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -270,13 +270,13 @@ class TestProtocolResult:
         assert len(geom) == 3
         assert isinstance(geom[0], BoreschRestraintGeometry)
         assert geom[0].guest_atoms == [1779, 1778, 1777]
-        assert geom[0].host_atoms == [880, 865, 864]
-        assert pytest.approx(geom[0].r_aA0, rel=1e-2) == 1.083558 * offunit.nanometer
-        assert pytest.approx(geom[0].theta_A0, rel=1e-2) == 0.711876 * offunit.radian
-        assert pytest.approx(geom[0].theta_B0, rel=1e-2) == 1.687366 * offunit.radian
-        assert pytest.approx(geom[0].phi_A0, rel=1e-2) == -0.2164231 * offunit.radian
-        assert pytest.approx(geom[0].phi_B0, rel=1e-2) == 1.892376 * offunit.radian
-        assert pytest.approx(geom[0].phi_C0, rel=1e-2) == -0.522031870 * offunit.radian
+        assert geom[0].host_atoms == [852, 853, 854]
+        assert pytest.approx(geom[0].r_aA0, rel=1e-2) == 1.041035 * offunit.nanometer
+        assert pytest.approx(geom[0].theta_A0, rel=1e-2) == 1.063788 * offunit.radian
+        assert pytest.approx(geom[0].theta_B0, rel=1e-2) == 1.230858 * offunit.radian
+        assert pytest.approx(geom[0].phi_A0, rel=1e-2) == 1.155133 * offunit.radian
+        assert pytest.approx(geom[0].phi_B0, rel=1e-2) == 1.141134 * offunit.radian
+        assert pytest.approx(geom[0].phi_C0, rel=1e-2) == -0.621615 * offunit.radian
 
     @pytest.mark.parametrize(
         "key, expected_size",
