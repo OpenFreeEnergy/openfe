@@ -31,7 +31,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     stable_secondary_structure_selection,
 )
 
-from ...conftest import HAS_INTERNET, POOCH_CACHE
+from ...conftest import HAS_INTERNET
 
 
 @pytest.fixture(scope="module")

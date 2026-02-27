@@ -4,7 +4,6 @@ import os
 import pathlib
 
 import MDAnalysis as mda
-import pooch
 import pytest
 from openff.units import unit
 from rdkit import Chem
@@ -15,7 +14,7 @@ from openfe.protocols.restraint_utils.geometry.boresch.geometry import (
     find_boresch_restraint,
 )
 
-from ...conftest import HAS_INTERNET, POOCH_CACHE
+from ...conftest import HAS_INTERNET
 
 
 @pytest.fixture()

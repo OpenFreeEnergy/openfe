@@ -5,7 +5,6 @@ import os
 
 import MDAnalysis as mda
 import numpy as np
-import pooch
 import pytest
 from numpy.testing import assert_equal
 from openff.units import unit
