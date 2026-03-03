@@ -2,7 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
 import json
-import pathlib
 import sys
 import xml.etree.ElementTree as ET
 from importlib import resources
@@ -1097,7 +1096,7 @@ def test_dry_run_complex(
         assert pdb.n_atoms == 2629
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 def test_dry_run_membrane_complex(
     a2a_protein_membrane_component,
     a2a_ligands,
