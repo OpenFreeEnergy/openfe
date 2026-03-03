@@ -8,6 +8,7 @@ This module defines the ProtocolUnits for the
 
 import logging
 import pathlib
+from typing import Sequence
 
 import MDAnalysis as mda
 import numpy as np
@@ -180,7 +181,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
     @staticmethod
     def _get_idxs_from_residxs(
         topology: omm_topology,
-        residxs: list[int],
+        residxs: Sequence[int],
     ) -> list[int]:
         """
         Helper method to get the a list of atom indices which belong to a list
