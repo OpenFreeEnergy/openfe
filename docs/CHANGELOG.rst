@@ -9,8 +9,8 @@ v1.9.1
 
 **Fixed:**
 
-* Fixed a bug in Protocol termination for the HybridTop and AFE Protocols
-  which would unnecessarily declare an ``UnboundLocalError``.
+* Fixed a bug in Protocol termination for the HybridTop and AFE Protocols which would unnecessarily declare an ``UnboundLocalError``.
+* Updated ``openfe_analysis`` dependency  to fix issue with RMSD analysis (`Issue 1834 <https://github.com/OpenFreeEnergy/openfe/issues/1834>`).
 
 
 
