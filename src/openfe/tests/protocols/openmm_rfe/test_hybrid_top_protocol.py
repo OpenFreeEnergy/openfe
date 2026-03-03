@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
 import json
+import pathlib
 import sys
 import xml.etree.ElementTree as ET
 from importlib import resources
@@ -1096,7 +1097,7 @@ def test_dry_run_complex(
         assert pdb.n_atoms == 2629
 
 
-@pytest.mark.slow
+# @pytest.mark.slow
 def test_dry_run_membrane_complex(
     a2a_protein_membrane_component,
     a2a_ligands,
@@ -1126,7 +1127,7 @@ def test_dry_run_membrane_complex(
     )
 
     adaptive_settings = openmm_rfe.RelativeHybridTopologyProtocol._adaptive_settings(
-        stateA=systemA, stateB=systemB, initial_settings=settings
+        stateA=systemA, stateB=systemB, mapping=mapping, initial_settings=settings
     )
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=adaptive_settings,
@@ -1141,6 +1142,9 @@ def test_dry_run_membrane_complex(
 
     with tmpdir.as_cwd():
         setup_results = dag_setup_unit.run(dry=True)
+        input_box = a2a_protein_membrane_component.box_vectors
+        system_box = from_openmm(setup_results["hybrid_system"].getDefaultPeriodicBoxVectors())
+        assert_allclose(system_box, input_box, atol=1e-5)
         sim_results = dag_sim_unit.run(
             system=setup_results["hybrid_system"],
             positions=setup_results["hybrid_positions"],
