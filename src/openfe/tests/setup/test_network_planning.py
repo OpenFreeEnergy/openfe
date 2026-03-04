@@ -595,6 +595,11 @@ class TestGenerateNetworkFromNames:
         assert set(requested_names) == actual_edges
 
     def test_roundtrip(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        from rdkit.Chem import AllChem
+
+        AllChem.SetDefaultPickleProperties(AllChem.PropertyPickleOptions.AllProps)
+        assert AllChem.GetDefaultPickleProperties() == 65535
+
         ligands = list(atom_mapping_basic_test_files.values())
 
         requested_names = [
