@@ -19,9 +19,9 @@ zenodo_rbfe_parallel_data = dict(
     known_hash="md5:ff7313e14eb6f2940c6ffd50f2192181",
 )
 zenodo_abfe_data = dict(
-    base_url="doi:10.5281/zenodo.17348229/",
+    base_url="doi:10.5281/zenodo.18869458/",
     fname="abfe_results.zip",
-    known_hash="md5:547f896e867cce61979d75b7e082f6ba",
+    known_hash="md5:7702338fddb0cc3ede59809f670ef506",
 )
 zenodo_septop_data = dict(
     base_url="doi:10.5281/zenodo.17435569/",
