@@ -9,3 +9,4 @@ from .output import OUTPUT_FILE_AND_EXT
 from .output_dir import OUTPUT_DIR
 from .plan_network_options import YAML_OPTIONS
 from .protein import PROTEIN
+from .warehouse import WAREHOUSE
