@@ -1052,7 +1052,15 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             "independent": _rfe_utils.multistate.HybridMultiStateSampler,
         }
 
+        # note we if/else around sampler method because in the future
+        # we will try to re-use this method and just have _SAMPLERs be
+        # defined elsewhere
         sampler_method = simulation_settings.sampler_method.lower()
+        try:
+            sampler_class = _SAMPLERS[sampler_method]
+        except KeyError:
+            errmsg = f"Unknown sampler {sampler_method}"
+            raise AttributeError(errmsg)
 
         # Get the real time analysis values to use
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(

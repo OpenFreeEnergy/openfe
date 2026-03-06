@@ -240,6 +240,28 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
     assert len(repeat_ids) == 6
 
 
+def test_bad_sampler():
+
+    class FakeSimSettings(gufe.settings.SettingsBaseModel):
+        sampler_method: str = "foo bar"
+
+    errmsg = "Unknown sampler foo bar"
+    with pytest.raises(AttributeError, match=errmsg):
+        HybridTopologyMultiStateSimulationUnit._get_sampler(
+            system=None,
+            positions=None,
+            lambdas=None,
+            integrator=None,
+            reporter=None,
+            simulation_settings=FakeSimSettings(),
+            thermo_settings=None,
+            alchem_settings=None,
+            platform=None,
+            restart=False,
+            dry=False,
+        )
+
+
 @pytest.mark.parametrize("method", ["repex", "sams", "independent", "InDePeNdENT"])
 def test_setup_dry_sim_default_vacuum(
     benzene_vacuum_system,
