@@ -184,7 +184,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
         ----------
         topology : openmm.app.Topology
           An OpenMM Topology that defines the System.
-        residxs : list[int]
+        residxs : Iterable[int]
           A list of residue numbers who's atoms we should get atom indices.
 
         Returns
