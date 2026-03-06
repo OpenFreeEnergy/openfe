@@ -241,7 +241,6 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
 
 
 def test_bad_sampler():
-
     class FakeSimSettings(gufe.settings.SettingsBaseModel):
         sampler_method: str = "foo bar"
 
