@@ -8,6 +8,7 @@ This module defines the ProtocolUnits for the
 
 import logging
 import pathlib
+from collections.abc import Iterable
 
 import MDAnalysis as mda
 import numpy as np
@@ -173,7 +174,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
     @staticmethod
     def _get_idxs_from_residxs(
         topology: omm_topology,
-        residxs: list[int],
+        residxs: Iterable[int],
     ) -> list[int]:
         """
         Helper method to get the a list of atom indices which belong to a list
@@ -183,7 +184,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
         ----------
         topology : openmm.app.Topology
           An OpenMM Topology that defines the System.
-        residxs : list[int]
+        residxs : Iterable[int]
           A list of residue numbers who's atoms we should get atom indices.
 
         Returns
