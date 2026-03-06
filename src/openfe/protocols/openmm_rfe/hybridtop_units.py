@@ -1382,7 +1382,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-        # Ensure that we the environment hasn't changed
+        # Ensure that the environment hasn't changed
         self._verify_execution_environment(setup_results.outputs)
 
         # Get the relevant inputs for running the unit
