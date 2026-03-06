@@ -6,7 +6,7 @@ import pathlib
 import click
 
 from openfecli import OFECommandPlugin
-from openfecli.utils import print_duration, write
+from openfecli.utils import configure_logger, print_duration, write
 
 
 def _build_worker(warehouse_path: pathlib.Path, db_path: pathlib.Path):
@@ -17,7 +17,54 @@ def _build_worker(warehouse_path: pathlib.Path, db_path: pathlib.Path):
     return Worker(warehouse=warehouse, task_db_path=db_path)
 
 
+def _write_failure_result_details(taskid: str, result) -> None:
+    source_key = getattr(result, "source_key", None)
+    exception = getattr(result, "exception", None)
+    traceback_text = getattr(result, "traceback", None)
+
+    write(f"Task '{taskid}' returned a failure result.")
+    if source_key is not None:
+        write(f"Failed unit source key: {source_key}")
+
+    if isinstance(exception, tuple) and len(exception) == 2:
+        exc_type, exc_args = exception
+        write(f"Protocol unit exception: {exc_type}: {exc_args}")
+
+    if isinstance(traceback_text, str) and traceback_text:
+        write("Protocol unit traceback:")
+        write(traceback_text)
+
+
 def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
+    import logging
+    import os
+    import sys
+    import traceback
+
+    from openfe.utils import logging_control
+
+    # avoid problems with output not showing if queueing system kills a job
+    sys.stdout.reconfigure(line_buffering=True)
+
+    stdout_handler = logging.StreamHandler(sys.stdout)
+
+    configure_logger("gufekey", handler=stdout_handler)
+    configure_logger("gufe", handler=stdout_handler)
+    configure_logger("openfe", handler=stdout_handler)
+
+    # silence the openmmtools.multistate API warning
+    logging_control._silence_message(
+        msg=[
+            "The openmmtools.multistate API is experimental and may change in future releases",
+        ],
+        logger_names=[
+            "openmmtools.multistate.multistatereporter",
+            "openmmtools.multistate.multistateanalyzer",
+            "openmmtools.multistate.multistatesampler",
+        ],
+    )
+    # turn warnings into log message (don't show stack trace)
+    logging.captureWarnings(True)
     db_path = warehouse_path / "tasks.db"
     if not db_path.is_file():
         raise click.ClickException(f"Task database not found at: {db_path}")
@@ -30,8 +77,10 @@ def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
     worker = _build_worker(warehouse_path, db_path)
 
     try:
+        write("Executing unit...")
         execution = worker.execute_unit(scratch=scratch)
     except Exception as exc:
+        write(traceback.format_exc())
         raise click.ClickException(f"Task execution failed: {exc}") from exc
 
     if execution is None:
@@ -40,6 +89,7 @@ def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
 
     taskid, result = execution
     if not result.ok():
+        _write_failure_result_details(taskid, result)
         raise click.ClickException(f"Task '{taskid}' returned a failure result.")
 
     write(f"Completed task: {taskid}")
