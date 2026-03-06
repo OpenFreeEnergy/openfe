@@ -27,6 +27,24 @@ def _contains_protocol_unit(value) -> bool:
     return False
 
 
+class _ToyProtocolUnit(ProtocolUnit):
+    @staticmethod
+    def _execute(ctx, **inputs) -> dict[str, int]:
+        increment = inputs["increment"]
+        upstream = inputs.get("upstream")
+        base = 0 if upstream is None else upstream.outputs["value"]
+        return {"value": base + increment}
+
+
+class _FileWritingUnit(ProtocolUnit):
+    @staticmethod
+    def _execute(ctx, **inputs) -> dict[str, str]:
+        shared_file = ctx.shared / "simulation.nc"
+        shared_file.parent.mkdir(parents=True, exist_ok=True)
+        shared_file.write_text("unit output", encoding="utf-8")
+        return {"shared_file": str(shared_file)}
+
+
 def _get_dependency_free_unit(absolute_transformation):
     for unit in absolute_transformation.create().protocol_units:
         if not _contains_protocol_unit(unit.inputs):
@@ -74,11 +92,12 @@ def test_get_task_uses_default_db_path_without_patching(
     db = build_task_db_from_alchemical_network(network, warehouse, db_path=db_path)
 
     worker = Worker(warehouse=warehouse)
-    loaded = worker._get_task()
+    taskid, loaded = worker._get_task()
 
     expected_keys = {task_row.taskid.split(":", maxsplit=1)[1] for task_row in db.get_all_tasks()}
     assert worker.task_db_path == Path("./warehouse/tasks.db")
     assert str(loaded.key) in expected_keys
+    assert taskid.endswith(f":{loaded.key}")
 
 
 def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
@@ -87,11 +106,12 @@ def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_r
     task_ids = [row.taskid for row in db.get_all_tasks()]
     expected_protocol_unit_keys = {task_id.split(":", maxsplit=1)[1] for task_id in task_ids}
 
-    loaded = worker._get_task()
+    taskid, loaded = worker._get_task()
     reloaded = warehouse.load_task(loaded.key)
 
     assert str(loaded.key) in expected_protocol_unit_keys
     assert loaded == reloaded
+    assert taskid.endswith(f":{loaded.key}")
 
 
 def test_execute_unit_stores_real_result(worker_with_executable_task_db, tmp_path):
@@ -152,3 +172,103 @@ def test_execute_unit_returns_none_when_no_available_tasks(tmp_path):
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
 
     assert worker.execute_unit(scratch=tmp_path / "scratch") is None
+
+
+def test_execute_unit_resolves_dependency_results(tmp_path):
+    warehouse_root = tmp_path / "warehouse"
+    db_path = warehouse_root / "tasks.db"
+    warehouse = FileSystemWarehouse(str(warehouse_root))
+
+    first_unit = _ToyProtocolUnit(name="first", increment=1)
+    second_unit = _ToyProtocolUnit(name="second", upstream=first_unit, increment=2)
+
+    warehouse.store_task(first_unit)
+    warehouse.store_task(second_unit)
+
+    transformation_key = "Transformation-toy"
+    first_taskid = f"{transformation_key}:{first_unit.key}"
+    second_taskid = f"{transformation_key}:{second_unit.key}"
+
+    task_graph = nx.DiGraph()
+    task_graph.add_edge(first_taskid, second_taskid)
+
+    db = exorcist.TaskStatusDB.from_filename(db_path)
+    db.add_task_network(task_graph, max_tries=1)
+
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+
+    first_execution = worker.execute_unit(scratch=tmp_path / "scratch")
+    second_execution = worker.execute_unit(scratch=tmp_path / "scratch")
+
+    assert first_execution is not None
+    assert first_execution[0] == first_taskid
+    assert second_execution is not None
+    assert second_execution[0] == second_taskid
+    assert second_execution[1].outputs["value"] == 3
+
+    status_by_taskid = {row.taskid: row.status for row in db.get_all_tasks()}
+    assert status_by_taskid[first_taskid] == exorcist.TaskStatus.COMPLETED.value
+    assert status_by_taskid[second_taskid] == exorcist.TaskStatus.COMPLETED.value
+
+
+def test_execute_unit_marks_missing_dependency_as_failed(tmp_path):
+    warehouse_root = tmp_path / "warehouse"
+    db_path = warehouse_root / "tasks.db"
+    warehouse = FileSystemWarehouse(str(warehouse_root))
+
+    missing_upstream = _ToyProtocolUnit(name="missing", increment=1)
+    dependent_unit = _ToyProtocolUnit(name="dependent", upstream=missing_upstream, increment=2)
+    warehouse.store_task(dependent_unit)
+
+    taskid = f"Transformation-toy:{dependent_unit.key}"
+    task_graph = nx.DiGraph()
+    task_graph.add_node(taskid)
+
+    db = exorcist.TaskStatusDB.from_filename(db_path)
+    db.add_task_network(task_graph, max_tries=1)
+
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+
+    with pytest.raises(RuntimeError, match="Missing ProtocolUnitResult"):
+        worker.execute_unit(scratch=tmp_path / "scratch")
+
+    status_by_taskid = {row.taskid: row.status for row in db.get_all_tasks()}
+    assert status_by_taskid[taskid] == exorcist.TaskStatus.TOO_MANY_RETRIES.value
+
+
+def test_execute_unit_uses_isolated_shared_workspace_per_task(tmp_path):
+    warehouse_root = tmp_path / "warehouse"
+    db_path = warehouse_root / "tasks.db"
+    warehouse = FileSystemWarehouse(str(warehouse_root))
+
+    first_unit = _FileWritingUnit(name="first")
+    second_unit = _FileWritingUnit(name="second")
+
+    warehouse.store_task(first_unit)
+    warehouse.store_task(second_unit)
+
+    first_taskid = f"Transformation-toy:{first_unit.key}"
+    second_taskid = f"Transformation-toy:{second_unit.key}"
+
+    task_graph = nx.DiGraph()
+    task_graph.add_node(first_taskid)
+    task_graph.add_node(second_taskid)
+
+    db = exorcist.TaskStatusDB.from_filename(db_path)
+    db.add_task_network(task_graph, max_tries=1)
+
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+
+    first_execution = worker.execute_unit(scratch=tmp_path / "scratch")
+    second_execution = worker.execute_unit(scratch=tmp_path / "scratch")
+
+    assert first_execution is not None
+    assert second_execution is not None
+
+    first_path = Path(first_execution[1].outputs["shared_file"])
+    second_path = Path(second_execution[1].outputs["shared_file"])
+
+    assert first_path != second_path
+    assert first_path.name == "simulation.nc"
+    assert second_path.name == "simulation.nc"
+    assert first_path.parent != second_path.parent
