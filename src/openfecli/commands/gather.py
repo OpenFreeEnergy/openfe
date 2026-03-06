@@ -249,12 +249,17 @@ def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
         component_types = [
             x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
         ]
-    if "gufe.components.solventcomponent" not in component_types:
-        return "vacuum"
-    elif "gufe.components.proteincomponent" in component_types:
+    if (
+            "gufe.components.proteincomponent" in component_types
+            or "gufe.components.solvatedpdbcomponent" in component_types
+    ):
         return "complex"
-    else:
+
+    elif "gufe.components.solventcomponent" in component_types:
         return "solvent"
+
+    else:
+        return "vacuum"
 
 
 def _legacy_get_type(res_fn: os.PathLike | str) -> Literal["vacuum", "solvent", "complex"]:
