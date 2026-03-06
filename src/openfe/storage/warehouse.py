@@ -179,7 +179,6 @@ class WarehouseBaseClass:
         ValueError
             If the key is not found in any store.
         """
-        print(key)
         for name in self.stores:
             if key in self.stores[name]:
                 return self.stores[name]
