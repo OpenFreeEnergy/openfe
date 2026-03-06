@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import json
 import pathlib
+from pathlib import Path
+from typing import Optional
 
 from openfe import AlchemicalNetwork, LigandNetwork
+from openfe.orchestration.exorcist_utils import build_task_db_from_alchemical_network
+from openfe.storage.warehouse import FileSystemWarehouse
 from openfecli.utils import write
 
 
@@ -13,26 +17,32 @@ def plan_alchemical_network_output(
     alchemical_network: AlchemicalNetwork,
     ligand_network: LigandNetwork,
     folder_path: pathlib.Path,
+    warehouse: Optional[FileSystemWarehouse] = None,
 ):
     """Write the contents of an alchemical network into the structure"""
 
-    base_name = folder_path.name
-    folder_path.mkdir(parents=True, exist_ok=True)
+    if warehouse:
+        warehouse.store_setup_tokenizable(alchemical_network)
+        db_path = Path(warehouse.root_dir) / "tasks.db"
+        _ = build_task_db_from_alchemical_network(alchemical_network, warehouse, db_path)
+    else:
+        base_name = folder_path.name
+        folder_path.mkdir(parents=True, exist_ok=True)
 
-    an_json = folder_path / f"{base_name}.json"
-    alchemical_network.to_json(an_json)
-    write("\t\t- " + base_name + ".json")
+        an_json = folder_path / f"{base_name}.json"
+        alchemical_network.to_json(an_json)
+        write("\t\t- " + base_name + ".json")
 
-    ln_fname = "ligand_network.graphml"
-    with open(folder_path / ln_fname, mode="w") as f:
-        f.write(ligand_network.to_graphml())
-    write(f"\t\t- {ln_fname}")
+        ln_fname = "ligand_network.graphml"
+        with open(folder_path / ln_fname, mode="w") as f:
+            f.write(ligand_network.to_graphml())
+        write(f"\t\t- {ln_fname}")
 
-    transformations_dir = folder_path / "transformations"
-    transformations_dir.mkdir(parents=True, exist_ok=True)
+        transformations_dir = folder_path / "transformations"
+        transformations_dir.mkdir(parents=True, exist_ok=True)
 
-    for transformation in alchemical_network.edges:
-        transformation_name = transformation.name or transformation.key
-        filename = f"{transformation_name}.json"
-        transformation.to_json(transformations_dir / filename)
-        write("\t\t\t\t- " + filename)
+        for transformation in alchemical_network.edges:
+            transformation_name = transformation.name or transformation.key
+            filename = f"{transformation_name}.json"
+            transformation.to_json(transformations_dir / filename)
+            write("\t\t\t\t- " + filename)
