@@ -70,6 +70,18 @@ def test_verify_execution_environment_fail():
         )
 
 
+def test_verify_execution_env_missing_key():
+    errmsg = "Missing environment information from setup outputs."
+    with pytest.raises(ProtocolUnitExecutionError, match=errmsg):
+        openmm_rfe.HybridTopologyMultiStateSimulationUnit._verify_execution_environment(
+            setup_outputs={
+                "foo_version": 0.1,
+                "openfe_version": openfe.__version__,
+                "openmm_version": openmm.__version__,
+            },
+        )
+
+
 @pytest.mark.skipif(
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet unavailable and test data is not cached locally",

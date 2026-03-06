@@ -153,12 +153,16 @@ class HybridTopologyUnitMixin:
         Check that the Python environment hasn't changed based on the
         relevant Python library versions stored in the setup outputs.
         """
-        if (
-            (gufe.__version__ != setup_outputs["gufe_version"])
-            or (openfe.__version__ != setup_outputs["openfe_version"])
-            or (openmm.__version__ != setup_outputs["openmm_version"])
-        ):
-            errmsg = "Python environment has changed, cannot continue Protocol execution."
+        try:
+            if (
+                (gufe.__version__ != setup_outputs["gufe_version"])
+                or (openfe.__version__ != setup_outputs["openfe_version"])
+                or (openmm.__version__ != setup_outputs["openmm_version"])
+            ):
+                errmsg = "Python environment has changed, cannot continue Protocol execution."
+                raise ProtocolUnitExecutionError(errmsg)
+        except KeyError:
+            errmsg = "Missing environment information from setup outputs."
             raise ProtocolUnitExecutionError(errmsg)
 
 
