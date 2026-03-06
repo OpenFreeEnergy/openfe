@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import pathlib
+from pathlib import Path
 from typing import Optional
 
 from openfe import AlchemicalNetwork, LigandNetwork
-from openfe.storage.warehouse import WarehouseBaseClass
+from openfe.orchestration.exorcist_utils import build_task_db_from_alchemical_network
+from openfe.storage.warehouse import FileSystemWarehouse
 from openfecli.utils import write
 
 
@@ -15,13 +17,14 @@ def plan_alchemical_network_output(
     alchemical_network: AlchemicalNetwork,
     ligand_network: LigandNetwork,
     folder_path: pathlib.Path,
-    warehouse: Optional[WarehouseBaseClass],
+    warehouse: Optional[FileSystemWarehouse] = None,
 ):
     """Write the contents of an alchemical network into the structure"""
 
     if warehouse:
         warehouse.store_setup_tokenizable(alchemical_network)
-        warehouse.store_setup_tokenizable(ligand_network)
+        db_path = Path(warehouse.root_dir) / "tasks.db"
+        _ = build_task_db_from_alchemical_network(alchemical_network, warehouse, db_path)
     else:
         base_name = folder_path.name
         folder_path.mkdir(parents=True, exist_ok=True)

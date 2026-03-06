@@ -16,6 +16,15 @@ class _FailedResult:
         return False
 
 
+class _FailedResultWithDetails:
+    source_key = "HybridTopologyMultiStateSimulationUnit-deadbeef"
+    exception = ("RuntimeError", ("simulation blew up",))
+    traceback = 'Traceback (most recent call last):\n  File "sim.py", line 1\nRuntimeError: simulation blew up'
+
+    def ok(self):
+        return False
+
+
 def test_worker_requires_task_database():
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -90,6 +99,31 @@ def test_worker_raises_when_result_is_failure():
         assert "returned a failure result" in result.output
 
 
+def test_worker_prints_failure_result_details_when_available():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        warehouse_path = Path("warehouse")
+        warehouse_path.mkdir()
+        (warehouse_path / "tasks.db").touch()
+
+        mock_worker = mock.Mock()
+        mock_worker.execute_unit.return_value = (
+            "Transformation-abc:ProtocolUnit-def",
+            _FailedResultWithDetails(),
+        )
+
+        with mock.patch("openfecli.commands.worker._build_worker", return_value=mock_worker):
+            result = runner.invoke(worker, ["warehouse"])
+
+        assert result.exit_code == 1
+        assert (
+            "Failed unit source key: HybridTopologyMultiStateSimulationUnit-deadbeef"
+            in result.output
+        )
+        assert "Protocol unit exception: RuntimeError: ('simulation blew up',)" in result.output
+        assert "Protocol unit traceback:" in result.output
+
+
 def test_worker_raises_when_execution_throws():
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -104,4 +138,6 @@ def test_worker_raises_when_execution_throws():
             result = runner.invoke(worker, ["warehouse"])
 
         assert result.exit_code == 1
+        assert "Traceback (most recent call last):" in result.output
+        assert "RuntimeError: boom" in result.output
         assert "Task execution failed: boom" in result.output
