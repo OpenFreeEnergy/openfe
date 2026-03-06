@@ -48,10 +48,10 @@ def alchemical_network_to_task_graph(
                 node_id,
             )
             warehouse.store_task(unit)
-        for u, v in dag.graph.edges:
-            u_id = f"{str(transformation.key)}:{str(u.key)}"
-            v_id = f"{str(transformation.key)}:{str(v.key)}"
-            global_dag.add_edge(u_id, v_id)
+        for dependent_unit, dependency_unit in dag.graph.edges:
+            upstream_id = f"{str(transformation.key)}:{str(dependency_unit.key)}"
+            downstream_id = f"{str(transformation.key)}:{str(dependent_unit.key)}"
+            global_dag.add_edge(upstream_id, downstream_id)
 
     if not nx.is_directed_acyclic_graph(global_dag):
         raise ValueError("AlchemicalNetwork produced a task graph that is not a DAG.")

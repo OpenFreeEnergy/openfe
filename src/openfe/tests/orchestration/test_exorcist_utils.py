@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 from unittest import mock
 
 import exorcist
@@ -11,7 +12,7 @@ from openfe.orchestration.exorcist_utils import (
     alchemical_network_to_task_graph,
     build_task_db_from_alchemical_network,
 )
-from openfe.storage.warehouse import FileSystemWarehouse
+from openfe.storage.warehouse import FileSystemWarehouse, WarehouseBaseClass
 
 
 class _RecordingWarehouse:
@@ -35,7 +36,7 @@ def test_alchemical_network_to_task_graph_stores_all_units(request, fixture):
     network = request.getfixturevalue(fixture)
     expected_units = _network_units(network)
 
-    alchemical_network_to_task_graph(network, warehouse)
+    alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     stored_unit_names = [str(unit.name) for unit in warehouse.stored_tasks]
     expected_unit_names = [str(unit.name) for unit in expected_units]
@@ -49,7 +50,7 @@ def test_alchemical_network_to_task_graph_uses_canonical_task_ids(request, fixtu
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
 
-    graph = alchemical_network_to_task_graph(network, warehouse)
+    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     transformation_keys = {str(transformation.key) for transformation in network.edges}
     expected_protocol_unit_keys = sorted(str(unit.key) for unit in warehouse.stored_tasks)
@@ -68,12 +69,28 @@ def test_alchemical_network_to_task_graph_edges_reference_existing_nodes(request
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
 
-    graph = alchemical_network_to_task_graph(network, warehouse)
+    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     assert len(graph.edges) > 0
     for u, v in graph.edges:
         assert u in graph.nodes
         assert v in graph.nodes
+
+
+@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+def test_alchemical_network_to_task_graph_edge_direction_matches_dependencies(request, fixture):
+    warehouse = _RecordingWarehouse()
+    network = request.getfixturevalue(fixture)
+
+    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    units_by_key = {str(unit.key): unit for unit in warehouse.stored_tasks}
+
+    for upstream_id, downstream_id in graph.edges:
+        _, upstream_key = upstream_id.split(":", maxsplit=1)
+        _, downstream_key = downstream_id.split(":", maxsplit=1)
+        upstream_unit = units_by_key[upstream_key]
+        downstream_unit = units_by_key[downstream_key]
+        assert upstream_unit in downstream_unit.dependencies
 
 
 def test_alchemical_network_to_task_graph_raises_for_cycle():
@@ -125,7 +142,6 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     checkout_order = []
     # Hard upper bound prevents infinite checkout loops.
     max_checkouts = len(graph_taskids)
-    print(f"Max Checkout={max_checkouts}")
     for _ in range(max_checkouts):
         taskid = db.check_out_task()
         if taskid is None:
