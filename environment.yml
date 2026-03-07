@@ -53,7 +53,7 @@ dependencies:
   # Control blas/openmp threads
   - threadpoolctl
   - pip:
-    - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/gufe@restart_execute
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
