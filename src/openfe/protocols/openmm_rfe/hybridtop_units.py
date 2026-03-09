@@ -1117,7 +1117,8 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             )
 
             if (
-                (simulation_settings.n_replicas != sampler.n_states != sampler.n_replicas)
+                (simulation_settings.n_replicas != sampler.n_states)
+                or (simulation_settings.n_replicas != sampler.n_replicas)
                 or (sampler.mcmc_moves[0].n_steps != steps_per_iteration)
                 or (sampler.mcmc_moves[0].timestep != integrator.timestep)
             ):
