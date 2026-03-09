@@ -21,6 +21,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 import openfe
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
 from openfe.protocols.openmm_utils.serialization import deserialize

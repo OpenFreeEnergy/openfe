@@ -13,7 +13,10 @@ from openfe.protocols import openmm_afe
 
 @pytest.mark.integration  # takes too long to be a slow test ~ 4 mins locally
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
-@pytest.mark.parametrize("platform", ["CPU", "CUDA"])
+@pytest.mark.parametrize(
+    "platform",
+    [pytest.param("CPU", marks=pytest.mark.xfail(reason="see openfe issue #1670")), "CUDA"],
+)
 def test_openmm_run_engine(
     platform,
     get_available_openmm_platforms,

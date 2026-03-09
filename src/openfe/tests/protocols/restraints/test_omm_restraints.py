@@ -2,15 +2,14 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import os
-import pathlib
 
 import openmm
-import pooch
 import pytest
 from gufe import SmallMoleculeComponent
 from openff.units import unit
 from openmmtools.states import ThermodynamicState
 
+from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     BoreschRestraintGeometry,
@@ -98,34 +97,18 @@ def test_verify_geometry():
         restraint._verify_geometry(geometry)
 
 
-POOCH_CACHE = pooch.os_cache("openfe")
-zenodo_restraint_data = pooch.create(
-    path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.15212342",
-    registry={
-        "industry_benchmark_systems.zip": "sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd"
-    },
-)
-
-
 @pytest.fixture
-def tyk2_protein_ligand_system():
-    zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
-    cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
-    )
-    with open(str(cache_dir / "jacs_set" / "tyk2" / "protein_ligand_system.xml")) as xml:
+def tyk2_protein_ligand_system(industry_benchmark_files):
+    with open(
+        str(industry_benchmark_files / "jacs_set" / "tyk2" / "protein_ligand_system.xml")
+    ) as xml:
         return openmm.XmlSerializer.deserialize(xml.read())
 
 
 @pytest.fixture
-def tyk2_rdkit_ligand():
-    zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
-    cache_dir = pathlib.Path(
-        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems"
-    )
+def tyk2_rdkit_ligand(industry_benchmark_files):
     ligand = SmallMoleculeComponent.from_sdf_file(
-        str(cache_dir / "jacs_set" / "tyk2" / "test_ligand.sdf")
+        str(industry_benchmark_files / "jacs_set" / "tyk2" / "test_ligand.sdf")
     )
     return ligand.to_rdkit()
 

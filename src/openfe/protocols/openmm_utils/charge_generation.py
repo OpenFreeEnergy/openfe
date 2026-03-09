@@ -7,7 +7,7 @@ Reusable utilities for assigning partial charges to ChemicalComponents.
 import copy
 import sys
 import warnings
-from typing import Callable, Literal, Optional, Union
+from typing import Callable, Literal
 
 import numpy as np
 from gufe import SmallMoleculeComponent
@@ -112,7 +112,7 @@ def assign_offmol_espaloma_charges(offmol: OFFMol, toolkit_registry: ToolkitRegi
 def assign_offmol_nagl_charges(
     offmol: OFFMol,
     toolkit_registry: ToolkitRegistry,
-    nagl_model: Optional[str] = None,
+    nagl_model: str | None = None,
 ) -> None:
     """
     Assign NAGL charges using the OpenFF toolkit.
@@ -126,7 +126,7 @@ def assign_offmol_nagl_charges(
       This strictly limits available toolkit wrappers by
       overwriting the global registry during the partial charge
       assignment stage.
-    nagl_model : Optional[str]
+    nagl_model : str | None
       The NAGL model to use when assigning partial charges.
       If ``None``, will fetch the latest production "am1bcc" model.
     """
@@ -208,7 +208,7 @@ def _generate_offmol_conformers(
     offmol: OFFMol,
     max_conf: int,
     toolkit_registry: ToolkitRegistry,
-    generate_n_conformers: Optional[int],
+    generate_n_conformers: int | None,
 ) -> None:
     """
     Helper method for OFF Molecule conformer generation in charge assignment.
@@ -223,7 +223,7 @@ def _generate_offmol_conformers(
       Toolkit registry to use for generating conformers.
       This strictly limits available toolkit wrappers by
       overwriting the global registry during the conformer generation step.
-    generate_n_conformers : Optional[int]
+    generate_n_conformers : int | None
       The number of conformers to generate. If ``None``, the existing
       conformers are retained & used.
 
@@ -288,8 +288,8 @@ def assign_offmol_partial_charges(
     overwrite: bool,
     method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"],
     toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
-    generate_n_conformers: Optional[int],
-    nagl_model: Optional[str],
+    generate_n_conformers: int | None,
+    nagl_model: str | None,
 ) -> OFFMol:
     """
     Assign partial charges to an OpenFF Molecule based on a selected method.
@@ -312,11 +312,11 @@ def assign_offmol_partial_charges(
         * ``rdkit``: selects the RDKit toolkit Wrapper
       Note that the ``rdkit`` backend cannot be used for `am1bcc` or
       ``am1bccelf10`` partial charge methods.
-    generate_n_conformers : Optional[int]
+    generate_n_conformers : int | None
       Number of conformers to generate for partial charge generation.
-      If ``None`` (default), the input conformer will be used.
+      If ``None``, the input conformer will be used.
       Values greater than 1 can only be used alongside ``am1bccelf10``.
-    nagl_model : Optional[str]
+    nagl_model : str | None
       The NAGL model to use for charge assignment if method is ``nagl``.
       If ``None``, the latest am1bcc NAGL charge model is used.
 
@@ -443,8 +443,8 @@ def bulk_assign_partial_charges(
     overwrite: bool,
     method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"],
     toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
-    generate_n_conformers: Optional[int],
-    nagl_model: Optional[str],
+    generate_n_conformers: int | None,
+    nagl_model: str | None,
     processors: int = 1,
 ) -> list[SmallMoleculeComponent]:
     """
@@ -468,11 +468,11 @@ def bulk_assign_partial_charges(
         * ``rdkit``: selects the RDKit toolkit Wrapper
       Note that the ``rdkit`` backend cannot be used for `am1bcc` or
       ``am1bccelf10`` partial charge methods.
-    generate_n_conformers : Optional[int]
+    generate_n_conformers : int | None
       Number of conformers to generate for partial charge generation.
-      If ``None`` (default), the input conformer will be used.
+      If ``None``, the input conformer will be used.
       Values greater than 1 can only be used alongside ``am1bccelf10``.
-    nagl_model : Optional[str]
+    nagl_model : str | None
       The NAGL model to use for charge assignment if method is ``nagl``.
       If ``None``, the latest am1bcc NAGL charge model is used.
     processors: int, default 1
