@@ -250,8 +250,8 @@ def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
             x["__module__"] for x in protocol_data["inputs"]["stateA"]["components"].values()
         ]
     if (
-            "gufe.components.proteincomponent" in component_types
-            or "gufe.components.solvatedpdbcomponent" in component_types
+        "gufe.components.proteincomponent" in component_types
+        or "gufe.components.solvatedpdbcomponent" in component_types
     ):
         return "complex"
 
