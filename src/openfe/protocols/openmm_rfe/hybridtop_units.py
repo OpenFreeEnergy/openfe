@@ -1116,6 +1116,19 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 stored_system=sampler._thermodynamic_states[0].get_system(remove_thermostat=True),
             )
 
+            # We do check to make sure we have the same thermodynamic
+            # parameters and that the lambda schedule is the same.
+            for index, thermostate in enumerate(sampler._thermodynamic_states):
+                assert thermostate.temperature == to_openmm(thermo_settings.temperature)
+                assert thermostate.pressure == to_openmm(thermo_settings.pressure)
+
+                for key in lambdas.functions:
+                    lambda_value = lambdas.lambda_schedule[index]
+                    expected = lambdas.functions[key](lambda_value)
+                    stored = getattr(thermostate, key)
+                    assert expected == stored
+
+            # Finally we check that some of the sampler parameters haven't changed
             if (
                 (simulation_settings.n_replicas != sampler.n_states)
                 or (simulation_settings.n_replicas != sampler.n_replicas)
