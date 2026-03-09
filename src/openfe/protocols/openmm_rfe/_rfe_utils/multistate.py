@@ -32,7 +32,13 @@ class HybridCompatibilityMixin:
     unsampled endpoints have a different number of degrees of freedom.
     """
 
-    def __init__(self, *args, hybrid_system, hybrid_positions, **kwargs):
+    def __init__(
+        self,
+        *args,
+        hybrid_system: openmm.System | None = None,
+        hybrid_positions: unit.Quantity | None = None,
+        **kwargs
+    ):
         self._hybrid_system = hybrid_system
         self._hybrid_positions = hybrid_positions
         super(HybridCompatibilityMixin, self).__init__(*args, **kwargs)
@@ -167,7 +173,13 @@ class HybridRepexSampler(HybridCompatibilityMixin,
     number of positions
     """
 
-    def __init__(self, *args, hybrid_system, hybrid_positions, **kwargs):
+    def __init__(
+        self,
+        *args,
+        hybrid_system: openmm.System | None = None,
+        hybrid_positions: unit.Quantity | None = None,
+        **kwargs
+    ):
         super(HybridRepexSampler, self).__init__(
             *args,
             hybrid_system=hybrid_system,
@@ -182,7 +194,13 @@ class HybridSAMSSampler(HybridCompatibilityMixin, sams.SAMSSampler):
     of positions
     """
 
-    def __init__(self, *args, hybrid_system, hybrid_positions, **kwargs):
+    def __init__(
+        self,
+        *args,
+        hybrid_system: openmm.System | None = None,
+        hybrid_positions: unit.Quantity | None = None,
+        **kwargs
+    ):
         super(HybridSAMSSampler, self).__init__(
             *args,
             hybrid_system=hybrid_system,
@@ -197,7 +215,13 @@ class HybridMultiStateSampler(HybridCompatibilityMixin,
     MultiStateSampler that supports unsample end states with a different
     number of positions
     """
-    def __init__(self, *args, hybrid_system, hybrid_positions, **kwargs):
+    def __init__(
+        self,
+        *args,
+        hybrid_system: openmm.System | None = None,
+        hybrid_positions: unit.Quantity | None = None,
+        **kwargs
+    ):
         super(HybridMultiStateSampler, self).__init__(
             *args,
             hybrid_system=hybrid_system,
