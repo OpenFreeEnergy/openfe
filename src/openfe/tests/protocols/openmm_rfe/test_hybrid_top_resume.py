@@ -182,17 +182,14 @@ class TestCheckpointResuming:
             shared_basepath=cwd,
         )
 
-        # TODO: can't do this right now: openfe-analysis isn't closing
-        # netcdf files properly, so we can't do any follow-up operations
-        # Once openfe-analysis is released, add tests for this.
-        # # Finally we analyze the results
-        # analysis_results = analysis_unit.run(
-        #     pdb_file=setup_results["pdb_structure"],
-        #     trajectory=sim_results["nc"],
-        #     checkpoint=sim_results["checkpoint"],
-        #     scratch_basepath=cwd,
-        #     shared_basepath=cwd,
-        # )
+        # Finally we analyze the results
+        analysis_results = analysis_unit.run(
+            pdb_file=setup_results["pdb_structure"],
+            trajectory=sim_results["nc"],
+            checkpoint=sim_results["checkpoint"],
+            scratch_basepath=cwd,
+            shared_basepath=cwd,
+        )
 
         # 3. Analyze the trajectory/checkpoint again
         reporter = MultiStateReporter(
@@ -215,6 +212,10 @@ class TestCheckpointResuming:
 
         reporter.close()
         del sampler
+
+        # Check the openfe-analysis outputs are there
+        structural_analysis_file = cwd / "structural_analysis.npz"
+        assert (structural_analysis_file).exists()
 
     @pytest.mark.slow
     def test_resume_fail_particles(
