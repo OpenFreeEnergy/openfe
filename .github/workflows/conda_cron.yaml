@@ -41,7 +41,8 @@ jobs:
         working-directory: openfe_repo
         run: |
           REPO="${{ github.repository }}"
-          VERSION=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name | ltrimstr("v")')
+          VERSION=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name | ltrimstr("v")')
           echo $VERSION
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
