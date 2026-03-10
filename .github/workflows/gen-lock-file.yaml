@@ -23,7 +23,8 @@ jobs:
     - name: Get latest tag
       id: latest-version
       run: |
-        VERSION=$(curl -s https://api.github.com/repos/OpenFreeEnergy/openfe/releases/latest | jq -r '.tag_name | ltrimstr("v")')
+        REPO="${{ github.repository }}"
+        VERSION=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name | ltrimstr("v")')
         echo $VERSION
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
