@@ -10,6 +10,8 @@ from gufe.tokenization import JSON_HANDLER
 
 from openfecli.commands.quickrun import quickrun
 
+# from ..utils import assert_click_success
+
 
 @pytest.fixture
 def json_file():
@@ -34,8 +36,10 @@ def test_quickrun(extra_args, json_file):
         result = runner.invoke(quickrun, [json_file] + extras)
         assert result.exit_code == 0
         assert "Here is the result" in result.output
-
-        assert pathlib.Path(extra_args.get("-d", ""), "protocol_dag.json").exists()
+        trans = Transformation.from_json(json_file)
+        assert pathlib.Path(
+            extra_args.get("-d", ""), f"Transformation-{trans.key}-protocolDAG.json"
+        ).exists()
 
         if outfile := extra_args.get("-o"):
             assert pathlib.Path(outfile).exists()
@@ -103,7 +107,7 @@ def test_quickrun_resume(json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        dag.to_json("protocol_dag.json")
+        dag.to_json(f"Transformation-{trans.key}-protocolDAG.json")
         result = runner.invoke(quickrun, [json_file])
 
         assert result.exit_code == 0
