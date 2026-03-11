@@ -107,4 +107,4 @@ def test_quickrun_resume(json_file):
         result = runner.invoke(quickrun, [json_file])
 
         assert result.exit_code == 0
-        assert "Attempting to recover edge simulations" in result.output
+        assert "Attempting to resume" in result.output

@@ -97,12 +97,13 @@ def quickrun(transformation, work_dir, output):
         output.parent.mkdir(exist_ok=True, parents=True)
 
     # Attempt to either deserialize or freshly create DAG
-    if (work_dir / "protocol_dag.json").is_file():
-        write("Attempting to recover edge simulations from file")
+    dag_json = work_dir / "protocol_dag.json"
+    if dag_json.is_file():
+        write(f"Attempting to resume execution using existing edges from '{dag_json}'")
         try:
             dag = ProtocolDAG.from_json(work_dir / "protocol_dag.json")
         except JSONDecodeError:
-            errmsg = "Recovery failed, please clean workdir before continuing"
+            errmsg = f"Recovery failed, please remove {dag_json} and any results from your working directory before continuing to create a new protocol."
             raise click.ClickException(errmsg)
     else:
         # Create the DAG instead and then serialize for later resuming
