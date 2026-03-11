@@ -4,6 +4,7 @@ import sys
 from math import sqrt
 from unittest import mock
 
+import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
