@@ -5,6 +5,7 @@ from importlib import resources
 import click
 import pytest
 from click.testing import CliRunner
+from gufe import Transformation
 from gufe.tokenization import JSON_HANDLER
 
 from openfecli.commands.quickrun import quickrun
@@ -94,3 +95,16 @@ def test_quickrun_unit_error():
         # to be stored in JSON
         # not sure whether that means we should always be storing all
         # protocol dag results maybe?
+
+
+def test_quickrun_resume(json_file):
+    trans = Transformation.from_json(json_file)
+    dag = trans.create()
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        dag.to_json("protocol_dag.json")
+        result = runner.invoke(quickrun, [json_file])
+
+        assert result.exit_code == 0
+        assert "Attempting to recover edge simulations" in result.output
