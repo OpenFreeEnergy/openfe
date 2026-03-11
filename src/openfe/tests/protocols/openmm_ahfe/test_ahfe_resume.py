@@ -7,18 +7,18 @@ import pathlib
 import shutil
 
 import gufe
-from gufe.protocols.errors import ProtocolUnitExecutionError
+import openmm
 import pytest
+from gufe.protocols.errors import ProtocolUnitExecutionError
 from numpy.testing import assert_allclose
 from openfe_analysis.utils.multistate import _determine_position_indices
 from openff.units import unit as offunit
 from openff.units.openmm import from_openmm
-import openmm
 from openmmtools.multistate import MultiStateReporter, ReplicaExchangeSampler
 
 import openfe
-from openfe.protocols import openmm_afe
 from openfe.data._registry import POOCH_CACHE
+from openfe.protocols import openmm_afe
 
 from ...conftest import HAS_INTERNET
 from .utils import _get_units
@@ -115,7 +115,9 @@ def test_vacuum_check_restart(protocol_settings, ahfe_vac_trajectory_path):
 class TestCheckpointResuming:
     @pytest.fixture()
     def protocol_dag(
-        self, protocol_settings, benzene_modifications,
+        self,
+        protocol_settings,
+        benzene_modifications,
     ):
         stateA = openfe.ChemicalSystem(
             {
@@ -160,7 +162,9 @@ class TestCheckpointResuming:
         shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
 
     @pytest.mark.integration
-    def test_resume(self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmpdir):
+    def test_resume(
+        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmpdir
+    ):
         """
         Attempt to resume a simulation unit with pre-existing checkpoint &
         trajectory files.
