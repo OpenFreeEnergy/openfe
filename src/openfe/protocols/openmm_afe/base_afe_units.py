@@ -34,6 +34,7 @@ from gufe import (
     SolventComponent,
 )
 from gufe.components import Component
+from gufe.protocols.errors import ProtocolUnitExecutionError
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity
 from openff.units import unit as offunit
@@ -54,6 +55,7 @@ from openmmtools.states import (
     create_thermodynamic_state_protocol,
 )
 
+import openfe
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AlchemicalSettings,
     BaseSolvationSettings,
@@ -61,8 +63,6 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
-    OpenMMEngineSettings,
-    OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
@@ -72,6 +72,7 @@ from openfe.protocols.openmm_utils import (
     omm_compute,
     settings_validation,
     system_creation,
+    system_validation,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
@@ -148,6 +149,26 @@ class AbsoluteUnitMixin:
         Must be implemented in the child class.
         """
         ...
+
+    @staticmethod
+    def _verify_execution_environment(
+        setup_outputs: dict[str, Any],
+    ) -> None:
+        """
+        Check that the Python environment hasn't changed based on the
+        relevant Python library versions stored in the setup outputs.
+        """
+        try:
+            if (
+                (gufe.__version__ != setup_outputs["gufe_version"])
+                or (openfe.__version__ != setup_outputs["openfe_version"])
+                or (openmm.__version__ != setup_outputs["openmm_version"])
+            ):
+                errmsg = "Python environment has changed, cannot continue Protocol execution."
+                raise ProtocolUnitExecutionError(errmsg)
+        except KeyError:
+            errmsg = "Missing environment information from setup outputs."
+            raise ProtocolUnitExecutionError(errmsg)
 
 
 class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
@@ -782,6 +803,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
             "simtype": self.simtype,
+            "openmm_version": openmm.__version__,
+            "openfe_version": openfe.__version__,
+            "gufe_version": gufe.__version__,
             **outputs,
         }
 
@@ -807,6 +831,13 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         """
         trajectory = shared_path / output_settings.output_filename
         checkpoint = shared_path / output_settings.checkpoint_storage_filename
+
+        if trajectory.is_file() ^ checkpoint.is_file():
+            errmsg = (
+                "One of either the trajectory or checkpoint files are missing but "
+                "the other is not. This should not happen under normal circumstances."
+            )
+            raise IOError(errmsg)
 
         if trajectory.is_file() and checkpoint.is_file():
             return True
@@ -1029,7 +1060,13 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         -------
         reporter : multistate.MultiStateReporter
           The reporter for the simulation.
+
+        Notes
+        -----
+        All this does is create the reporter, it works for both
+        new reporters and if we are doing a restart.
         """
+        # Define the trajectory & checkpoint files
         nc = storage_path / output_settings.output_filename
         # The checkpoint file in openmmtools is taken as a file relative
         # to the location of the nc file, so you only want the filename
@@ -1114,6 +1151,11 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         }
 
         sampler_method = simulation_settings.sampler_method.lower()
+        try:
+            sampler_class = _SAMPLERS[sampler_method]
+        except KeyError:
+            errmsg = f"Unknown sampler {sampler_method}"
+            raise AttributeError(errmsg)
 
         # Get the real time analysis values to use
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
@@ -1159,25 +1201,42 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
                 "replica_mixing_scheme": "swap-all",
             }
 
+        # Restarting so we just rebuild from storage.
         if restart:
-            sampler = _SAMPLERS[sampler_method].from_storage(reporter)
+            sampler = sampler_class.from_storage(reporter)
 
-            # Add some tests here
-            sampler_system = sampler._thermodynamic_states[0].get_system(remove_thermostat=True)
-            system = compound_states[0].get_system(rermove_thermostat=True)
+            # We do some checks to make sure we are running the same system
+            # including ensuring that we have the same thermodynamic parameters and
+            # that the lambda schedule is the same.
+            for index, thermostate in enumerate(sampler._thermodynamic_states):
+                system_validation.assert_multistate_system_equality(
+                    ref_system=compound_states[index].get_system(remove_thermostat=True),
+                    stored_system=thermostate.get_system(remove_thermostat=True),
+                )
+
+                # Loop over each composable state (e.g. GlobalParameterState object)
+                # get the parameters and check that the values are the same.
+                for composable_state in compound_states[index]._composable_states:
+                    for param in composable_state._parameters:
+                        expected = getattr(compound_states[index], param)
+                        stored = getattr(thermostate, param)
+                        if expected != stored:
+                            errmsg = (
+                                f"System parameter {param} in checkpoint does "
+                                "not match protocol system, cannot resume"
+                            )
+                            raise ValueError(errmsg)
 
             if (
-                (simulation_settings.n_replicas != sampler.n_states != sampler.n_replicas)
-                or (system.getNumForces() != sampler_system.getNumForces())
-                or (system.getNumParticles() != sampler_system.getNumParticles())
-                or (system.getNumConstraints() != sampler_system.getNumConstraints())
+                (simulation_settings.n_replicas != sampler.n_states)
+                or (simulation_settings.n_replicas != sampler.n_replicas)
                 or (sampler.mcmc_moves[0].n_steps != steps_per_iteration)
                 or (sampler.mcmc_moves[0].timestep != integrator.timestep)
             ):
                 errmsg = "System in checkpoint does not match protocol system, cannot resume"
                 raise ValueError(errmsg)
         else:
-            sampler = _SAMPLERS[sampler_method](**sampler_kwargs)
+            sampler = sampler_class(**sampler_kwargs)
 
             sampler.create(
                 thermodynamic_states=compound_states,
@@ -1446,6 +1505,10 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
+        # Ensure the environment hasn't changed
+        self._verify_execution_environment(setup_results.outputs)
+
+        # Get the relevant inputs for running the unit
         system = deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nanometer)
         selection_indices = setup_results.outputs["selection_indices"]
@@ -1588,6 +1651,10 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
+        # Ensure the environment hasn't changed
+        self._verify_execution_environment(setup_results.outputs)
+
+        # Get the relevant inputs for running the unit
         pdb_file = setup_results.outputs["pdb_structure"]
         selection_indices = setup_results.outputs["selection_indices"]
         restraint_geometry = setup_results.outputs["restraint_geometry"]

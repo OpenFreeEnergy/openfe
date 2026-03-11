@@ -803,9 +803,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
             "selection_indices": selection_indices,
-            "openmm_version": openmm.__version__,
-            "openfe_version": openfe.__version__,
-            "gufe_version": gufe.__version__,
         }
 
         if dry:
@@ -830,6 +827,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            "openmm_version": openmm.__version__,
+            "openfe_version": openfe.__version__,
+            "gufe_version": gufe.__version__,
             **outputs,
         }
 
@@ -1108,7 +1108,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
         # Restarting doesn't need any setup, we just rebuild from storage.
         if restart:
-            sampler = _SAMPLERS[sampler_method].from_storage(reporter)  # type: ignore[attr-defined]
+            sampler = sampler_class.from_storage(reporter)  # type: ignore[attr-defined]
 
             # We do some checks to make sure we are running the same system
             system_validation.assert_multistate_system_equality(
@@ -1139,7 +1139,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 raise ValueError(errmsg)
 
         else:
-            sampler = _SAMPLERS[sampler_method](**sampler_kwargs)
+            sampler = sampler_class(**sampler_kwargs)
 
             sampler.setup(
                 n_replicas=simulation_settings.n_replicas,

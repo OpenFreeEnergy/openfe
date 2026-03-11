@@ -9,6 +9,7 @@ import gufe
 import numpy as np
 import pytest
 from openff.units import unit as offunit
+import openmm
 
 import openfe
 from openfe import ChemicalSystem, SolventComponent
@@ -51,6 +52,9 @@ def patcher():
                 "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
                 "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
                 "restraint_geometry": None,
+                "gufe_version": gufe.__version__,
+                "openfe_version": openfe.__version__,
+                "openmm_version": openmm.__version__,
             },
         ),
         mock.patch(

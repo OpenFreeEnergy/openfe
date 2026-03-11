@@ -1,60 +1,27 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import copy
+import os
 import pathlib
-import pooch
+import shutil
 
+import gufe
+from gufe.protocols.errors import ProtocolUnitExecutionError
 import pytest
+from numpy.testing import assert_allclose
+from openfe_analysis.utils.multistate import _determine_position_indices
 from openff.units import unit as offunit
+from openff.units.openmm import from_openmm
+import openmm
+from openmmtools.multistate import MultiStateReporter, ReplicaExchangeSampler
 
 import openfe
 from openfe.protocols import openmm_afe
+from openfe.data._registry import POOCH_CACHE
 
 from ...conftest import HAS_INTERNET
-from utils import _get_units
-
-
-POOCH_CACHE = pooch.os_cache("openfe")
-zenodo_resume_data = pooch.create(
-    path=POOCH_CACHE,
-    base_url="doi:10.5281/zenodo.18331259",
-    registry={"multistate_checkpoints.zip": "md5:2cf8aa417ac8311aca1551d4abf3b3ed"},
-)
-
-@pytest.fixture(scope="module")
-def vac_trajectory_path():
-    zenodo_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
-    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
-    subdir = "ahfes"
-    filename = "vacuum.nc"
-    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
-
-
-@pytest.fixture(scope="module")
-def vac_checkpoint_path():
-    zenodo_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
-    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
-    subdir = "ahfes"
-    filename = "vacuum_checkpoint.chk"
-    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
-
-
-@pytest.fixture(scope="module")
-def sol_trajectory_path():
-    zenodo_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
-    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
-    subdir = "ahfes"
-    filename = "solvent.nc"
-    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
-
-
-@pytest.fixture(scope="module")
-def sol_checkpoint_path():
-    zenodo_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
-    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
-    subdir = "ahfes"
-    filename = "solvent_checkpoint.chk"
-    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+from .utils import _get_units
 
 
 @pytest.fixture()
@@ -78,17 +45,52 @@ def protocol_settings():
     return settings
 
 
+def test_verify_execution_environment():
+    # Verification should pass
+    openmm_afe.AHFESolventSimUnit._verify_execution_environment(
+        setup_outputs={
+            "gufe_version": gufe.__version__,
+            "openfe_version": openfe.__version__,
+            "openmm_version": openmm.__version__,
+        },
+    )
+
+
+def test_verify_execution_environment_fail():
+    # Passing a bad version should fail
+    with pytest.raises(ProtocolUnitExecutionError, match="Python environment"):
+        openmm_afe.AHFESolventSimUnit._verify_execution_environment(
+            setup_outputs={
+                "gufe_version": 0.1,
+                "openfe_version": openfe.__version__,
+                "openmm_version": openmm.__version__,
+            },
+        )
+
+
+def test_verify_execution_env_missing_key():
+    errmsg = "Missing environment information from setup outputs."
+    with pytest.raises(ProtocolUnitExecutionError, match=errmsg):
+        openmm_afe.AHFESolventSimUnit._verify_execution_environment(
+            setup_outputs={
+                "foo_version": 0.1,
+                "openfe_version": openfe.__version__,
+                "openmm_version": openmm.__version__,
+            },
+        )
+
+
 @pytest.mark.skipif(
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet unavailable and test data is not cached locally",
 )
-def test_solvent_check_restart(protocol_settings, sol_trajectory_path):
-    assert openmm_afe.ABFESolventSimUnit._check_restart(
+def test_solvent_check_restart(protocol_settings, ahfe_solv_trajectory_path):
+    assert openmm_afe.AHFESolventSimUnit._check_restart(
         output_settings=protocol_settings.solvent_output_settings,
-        shared_path=sol_trajectory_path.parent,
+        shared_path=ahfe_solv_trajectory_path.parent,
     )
 
-    assert not openmm_afe.ABFESolventSimUnit._check_restart(
+    assert not openmm_afe.AHFESolventSimUnit._check_restart(
         output_settings=protocol_settings.solvent_output_settings,
         shared_path=pathlib.Path("."),
     )
@@ -98,17 +100,16 @@ def test_solvent_check_restart(protocol_settings, sol_trajectory_path):
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet unavailable and test data is not cached locally",
 )
-def test_vacuum_check_restart(protocol_settings, vac_trajectory_path):
-    assert openmm_afe.ABFEVacuumSimUnit._check_restart(
+def test_vacuum_check_restart(protocol_settings, ahfe_vac_trajectory_path):
+    assert openmm_afe.AHFEVacuumSimUnit._check_restart(
         output_settings=protocol_settings.vacuum_output_settings,
-        shared_path=vac_trajectory_path.parent,
+        shared_path=ahfe_vac_trajectory_path.parent,
     )
 
-    assert not openmm_afe.ABFEVacuumSimUnit._check_restart(
+    assert not openmm_afe.AHFEVacuumSimUnit._check_restart(
         output_settings=protocol_settings.vacuum_output_settings,
         shared_path=pathlib.Path("."),
     )
-
 
 
 class TestCheckpointResuming:
@@ -135,63 +136,112 @@ class TestCheckpointResuming:
             mapping=None,
         )
 
-    def test_resume(self, protocol_dag, tmpdir):
+    @staticmethod
+    def _check_sampler(sampler, num_iterations: int):
+        # Helper method to do some checks on the sampler
+        assert sampler._iteration == num_iterations
+        assert sampler.number_of_iterations == 80
+        assert sampler.is_completed is (num_iterations == 80)
+        assert sampler.n_states == sampler.n_replicas == 14
+        assert sampler.is_periodic
+        assert sampler.mcmc_moves[0].n_steps == 625
+        assert from_openmm(sampler.mcmc_moves[0].timestep) == 4 * offunit.fs
+
+    @staticmethod
+    def _get_positions(dataset):
+        frame_list = _determine_position_indices(dataset)
+        positions = []
+        for frame in frame_list:
+            positions.append(copy.deepcopy(dataset.variables["positions"][frame].data))
+        return positions
+
+    @staticmethod
+    def _copy_simfiles(cwd: pathlib.Path, filepath):
+        shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
+
+    @pytest.mark.integration
+    def test_resume(self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmpdir):
         """
         Attempt to resume a simulation unit with pre-existing checkpoint &
         trajectory files.
         """
-        cwd = pathlib.Path("resume_files")
-        r = openfe.execute_DAG(protocol_dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
+        cwd = pathlib.Path(str(tmpdir))
+        self._copy_simfiles(cwd, ahfe_solv_trajectory_path)
+        self._copy_simfiles(cwd, ahfe_solv_checkpoint_path)
 
+        # 1. Check that the trajectory / checkpoint contain what we expect
+        reporter = MultiStateReporter(
+            f"{cwd}/solvent.nc",
+            checkpoint_storage="solvent_checkpoint.nc",
+        )
+        sampler = ReplicaExchangeSampler.from_storage(reporter)
 
+        self._check_sampler(sampler, num_iterations=40)
 
+        # Deep copy energies & positions for later comparison
+        init_energies = copy.deepcopy(reporter.read_energies())[0]
+        assert init_energies.shape == (41, 14, 14)
+        init_positions = self._get_positions(reporter._storage[0])
+        assert len(init_positions) == 2
 
+        reporter.close()
+        del sampler
 
-# @pytest.mark.integration  # takes too long to be a slow test ~ 4 mins locally
-# def test_openmm_run_engine(
-#     platform,
-#     get_available_openmm_platforms,
-#     benzene_modifications,
-#     tmpdir,
-# ):
-#     cwd = pathlib.Path(str(tmpdir))
-#     r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
-# 
-#     assert r.ok()
-# 
-#     # Check outputs of solvent & vacuum results
-#     for phase in ["solvent", "vacuum"]:
-#         purs = [pur for pur in r.protocol_unit_results if pur.outputs["simtype"] == phase]
-# 
-#         # get the path to the simulation unit shared dict
-#         for pur in purs:
-#             if "Simulation" in pur.name:
-#                 sim_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
-#                 assert sim_shared.exists()
-#                 assert pathlib.Path(sim_shared).is_dir()
-# 
-#         # check the analysis outputs
-#         for pur in purs:
-#             if "Analysis" not in pur.name:
-#                 continue
-# 
-#             unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
-#             assert unit_shared.exists()
-#             assert pathlib.Path(unit_shared).is_dir()
-# 
-#             # Does the checkpoint file exist?
-#             checkpoint = pur.outputs["checkpoint"]
-#             assert checkpoint == sim_shared / f"{pur.outputs['simtype']}_checkpoint.nc"
-#             assert checkpoint.exists()
-# 
-#             # Does the trajectory file exist?
-#             nc = pur.outputs["trajectory"]
-#             assert nc == sim_shared / f"{pur.outputs['simtype']}.nc"
-#             assert nc.exists()
-# 
-#     # Test results methods that need files present
-#     results = protocol.gather([r])
-#     states = results.get_replica_states()
-#     assert len(states.items()) == 2
-#     assert len(states["solvent"]) == 1
-#     assert states["solvent"][0].shape[1] == 20
+        # 2. get & run the units
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
+        sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
+        analysis_unit = _get_units(pus, openmm_afe.AHFESolventAnalysisUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(
+            dry=True,
+            scratch_basepath=cwd,
+            shared_basepath=cwd,
+        )
+
+        # Now we run the simultion in resume mode
+        sim_results = sim_unit.run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            scratch_basepath=cwd,
+            shared_basepath=cwd,
+        )
+
+        # Finally we analyze the results
+        analysis_results = analysis_unit.run(
+            trajectory=sim_results["trajectory"],
+            checkpoint=sim_results["checkpoint"],
+            scratch_basepath=cwd,
+            shared_basepath=cwd,
+        )
+
+        # Analyze the trajectory / checkpoint again
+        reporter = MultiStateReporter(
+            f"{cwd}/solvent.nc",
+            checkpoint_storage="solvent_checkpoint.nc",
+        )
+
+        sampler = ReplicaExchangeSampler.from_storage(reporter)
+
+        self._check_sampler(sampler, num_iterations=80)
+
+        # Check the energies and positions
+        energies = reporter.read_energies()[0]
+        assert energies.shape == (81, 14, 14)
+        assert_allclose(init_energies, energies[:41])
+
+        positions = self._get_positions(reporter._storage[0])
+        assert len(positions) == 3
+        for i in range(2):
+            assert_allclose(positions[i], init_positions[i])
+
+        reporter.close()
+        del sampler
+
+        # Check the free energy plots are there
+        mbar_overlap_file = cwd / "mbar_overlap_matrix.png"
+        assert (mbar_overlap_file).exists()
