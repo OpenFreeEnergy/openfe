@@ -34,6 +34,8 @@ def test_quickrun(extra_args, json_file):
         assert result.exit_code == 0
         assert "Here is the result" in result.output
 
+        assert pathlib.Path(extra_args.get("-d", ""), "protocol_dag.json").exists()
+
         if outfile := extra_args.get("-o"):
             assert pathlib.Path(outfile).exists()
             with open(outfile, mode="r") as outf:
