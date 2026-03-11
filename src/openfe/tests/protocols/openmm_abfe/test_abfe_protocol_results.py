@@ -8,9 +8,9 @@ from unittest import mock
 
 import gufe
 import numpy as np
+import openmm
 import pytest
 from openff.units import unit as offunit
-import openmm
 
 import openfe
 from openfe.protocols import openmm_afe
