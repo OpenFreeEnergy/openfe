@@ -1257,12 +1257,12 @@ def test_unit_tagging(solvent_protocol_dag, unit_mock_patcher, tmpdir):
     assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
 
 
-def test_gather(solvent_protocol_dag, unit_mock_patcher, tmpdir):
+def test_gather(solvent_protocol_dag, unit_mock_patcher, tmp_path):
     # check .gather behaves as expected
     dagres = gufe.protocols.execute_DAG(
         solvent_protocol_dag,
-        shared_basedir=tmpdir,
-        scratch_basedir=tmpdir,
+        shared_basedir=tmp_path,
+        scratch_basedir=tmp_path,
         keep_shared=True,
     )
 
