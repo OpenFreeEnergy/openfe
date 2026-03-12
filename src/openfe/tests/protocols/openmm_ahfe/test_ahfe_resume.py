@@ -112,6 +112,21 @@ def test_vacuum_check_restart(protocol_settings, ahfe_vac_trajectory_path):
     )
 
 
+@pytest.mark.skipif(
+    not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
+    reason="Internet unavailable and test data is not cached locally",
+)
+def test_check_restart_one_file_missing(protocol_settings, ahfe_vac_trajectory_path):
+    protocol_settings.vacuum_output_settings.checkpoint_storage_filename = "foo.nc"
+
+    errmsg = "One of either the trajectory or checkpoint files are missing"
+    with pytest.raises(IOError, match=errmsg):
+        openmm_afe.AHFEVacuumSimUnit._check_restart(
+            output_settings=protocol_settings.vacuum_output_settings,
+            shared_path=ahfe_vac_trajectory_path.parent,
+        )
+
+
 class TestCheckpointResuming:
     @pytest.fixture()
     def protocol_dag(
@@ -249,3 +264,4 @@ class TestCheckpointResuming:
         # Check the free energy plots are there
         mbar_overlap_file = cwd / "mbar_overlap_matrix.png"
         assert (mbar_overlap_file).exists()
+
