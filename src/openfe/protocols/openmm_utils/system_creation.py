@@ -10,11 +10,19 @@ from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
-from gufe import Component, ProteinComponent, SmallMoleculeComponent, SolventComponent
+from gufe import (
+    BaseSolventComponent,
+    Component,
+    ProteinComponent,
+    ProteinMembraneComponent,
+    SmallMoleculeComponent,
+    SolvatedPDBComponent,
+    SolventComponent,
+)
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from openff.toolkit import Molecule as OFFMol
 from openff.units.openmm import ensure_quantity, to_openmm
-from openmm import MonteCarloBarostat, app
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat, app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SystemGenerator
 
@@ -40,13 +48,11 @@ def get_system_generator(
       Force field settings, including necessary information
       for constraints, hydrogen mass, rigid waters,
       non-ligand FF xmls, and the ligand FF name.
-    integrator_settings: IntegratorSettings
-      Integrator settings, including COM removal.
     thermo_settings : ThermoSettings
       Thermodynamic settings, including necessary settings
       for defining the ensemble conditions.
     integrator_settings : IntegratorSettings
-      Integrator settings, including barostat control variables.
+      Integrator settings, including barostat control variables and COM removal.
     cache : Optional[pathlib.Path]
       Path to openff force field cache.
     has_solvent : bool
@@ -108,13 +114,26 @@ def get_system_generator(
         nonperiodic_kwargs = periodic_kwargs
 
     # Add barostat if necessary
-    # TODO: move this to its own place where we can handle membranes
+    # For membrane systems, add a MonteCarloMembraneBarostat.
+    # ToDo: We could also only check for the barostat setting here. But for
+    #       that we first need adaptive settings for the rfe protocol
     if has_solvent:
-        barostat = MonteCarloBarostat(
-            ensure_quantity(thermo_settings.pressure, "openmm"),
-            ensure_quantity(thermo_settings.temperature, "openmm"),
-            integrator_settings.barostat_frequency.m,
-        )
+        if integrator_settings.barostat == "MonteCarloMembraneBarostat":
+            barostat = MonteCarloMembraneBarostat(
+                ensure_quantity(thermo_settings.pressure, "openmm"),
+                to_openmm(integrator_settings.surface_tension),
+                ensure_quantity(thermo_settings.temperature, "openmm"),
+                MonteCarloMembraneBarostat.XYIsotropic,
+                MonteCarloMembraneBarostat.ZFree,
+                integrator_settings.barostat_frequency.m,
+            )
+
+        else:
+            barostat = MonteCarloBarostat(
+                ensure_quantity(thermo_settings.pressure, "openmm"),
+                ensure_quantity(thermo_settings.temperature, "openmm"),
+                integrator_settings.barostat_frequency.m,
+            )
     else:
         barostat = None
 
@@ -136,7 +155,7 @@ ModellerReturn = tuple[app.Modeller, dict[Component, npt.NDArray]]
 
 def get_omm_modeller(
     protein_comp: Optional[ProteinComponent],
-    solvent_comp: Optional[SolventComponent],
+    solvent_comp: Optional[BaseSolventComponent],
     small_mols: dict[SmallMoleculeComponent, OFFMol],
     omm_forcefield: app.ForceField,
     solvent_settings: OpenMMSolvationSettings,
@@ -149,8 +168,8 @@ def get_omm_modeller(
     ----------
     protein_comp : Optional[ProteinComponent]
       Protein Component, if it exists.
-    solvent_comp : Optional[ProteinCompoinent]
-      Solvent Component, if it exists.
+    solvent_comp : Optional[BaseSolventComponent]
+      Base Solvent Component, if it exists.
     small_mols : dict
       Small molecules to add.
     omm_forcefield : app.ForceField
@@ -195,7 +214,7 @@ def get_omm_modeller(
         )
         # if we solvate temporarily rename water molecules to 'WAT'
         # see openmm issue #4103
-        if solvent_comp is not None:
+        if isinstance(solvent_comp, SolventComponent):
             for r in system_modeller.topology.residues():
                 if r.name == "HOH":
                     r.name = "WAT"
@@ -204,8 +223,8 @@ def get_omm_modeller(
     for comp, mol in small_mols.items():
         _add_small_mol(comp, mol, system_modeller, component_resids)
 
-    # Add solvent if neeeded
-    if solvent_comp is not None:
+    # Add solvent if needed
+    if isinstance(solvent_comp, SolventComponent):
         # Do unit conversions if necessary
         solvent_padding = None
         box_size = None
@@ -243,5 +262,11 @@ def get_omm_modeller(
         for r in system_modeller.topology.residues():
             if r.name == "WAT":
                 r.name = "HOH"
+    # If we are working with a presolvated system (with solvent
+    # already added) and we have predefined box vectors, then skip solvation
+    # with Modeller and set box vectors.
+    elif isinstance(solvent_comp, SolvatedPDBComponent):
+        # Set the periodic box vectors
+        system_modeller.topology.setPeriodicBoxVectors(to_openmm(solvent_comp.box_vectors))
 
     return system_modeller, component_resids

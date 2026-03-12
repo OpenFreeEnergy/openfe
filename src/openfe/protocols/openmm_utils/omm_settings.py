@@ -34,13 +34,14 @@ from gufe.settings.typing import (
 )
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 from openff.units import unit
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator, model_validator
 
 FemtosecondQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("femtosecond")]
 InversePicosecondQuantity: TypeAlias = Annotated[
     GufeQuantity, specify_quantity_units("1/picosecond")
 ]
 TimestepQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("timestep")]
+SurfaceTensionQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("bar*nanometer")]
 
 
 class BaseSolvationSettings(SettingsBaseModel):
@@ -382,11 +383,27 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance: float = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
+    barostat: Literal["MonteCarloBarostat", "MonteCarloMembraneBarostat"] = "MonteCarloBarostat"
+    """
+    The barostat to be used in the simulations. Default MonteCarloBarostat.
+    Notes
+    -----
+    If the system contains a membrane, use the `MonteCarloMembraneBarostat`.
+    """
     barostat_frequency: TimestepQuantity = 25.0 * unit.timestep
     """
     Frequency at which volume scaling changes should be attempted.
     Note: The barostat frequency is ignored for gas-phase simulations.
     Default 25 * unit.timestep.
+    """
+    surface_tension: Optional[SurfaceTensionQuantity] = 0 * unit.bar * unit.nanometer
+    """
+    The surface tension in bar*nm to define the `MonteCarloMembraneBarostat`.
+    Default 0 * unit.bar * unit.nanometer.
+    Notes
+    -----
+    The `surface_tension` is ignored when the `MonteCarloMembraneBarostat` is
+    not used.
     """
     remove_com: bool = False
     """
@@ -422,6 +439,19 @@ class IntegratorSettings(SettingsBaseModel):
         if not v.is_compatible_with(1 / unit.picosecond):
             raise ValueError("langevin collision_rate must be in inverse time (i.e. 1/picoseconds)")
         return v
+
+    @model_validator(mode="after")
+    def validate_surface_tension(self):
+        if self.barostat == "MonteCarloMembraneBarostat" and self.surface_tension is None:
+            raise ValueError(
+                "surface_tension must be set (may be zero) when using MonteCarloMembraneBarostat"
+            )
+        if self.barostat == "MonteCarloBarostat" and self.surface_tension:
+            raise ValueError(
+                "Got a nonzero surface_tension which is not allowed when using "
+                f"the MonteCarloBarostat. Got surface_tension {self.surface_tension}"
+            )
+        return self
 
 
 class OutputSettings(SettingsBaseModel):

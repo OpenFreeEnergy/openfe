@@ -2,8 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 
+from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
+    AbsoluteBindingSettings,
 )
 
 
@@ -76,3 +78,34 @@ def test_equil_not_all_complex(default_settings):
 def test_equil_not_all_solvent(default_settings):
     with pytest.raises(ValueError, match="output_indices must be all"):
         default_settings.solvent_equil_output_settings.output_indices = "not water"
+
+
+def test_adaptive_settings_no_protein_membrane(toluene_complex_system, default_settings):
+    settings = AbsoluteBindingProtocol._adaptive_settings(
+        toluene_complex_system,
+        toluene_complex_system,
+        default_settings,
+    )
+
+    assert isinstance(settings, AbsoluteBindingSettings)
+    # Should use default barostat since no ProteinMembraneComponent
+    assert settings.complex_integrator_settings.barostat == "MonteCarloBarostat"
+
+
+def test_adaptive_settings_with_protein_membrane(a2a_protein_membrane_component, a2a_ligands):
+    stateA = ChemicalSystem(
+        {
+            "ligandA": a2a_ligands[0],
+            "protein": a2a_protein_membrane_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    settings = AbsoluteBindingProtocol._adaptive_settings(stateA, stateA)
+    assert isinstance(settings, AbsoluteBindingSettings)
+    # Barostat should have been updated
+    assert settings.complex_integrator_settings.barostat == "MonteCarloMembraneBarostat"
+
+    # Forcefields should include the lipid forcefields
+    ff = settings.forcefield_settings.forcefields
+    assert "amber/lipid17_merged.xml" in ff
