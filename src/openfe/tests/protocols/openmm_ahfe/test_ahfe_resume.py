@@ -264,4 +264,3 @@ class TestCheckpointResuming:
         # Check the free energy plots are there
         mbar_overlap_file = cwd / "mbar_overlap_matrix.png"
         assert (mbar_overlap_file).exists()
-
