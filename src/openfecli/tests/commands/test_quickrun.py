@@ -107,8 +107,22 @@ def test_quickrun_resume(json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        dag.to_json(f"Transformation-{trans.key}-protocolDAG.json")
+        dag.to_json(f"{trans.key}-protocolDAG.json")
         result = runner.invoke(quickrun, [json_file])
 
         assert result.exit_code == 0
         assert "Attempting to resume" in result.output
+
+
+def test_quickrun_resume_json_invalid(json_file):
+    """Fail if the output file doesn't load properly."""
+    trans = Transformation.from_json(json_file)
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        pathlib.Path(f"{trans.key}-protocolDAG.json").touch()
+        result = runner.invoke(quickrun, [json_file])
+
+        assert result.exit_code == 1
+        assert "Attempting to resume" in result.output
+        assert "Recovery failed" in result.stderr

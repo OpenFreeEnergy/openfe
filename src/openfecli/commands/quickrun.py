@@ -97,7 +97,7 @@ def quickrun(transformation, work_dir, output):
         output.parent.mkdir(exist_ok=True, parents=True)
 
     # Attempt to either deserialize or freshly create DAG
-    trans_DAG_json = work_dir / f"Transformation-{trans.key}-protocolDAG.json"
+    trans_DAG_json = work_dir / f"{trans.key}-protocolDAG.json"
 
     if trans_DAG_json.is_file():
         write(f"Attempting to resume execution using existing edges from '{trans_DAG_json}'")
