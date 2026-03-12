@@ -183,7 +183,7 @@ class TestCheckpointResuming:
         )
 
         # Finally we analyze the results
-        analysis_results = analysis_unit.run(
+        _ = analysis_unit.run(
             pdb_file=setup_results["pdb_structure"],
             trajectory=sim_results["nc"],
             checkpoint=sim_results["checkpoint"],
@@ -235,7 +235,6 @@ class TestCheckpointResuming:
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
-        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
@@ -243,7 +242,7 @@ class TestCheckpointResuming:
         # Fake system should trigger a mismatch
         errmsg = "Stored checkpoint System particles do not"
         with pytest.raises(ValueError, match=errmsg):
-            sim_results = simulation_unit.run(
+            _ = simulation_unit.run(
                 system=openmm.System(),
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
@@ -269,7 +268,6 @@ class TestCheckpointResuming:
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
-        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
@@ -283,7 +281,7 @@ class TestCheckpointResuming:
         # Fake system should trigger a mismatch
         errmsg = "Stored checkpoint System constraints do not"
         with pytest.raises(ValueError, match=errmsg):
-            sim_results = simulation_unit.run(
+            _ = simulation_unit.run(
                 system=fake_system,
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
@@ -309,7 +307,6 @@ class TestCheckpointResuming:
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
-        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
@@ -321,7 +318,7 @@ class TestCheckpointResuming:
         # Fake system should trigger a mismatch
         errmsg = "Number of forces stored in checkpoint System"
         with pytest.raises(ValueError, match=errmsg):
-            sim_results = simulation_unit.run(
+            _ = simulation_unit.run(
                 system=fake_system,
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
@@ -348,7 +345,6 @@ class TestCheckpointResuming:
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
-        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
@@ -374,7 +370,7 @@ class TestCheckpointResuming:
         # Fake system should trigger a mismatch
         errmsg = "stored checkpoint System does not match the same force"
         with pytest.raises(ValueError, match=errmsg):
-            sim_results = simulation_unit.run(
+            _ = simulation_unit.run(
                 system=fake_system,
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
@@ -409,13 +405,12 @@ class TestCheckpointResuming:
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
-        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
 
         with pytest.raises(OSError, match="Unknown file format"):
-            sim_results = simulation_unit.run(
+            _ = simulation_unit.run(
                 system=setup_results["hybrid_system"],
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
@@ -447,14 +442,13 @@ class TestCheckpointResuming:
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
-        analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
 
         errmsg = "One of either the trajectory or checkpoint files are missing"
         with pytest.raises(IOError, match=errmsg):
-            sim_results = simulation_unit.run(
+            _ = simulation_unit.run(
                 system=setup_results["hybrid_system"],
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
