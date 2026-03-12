@@ -294,7 +294,7 @@ class TestCheckpointResuming:
         # Fake system should trigger a mismatch
         errmsg = "Stored checkpoint System particles do not"
         with pytest.raises(ValueError, match=errmsg):
-           _ = sim_unit.run(
+            _ = sim_unit.run(
                 system=fake_system,
                 positions=setup_results["debug_positions"],
                 selection_indices=setup_results["selection_indices"],
@@ -335,7 +335,7 @@ class TestCheckpointResuming:
         # Fake system should trigger a mismatch
         errmsg = "Stored checkpoint System constraints do not"
         with pytest.raises(ValueError, match=errmsg):
-           _ = sim_unit.run(
+            _ = sim_unit.run(
                 system=fake_system,
                 positions=setup_results["debug_positions"],
                 selection_indices=setup_results["selection_indices"],
@@ -430,7 +430,7 @@ class TestCheckpointResuming:
         # Fake system should trigger a mismatch
         errmsg = "stored checkpoint System does not match the same force"
         with pytest.raises(ValueError, match=errmsg):
-           _ = sim_unit.run(
+            _ = sim_unit.run(
                 system=fake_system,
                 positions=setup_results["debug_positions"],
                 selection_indices=setup_results["selection_indices"],
