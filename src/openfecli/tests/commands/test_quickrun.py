@@ -37,9 +37,7 @@ def test_quickrun(extra_args, json_file):
         assert result.exit_code == 0
         assert "Here is the result" in result.output
         trans = Transformation.from_json(json_file)
-        assert pathlib.Path(
-            extra_args.get("-d", ""), f"Transformation-{trans.key}-protocolDAG.json"
-        ).exists()
+        assert pathlib.Path(extra_args.get("-d", ""), f"{trans.key}-protocolDAG.json").exists()
 
         if outfile := extra_args.get("-o"):
             assert pathlib.Path(outfile).exists()
