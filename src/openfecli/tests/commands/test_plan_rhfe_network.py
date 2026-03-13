@@ -21,8 +21,8 @@ from openfecli.commands.plan_rhfe_network import (
 
 
 @pytest.fixture(scope="session")
-def mol_dir_args(tmpdir_factory):
-    ofe_dir_path = tmpdir_factory.mktemp("moldir")
+def mol_dir_args(tmp_path_factory):
+    ofe_dir_path = tmp_path_factory.mktemp("moldir")
 
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         for f in ["ligand_23.sdf", "ligand_55.sdf"]:
@@ -32,8 +32,8 @@ def mol_dir_args(tmpdir_factory):
 
 
 @pytest.fixture(scope="session")
-def dummy_charge_dir_args(tmpdir_factory):
-    ofe_dir_path = tmpdir_factory.mktemp("charge_moldir")
+def dummy_charge_dir_args(tmp_path_factory):
+    ofe_dir_path = tmp_path_factory.mktemp("charge_moldir")
 
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         for f in ["dummy_charge_ligand_23.sdf", "dummy_charge_ligand_55.sdf"]:
@@ -118,12 +118,12 @@ partial_charge:
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_plan_rhfe_network(mol_dir_args, tmpdir, yaml_nagl_settings):
+def test_plan_rhfe_network(mol_dir_args, tmp_path, yaml_nagl_settings):
     """
     smoke test
     """
     # use nagl charges for CI speed!
-    settings_path = tmpdir / "settings.yaml"
+    settings_path = tmp_path / "settings.yaml"
     with open(settings_path, "w") as f:
         f.write(yaml_nagl_settings)
 
@@ -196,8 +196,8 @@ partial_charge:
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tmpdir):
-    settings_path = tmpdir / "settings.yaml"
+def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tmp_path):
+    settings_path = tmp_path / "settings.yaml"
     with open(settings_path, "w") as f:
         f.write(custom_yaml_settings)
 
@@ -227,11 +227,11 @@ def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tm
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_nagl_settings, overwrite):  # fmt: skip
+def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmp_path, yaml_nagl_settings, overwrite):  # fmt: skip
     # make sure the dummy charges are overwritten when requested
 
     # use nagl charges for CI speed!
-    settings_path = tmpdir / "settings.yaml"
+    settings_path = tmp_path / "settings.yaml"
     with open(settings_path, "w") as f:
         f.write(yaml_nagl_settings)
 
