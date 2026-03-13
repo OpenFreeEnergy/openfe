@@ -1235,7 +1235,7 @@ class TestT4LXmlRegression:
             assert a[2] == b[2]
 
 
-def test_unit_tagging(benzene_toluene_dag, tmpdir):
+def test_unit_tagging(benzene_toluene_dag, tmp_path):
     # test that executing the units includes correct gen and repeat info
     dag_units = benzene_toluene_dag.protocol_units
     with (
@@ -1280,7 +1280,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     ):
         results = []
         for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
+            ret = u.execute(context=gufe.Context(tmp_path, tmp_path))
             results.append(ret)
     solv_repeats = set()
     complex_repeats = set()
@@ -1295,7 +1295,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     assert len(complex_repeats) == len(solv_repeats) == 2
 
 
-def test_gather(benzene_toluene_dag, tmpdir):
+def test_gather(benzene_toluene_dag, tmp_path):
     # check that .gather behaves as expected
     with (
         mock.patch(
@@ -1339,8 +1339,8 @@ def test_gather(benzene_toluene_dag, tmpdir):
     ):
         dagres = gufe.protocols.execute_DAG(
             benzene_toluene_dag,
-            shared_basedir=tmpdir,
-            scratch_basedir=tmpdir,
+            shared_basedir=tmp_path,
+            scratch_basedir=tmp_path,
             keep_shared=True,
         )
 

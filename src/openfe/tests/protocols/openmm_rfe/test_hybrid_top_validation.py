@@ -588,7 +588,6 @@ def test_n_replicas_not_n_windows(
     toluene_vacuum_system,
     benzene_to_toluene_mapping,
     vac_settings,
-    tmpdir,
 ):
     # For PR #125 we pin such that the number of lambda windows
     # equals the numbers of replicas used - TODO: remove limitation

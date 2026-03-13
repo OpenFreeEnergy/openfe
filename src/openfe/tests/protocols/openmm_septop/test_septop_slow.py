@@ -217,7 +217,7 @@ def test_openmm_run_engine(
     available_platforms,
     benzene_modifications,
     T4_protein_component,
-    tmpdir,
+    tmp_path,
     default_settings,
 ):
     if platform not in available_platforms:
@@ -270,12 +270,11 @@ def test_openmm_run_engine(
         mapping=None,
     )
 
-    cwd = pathlib.Path(str(tmpdir))
-    r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
+    r = execute_DAG(dag, shared_basedir=tmp_path, scratch_basedir=tmp_path, keep_shared=True)
 
     assert r.ok()
     for pur in r.protocol_unit_results:
-        unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+        unit_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
         if "SepTopComplexRunUnit" in pur.source_key.split("-") or "SepTopSolventRunUnit" in pur.source_key.split("-"):  # fmt: skip
