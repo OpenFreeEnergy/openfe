@@ -13,7 +13,7 @@ from openfecli.commands.quickrun import _hash_quickrun_inputs, quickrun
 
 from ..utils import assert_click_success
 
-# from ..utils import assert_click_success
+from ..utils import assert_click_success
 
 
 @pytest.fixture
