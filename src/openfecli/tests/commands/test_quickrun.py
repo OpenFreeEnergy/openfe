@@ -10,7 +10,7 @@ from gufe.tokenization import JSON_HANDLER
 
 from openfecli.commands.quickrun import quickrun
 
-# from ..utils import assert_click_success
+from ..utils import assert_click_success
 
 
 @pytest.fixture
@@ -34,7 +34,8 @@ def test_quickrun(extra_args, json_file):
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(quickrun, [json_file] + extras)
-        assert result.exit_code == 0
+
+        assert_click_success(result)
         assert "Here is the result" in result.output
         trans = Transformation.from_json(json_file)
         assert pathlib.Path(extra_args.get("-d", ""), f"{trans.key}-protocolDAG.json").exists()
@@ -70,7 +71,7 @@ def test_quickrun_output_file_in_nonexistent_directory(json_file):
     with runner.isolated_filesystem():
         outfile = pathlib.Path("not_dir/foo.json")
         result = runner.invoke(quickrun, [json_file, "-o", outfile])
-        assert result.exit_code == 0
+        assert_click_success(result)
         assert outfile.parent.is_dir()
 
 
@@ -81,7 +82,7 @@ def test_quickrun_dir_created_at_runtime(json_file):
         outdir = "not_dir"
         outfile = outdir + "foo.json"
         result = runner.invoke(quickrun, [json_file, "-d", outdir, "-o", outfile])
-        assert result.exit_code == 0
+        assert_click_success(result)
 
 
 def test_quickrun_unit_error():
@@ -108,7 +109,7 @@ def test_quickrun_resume(json_file):
         dag.to_json(f"{trans.key}-protocolDAG.json")
         result = runner.invoke(quickrun, [json_file])
 
-        assert result.exit_code == 0
+        assert_click_success(result)
         assert "Attempting to resume" in result.output
 
 
