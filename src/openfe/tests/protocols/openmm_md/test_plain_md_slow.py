@@ -15,7 +15,7 @@ def test_vacuum_sim(
     benzene_vacuum_system,
     platform,
     available_platforms,
-    tmpdir,
+    tmp_path,
 ):
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} is not available")
@@ -37,12 +37,12 @@ def test_vacuum_sim(
         mapping=None,
     )
 
-    workdir = pathlib.Path(str(tmpdir))
+    basedir = tmp_path
 
     r = execute_DAG(
         dag,
-        shared_basedir=workdir,
-        scratch_basedir=workdir,
+        shared_basedir=basedir,
+        scratch_basedir=basedir,
         keep_shared=True,
     )
 
@@ -51,7 +51,7 @@ def test_vacuum_sim(
     assert len(r.protocol_unit_results) == 1
 
     pur = r.protocol_unit_results[0]
-    unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+    unit_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
     assert unit_shared.exists()
     assert pathlib.Path(unit_shared).is_dir()
 
@@ -85,7 +85,7 @@ def test_complex_solvent_sim_gpu(
     benzene_complex_system,
     platform,
     available_platforms,
-    tmpdir,
+    tmp_path,
 ):
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} is not available")
@@ -106,12 +106,12 @@ def test_complex_solvent_sim_gpu(
         mapping=None,
     )
 
-    workdir = pathlib.Path(str(tmpdir))
+    basedir = pathlib.Path(str(tmp_path))
 
     r = execute_DAG(
         dag,
-        shared_basedir=workdir,
-        scratch_basedir=workdir,
+        shared_basedir=basedir,
+        scratch_basedir=basedir,
         keep_shared=True,
     )
 
@@ -120,7 +120,7 @@ def test_complex_solvent_sim_gpu(
     assert len(r.protocol_unit_results) == 1
 
     pur = r.protocol_unit_results[0]
-    unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+    unit_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
     assert unit_shared.exists()
     assert pathlib.Path(unit_shared).is_dir()
 

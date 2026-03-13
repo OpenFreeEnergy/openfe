@@ -99,12 +99,12 @@ def patcher():
         yield
 
 
-def test_gather(benzene_solvation_dag, patcher, tmpdir):
+def test_gather(benzene_solvation_dag, patcher, tmp_path):
     # check that .gather behaves as expected
     dagres = gufe.protocols.execute_DAG(
         benzene_solvation_dag,
-        shared_basedir=tmpdir,
-        scratch_basedir=tmpdir,
+        shared_basedir=tmp_path,
+        scratch_basedir=tmp_path,
         keep_shared=True,
     )
 
@@ -117,7 +117,7 @@ def test_gather(benzene_solvation_dag, patcher, tmpdir):
     assert isinstance(res, openmm_afe.AbsoluteSolvationProtocolResult)
 
 
-def test_unit_tagging(benzene_solvation_dag, patcher, tmpdir):
+def test_unit_tagging(benzene_solvation_dag, patcher, tmp_path):
     # test that executing the units includes correct gen and repeat info
 
     dag_units = benzene_solvation_dag.protocol_units
@@ -133,19 +133,19 @@ def test_unit_tagging(benzene_solvation_dag, patcher, tmpdir):
 
         for u in setup_units:
             rid = u.inputs["repeat_id"]
-            setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
+            setup_results[rid] = u.execute(context=gufe.Context(tmp_path, tmp_path))
 
         for u in sim_units:
             rid = u.inputs["repeat_id"]
             sim_results[rid] = u.execute(
-                context=gufe.Context(tmpdir, tmpdir),
+                context=gufe.Context(tmp_path, tmp_path),
                 setup_results=setup_results[rid],
             )
 
         for u in a_units:
             rid = u.inputs["repeat_id"]
             analysis_results[rid] = u.execute(
-                context=gufe.Context(tmpdir, tmpdir),
+                context=gufe.Context(tmp_path, tmp_path),
                 setup_results=setup_results[rid],
                 simulation_results=sim_results[rid],
             )
