@@ -12,6 +12,7 @@ from openfecli.parameters import (
     OUTPUT_DIR,
     OVERWRITE,
     PROTEIN,
+    PROTEIN_MEMBRANE,
     YAML_OPTIONS,
 )
 from openfecli.utils import print_duration, write
@@ -123,7 +124,10 @@ def plan_rbfe_network_main(
     ),
 )
 @MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
-@PROTEIN.parameter(multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"])
+@PROTEIN.parameter(multiple=False, required=False, default=None, help=PROTEIN.kwargs["help"])
+@PROTEIN_MEMBRANE.parameter(
+    multiple=False, required=False, default=None, help=PROTEIN_MEMBRANE.kwargs["help"]
+)
 @COFACTORS.parameter(multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"])
 @YAML_OPTIONS.parameter(multiple=False, required=False, default=None, help=YAML_OPTIONS.kwargs["help"])  # fmt: skip
 @OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.", default="alchemicalNetwork")  # fmt: skip
@@ -133,7 +137,8 @@ def plan_rbfe_network_main(
 @print_duration
 def plan_rbfe_network(
     molecules: list[str],
-    protein: str,
+    protein: str | None,
+    protein_membrane: str | None,
     cofactors: tuple[str],
     yaml_settings: str,
     output_dir: str,
@@ -187,9 +192,17 @@ def plan_rbfe_network(
 
     small_molecules = MOL_DIR.get(molecules)
     write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
-
-    protein = PROTEIN.get(protein)
-    write("\t\tProtein: " + str(protein))
+    if protein and protein_membrane:
+        raise ValueError()
+    elif protein:
+        protein = PROTEIN.get(protein)
+        write("\t\tProtein: " + str(protein))
+    elif protein_membrane:
+        protein = PROTEIN_MEMBRANE.get(protein_membrane)
+        write("\t\tProteinMembraneComponent: " + str(protein))
+        protein.validate()
+    else:
+        raise ValueError()
 
     if cofactors is not None:
         cofactors = sum((COFACTORS.get(c) for c in cofactors), start=[])
