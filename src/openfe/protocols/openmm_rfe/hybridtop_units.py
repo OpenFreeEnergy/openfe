@@ -803,9 +803,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
             "selection_indices": selection_indices,
-            "openmm_version": openmm.__version__,
-            "openfe_version": openfe.__version__,
-            "gufe_version": gufe.__version__,
         }
 
         if dry:
@@ -830,6 +827,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            "openmm_version": openmm.__version__,
+            "openfe_version": openfe.__version__,
+            "gufe_version": gufe.__version__,
             **outputs,
         }
 
@@ -866,17 +866,22 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         trajectory = shared_path / output_settings.output_filename
         checkpoint = shared_path / output_settings.checkpoint_storage_filename
 
-        if trajectory.is_file() ^ checkpoint.is_file():
-            errmsg = (
-                "One of either the trajectory or checkpoint files are missing but "
-                "the other is not. This should not happen under normal circumstances."
-            )
-            raise IOError(errmsg)
-
         if trajectory.is_file() and checkpoint.is_file():
             return True
+        elif trajectory.is_file() ^ checkpoint.is_file():
+            if trajectory.is_file():
+                errmsg = "the trajectory file is present but not the checkpoint file. "
+            else:
+                errmsg = "the checkpoint file is present but not the trajectory file. "
 
-        return False
+            errmsg = (
+                "Attempting to restart but "
+                + errmsg
+                + "This should not happen under normal circumstances."
+            )
+            raise IOError(errmsg)
+        else:
+            return False
 
     @staticmethod
     def _get_integrator(
@@ -1108,7 +1113,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
         # Restarting doesn't need any setup, we just rebuild from storage.
         if restart:
-            sampler = _SAMPLERS[sampler_method].from_storage(reporter)  # type: ignore[attr-defined]
+            sampler = sampler_class.from_storage(reporter)  # type: ignore[attr-defined]
 
             # We do some checks to make sure we are running the same system
             system_validation.assert_multistate_system_equality(
@@ -1139,7 +1144,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 raise ValueError(errmsg)
 
         else:
-            sampler = _SAMPLERS[sampler_method](**sampler_kwargs)
+            sampler = sampler_class(**sampler_kwargs)
 
             sampler.setup(
                 n_replicas=simulation_settings.n_replicas,

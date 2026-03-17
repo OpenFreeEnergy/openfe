@@ -37,12 +37,6 @@ from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
 )
-from openfe.protocols.openmm_afe.abfe_units import (
-    ABFEComplexSetupUnit,
-    ABFEComplexSimUnit,
-    ABFESolventSetupUnit,
-    ABFESolventSimUnit,
-)
 
 from .utils import UNIT_TYPES, _get_units
 

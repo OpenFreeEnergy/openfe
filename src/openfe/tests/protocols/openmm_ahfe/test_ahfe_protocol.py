@@ -4,6 +4,7 @@ import sys
 from math import sqrt
 from unittest import mock
 
+import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
@@ -25,6 +26,7 @@ from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteSolvationProtocol,
+    AHFESolventSimUnit,
 )
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
@@ -61,6 +63,24 @@ def test_serialize_protocol(default_settings):
     ser = protocol.to_dict()
     ret = AbsoluteSolvationProtocol.from_dict(ser)
     assert protocol == ret
+
+
+def test_bad_sampler():
+    class FakeSimSettings(gufe.settings.SettingsBaseModel):
+        sampler_method: str = "foo bar"
+
+    errmsg = "Unknown sampler foo bar"
+    with pytest.raises(AttributeError, match=errmsg):
+        AHFESolventSimUnit._get_sampler(
+            integrator=None,
+            reporter=None,
+            simulation_settings=FakeSimSettings(),
+            thermodynamic_settings=None,
+            compound_states=None,
+            sampler_states=None,
+            platform=None,
+            restart=False,
+        )
 
 
 def test_repeat_units(benzene_system):
