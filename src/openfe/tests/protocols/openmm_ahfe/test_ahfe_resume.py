@@ -119,7 +119,7 @@ def test_vacuum_check_restart(protocol_settings, ahfe_vac_trajectory_path):
 def test_check_restart_one_file_missing(protocol_settings, ahfe_vac_trajectory_path):
     protocol_settings.vacuum_output_settings.checkpoint_storage_filename = "foo.nc"
 
-    errmsg = "One of either the trajectory or checkpoint files are missing"
+    errmsg = "the trajectory file is present but not the checkpoint file."
     with pytest.raises(IOError, match=errmsg):
         openmm_afe.AHFEVacuumSimUnit._check_restart(
             output_settings=protocol_settings.vacuum_output_settings,

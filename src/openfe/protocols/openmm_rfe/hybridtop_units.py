@@ -866,17 +866,22 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         trajectory = shared_path / output_settings.output_filename
         checkpoint = shared_path / output_settings.checkpoint_storage_filename
 
-        if trajectory.is_file() ^ checkpoint.is_file():
-            errmsg = (
-                "One of either the trajectory or checkpoint files are missing but "
-                "the other is not. This should not happen under normal circumstances."
-            )
-            raise IOError(errmsg)
-
         if trajectory.is_file() and checkpoint.is_file():
             return True
+        elif trajectory.is_file() ^ checkpoint.is_file():
+            if trajectory.is_file():
+                errmsg = "the trajectory file is present but not the checkpoint file. "
+            else:
+                errmsg = "the checkpoint file is present but not the trajectory file. "
 
-        return False
+            errmsg = (
+                "Attempting to restart but "
+                + errmsg
+                + "This should not happen under normal circumstances."
+            )
+            raise IOError(errmsg)
+        else:
+            return False
 
     @staticmethod
     def _get_integrator(

@@ -446,7 +446,7 @@ class TestCheckpointResuming:
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
 
-        errmsg = "One of either the trajectory or checkpoint files are missing"
+        errmsg = f"file is present but not the {missing_file} file."
         with pytest.raises(IOError, match=errmsg):
             _ = simulation_unit.run(
                 system=setup_results["hybrid_system"],
