@@ -118,6 +118,9 @@ def _get_legs_from_result_jsons(
         dgs[name]["overall"].append([result["estimate"], result["uncertainty"]])
         proto_key = [k for k in result["unit_results"].keys() if k.startswith("ProtocolUnitResult")]
         for p in proto_key:
+            # In openfe v1.9+, we only want to pick up results from
+            # the Analysis Unit. To ensure backwards compatibility with
+            # prior releases of openfe v1.x, we exclude Setup and Simulation
             if (
                 "Setup" in result["unit_results"][p]["source_key"]
                 or "Simulation" in result["unit_results"][p]["source_key"]
