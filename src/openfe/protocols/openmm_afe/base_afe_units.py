@@ -823,6 +823,12 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         shared_path : pathlib.Path
           The shared directory where we should be looking for existing files.
 
+        Raises
+        ------
+        IOError
+          If one of the trajectory or checkpoint files are present
+          without the other.
+
         Notes
         -----
         For now this just checks if the netcdf files are present in the
