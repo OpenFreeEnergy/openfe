@@ -134,6 +134,10 @@ def _get_legs_from_result_jsons(
                 dgs[name][simtype].append([dg, dg_error])
             if "standard_state_correction" in result["unit_results"][p]["outputs"]:
                 corr = result["unit_results"][p]["outputs"]["standard_state_correction"]
+                # In openfe v1.9+, standard state corrections are set to 0 kcal/mol
+                # when no correction is being applied (e.g. no restraints).
+                # To make raw outputs similar to pre-v1.9, we exclude corrections
+                # if they are close to 0.
                 if not np.isclose(corr.m, 0):
                     dgs[name]["standard_state_correction"].append(
                         [corr, 0 * unit.kilocalorie_per_mole]
