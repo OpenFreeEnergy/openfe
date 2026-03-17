@@ -1318,7 +1318,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
 
                 sampler.equilibrate(int(equil_steps / mc_steps))
 
-            # St this point we are ready for production
+            # At this point we are ready for production
             if self.verbose:
                 self.logger.info("running production phase")
 
