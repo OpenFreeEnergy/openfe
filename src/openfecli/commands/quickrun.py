@@ -115,9 +115,8 @@ def quickrun(transformation, work_dir, output, resume):
 
     else:
         if resume:
-            warnings.warn(
-                f"No checkpoint found at {trans_DAG_json}! Starting new execution."
-            )  # TODO: make this clearer
+            # TODO: make this message clearer
+            warnings.warn(f"No checkpoint found at {trans_DAG_json}! Starting new execution.")
 
         # Create the DAG instead and then serialize for later resuming
         write("Planning simulations for this edge...")

@@ -154,7 +154,6 @@ def test_quickrun_resume_missing_checkpoint(json_file):
     """If --resume is passed but there's not checkpoint, just warn and keep going"""
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(quickrun, [json_file, "--resume"])
-
-        assert result.exit_code == 0
-        # TODO: check for warning
+        with pytest.warns():
+            result = runner.invoke(quickrun, [json_file, "--resume"])
+            assert result.exit_code == 0
