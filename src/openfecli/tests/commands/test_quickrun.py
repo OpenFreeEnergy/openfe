@@ -1,8 +1,8 @@
 import json
 import pathlib
 from importlib import resources
+from unittest import mock
 
-import click
 import pytest
 from click.testing import CliRunner
 from gufe import Transformation
@@ -21,13 +21,7 @@ def json_file():
     return json_file
 
 
-@pytest.mark.parametrize(
-    "extra_args",
-    [
-        {},
-        {"-d": "foo_dir", "-o": "foo.json"},
-    ],
-)
+@pytest.mark.parametrize("extra_args", [{}, {"-d": "foo_dir", "-o": "foo.json"}])
 def test_quickrun(extra_args, json_file):
     extras = sum([list(kv) for kv in extra_args.items()], [])
 
@@ -53,6 +47,21 @@ def test_quickrun(extra_args, json_file):
         #     assert dirpath.exists()
         #     assert dirpath.is_dir()
         #     assert len(list(dirpath.iterdir())) > 0
+
+
+@pytest.mark.parametrize("extra_args", [{}, {"-d": "foo_dir", "-o": "foo.json"}])
+def test_quickrun_interrupted(extra_args, json_file):
+    """If a quickrun is unable to complete, the protocolDAG.json checkpoint should exist."""
+    extras = sum([list(kv) for kv in extra_args.items()], [])
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with mock.patch("gufe.protocols.protocoldag.execute_DAG", side_effect=RuntimeError):
+            result = runner.invoke(quickrun, [json_file] + extras)
+
+        assert "Here is the result" not in result.output
+        trans = Transformation.from_json(json_file)
+        assert pathlib.Path(extra_args.get("-d", ""), f"{trans.key}-protocolDAG.json").exists()
 
 
 def test_quickrun_output_file_exists(json_file):
