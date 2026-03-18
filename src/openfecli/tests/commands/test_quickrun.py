@@ -1,4 +1,5 @@
 import json
+import os
 import pathlib
 from importlib import resources
 from unittest import mock
@@ -33,7 +34,9 @@ def test_quickrun(extra_args, json_file):
         assert "Here is the result" in result.output
         trans = Transformation.from_json(json_file)
         # checkpoint should be deleted when job is complete
-        assert not pathlib.Path(extra_args.get("-d", ""), f"{trans.key}-protocolDAG.json").exists()
+        assert not pathlib.Path(
+            extra_args.get("-d", ""), "quickrun_cache", f"{trans.key}-protocolDAG.json"
+        ).exists()
 
         if outfile := extra_args.get("-o"):
             assert pathlib.Path(outfile).exists()
@@ -62,7 +65,9 @@ def test_quickrun_interrupted(extra_args, json_file):
 
         assert "Here is the result" not in result.output
         trans = Transformation.from_json(json_file)
-        assert pathlib.Path(extra_args.get("-d", ""), f"{trans.key}-protocolDAG.json").exists()
+        assert pathlib.Path(
+            extra_args.get("-d", ""), "quickrun_cache", f"{trans.key}-protocolDAG.json"
+        ).exists()
 
 
 def test_quickrun_output_file_exists(json_file):
@@ -117,7 +122,8 @@ def test_quickrun_existing_checkpoint(json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        dag.to_json(f"{trans.key}-protocolDAG.json")
+        pathlib.Path("quickrun_cache").mkdir()
+        dag.to_json(pathlib.Path("quickrun_cache", f"{trans.key}-protocolDAG.json"))
         result = runner.invoke(quickrun, [json_file])
         assert isinstance(result.exception, RuntimeError)
         assert "Attempting to resume" not in result.output
@@ -129,7 +135,8 @@ def test_quickrun_resume_from_checkpoint(json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        dag.to_json(f"{trans.key}-protocolDAG.json")
+        pathlib.Path("quickrun_cache").mkdir()
+        dag.to_json(pathlib.Path("quickrun_cache", f"{trans.key}-protocolDAG.json"))
         result = runner.invoke(quickrun, [json_file, "--resume"])
 
         assert_click_success(result)
@@ -142,7 +149,8 @@ def test_quickrun_resume_invalid_checkpoint(json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        pathlib.Path(f"{trans.key}-protocolDAG.json").touch()
+        pathlib.Path("quickrun_cache").mkdir()
+        pathlib.Path("quickrun_cache", f"{trans.key}-protocolDAG.json").touch()
         result = runner.invoke(quickrun, [json_file, "--resume"])
 
         assert result.exit_code == 1
@@ -151,7 +159,7 @@ def test_quickrun_resume_invalid_checkpoint(json_file):
 
 
 def test_quickrun_resume_missing_checkpoint(json_file):
-    """If --resume is passed but there's not checkpoint, just warn and keep going"""
+    """If --resume is passed but there's not checkpoint, just warn and keep going."""
     runner = CliRunner()
     with runner.isolated_filesystem():
         with pytest.warns():
