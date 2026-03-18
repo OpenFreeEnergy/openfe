@@ -31,7 +31,12 @@ def _format_exception(exception) -> str:
     type=click.Path(dir_okay=False, file_okay=False, path_type=pathlib.Path),
     help="Filepath at which to create and write the JSON-formatted results.",
 )  # fmt: skip
-@click.option("--resume", is_flag=True, default=False, help=(""))  # TODO: add help msg
+@click.option(
+    "--resume",
+    is_flag=True,
+    default=False,
+    help=("Attempt to resume this transformation's execution using the cache."),
+)
 @print_duration
 def quickrun(transformation, work_dir, output, resume):
     """Run the transformation (edge) in the given JSON file.
@@ -115,7 +120,6 @@ def quickrun(transformation, work_dir, output, resume):
 
     else:
         if resume:
-            # TODO: make this message clearer
             warnings.warn(f"No checkpoint found at {trans_DAG_json}! Starting new execution.")
 
         # Create the DAG instead and then serialize for later resuming
