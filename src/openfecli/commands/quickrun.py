@@ -3,6 +3,7 @@
 
 import json
 import pathlib
+import warnings
 
 import click
 
@@ -100,17 +101,24 @@ def quickrun(transformation, work_dir, output, resume):
     # Attempt to either deserialize or freshly create DAG
     trans_DAG_json = work_dir / f"{trans.key}-protocolDAG.json"
 
-    if resume and trans_DAG_json.is_file():
-        write(f"Attempting to resume execution using existing edges from '{trans_DAG_json}'")
-        try:
-            dag = ProtocolDAG.from_json(trans_DAG_json)
-        except JSONDecodeError:
-            errmsg = f"Recovery failed, please remove {trans_DAG_json} and any results from your working directory before continuing to create a new protocol, or run without `--resume`."
-            raise click.ClickException(errmsg)
-    elif not resume and trans_DAG_json.is_file():
-        errmsg = f"Transformation has been started but is incomplete. Please remove {trans_DAG_json} and rerun, or resume execution using the ``--resume`` flag."
-        raise RuntimeError(errmsg)
+    if trans_DAG_json.is_file():
+        if resume:
+            write(f"Attempting to resume execution using existing edges from '{trans_DAG_json}'")
+            try:
+                dag = ProtocolDAG.from_json(trans_DAG_json)
+            except JSONDecodeError:
+                errmsg = f"Recovery failed, please remove {trans_DAG_json} and any results from your working directory before continuing to create a new protocol, or run without `--resume`."
+                raise click.ClickException(errmsg)
+        else:
+            errmsg = f"Transformation has been started but is incomplete. Please remove {trans_DAG_json} and rerun, or resume execution using the ``--resume`` flag."
+            raise RuntimeError(errmsg)
+
     else:
+        if resume:
+            warnings.warn(
+                f"No checkpoint found at {trans_DAG_json}! Starting new execution."
+            )  # TODO: make this clearer
+
         # Create the DAG instead and then serialize for later resuming
         write("Planning simulations for this edge...")
         dag = trans.create()
