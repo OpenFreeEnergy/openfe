@@ -32,7 +32,8 @@ def test_quickrun(extra_args, json_file):
         assert_click_success(result)
         assert "Here is the result" in result.output
         trans = Transformation.from_json(json_file)
-        assert pathlib.Path(extra_args.get("-d", ""), f"{trans.key}-protocolDAG.json").exists()
+        # checkpoint should be deleted when job is complete
+        assert not pathlib.Path(extra_args.get("-d", ""), f"{trans.key}-protocolDAG.json").exists()
 
         if outfile := extra_args.get("-o"):
             assert pathlib.Path(outfile).exists()

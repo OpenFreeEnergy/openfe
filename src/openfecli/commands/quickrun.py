@@ -143,6 +143,9 @@ def quickrun(transformation, work_dir, output):
     with open(output, mode="w") as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
+    # remove the checkpoint since the job has completed
+    os.remove(trans_DAG_json)
+
     write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
     write("")
 
