@@ -30,8 +30,9 @@ def _format_exception(exception) -> str:
     type=click.Path(dir_okay=False, file_okay=False, path_type=pathlib.Path),
     help="Filepath at which to create and write the JSON-formatted results.",
 )  # fmt: skip
+@click.option("--resume", is_flag=True, default=False, help=(""))  # TODO: add help msg
 @print_duration
-def quickrun(transformation, work_dir, output):
+def quickrun(transformation, work_dir, output, resume):
     """Run the transformation (edge) in the given JSON file.
 
     Simulation JSON files can be created with the
@@ -99,13 +100,16 @@ def quickrun(transformation, work_dir, output):
     # Attempt to either deserialize or freshly create DAG
     trans_DAG_json = work_dir / f"{trans.key}-protocolDAG.json"
 
-    if trans_DAG_json.is_file():
+    if resume and trans_DAG_json.is_file():
         write(f"Attempting to resume execution using existing edges from '{trans_DAG_json}'")
         try:
             dag = ProtocolDAG.from_json(trans_DAG_json)
         except JSONDecodeError:
-            errmsg = f"Recovery failed, please remove {trans_DAG_json} and any results from your working directory before continuing to create a new protocol."
+            errmsg = f"Recovery failed, please remove {trans_DAG_json} and any results from your working directory before continuing to create a new protocol, or run without `--resume`."
             raise click.ClickException(errmsg)
+    elif not resume and trans_DAG_json.is_file():
+        errmsg = f"Transformation has been started but is incomplete. Please remove {trans_DAG_json} and rerun, or resume execution using the ``--resume`` flag."
+        raise RuntimeError(errmsg)
     else:
         # Create the DAG instead and then serialize for later resuming
         write("Planning simulations for this edge...")

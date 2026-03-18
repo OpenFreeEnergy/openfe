@@ -110,7 +110,8 @@ def test_quickrun_unit_error():
         # protocol dag results maybe?
 
 
-def test_quickrun_resume(json_file):
+def test_quickrun_existing_checkpoint(json_file):
+    """In the default case where resume=False, if the checkpoint exists, quickrun should error out and not attempt to execute."""
     trans = Transformation.from_json(json_file)
     dag = trans.create()
 
@@ -118,20 +119,35 @@ def test_quickrun_resume(json_file):
     with runner.isolated_filesystem():
         dag.to_json(f"{trans.key}-protocolDAG.json")
         result = runner.invoke(quickrun, [json_file])
+        assert isinstance(result.exception, RuntimeError)
+        assert "Attempting to resume" not in result.output
+
+
+def test_quickrun_resume_from_checkpoint(json_file):
+    trans = Transformation.from_json(json_file)
+    dag = trans.create()
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        dag.to_json(f"{trans.key}-protocolDAG.json")
+        result = runner.invoke(quickrun, [json_file, "--resume"])
 
         assert_click_success(result)
         assert "Attempting to resume" in result.output
 
 
-def test_quickrun_resume_json_invalid(json_file):
+def test_quickrun_resume_invalid_checkpoint(json_file):
     """Fail if the output file doesn't load properly."""
     trans = Transformation.from_json(json_file)
 
     runner = CliRunner()
     with runner.isolated_filesystem():
         pathlib.Path(f"{trans.key}-protocolDAG.json").touch()
-        result = runner.invoke(quickrun, [json_file])
+        result = runner.invoke(quickrun, [json_file, "--resume"])
 
         assert result.exit_code == 1
         assert "Attempting to resume" in result.output
         assert "Recovery failed" in result.stderr
+
+
+# def test_quickrun_resume_missing_checkpoint(json_file):
