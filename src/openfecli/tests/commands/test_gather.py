@@ -475,9 +475,39 @@ ZENODO_SEPTOP_DATA = pooch.create(
 
 @pytest.fixture
 def abfe_result_dir() -> pathlib.Path:
+    """for pre-PR #1776 backwards compatability"""
     ZENODO_ABFE_DATA.fetch("abfe_results.zip", processor=pooch.Unzip())
     result_dir = pathlib.Path(POOCH_CACHE) / "abfe_results.zip.unzip/abfe_results/"
     return result_dir
+
+
+class TestGatherABFE:
+    @pytest.mark.parametrize("report", ["raw", "dg"])
+    @pytest.mark.parametrize("protocol_type", ["single_unit", "multiple_units"])
+    def test_abfe_full_results(self, abfe_result_dir, report, protocol_type, file_regression):
+        results_dir = abfe_result_dir / f"abfe_results_{protocol_type}"
+        results = [str(results_dir / f"results_{i}") for i in range(3)]
+        args = ["--report", report]
+        runner = CliRunner()
+        cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
+
+        assert_click_success(cli_result)
+        assert "WARNING! Gathering of ABFE results" in cli_result.stderr
+
+        file_regression.check(cli_result.stdout, extension=".tsv")
+
+    @pytest.mark.parametrize("report", ["raw", "dg"])
+    @pytest.mark.parametrize("protocol_type", ["single_unit", "multiple_units"])
+    def test_abfe_single_repeat(self, abfe_result_dir, report, protocol_type, file_regression):
+        results_dir = str(abfe_result_dir / f"abfe_results_{protocol_type}" / "results_0")
+        args = ["--report", report]
+        runner = CliRunner()
+        cli_result = runner.invoke(gather_abfe, [results_dir] + args + ["--tsv"])
+
+        assert_click_success(cli_result)
+        assert "WARNING! Gathering of ABFE results" in cli_result.stderr
+
+        file_regression.check(cli_result.stdout, extension=".tsv")
 
 
 @pytest.fixture
@@ -486,32 +516,6 @@ def septop_result_dir() -> pathlib.Path:
     result_dir = pathlib.Path(POOCH_CACHE) / "septop_results.zip.unzip/septop_results/"
 
     return result_dir
-
-
-class TestGatherABFE:
-    @pytest.mark.parametrize("report", ["raw", "dg"])
-    def test_abfe_full_results(self, abfe_result_dir, report, file_regression):
-        results = [str(abfe_result_dir / f"results_{i}") for i in range(3)]
-        args = ["--report", report]
-        runner = CliRunner()
-        cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
-
-        assert_click_success(cli_result)
-        assert "WARNING! Gathering of ABFE results" in cli_result.stderr
-
-        file_regression.check(cli_result.stdout, extension=".tsv")
-
-    @pytest.mark.parametrize("report", ["raw", "dg"])
-    def test_abfe_single_repeat(self, abfe_result_dir, report, file_regression):
-        results = [str(abfe_result_dir / "results_0")]
-        args = ["--report", report]
-        runner = CliRunner()
-        cli_result = runner.invoke(gather_abfe, results + args + ["--tsv"])
-
-        assert_click_success(cli_result)
-        assert "WARNING! Gathering of ABFE results" in cli_result.stderr
-
-        file_regression.check(cli_result.stdout, extension=".tsv")
 
 
 class TestGatherSepTop:
