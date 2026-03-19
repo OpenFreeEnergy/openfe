@@ -952,7 +952,7 @@ def test_dry_run_benzene_toluene_tip4p(
 ):
     protocol_dry_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvent_solvation_settings.solvent_model = "tip4pew"
@@ -1255,7 +1255,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
                 "generation": 0,
                 "simtype": "complex",
                 "nc": "file.nc",
-                "last_checkpoint": "chck.nc",
+                "last_checkpoint": "check.nc",
             },
         ),
         mock.patch(
@@ -1274,7 +1274,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
                 "generation": 0,
                 "simtype": "solvent",
                 "nc": "file.nc",
-                "last_checkpoint": "chck.nc",
+                "last_checkpoint": "check.nc",
             },
         ),
     ):
@@ -1314,7 +1314,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
                 "generation": 0,
                 "simtype": "complex",
                 "nc": "file.nc",
-                "last_checkpoint": "chck.nc",
+                "last_checkpoint": "check.nc",
             },
         ),
         mock.patch(
@@ -1333,7 +1333,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
                 "generation": 0,
                 "simtype": "solvent",
                 "nc": "file.nc",
-                "last_checkpoint": "chck.nc",
+                "last_checkpoint": "check.nc",
             },
         ),
     ):

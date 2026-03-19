@@ -31,7 +31,7 @@ the :class:`.Protocol` may create one or more ``ProtocolDAG``\ s, the
 :class:`.ProtocolResult` will be made from one or more
 :class:`.ProtocolDAGResult`\ s.  Finally, each :class:`.ProtocolDAGResult`
 may carry information about multiple :class:`.ProtocolUnitResult`\ s, just a
-single ``ProtocolDAG`` may involve mutliple ``ProtocolUnit``\ s.
+single ``ProtocolDAG`` may involve multiple ``ProtocolUnit``\ s.
 
 .. TODO FUTURE: figure showing the relations of protocol objects and result
    objects
