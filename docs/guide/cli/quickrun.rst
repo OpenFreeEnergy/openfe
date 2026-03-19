@@ -75,4 +75,4 @@ See Also
 --------
 
 - :ref:`cli-reference` - full CLI reference for ``openfe quickrun``
-- :ref:`rbfe-cli-tutorial` - a tutorial on how to use the CLI to run hybrid topology relative binding free energy calculations.
+- :ref:`rbfe_cli_tutorial` - a tutorial on how to use the CLI to run hybrid topology relative binding free energy calculations.
