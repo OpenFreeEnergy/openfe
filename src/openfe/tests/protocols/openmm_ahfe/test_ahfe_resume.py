@@ -42,6 +42,8 @@ def protocol_settings():
     settings.solvent_simulation_settings.time_per_iteration = 2.5 * offunit.picosecond
     settings.vacuum_output_settings.checkpoint_interval = 100 * offunit.picosecond
     settings.solvent_output_settings.checkpoint_interval = 100 * offunit.picosecond
+    settings.vacuum_engine_settings.compute_platform = None
+    settings.solvent_engine_settings.compute_platform = None
     return settings
 
 
