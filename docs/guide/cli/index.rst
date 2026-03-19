@@ -13,3 +13,4 @@ into non-Python workflows.
 .. toctree::
    cli_basics
    cli_yaml
+   quickrun
