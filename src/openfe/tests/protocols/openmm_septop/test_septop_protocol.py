@@ -1255,7 +1255,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
                 "generation": 0,
                 "simtype": "complex",
                 "nc": "file.nc",
-                "last_checkpoint": "check.nc",
+                "last_checkpoint": "chck.nc",
             },
         ),
         mock.patch(
@@ -1274,7 +1274,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
                 "generation": 0,
                 "simtype": "solvent",
                 "nc": "file.nc",
-                "last_checkpoint": "check.nc",
+                "last_checkpoint": "chck.nc",
             },
         ),
     ):
@@ -1314,7 +1314,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
                 "generation": 0,
                 "simtype": "complex",
                 "nc": "file.nc",
-                "last_checkpoint": "check.nc",
+                "last_checkpoint": "chck.nc",
             },
         ),
         mock.patch(
@@ -1333,7 +1333,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
                 "generation": 0,
                 "simtype": "solvent",
                 "nc": "file.nc",
-                "last_checkpoint": "check.nc",
+                "last_checkpoint": "chck.nc",
             },
         ),
     ):

@@ -23,16 +23,16 @@ def import_thing(import_string: str):
     Any :
         the object from that namespace
     """
-    split = import_string.split(".")
-    if len(split) > 1:
+    splitted = import_string.split(".")
+    if len(splitted) > 1:
         # if the string has a dot, import the module and getattr the object
-        obj = split[-1]
-        mod = ".".join(split[:-1])
+        obj = splitted[-1]
+        mod = ".".join(splitted[:-1])
         module = importlib.import_module(mod)
         result = getattr(module, obj)
     else:
         # if there is no dot, import and return the module
-        mod = split[0]
+        mod = splitted[0]
         result = importlib.import_module(mod)
     return result
 
