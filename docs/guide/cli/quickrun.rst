@@ -1,7 +1,7 @@
 .. _userguide_cli_quickrun:
 
-Using Quickrun
-==============
+Using Quickrun to execute Transformations
+=========================================
 
 The ``openfe quickrun`` command executes a single alchemical Transformation.
 This is currrently the primary way to execute Transformations after they
