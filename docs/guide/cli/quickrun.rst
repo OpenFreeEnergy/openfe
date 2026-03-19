@@ -47,19 +47,28 @@ manual cancellation), you can resume the interrupted job by passing the ``--resu
 The planned simulation cache will be used to identify where in the simulation
 process it is and, if supported by the Transformation Protocol, how to resume.
 
-**Note:** the same ``-d`` / ``--work-dir`` used in the original run
-must be specified so that ``quickrun`` can locate the cache file.
+.. note::
+
+    The same ``-d`` / ``--work-dir`` used in the original run
+    must be specified so that ``quickrun`` can locate the cache file.
 
 If you pass ``--resume`` but no cache file is found (e.g. the job never
 started), the following warning is printed and a fresh execution begins:
 
-.. note::
+.. code:: none
 
-    If the cache file is corrupted (e.g. due to an incomplete write at
-    the moment of interruption), ``quickrun --resume`` will raise a
-    ``ClickException`` with instructions to remove the cache file and either
-    start fresh or rerun without ``--resume``.
+    No checkpoint found at <work-dir>/quickrun_cache/<transformation_key>-protocolDAG.json!
+    Starting new execution.
 
+If the cache file is corrupted (e.g. due to an incomplete write at
+the moment of interruption), ``quickrun --resume`` will raise a
+``ClickException`` with instructions to remove the cache file and either
+start fresh or rerun without ``--resume``:
+
+.. code:: none
+
+    Recovery failed, please remove <work-dir>/quickrun_cache/<transformation_key>-protocolDAG.json
+    and any results from your working directory before continuing to create a new protocol, or run without `--resume`.
 
 If you do not pass the ``--resume`` flag, the code will detect the partially
 complete transformation and prevent you from accidentally starting a duplicate
