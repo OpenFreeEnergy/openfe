@@ -160,9 +160,9 @@ def test_quickrun_resume_invalid_checkpoint(json_file):
 
 
 def test_quickrun_resume_missing_checkpoint(json_file):
-    """If --resume is passed but there's not checkpoint, just warn and keep going."""
+    """If --resume is passed but there's not checkpoint, just echo a message and keep going."""
     runner = CliRunner()
     with runner.isolated_filesystem():
-        with pytest.warns():
-            result = runner.invoke(quickrun, [json_file, "--resume"])
-            assert result.exit_code == 0
+        result = runner.invoke(quickrun, [json_file, "--resume"])
+        assert_click_success(result)
+        assert "openfe quickrun was run with --resume, but no checkpoint found at" in result.output

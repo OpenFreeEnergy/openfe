@@ -121,7 +121,9 @@ def quickrun(transformation, work_dir, output, resume):
 
     else:
         if resume:
-            warnings.warn(f"No checkpoint found at {trans_DAG_json}! Starting new execution.")
+            click.echo(
+                f"openfe quickrun was run with --resume, but no checkpoint found at {trans_DAG_json}. Starting new execution."
+            )
 
         # Create the DAG instead and then serialize for later resuming
         write("Planning simulations for this edge...")
