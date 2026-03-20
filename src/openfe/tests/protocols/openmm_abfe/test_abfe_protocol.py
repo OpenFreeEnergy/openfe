@@ -33,6 +33,7 @@ from openmmtools.tests.test_alchemy import (
     check_noninteracting_energy_components,
     compare_system_energies,
 )
+from openmmtools.tests import test_alchemy
 
 import openfe
 from openfe import ChemicalSystem, SmallMoleculeComponent, SolventComponent
@@ -637,6 +638,24 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
         "complex": MonteCarloMembraneBarostat,
         "solvent": MonteCarloBarostat,
     }
+
+
+    @pytest.fixture(scope="class", autouse=True)
+    def set_platform(self):
+        """Set the platform used by this test **Only** to Reference to ensure double precision is used for all energy operations.
+        Due to the system size discrepancies can occur see <https://github.com/openmm/openmm/issues/5230> for more details.
+
+        Note
+        ----
+        - must keep autouse=True to ensure it is used without being called explicitly
+        """
+        original_platform = test_alchemy.GLOBAL_ALCHEMY_PLATFORM
+        # set the new platform
+        test_alchemy.GLOBAL_ALCHEMY_PLATFORM = openmm.Platform.getPlatformByName("Reference")
+        yield
+        # restore the old value
+        test_alchemy.GLOBAL_ALCHEMY_PLATFORM = original_platform
+
 
     @pytest.fixture(scope="class")
     def settings(self):
