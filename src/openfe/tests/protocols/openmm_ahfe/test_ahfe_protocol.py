@@ -406,12 +406,12 @@ def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmpdir):
 def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvent_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvation_settings.solvent_model = "tip4pew"
@@ -451,12 +451,12 @@ def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
 def test_setup_dry_sim_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdir):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvent_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvation_settings.solvent_model = "tip4pew"

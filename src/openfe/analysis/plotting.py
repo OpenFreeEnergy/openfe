@@ -88,7 +88,7 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
                 color=("k" if rel_prob < 0.5 else "w"),
             )
 
-        # anotate axes
+        # annotate axes
         base_settings: dict[str, Union[str, int]] = {
             "size": 10,
             "va": "center",

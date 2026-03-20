@@ -56,7 +56,7 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     annihilate_sterics: bool = False
     """
-    If True, sterics (Lennard-Jones) will be annhilated instead
+    If True, sterics (Lennard-Jones) will be annihilated instead
     of decoupled. Default is False.
     """
     softcore_alpha: float = 0.5

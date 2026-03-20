@@ -11,7 +11,7 @@ from typing import Callable
 
 def requires_package(package_name: str) -> Callable:
     """
-    Helper function to denote that a funciton requires some optional
+    Helper function to denote that a function requires some optional
     dependency. A function decorated with this decorator will raise
     `MissingDependencyError` if the package is not found by
     `importlib.import_module()`.
