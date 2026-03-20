@@ -14,7 +14,7 @@ alchemical sampling methods:
 Current limitations
 -------------------
 * Alchemical species with a net charge are not currently supported.
-* Disapearing molecules are only allowed in state A. Support for
+* Disappearing molecules are only allowed in state A. Support for
   appearing molecules will be added in due course.
 * Only small molecules are allowed to act as alchemical molecules.
   Alchemically changing protein or solvent components would induce
@@ -266,7 +266,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Make sure that the state A unique is an SMC
         if not isinstance(diff[0][0], SmallMoleculeComponent):
             errmsg = (
-                "Only dissapearing SmallMoleculeComponents "
+                "Only disappearing SmallMoleculeComponents "
                 "are supported by this protocol. "
                 f"Found a {type(diff[0][0])}"
             )

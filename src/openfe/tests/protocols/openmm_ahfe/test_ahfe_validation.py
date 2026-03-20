@@ -238,7 +238,7 @@ def test_validate_alchem_nonsmc(benzene_modifications):
         }
     )
 
-    errmsg = "Only dissapearing SmallMoleculeComponents"
+    errmsg = "Only disappearing SmallMoleculeComponents"
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 

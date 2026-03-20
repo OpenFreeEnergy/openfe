@@ -5,8 +5,8 @@
 
 Base classes for the OpenMM absolute free energy ProtocolUnits.
 
-Thist mostly implements BaseAbsoluteUnit whose methods can be
-overriden to define different types of alchemical transformations.
+This mostly implements BaseAbsoluteUnit whose methods can be
+overridden to define different types of alchemical transformations.
 
 TODO
 ----

@@ -14,7 +14,7 @@ alchemical sampling methods:
 Current limitations
 -------------------
 * Alchemical species with a net charge are not currently supported.
-* Disapearing molecules are only allowed in state A.
+* Disappearing molecules are only allowed in state A.
 * Only small molecules are allowed to act as alchemical molecules.
 
 Acknowledgements
@@ -254,7 +254,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         if not isinstance(diff[0][0], SmallMoleculeComponent):
             errmsg = (
-                "Only dissapearing small molecule components "
+                "Only disappearing small molecule components "
                 "are supported by this protocol. "
                 f"Found a {type(diff[0][0])}"
             )
@@ -366,7 +366,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         )
 
         # If the complex restraints schedule is all zero, it might be bad
-        # but we don't dissallow it.
+        # but we don't disallow it.
         if all([i == 0.0 for i in self.settings.complex_lambda_settings.lambda_restraints]):
             wmsg = (
                 "No restraints are being applied in the complex phase, "

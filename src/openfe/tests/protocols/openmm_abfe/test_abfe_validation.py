@@ -212,7 +212,7 @@ def test_validate_solvent_endstates_solvent_dissapearing(
         }
     )
 
-    errmsg = "Only dissapearing small molecule components"
+    errmsg = "Only disappearing small molecule components"
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
