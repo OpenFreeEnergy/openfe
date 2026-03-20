@@ -105,7 +105,7 @@ def quickrun(transformation, work_dir, output, resume):
 
     # Attempt to either deserialize or freshly create DAG
     cache_basedir = work_dir / "quickrun_cache"
-    trans_DAG_json = cache_basedir / f"{trans.key}-protocolDAG.json"
+    trans_DAG_json = cache_basedir / f"{trans.key}-ProtocolDAG.json"
 
     if trans_DAG_json.is_file():
         if resume:
