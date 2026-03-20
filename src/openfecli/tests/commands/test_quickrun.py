@@ -125,8 +125,9 @@ def test_quickrun_existing_checkpoint(json_file):
         pathlib.Path("quickrun_cache").mkdir()
         dag.to_json(pathlib.Path("quickrun_cache", f"{trans.key}-protocolDAG.json"))
         result = runner.invoke(quickrun, [json_file])
-        assert isinstance(result.exception, RuntimeError)
+        assert result.exit_code == 1
         assert "Attempting to resume" not in result.output
+        assert "Transformation has been started but is incomplete." in result.stderr
 
 
 def test_quickrun_resume_from_checkpoint(json_file):

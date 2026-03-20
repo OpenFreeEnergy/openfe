@@ -116,7 +116,7 @@ def quickrun(transformation, work_dir, output, resume):
                 raise click.ClickException(errmsg)
         else:
             errmsg = f"Transformation has been started but is incomplete. Please remove {trans_DAG_json} and rerun, or resume execution using the ``--resume`` flag."
-            raise RuntimeError(errmsg)
+            raise click.ClickException(errmsg)
 
     else:
         if resume:
