@@ -133,7 +133,7 @@ def quickrun(transformation, work_dir, output, resume):
         dag,
         shared_basedir=work_dir,
         scratch_basedir=work_dir,
-        unitresults_basedir=work_dir,
+        cache_basedir=work_dir,
         keep_shared=True,
         raise_error=False,
         n_retries=2,
