@@ -112,7 +112,7 @@ def quickrun(transformation, work_dir, output, resume):
             try:
                 dag = ProtocolDAG.from_json(trans_DAG_json)
             except JSONDecodeError:
-                errmsg = f"Recovery failed, please remove {trans_DAG_json} and any results from your working directory before continuing to create a new protocol, or run without `--resume`."
+                errmsg = f"Recovery failed, please remove {trans_DAG_json} and any results from your working directory before continuing to create a new protocol."
                 raise click.ClickException(errmsg)
         else:
             errmsg = f"Transformation has been started but is incomplete. Please remove {trans_DAG_json} and rerun, or resume execution using the ``--resume`` flag."
