@@ -104,7 +104,8 @@ def quickrun(transformation, work_dir, output, resume):
         output.parent.mkdir(exist_ok=True, parents=True)
 
     # Attempt to either deserialize or freshly create DAG
-    trans_DAG_json = work_dir / "quickrun_cache" / f"{trans.key}-protocolDAG.json"
+    cache_basedir = work_dir / "quickrun_cache"
+    trans_DAG_json = cache_basedir / f"{trans.key}-protocolDAG.json"
 
     if trans_DAG_json.is_file():
         if resume:
@@ -125,7 +126,7 @@ def quickrun(transformation, work_dir, output, resume):
         # Create the DAG instead and then serialize for later resuming
         write("Planning simulations for this edge...")
         dag = trans.create()
-        pathlib.Path(work_dir, "quickrun_cache").mkdir(exist_ok=True)
+        cache_basedir.mkdir(exist_ok=True)
         dag.to_json(trans_DAG_json)
 
     write("Starting the simulations for this edge...")
@@ -133,7 +134,7 @@ def quickrun(transformation, work_dir, output, resume):
         dag,
         shared_basedir=work_dir,
         scratch_basedir=work_dir,
-        cache_basedir=work_dir,
+        cache_basedir=cache_basedir,
         keep_shared=True,
         raise_error=False,
         n_retries=2,
