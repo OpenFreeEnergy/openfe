@@ -195,7 +195,7 @@ def _verify_alchemical_sterics_force_parameters(
 
 
 @pytest.mark.parametrize("method", ["repex", "sams", "independent", "InDePeNdENT"])
-def test_setup_dry_sim_vac_benzene(benzene_system, method, protocol_dry_settings, tmpdir):
+def test_setup_dry_sim_vac_benzene(benzene_system, method, protocol_dry_settings, tmp_path):
     protocol_dry_settings.vacuum_simulation_settings.sampler_method = method
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
@@ -221,51 +221,52 @@ def test_setup_dry_sim_vac_benzene(benzene_system, method, protocol_dry_settings
     assert len(vac_setup_unit) == 1
     assert len(vac_sim_unit) == 1
 
-    with tmpdir.as_cwd():
-        setup_results = vac_setup_unit[0].run(dry=True)
-        sim_results = vac_sim_unit[0].run(
-            system=setup_results["alchem_system"],
-            positions=setup_results["debug_positions"],
-            selection_indices=setup_results["selection_indices"],
-            box_vectors=setup_results["box_vectors"],
-            alchemical_restraints=False,
-            dry=True,
-        )
+    setup_results = vac_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    sim_results = vac_sim_unit[0].run(
+        system=setup_results["alchem_system"],
+        positions=setup_results["debug_positions"],
+        selection_indices=setup_results["selection_indices"],
+        box_vectors=setup_results["box_vectors"],
+        alchemical_restraints=False,
+        dry=True,
+    )
 
-        sampler = sim_results["sampler"]
-        assert isinstance(sampler, MultiStateSampler)
-        assert not sampler.is_periodic
-        assert sampler._thermodynamic_states[0].barostat is None
+    sampler = sim_results["sampler"]
+    assert isinstance(sampler, MultiStateSampler)
+    assert not sampler.is_periodic
+    assert sampler._thermodynamic_states[0].barostat is None
 
-        # standard system
-        system = setup_results["standard_system"]
-        assert system.getNumParticles() == 12
-        assert len(system.getForces()) == 4
-        _assert_num_forces(system, NonbondedForce, 1)
-        _assert_num_forces(system, HarmonicBondForce, 1)
-        _assert_num_forces(system, HarmonicAngleForce, 1)
-        _assert_num_forces(system, PeriodicTorsionForce, 1)
+    # standard system
+    system = setup_results["standard_system"]
+    assert system.getNumParticles() == 12
+    assert len(system.getForces()) == 4
+    _assert_num_forces(system, NonbondedForce, 1)
+    _assert_num_forces(system, HarmonicBondForce, 1)
+    _assert_num_forces(system, HarmonicAngleForce, 1)
+    _assert_num_forces(system, PeriodicTorsionForce, 1)
 
-        # alchemical system
-        alchem_system = setup_results["alchem_system"]
-        assert alchem_system.getNumParticles() == 12
-        assert len(alchem_system.getForces()) == 12
-        _assert_num_forces(alchem_system, NonbondedForce, 1)
-        _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
-        _assert_num_forces(alchem_system, CustomBondForce, 4)
-        _assert_num_forces(alchem_system, HarmonicBondForce, 1)
-        _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
-        _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
+    # alchemical system
+    alchem_system = setup_results["alchem_system"]
+    assert alchem_system.getNumParticles() == 12
+    assert len(alchem_system.getForces()) == 12
+    _assert_num_forces(alchem_system, NonbondedForce, 1)
+    _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
+    _assert_num_forces(alchem_system, CustomBondForce, 4)
+    _assert_num_forces(alchem_system, HarmonicBondForce, 1)
+    _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
+    _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
 
-        # Check some force contents
-        stericsf = [
-            f
-            for f in alchem_system.getForces()
-            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction()
-        ]
+    # Check some force contents
+    stericsf = [
+        f
+        for f in alchem_system.getForces()
+        if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction()
+    ]
 
-        for force in stericsf:
-            _verify_alchemical_sterics_force_parameters(force)
+    for force in stericsf:
+        _verify_alchemical_sterics_force_parameters(force)
 
 
 @pytest.mark.parametrize(
@@ -276,7 +277,7 @@ def test_setup_dry_sim_vac_benzene(benzene_system, method, protocol_dry_settings
     ],
 )
 def test_alchemical_settings_setup_vacuum(
-    alpha, a, b, c, correction, benzene_system, protocol_dry_settings, tmpdir
+    alpha, a, b, c, correction, benzene_system, protocol_dry_settings, tmp_path
 ):
     """
     Test non default alchemical settings
@@ -309,36 +310,35 @@ def test_alchemical_settings_setup_vacuum(
     assert len(vac_setup_unit) == 1
     assert len(vac_sim_unit) == 1
 
-    with tmpdir.as_cwd():
-        results = vac_setup_unit[0].run(dry=True)
+    results = vac_setup_unit[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
-        alchem_system = results["alchem_system"]
-        _assert_num_forces(alchem_system, NonbondedForce, 1)
-        _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
-        _assert_num_forces(alchem_system, CustomBondForce, 4)
-        _assert_num_forces(alchem_system, HarmonicBondForce, 1)
-        _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
-        _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
+    alchem_system = results["alchem_system"]
+    _assert_num_forces(alchem_system, NonbondedForce, 1)
+    _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
+    _assert_num_forces(alchem_system, CustomBondForce, 4)
+    _assert_num_forces(alchem_system, HarmonicBondForce, 1)
+    _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
+    _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
 
-        # Check some force contents
-        stericsf = [
-            f
-            for f in alchem_system.getForces()
-            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction()
-        ]
+    # Check some force contents
+    stericsf = [
+        f
+        for f in alchem_system.getForces()
+        if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction()
+    ]
 
-        for force in stericsf:
-            _verify_alchemical_sterics_force_parameters(
-                force,
-                long_range=not correction,
-                alpha=alpha,
-                a=a,
-                b=b,
-                c=c,
-            )
+    for force in stericsf:
+        _verify_alchemical_sterics_force_parameters(
+            force,
+            long_range=not correction,
+            alpha=alpha,
+            a=a,
+            b=b,
+            c=c,
+        )
 
 
-def test_confgen_fail_AFE(benzene_system, protocol_dry_settings, tmpdir):
+def test_confgen_fail_AFE(benzene_system, protocol_dry_settings, tmp_path):
     # check system parametrisation works even if confgen fails
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
 
@@ -356,14 +356,17 @@ def test_confgen_fail_AFE(benzene_system, protocol_dry_settings, tmpdir):
     prot_units = list(dag.protocol_units)
     vac_setup_unit = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
 
-    with tmpdir.as_cwd():
-        with mock.patch("rdkit.Chem.AllChem.EmbedMultipleConfs", return_value=0):
-            # If this worked, the system will have been built
-            system = vac_setup_unit[0].run(dry=True)["alchem_system"]
-            assert system
+    with mock.patch("rdkit.Chem.AllChem.EmbedMultipleConfs", return_value=0):
+        # If this worked, the system will have been built
+        system = vac_setup_unit[0].run(
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )["alchem_system"]
+        assert system
 
 
-def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmpdir):
+def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmp_path):
     protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
@@ -386,24 +389,27 @@ def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmpdir):
 
     assert len(sol_setup_unit) == len(sol_sim_unit) == 1
 
-    with tmpdir.as_cwd():
-        setup_results = sol_setup_unit[0].run(dry=True)
-        sim_results = sol_sim_unit[0].run(
-            system=setup_results["alchem_system"],
-            positions=setup_results["debug_positions"],
-            selection_indices=setup_results["selection_indices"],
-            box_vectors=setup_results["box_vectors"],
-            alchemical_restraints=False,
-            dry=True,
-        )
-        sol_sampler = sim_results["sampler"]
-        assert sol_sampler.is_periodic
+    setup_results = sol_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    sim_results = sol_sim_unit[0].run(
+        system=setup_results["alchem_system"],
+        positions=setup_results["debug_positions"],
+        selection_indices=setup_results["selection_indices"],
+        box_vectors=setup_results["box_vectors"],
+        alchemical_restraints=False,
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
+    sol_sampler = sim_results["sampler"]
+    assert sol_sampler.is_periodic
 
-        pdb = mdt.load_pdb(setup_results["pdb_structure"])
-        assert pdb.n_atoms == 12
+    pdb = mdt.load_pdb(setup_results["pdb_structure"])
+    assert pdb.n_atoms == 12
 
 
-def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
+def test_dry_run_vsite_fail(benzene_system, tmp_path, protocol_dry_settings):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
@@ -435,20 +441,23 @@ def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
     sol_setup_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
     sol_sim_unit = _get_units(prot_units, UNIT_TYPES["solvent"]["sim"])
 
-    with tmpdir.as_cwd():
-        setup_results = sol_setup_unit[0].run(dry=True)
-        with pytest.raises(ValueError, match="are unstable"):
-            sim_results = sol_sim_unit[0].run(
-                system=setup_results["alchem_system"],
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
-                dry=True,
-            )
+    setup_results = sol_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    with pytest.raises(ValueError, match="are unstable"):
+        sim_results = sol_sim_unit[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
 
 
-def test_setup_dry_sim_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdir):
+def test_setup_dry_sim_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmp_path):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
@@ -480,21 +489,24 @@ def test_setup_dry_sim_solv_benzene_tip4p(benzene_system, protocol_dry_settings,
     sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
     sol_sim_units = _get_units(prot_units, UNIT_TYPES["solvent"]["sim"])
 
-    with tmpdir.as_cwd():
-        setup_results = sol_setup_units[0].run(dry=True)
-        sim_results = sol_sim_units[0].run(
-            system=setup_results["alchem_system"],
-            positions=setup_results["debug_positions"],
-            selection_indices=setup_results["selection_indices"],
-            box_vectors=setup_results["box_vectors"],
-            alchemical_restraints=False,
-            dry=True,
-        )
-        sol_sampler = sim_results["sampler"]
-        assert sol_sampler.is_periodic
+    setup_results = sol_setup_units[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    sim_results = sol_sim_units[0].run(
+        system=setup_results["alchem_system"],
+        positions=setup_results["debug_positions"],
+        selection_indices=setup_results["selection_indices"],
+        box_vectors=setup_results["box_vectors"],
+        alchemical_restraints=False,
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
+    sol_sampler = sim_results["sampler"]
+    assert sol_sampler.is_periodic
 
 
-def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tmpdir):
+def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tmp_path):
     protocol_dry_settings.solvation_settings.solvent_padding = 1.5 * offunit.nanometer
     protocol_dry_settings.solvation_settings.box_shape = "dodecahedron"
 
@@ -515,25 +527,24 @@ def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tm
 
     sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
 
-    with tmpdir.as_cwd():
-        results = sol_setup_units[0].run(dry=True)
-        system = results["alchem_system"]
+    results = sol_setup_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = results["alchem_system"]
 
-        vectors = system.getDefaultPeriodicBoxVectors()
-        width = float(from_openmm(vectors)[0][0].to("nanometer").m)
+    vectors = system.getDefaultPeriodicBoxVectors()
+    width = float(from_openmm(vectors)[0][0].to("nanometer").m)
 
-        # dodecahedron has the following shape:
-        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
+    # dodecahedron has the following shape:
+    # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
 
-        expected_vectors = [
-            [width, 0, 0],
-            [0, width, 0],
-            [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
-        ] * offunit.nanometer
-        assert_allclose(expected_vectors, from_openmm(vectors))
+    expected_vectors = [
+        [width, 0, 0],
+        [0, width, 0],
+        [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
+    ] * offunit.nanometer
+    assert_allclose(expected_vectors, from_openmm(vectors))
 
 
-def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_settings, tmpdir):
+def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_settings, tmp_path):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
@@ -578,36 +589,32 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
     sol_setup_units = _get_units(prot_units, UNIT_TYPES["solvent"]["setup"])
 
     # check sol_unit charges
-    with tmpdir.as_cwd():
-        results = sol_setup_units[0].run(dry=True)
-        system = results["alchem_system"]
-        nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
+    results = sol_setup_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = results["alchem_system"]
+    nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
 
-        assert len(nonbond) == 1
+    assert len(nonbond) == 1
 
-        # loop through the 12 benzene atoms
-        # partial charge is stored in the offset
-        for i in range(12):
-            offsets = nonbond[0].getParticleParameterOffset(i)
-            c = ensure_quantity(offsets[2], "openff")
-            assert pytest.approx(c) == prop_chgs[i]
+    # loop through the 12 benzene atoms
+    # partial charge is stored in the offset
+    for i in range(12):
+        offsets = nonbond[0].getParticleParameterOffset(i)
+        c = ensure_quantity(offsets[2], "openff")
+        assert pytest.approx(c) == prop_chgs[i]
 
     # check vac_unit charges
-    with tmpdir.as_cwd():
-        results = vac_setup_units[0].run(dry=True)
-        system = results["alchem_system"]
-        nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
-        assert len(nonbond) == 4
+    results = vac_setup_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = results["alchem_system"]
+    nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
+    assert len(nonbond) == 4
 
-        custom_elec = [
-            n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics"
-        ][0]
+    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics"][0]
 
-        # loop through the 12 benzene atoms
-        for i in range(12):
-            c, s = custom_elec.getParticleParameters(i)
-            c = ensure_quantity(c, "openff")
-            assert pytest.approx(c) == prop_chgs[i]
+    # loop through the 12 benzene atoms
+    for i in range(12):
+        c, s = custom_elec.getParticleParameters(i)
+        c = ensure_quantity(c, "openff")
+        assert pytest.approx(c) == prop_chgs[i]
 
 
 @pytest.mark.parametrize(
@@ -638,7 +645,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
     ],
 )
 def test_dry_run_charge_backends(
-    CN_molecule, tmpdir, method, backend, ref_key, protocol_dry_settings, am1bcc_ref_charges
+    CN_molecule, tmp_path, method, backend, ref_key, protocol_dry_settings, am1bcc_ref_charges
 ):
     """
     Check that partial charge generation with different backends
@@ -663,20 +670,17 @@ def test_dry_run_charge_backends(
     vac_setup_units = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
 
     # check vac_unit charges
-    with tmpdir.as_cwd():
-        results = vac_setup_units[0].run(dry=True)
-        system = results["alchem_system"]
-        nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
-        assert len(nonbond) == 4
+    results = vac_setup_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = results["alchem_system"]
+    nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
+    assert len(nonbond) == 4
 
-        custom_elec = [
-            n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics"
-        ][0]
+    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics"][0]
 
-        charges = []
-        for i in range(system.getNumParticles()):
-            c, s = custom_elec.getParticleParameters(i)
-            charges.append(c)
+    charges = []
+    for i in range(system.getNumParticles()):
+        c, s = custom_elec.getParticleParameters(i)
+        charges.append(c)
 
     assert_allclose(
         am1bcc_ref_charges[ref_key],
@@ -710,7 +714,7 @@ def test_dry_run_vacuum_write_frequency(
     positions_write_frequency,
     velocities_write_frequency,
     protocol_dry_settings,
-    tmpdir,
+    tmp_path,
 ):
     protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
     protocol_dry_settings.solvent_output_settings.positions_write_frequency = positions_write_frequency  # fmt: skip
@@ -741,23 +745,28 @@ def test_dry_run_vacuum_write_frequency(
         setup_units = _get_units(prot_units, UNIT_TYPES[phase]["setup"])
         sim_units = _get_units(prot_units, UNIT_TYPES[phase]["sim"])
 
-        with tmpdir.as_cwd():
-            setup_results = setup_units[0].run(dry=True)
-            sim_results = sim_units[0].run(
-                system=setup_results["alchem_system"],
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
-                dry=True,
-            )
-            sampler = sim_results["sampler"]
-            reporter = sampler._reporter
-            if positions_write_frequency:
-                assert reporter.position_interval == positions_write_frequency.m
-            else:
-                assert reporter.position_interval == 0
-            if velocities_write_frequency:
-                assert reporter.velocity_interval == velocities_write_frequency.m
-            else:
-                assert reporter.velocity_interval == 0
+        setup_results = setup_units[0].run(
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+        sim_results = sim_units[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+        sampler = sim_results["sampler"]
+        reporter = sampler._reporter
+        if positions_write_frequency:
+            assert reporter.position_interval == positions_write_frequency.m
+        else:
+            assert reporter.position_interval == 0
+        if velocities_write_frequency:
+            assert reporter.velocity_interval == velocities_write_frequency.m
+        else:
+            assert reporter.velocity_interval == 0
