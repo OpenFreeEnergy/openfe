@@ -694,7 +694,7 @@ class MDOutputSettings(OutputSettings):
     """
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
-    preminimized_structure: Optional[str] = "system.pdb"
+    preminimized_structure: str = "system.pdb"
     """Path to the pdb file of the full pre-minimized system.
     Default 'system.pdb'."""
     minimized_structure: Optional[str] = "minimized.pdb"
