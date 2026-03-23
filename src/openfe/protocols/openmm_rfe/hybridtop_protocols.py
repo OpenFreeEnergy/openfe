@@ -532,6 +532,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             raise ValueError("Can't extend simulations yet")
 
         # Validate the end states
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
         # Validate the mapping

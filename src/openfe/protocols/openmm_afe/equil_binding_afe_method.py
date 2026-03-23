@@ -407,6 +407,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             warnings.warn(wmsg)
 
         # Validate the end states & alchemical components
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
         # Validate the complex lambda schedule

@@ -175,6 +175,9 @@ class PlainMDProtocol(gufe.Protocol):
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
+        # Validate the ChcemicalSystem
+        system_validation.validate_chemical_system(stateA)
+
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)

@@ -21,6 +21,7 @@ from gufe import (
     SolvatedPDBComponent,
     SolventComponent,
 )
+from gufe.components.errors import ComponentValidationError
 from openff.toolkit import Molecule as OFFMol
 
 logger = logging.getLogger(__name__)
@@ -343,3 +344,26 @@ def assert_multistate_system_equality(
         else:
             if sfhash not in ref_force_dict:
                 raise ValueError(errmsg)
+
+
+def validate_chemical_system(system: ChemicalSystem):
+    """
+    Validate that the input ChemicalSystem is suitable for use in an OpenMM-based
+    alchemical protocol.
+
+    Parameters
+    ----------
+    state : ChemicalSystem
+      The chemical system to validate.
+
+    Raises
+    ------
+    ComponentValidationError
+      If any component in the ChemicalSystem fails validation.
+    """
+    for entry in system.components:
+        try:
+            system.components[entry].validate()
+        except ComponentValidationError as e:
+            errmsg = f"Component {entry} from ChemicalSystem {system.name} failed validation: {e}"
+            raise ComponentValidationError(errmsg)

@@ -1364,6 +1364,8 @@ class SepTopProtocol(gufe.Protocol):
             raise NotImplementedError("Can't extend simulations yet")
 
         # Validate components and get alchemical components
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_complex_endstates(stateA, stateB)
         alchem_comps = system_validation.get_alchemical_components(
             stateA,
