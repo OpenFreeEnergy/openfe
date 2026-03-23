@@ -20,6 +20,7 @@ from typing import Any, Iterable, Optional
 
 import gufe
 import mdtraj
+import numpy as np
 import openmm
 import openmm.unit as omm_unit
 from gufe import (
@@ -47,17 +48,16 @@ from openfe.protocols.openmm_md.plain_md_settings import (
 from openfe.protocols.openmm_utils import (
     charge_generation,
     omm_compute,
+    serialization,
     settings_validation,
     system_creation,
     system_validation,
-    serialization
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
     FemtosecondQuantity,
 )
 from openfe.utils import log_system_probe, without_oechem_backend
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -162,9 +162,7 @@ class PlainMDProtocol(gufe.Protocol):
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             ),
-            output_settings=MDOutputSettings(
-                checkpoint_storage_filename="checkpoint.xml"
-            ),
+            output_settings=MDOutputSettings(checkpoint_storage_filename="checkpoint.xml"),
             protocol_repeats=1,
         )
 
@@ -258,7 +256,6 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
     Protocol setup unit for plan MD simulations which handles charging, system building and solvation.
     """
 
-
     def __init__(
         self,
         *,
@@ -296,7 +293,6 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
             generation=generation,
         )
 
-
     @staticmethod
     def _assign_partial_charges(
         charge_settings: OpenFFPartialChargeSettings,
@@ -322,7 +318,6 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
                 generate_n_conformers=charge_settings.number_of_conformers,
                 nagl_model=charge_settings.nagl_model,
             )
-
 
     def run(
         self,
@@ -462,10 +457,7 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
 
         # f. Save pdb of entire system topology to file, this is always needed for restarts
         with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
-            openmm.app.PDBFile.writeFile(
-                stateA_topology, stateA_positions, file=f, keepIds=True
-            )
-
+            openmm.app.PDBFile.writeFile(stateA_topology, stateA_positions, file=f, keepIds=True)
 
         # g. Save the system and positions to file
         system_outfile = shared_basepath / "system.xml.bz2"
@@ -489,7 +481,6 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
             unit_results_dict["debug"] = debug_info
 
         return unit_results_dict
-
 
     def _execute(
         self,
@@ -515,7 +506,6 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
     """
     Protocol unit for plain MD simulation equilibration and production runs (NonTransformation).
     """
-
 
     @staticmethod
     def _check_restart(output_settings: MDOutputSettings, shared_path: pathlib.Path):
@@ -552,14 +542,13 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
                 errmsg = "the checkpoint file is present but not the trajectory file. "
 
             errmsg = (
-                    "Attempting to restart but "
-                    + errmsg
-                    + "This should not happen under normal circumstances."
+                "Attempting to restart but "
+                + errmsg
+                + "This should not happen under normal circumstances."
             )
             raise IOError(errmsg)
         else:
             return False
-
 
     @staticmethod
     def _verify_execution_environment(
@@ -571,16 +560,15 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
         """
         try:
             if (
-                    (gufe.__version__ != setup_outputs["gufe_version"])
-                    or (openfe.__version__ != setup_outputs["openfe_version"])
-                    or (openmm.__version__ != setup_outputs["openmm_version"])
+                (gufe.__version__ != setup_outputs["gufe_version"])
+                or (openfe.__version__ != setup_outputs["openfe_version"])
+                or (openmm.__version__ != setup_outputs["openmm_version"])
             ):
                 errmsg = "Python environment has changed, cannot continue Protocol execution."
                 raise ProtocolUnitExecutionError(errmsg)
         except KeyError:
             errmsg = "Missing environment information from setup outputs."
             raise ProtocolUnitExecutionError(errmsg)
-
 
     @staticmethod
     def _run_MD(
@@ -596,7 +584,7 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
         prod_steps: int,
         verbose=True,
         shared_basepath=None,
-        restart: bool = False
+        restart: bool = False,
     ) -> None:
         """
         Energy minimization, Equilibration and Production MD to be reused
@@ -651,7 +639,9 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
             # workout the number of production steps left to run
             # as nvt steps can be None set to 0 in this case
             equil_steps_nvt = equil_steps_nvt or 0
-            production_steps = prod_steps - equil_steps_nvt - equil_steps_npt - simulation.context.getStepCount()
+            production_steps = (
+                prod_steps - equil_steps_nvt - equil_steps_npt - simulation.context.getStepCount()
+            )
             if verbose:
                 logger.info(f"running remaining production steps: {production_steps}")
 
@@ -771,7 +761,7 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
                 reportInterval=write_interval,
                 atomSubset=selection_indices,
                 # append to the trajectory if restarting
-                append=restart
+                append=restart,
             )
             simulation.reporters.append(xtc_reporter)
         if output_settings.checkpoint_storage_filename:
@@ -796,7 +786,7 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
                     volume=True,
                     density=True,
                     speed=True,
-                    append=restart
+                    append=restart,
                 )
             )
         t0 = time.time()
@@ -807,7 +797,6 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
             logger.info(f"Completed simulation in {t1 - t0} seconds")
 
         return None
-
 
     def run(
         self,
@@ -874,7 +863,6 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
         timestep = protocol_settings.integrator_settings.timestep
         integrator_settings = protocol_settings.integrator_settings
 
-
         # 10. Get platform
         restrict_cpu = forcefield_settings.nonbonded_method.lower() == "nocutoff"
         platform = omm_compute.get_openmm_platform(
@@ -913,7 +901,7 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
                     equil_steps_npt,
                     prod_steps,
                     shared_basepath=shared_basepath,
-                    restart=restart
+                    restart=restart,
                 )
 
         finally:
@@ -948,7 +936,6 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
         else:
             return {"debug": {"system": system}}
 
-
     def _execute(
         self,
         ctx: gufe.Context,
@@ -963,7 +950,7 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
         system = serialization.deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * omm_unit.nanometers)
         topology = openmm.app.PDBFile(setup_results.outputs["system_pdb"]).getTopology()
-        equil_steps_nvt =  setup_results.outputs["equil_steps_nvt"]
+        equil_steps_nvt = setup_results.outputs["equil_steps_nvt"]
         equil_steps_npt = setup_results.outputs["equil_steps_npt"]
         prod_steps = setup_results.outputs["prod_steps"]
 
@@ -975,7 +962,7 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
             equil_steps_npt=equil_steps_npt,
             prod_steps=prod_steps,
             scratch_basepath=ctx.scratch,
-            shared_basepath=ctx.shared
+            shared_basepath=ctx.shared,
         )
 
         return {
