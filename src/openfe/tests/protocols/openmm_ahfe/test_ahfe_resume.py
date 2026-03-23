@@ -175,10 +175,9 @@ class TestCheckpointResuming:
         return positions
 
     @staticmethod
-    def _copy_simfiles(tmp_path: pathlib.Path, filepath):
-        shutil.copyfile(filepath, f"{tmp_path}/{filepath.name}")
+    def _copy_simfiles(cwd: pathlib.Path, filepath):
+        shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
 
-    @pytest.mark.integration
     def test_resume(
         self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmp_path
     ):
@@ -191,7 +190,7 @@ class TestCheckpointResuming:
 
         # 1. Check that the trajectory / checkpoint contain what we expect
         reporter = MultiStateReporter(
-            f"{tmp_path}/solvent.nc",
+            tmp_path / "solvent.nc",
             checkpoint_storage="solvent_checkpoint.nc",
         )
         sampler = ReplicaExchangeSampler.from_storage(reporter)
@@ -241,7 +240,7 @@ class TestCheckpointResuming:
 
         # Analyze the trajectory / checkpoint again
         reporter = MultiStateReporter(
-            f"{tmp_path}/solvent.nc",
+            tmp_path / "solvent.nc",
             checkpoint_storage="solvent_checkpoint.nc",
         )
 
@@ -462,13 +461,13 @@ class TestCheckpointResuming:
         # copy files
 
         if bad_file == "trajectory":
-            with open(f"{tmp_path}/solvent.nc", "w") as f:
+            with open(tmp_path / "solvent.nc", "w") as f:
                 f.write("foo")
         else:
             self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
 
         if bad_file == "checkpoint":
-            with open(f"{tmp_path}/solvent_checkpoint.nc", "w") as f:
+            with open(tmp_path / "solvent_checkpoint.nc", "w") as f:
                 f.write("bar")
         else:
             self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)

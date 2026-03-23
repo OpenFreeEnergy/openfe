@@ -148,7 +148,7 @@ class TestCheckpointResuming:
 
         # 1. Check that the trajectory / checkpoint contain what we expect
         reporter = MultiStateReporter(
-            f"{tmp_path}/simulation.nc",
+            tmp_path / "simulation.nc",
             checkpoint_storage="checkpoint.chk",
         )
         sampler = HybridRepexSampler.from_storage(reporter)
@@ -194,7 +194,7 @@ class TestCheckpointResuming:
 
         # 3. Analyze the trajectory/checkpoint again
         reporter = MultiStateReporter(
-            f"{tmp_path}/simulation.nc",
+            tmp_path / "simulation.nc",
             checkpoint_storage="checkpoint.chk",
         )
         sampler = HybridRepexSampler.from_storage(reporter)
@@ -394,13 +394,13 @@ class TestCheckpointResuming:
         """
         # copy files
         if bad_file == "trajectory":
-            with open(f"{tmp_path}/simulation.nc", "w") as f:
+            with open(tmp_path / "simulation.nc", "w") as f:
                 f.write("foo")
         else:
             self._copy_simfiles(tmp_path, htop_trajectory_path)
 
         if bad_file == "checkpoint":
-            with open(f"{tmp_path}/checkpoint.chk", "w") as f:
+            with open(tmp_path / "checkpoint.chk", "w") as f:
                 f.write("bar")
         else:
             self._copy_simfiles(tmp_path, htop_checkpoint_path)
