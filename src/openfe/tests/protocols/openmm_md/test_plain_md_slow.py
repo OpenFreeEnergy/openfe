@@ -37,12 +37,10 @@ def test_vacuum_sim(
         mapping=None,
     )
 
-    basedir = tmp_path
-
     r = execute_DAG(
         dag,
-        shared_basedir=basedir,
-        scratch_basedir=basedir,
+        shared_basedir=tmp_path,
+        scratch_basedir=tmp_path,
         keep_shared=True,
     )
 
@@ -106,12 +104,10 @@ def test_complex_solvent_sim_gpu(
         mapping=None,
     )
 
-    basedir = pathlib.Path(str(tmp_path))
-
     r = execute_DAG(
         dag,
-        shared_basedir=basedir,
-        scratch_basedir=basedir,
+        shared_basedir=tmp_path,
+        scratch_basedir=tmp_path,
         keep_shared=True,
     )
 

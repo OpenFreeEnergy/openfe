@@ -78,8 +78,7 @@ def test_openmm_run_engine(
         mapping=None,
     )
 
-    basedir = tmp_path
-    r = execute_DAG(dag, shared_basedir=basedir, scratch_basedir=basedir, keep_shared=True)
+    r = execute_DAG(dag, shared_basedir=tmp_path, scratch_basedir=tmp_path, keep_shared=True)
 
     assert r.ok()
 
