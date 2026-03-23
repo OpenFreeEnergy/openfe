@@ -260,13 +260,13 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
 
 
     def __init__(
-            self,
-            *,
-            protocol: PlainMDProtocol,
-            stateA: ChemicalSystem,
-            generation: int,
-            repeat_id: int,
-            name: Optional[str] = None,
+        self,
+        *,
+        protocol: PlainMDProtocol,
+        stateA: ChemicalSystem,
+        generation: int,
+        repeat_id: int,
+        name: Optional[str] = None,
     ):
         """
         Parameters
@@ -299,8 +299,8 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _assign_partial_charges(
-            charge_settings: OpenFFPartialChargeSettings,
-            smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        charge_settings: OpenFFPartialChargeSettings,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
         Assign partial charges to SMCs.
@@ -325,12 +325,12 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
 
 
     def run(
-            self,
-            *,
-            dry: bool = False,
-            verbose: bool = True,
-            scratch_basepath: pathlib.Path | None = None,
-            shared_basepath: pathlib.Path | None = None,
+        self,
+        *,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
     ) -> dict[str, Any]:
         """Setup a plain MD system.
 
@@ -492,9 +492,9 @@ class PlainMDSetupUnit(gufe.ProtocolUnit):
 
 
     def _execute(
-            self,
-            ctx: gufe.Context,
-            **kwargs,
+        self,
+        ctx: gufe.Context,
+        **kwargs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
@@ -563,7 +563,7 @@ class PlainMDSimulationUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _verify_execution_environment(
-            setup_outputs: dict[str, Any],
+        setup_outputs: dict[str, Any],
     ) -> None:
         """
         Check that the Python environment hasn't changed based on the
