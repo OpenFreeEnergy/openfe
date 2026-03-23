@@ -61,9 +61,7 @@ started), the following warning is printed and a fresh execution begins:
     Starting new execution.
 
 If the cache file is corrupted (e.g. due to an incomplete write at
-the moment of interruption), ``quickrun --resume`` will raise a
-``ClickException`` with instructions to remove the cache file and either
-start fresh or rerun without ``--resume``:
+the moment of interruption), ``quickrun --resume`` will raise an error with instructions to rerun the simulation:
 
 .. code:: none
 
