@@ -33,7 +33,7 @@ cache file before execution begins:
 
 .. code:: none
 
-    <work-dir>/quickrun_cache/<transformation_key>-protocolDAG.json
+    <work-dir>/quickrun_cache/<transformation_key>-ProtocolDAG.json
 
 This cache is automatically removed once the job completes successfully.
 
