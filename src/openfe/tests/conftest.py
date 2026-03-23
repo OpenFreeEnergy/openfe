@@ -287,10 +287,15 @@ def T4_protein_component():
 
 
 @pytest.fixture(scope="session")
-def a2a_protein_membrane_component():
-    with resources.as_file(resources.files("openfe.tests.data")) as d:
-        with gzip.open(d / "a2a/protein.pdb.gz", "rb") as f:
-            yield openfe.ProteinMembraneComponent.from_pdb_file(f, name="a2a")
+def a2a_protein_membrane_pdb():
+    with resources.as_file(resources.files("openfe.tests.data.a2a")) as d:
+        yield str(d / "protein.pdb.gz")
+
+
+@pytest.fixture(scope="session")
+def a2a_protein_membrane_component(a2a_protein_membrane_pdb):
+    with gzip.open(a2a_protein_membrane_pdb, "rb") as f:
+        yield openfe.ProteinMembraneComponent.from_pdb_file(f, name="a2a")
 
 
 @pytest.fixture(scope="session")
