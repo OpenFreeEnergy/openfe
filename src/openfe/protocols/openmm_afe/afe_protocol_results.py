@@ -55,7 +55,7 @@ class AbsoluteProtocolResultMixin:
         -------
         forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, openff.units.Quantity]]]]]
             A dictionary, keyed for each leg of the thermodynamic cycle,
-            either ``solvent`` and ``vaccuum` for a solvation free energy or
+            either ``solvent`` and ``vacuum` for a solvation free energy or
           ``solvent`` and ``complex`` for a binding free energy,
             with each containing a list of dictionaries containing the forward
             and reverse analysis of each repeat of that simulation type.
@@ -109,7 +109,7 @@ class AbsoluteProtocolResultMixin:
         -------
         overlap_stats : dict[str, list[dict[str, npt.NDArray]]]
           A dictionary keyed for each leg of the thermodynamic cycle, either
-          ``solvent`` and ``vaccuum` for a solvation free energy or
+          ``solvent`` and ``vacuum` for a solvation free energy or
           ``solvent`` and ``complex`` for a binding free energy,
           with each containing a list of dictionaries with the MBAR overlap
           estimates of each repeat of that simulation type.
@@ -146,7 +146,7 @@ class AbsoluteProtocolResultMixin:
         -------
         repex_stats : dict[str, list[dict[str, npt.NDArray]]]
           A dictionary with keys for each leg of the thermodynamic cycle, either
-          ``solvent`` and ``vaccuum` for a solvation free energy or
+          ``solvent`` and ``vacuum` for a solvation free energy or
           ``solvent`` and ``complex`` for a binding free energy,
           with each containing a list of dictionaries containing the replica
           transition statistics for each repeat of that simulation type.

@@ -575,7 +575,7 @@ def tip4p_hybrid_factory(
     settings.engine_settings.compute_platform = None
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
@@ -907,7 +907,7 @@ def test_setup_user_charges(benzene_modifications, vac_settings, tmpdir):
         prop_chgs = np.array(prop_chgs.split(), dtype=float)
         np.testing.assert_allclose(prop_chgs, charge_array.m)
 
-    # Create new smc with overriden charges
+    # Create new smc with overridden charges
     benzene_offmol = benzene_modifications["benzene"].to_openff()
     toluene_offmol = benzene_modifications["toluene"].to_openff()
     benzene_rand_chg = assign_fictitious_charges(benzene_offmol)
@@ -917,7 +917,7 @@ def test_setup_user_charges(benzene_modifications, vac_settings, tmpdir):
     benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
     toluene_smc = openfe.SmallMoleculeComponent.from_openff(toluene_offmol)
 
-    # Check that the new smcs have the new overriden charges
+    # Check that the new smcs have the new overridden charges
     check_propchgs(benzene_smc, benzene_rand_chg)
     check_propchgs(toluene_smc, toluene_rand_chg)
 
@@ -1008,7 +1008,7 @@ def test_virtual_sites_no_reassign(
     """
     solv_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     solv_settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer

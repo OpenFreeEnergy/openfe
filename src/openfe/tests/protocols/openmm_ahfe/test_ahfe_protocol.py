@@ -4,6 +4,7 @@ import sys
 from math import sqrt
 from unittest import mock
 
+import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
@@ -25,6 +26,7 @@ from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteSolvationProtocol,
+    AHFESolventSimUnit,
 )
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
@@ -61,6 +63,24 @@ def test_serialize_protocol(default_settings):
     ser = protocol.to_dict()
     ret = AbsoluteSolvationProtocol.from_dict(ser)
     assert protocol == ret
+
+
+def test_bad_sampler():
+    class FakeSimSettings(gufe.settings.SettingsBaseModel):
+        sampler_method: str = "foo bar"
+
+    errmsg = "Unknown sampler foo bar"
+    with pytest.raises(AttributeError, match=errmsg):
+        AHFESolventSimUnit._get_sampler(
+            integrator=None,
+            reporter=None,
+            simulation_settings=FakeSimSettings(),
+            thermodynamic_settings=None,
+            compound_states=None,
+            sampler_states=None,
+            platform=None,
+            restart=False,
+        )
 
 
 def test_repeat_units(benzene_system):
@@ -386,12 +406,12 @@ def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmpdir):
 def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvent_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvation_settings.solvent_model = "tip4pew"
@@ -431,12 +451,12 @@ def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
 def test_setup_dry_sim_solv_benzene_tip4p(benzene_system, protocol_dry_settings, tmpdir):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvent_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvation_settings.solvent_model = "tip4pew"
