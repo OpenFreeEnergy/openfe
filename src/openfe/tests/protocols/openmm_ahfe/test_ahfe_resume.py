@@ -175,24 +175,23 @@ class TestCheckpointResuming:
         return positions
 
     @staticmethod
-    def _copy_simfiles(cwd: pathlib.Path, filepath):
-        shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
+    def _copy_simfiles(tmp_path: pathlib.Path, filepath):
+        shutil.copyfile(filepath, f"{tmp_path}/{filepath.name}")
 
     @pytest.mark.integration
     def test_resume(
-        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmpdir
+        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmp_path
     ):
         """
         Attempt to resume a simulation unit with pre-existing checkpoint &
         trajectory files.
         """
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, ahfe_solv_trajectory_path)
-        self._copy_simfiles(cwd, ahfe_solv_checkpoint_path)
+        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
 
         # 1. Check that the trajectory / checkpoint contain what we expect
         reporter = MultiStateReporter(
-            f"{cwd}/solvent.nc",
+            f"{tmp_path}/solvent.nc",
             checkpoint_storage="solvent_checkpoint.nc",
         )
         sampler = ReplicaExchangeSampler.from_storage(reporter)
@@ -217,8 +216,8 @@ class TestCheckpointResuming:
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(
             dry=True,
-            scratch_basepath=cwd,
-            shared_basepath=cwd,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
         # Now we run the simultion in resume mode
@@ -228,21 +227,21 @@ class TestCheckpointResuming:
             selection_indices=setup_results["selection_indices"],
             box_vectors=setup_results["box_vectors"],
             alchemical_restraints=False,
-            scratch_basepath=cwd,
-            shared_basepath=cwd,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
         # Finally we analyze the results
         _ = analysis_unit.run(
             trajectory=sim_results["trajectory"],
             checkpoint=sim_results["checkpoint"],
-            scratch_basepath=cwd,
-            shared_basepath=cwd,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
         # Analyze the trajectory / checkpoint again
         reporter = MultiStateReporter(
-            f"{cwd}/solvent.nc",
+            f"{tmp_path}/solvent.nc",
             checkpoint_storage="solvent_checkpoint.nc",
         )
 
@@ -264,12 +263,12 @@ class TestCheckpointResuming:
         del sampler
 
         # Check the free energy plots are there
-        mbar_overlap_file = cwd / "mbar_overlap_matrix.png"
+        mbar_overlap_file = tmp_path / "mbar_overlap_matrix.png"
         assert (mbar_overlap_file).exists()
 
     @pytest.mark.slow
     def test_resume_fail_particles(
-        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmpdir
+        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmp_path
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -277,17 +276,18 @@ class TestCheckpointResuming:
 
         Here we check that we don't have the same particles / mass.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, ahfe_solv_trajectory_path)
-        self._copy_simfiles(cwd, ahfe_solv_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
         sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Create a fake system where we will add a particle
         fake_system = copy.deepcopy(setup_results["alchem_system"])
@@ -302,13 +302,13 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     def test_resume_fail_constraints(
-        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmpdir
+        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmp_path
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -316,17 +316,18 @@ class TestCheckpointResuming:
 
         Here we check that we don't have the same constraints.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, ahfe_solv_trajectory_path)
-        self._copy_simfiles(cwd, ahfe_solv_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
         sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Create a fake system without constraints
         fake_system = copy.deepcopy(setup_results["alchem_system"])
@@ -343,13 +344,13 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     def test_resume_fail_forces(
-        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmpdir
+        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmp_path
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -357,17 +358,18 @@ class TestCheckpointResuming:
 
         Here we check we don't have the same forces.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, ahfe_solv_trajectory_path)
-        self._copy_simfiles(cwd, ahfe_solv_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
         sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Create a fake system without the last force
         fake_system = copy.deepcopy(setup_results["alchem_system"])
@@ -382,14 +384,19 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     @pytest.mark.parametrize("forcetype", [openmm.NonbondedForce, openmm.MonteCarloBarostat])
     def test_resume_differ_forces(
-        self, forcetype, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmpdir
+        self,
+        forcetype,
+        protocol_dag,
+        ahfe_solv_trajectory_path,
+        ahfe_solv_checkpoint_path,
+        tmp_path,
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -397,17 +404,18 @@ class TestCheckpointResuming:
 
         Here we check we have a different force
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, ahfe_solv_trajectory_path)
-        self._copy_simfiles(cwd, ahfe_solv_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
         sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Create a fake system with the fake forcetype
         fake_system = copy.deepcopy(setup_results["alchem_system"])
@@ -438,40 +446,41 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
     def test_resume_bad_files(
-        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, bad_file, tmpdir
+        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, bad_file, tmp_path
     ):
         """
         Test what happens when you have a bad trajectory and/or checkpoint
         files.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
+        # copy files
 
         if bad_file == "trajectory":
-            with open(f"{cwd}/solvent.nc", "w") as f:
+            with open(f"{tmp_path}/solvent.nc", "w") as f:
                 f.write("foo")
         else:
-            self._copy_simfiles(cwd, ahfe_solv_trajectory_path)
+            self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
 
         if bad_file == "checkpoint":
-            with open(f"{cwd}/solvent_checkpoint.nc", "w") as f:
+            with open(f"{tmp_path}/solvent_checkpoint.nc", "w") as f:
                 f.write("bar")
         else:
-            self._copy_simfiles(cwd, ahfe_solv_checkpoint_path)
+            self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
         sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         with pytest.raises(OSError, match="Unknown file format"):
             _ = sim_unit.run(
@@ -480,6 +489,6 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )

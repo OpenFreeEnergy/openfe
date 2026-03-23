@@ -105,7 +105,7 @@ def test_lambda_energies(
     eg5_ligands,
     eg5_protein,
     eg5_cofactor,
-    tmpdir,
+    tmp_path,
     default_settings,
 ):
     # check system parametrisation works even if confgen fails
@@ -151,62 +151,61 @@ def test_lambda_energies(
     prot_units = list(dag.protocol_units)
     solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
 
-    with tmpdir.as_cwd():
-        output = solv_setup_unit[0].run()
-        system = output["system"]
-        alchemical_system = deserialize(system)
-        topology = output["topology"]
-        pdb = openmm.app.pdbfile.PDBFile(str(topology))
-        positions = pdb.getPositions(asNumpy=True)
+    output = solv_setup_unit[0].run(scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = output["system"]
+    alchemical_system = deserialize(system)
+    topology = output["topology"]
+    pdb = openmm.app.pdbfile.PDBFile(str(topology))
+    positions = pdb.getPositions(asNumpy=True)
 
-        # Remove Harmonic restraint force solvent
-        alchemical_system.removeForce(13)
+    # Remove Harmonic restraint force solvent
+    alchemical_system.removeForce(13)
 
-        (
-            na_A,
-            na_B,
-            nonbonded,
-            energy,
-            energy_0,
-            energy_7,
-            energy_8,
-            energy_12,
-            energy_13,
-        ) = compare_energies(alchemical_system, positions)
+    (
+        na_A,
+        na_B,
+        nonbonded,
+        energy,
+        energy_0,
+        energy_7,
+        energy_8,
+        energy_12,
+        energy_13,
+    ) = compare_energies(alchemical_system, positions)
 
-        for key, value in energy.items():
-            if key == na_A:
-                assert_allclose(from_openmm(value), from_openmm(energy_0[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
-                assert not np.allclose(from_openmm(value), from_openmm(energy_13[key]))
+    for key, value in energy.items():
+        if key == na_A:
+            assert_allclose(from_openmm(value), from_openmm(energy_0[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
+            assert not np.allclose(from_openmm(value), from_openmm(energy_13[key]))
 
-            elif key == na_B:
-                assert not np.allclose(from_openmm(value), from_openmm(energy_0[key]))
-                assert_allclose(from_openmm(energy_0[key]), 0)
-                assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
+        elif key == na_B:
+            assert not np.allclose(from_openmm(value), from_openmm(energy_0[key]))
+            assert_allclose(from_openmm(energy_0[key]), 0)
+            assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
 
-            elif key == nonbonded:
-                assert not np.allclose(from_openmm(value), from_openmm(energy_0[key]))
-                assert_allclose(
-                    from_openmm(energy_0[key]),
-                    from_openmm(energy_7[key]),
-                    rtol=1e-05,
-                )
-                assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_8[key]))
-                assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_12[key]))
-                assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_13[key]))
+        elif key == nonbonded:
+            assert not np.allclose(from_openmm(value), from_openmm(energy_0[key]))
+            assert_allclose(
+                from_openmm(energy_0[key]),
+                from_openmm(energy_7[key]),
+                rtol=1e-05,
+            )
+            assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_8[key]))
+            assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_12[key]))
+            assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_13[key]))
 
-            else:
-                assert_allclose(from_openmm(value), from_openmm(energy_0[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
-                assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
+        else:
+            assert_allclose(from_openmm(value), from_openmm(energy_0[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
+            assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
 
 
 @pytest.mark.integration
@@ -300,7 +299,7 @@ def test_restraints_solvent(
     available_platforms,
     benzene_complex_system,
     toluene_complex_system,
-    tmpdir,
+    tmp_path,
     default_settings,
 ):
     if platform not in available_platforms:
@@ -328,11 +327,11 @@ def test_restraints_solvent(
     )
     prot_units = list(dag.protocol_units)
     solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
-    with tmpdir.as_cwd():
-        solv_setup_output = solv_setup_unit[0].run()
-        pdb = md.load_pdb("topology.pdb")
-        assert pdb.n_atoms == 1762
-        central_atoms = np.array([[2, 19]], dtype=np.int32)
-        distance = md.compute_distances(pdb, central_atoms)[0][0]
-        # For right now just checking that ligands at least somewhat apart
-        assert distance > 0.5
+
+    solv_setup_output = solv_setup_unit[0].run(scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    pdb = md.load_pdb(tmp_path / "topology.pdb")
+    assert pdb.n_atoms == 1762
+    central_atoms = np.array([[2, 19]], dtype=np.int32)
+    distance = md.compute_distances(pdb, central_atoms)[0][0]
+    # For right now just checking that ligands at least somewhat apart
+    assert distance > 0.5
