@@ -103,7 +103,7 @@ The openfe lock file and docker and apptainer images use Python 3.12, and so cha
 
 **Changed:**
 
-* The default atom mapper used in the CLI has been changed from ``LomapAtomMapper`` to ``KartografAtomMapper`` in line with the recommended defaults from the industry benchmarking paper. Users who whish to continue to use ``LomapAtomMapper`` can do so via the YAML configuration file. See the `documentation <https://docs.openfree.energy/en/latest/tutorials/rbfe_cli_tutorial.html#customize-your-campaign-setup>`_ for details (`PR #1530 <https://github.com/OpenFreeEnergy/openfe/pull/1530>`_).
+* The default atom mapper used in the CLI has been changed from ``LomapAtomMapper`` to ``KartografAtomMapper`` in line with the recommended defaults from the industry benchmarking paper. Users who wish to continue to use ``LomapAtomMapper`` can do so via the YAML configuration file. See the `documentation <https://docs.openfree.energy/en/latest/tutorials/rbfe_cli_tutorial.html#customize-your-campaign-setup>`_ for details (`PR #1530 <https://github.com/OpenFreeEnergy/openfe/pull/1530>`_).
 * An improved error message is now shown when a mapping involving a changing constraint length cannot be fixed (`PR #1529 <https://github.com/OpenFreeEnergy/openfe/pull/1529>`_).
 * The default platform for OpenMM-based Protocols is now CUDA and will fail by default on a non-Nvidia GPU enabled system (`PR #1576 <https://github.com/OpenFreeEnergy/openfe/pull/1576>`_).
 * Remove unnecessary limit on residues ids (``resids``) when getting mappings from topology in ``topology_helpers.py`` utility module (`PR #1539 <https://github.com/OpenFreeEnergy/openfe/pull/1539>`_).

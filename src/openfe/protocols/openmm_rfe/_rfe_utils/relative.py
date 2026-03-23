@@ -408,7 +408,7 @@ class HybridTopologyFactory:
         """
         Convenience method to invert a dictionary (since we do it so often).
 
-        Paramters:
+        Parameters:
         ----------
         dictionary : dict
             Dictionary you want to invert
@@ -657,7 +657,7 @@ class HybridTopologyFactory:
                 ):
                     errmsg = (f"new index exceptions {new_indices} include "
                               "unique new and environment atoms, which is "
-                              "dissallowed")
+                              "disallowed")
                     raise AssertionError
 
     def _handle_constraints(self):
@@ -710,7 +710,7 @@ class HybridTopologyFactory:
         Parameters
         ----------
         atm_map : dict[int, int]
-          The atom map correspondance between the two Systems.
+          The atom map correspondence between the two Systems.
         env_atoms: set[int]
           A list of environment atoms for the target System. This
           checks that no alchemical atoms are being tied to.
@@ -1940,7 +1940,7 @@ class HybridTopologyFactory:
                     atom_pair[0], atom_pair[1])
 
             # TODO: work out why there's a bunch of commented out code here
-            # Exerpt:
+            # Excerpt:
             # If it's not handled by an exception in the original system, we
             # just add the regular parameters as an exception
             # TODO: this implies that the old-old nonbonded interactions (those
@@ -2142,7 +2142,7 @@ class HybridTopologyFactory:
             # If it's a subset of unique_new_atoms, then this is an
             # intra-unique interaction and should have its exceptions
             # specified in the regular nonbonded force. However, this is
-            # handled elsewhere as above due to pecularities with exception
+            # handled elsewhere as above due to peculiarities with exception
             # handling
             if index_set.issubset(self._atom_classes['unique_new_atoms']):
                 continue
@@ -2210,7 +2210,7 @@ class HybridTopologyFactory:
     def _handle_old_new_exceptions(self):
         """
         Find the exceptions associated with old-old and old-core interactions,
-        as well as new-new and new-core interactions.  Theses exceptions will
+        as well as new-new and new-core interactions.  These exceptions will
         be placed in CustomBondedForce that will interpolate electrostatics and
         a softcore potential.
 

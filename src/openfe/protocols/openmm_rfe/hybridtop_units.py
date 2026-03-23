@@ -348,7 +348,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
           Dictionary of OpenFF Molecules keyed by SmallMoleculeComponent
           to be present in system B.
         mapping : LigandAtomMapping
-          LigandAtomMapping defining the correspondance betwee state A
+          LigandAtomMapping defining the correspondence between state A
           and B's alchemical ligand.
         stateA_topology : openmm.app.Topology
           The OpenMM topology for state A.
@@ -479,7 +479,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         stateB_positions : openmm.unit.Quantity
           Positions of partials for state B System.
         system_mapping : dict[str, dict[int, int]]
-          Dictionary of mappings defining the correspondance between
+          Dictionary of mappings defining the correspondence between
           the two state Systems.
         """
         if self.verbose:
@@ -1058,7 +1058,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         }
 
         # note we if/else around sampler method because in the future
-        # we will try to re-use this method and just have _SAMPLERs be
+        # we will try to reuse this method and just have _SAMPLERs be
         # defined elsewhere
         sampler_method = simulation_settings.sampler_method.lower()
         try:

@@ -34,7 +34,7 @@ def get_system_generator(
     """
     Create a SystemGenerator based on Protocol settings.
 
-    Paramters
+    Parameters
     ---------
     forcefield_settings : OpenMMSystemGeneratorFFSettings
       Force field settings, including necessary information
@@ -204,7 +204,7 @@ def get_omm_modeller(
     for comp, mol in small_mols.items():
         _add_small_mol(comp, mol, system_modeller, component_resids)
 
-    # Add solvent if neeeded
+    # Add solvent if needed
     if solvent_comp is not None:
         # Do unit conversions if necessary
         solvent_padding = None

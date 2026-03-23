@@ -17,7 +17,7 @@ can be found on the individual Protocol API reference documentation pages:
 Shared OpenMM Protocol Settings
 -------------------------------
 
-The following are Settings clases which are shared between multiple
+The following are Settings classes which are shared between multiple
 OpenMM-based Protocols. Please note that not all Protocols use these
 Settings classes.
 

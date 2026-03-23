@@ -380,7 +380,7 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
     settings.engine_settings.compute_platform = None
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     # we need a larger padding distance when using the dodecahedron box

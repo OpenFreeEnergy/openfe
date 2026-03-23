@@ -585,7 +585,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
         # 1. Create stateA system
-        # Create a dictionary of OFFMol for each SMC for bookeeping
+        # Create a dictionary of OFFMol for each SMC for bookkeeping
         smc_components: dict[SmallMoleculeComponent, OFFMolecule]
 
         smc_components = {i: i.to_openff() for i in small_mols}
@@ -692,7 +692,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             if not output["last_checkpoint"].exists():
                 output["last_checkpoint"] = None
 
-            # The NVT PDB can be ommitted if we don't run the simulation
+            # The NVT PDB can be omitted if we don't run the simulation
             # Note: we could also just check the file exist
             if (
                 output_settings.equil_nvt_structure
