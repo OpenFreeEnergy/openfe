@@ -12,8 +12,8 @@ import numpy as np
 import pooch
 import pytest
 from gufe import BaseSolventComponent
-from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe.components.errors import ComponentValidationError
+from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
@@ -289,19 +289,20 @@ def test_components_complex(T4_protein_component, benzene_modifications):
 
 
 def test_validate_chemical_system(a2a_protein_membrane_pdb):
-    inflated_box_vectors = np.asarray(
-        [
-            [1000, 0, 0],
-            [0, 1000, 0],
-            [0, 0, 1000],
-        ]
-    ) * unit.nanometer
+    inflated_box_vectors = (
+        np.asarray(
+            [
+                [1000, 0, 0],
+                [0, 1000, 0],
+                [0, 0, 1000],
+            ]
+        )
+        * unit.nanometer
+    )
 
-    with gzip.open(a2a_protein_membrane_pdb, 'rb') as f:
+    with gzip.open(a2a_protein_membrane_pdb, "rb") as f:
         comp = openfe.ProteinMembraneComponent.from_pdb_file(
-            f,
-            name="a2a",
-            box_vectors=inflated_box_vectors
+            f, name="a2a", box_vectors=inflated_box_vectors
         )
 
     chemical_system = openfe.ChemicalSystem({"protein": comp}, name="A")

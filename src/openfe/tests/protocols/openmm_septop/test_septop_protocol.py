@@ -861,7 +861,7 @@ def test_dry_run_ligand_system_pressure(
     # Only check the cutoff for the Solvent SetUp Unit
     solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in dag_units if isinstance(u, SepTopSolventRunUnit)]
- 
+
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
     )["debug"]
