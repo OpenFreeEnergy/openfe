@@ -10,10 +10,10 @@ from openfe.storage.metadatastore import JSONMetadataStore, PerFileJSONMetadataS
 
 
 @pytest.fixture
-def json_metadata(tmpdir):
+def json_metadata(tmp_path):
     metadata_dict = {"path/to/foo.txt": {"md5": "bar"}}
-    external_store = FileStorage(str(tmpdir))
-    with open(tmpdir / "metadata.json", mode="wb") as f:
+    external_store = FileStorage(tmp_path)
+    with open(tmp_path / "metadata.json", mode="wb") as f:
         f.write(json.dumps(metadata_dict).encode("utf-8"))
     json_metadata = JSONMetadataStore(external_store)
     return json_metadata
@@ -22,8 +22,8 @@ def json_metadata(tmpdir):
 @pytest.fixture
 def per_file_metadata(tmp_path):
     metadata_dict = {"path": "path/to/foo.txt", "metadata": {"md5": "bar"}}
-    external_store = FileStorage(str(tmp_path))
     metadata_loc = "metadata/path/to/foo.txt.json"
+    external_store = FileStorage(tmp_path)
     metadata_path = tmp_path / pathlib.Path(metadata_loc)
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
     with open(metadata_path, mode="wb") as f:
@@ -87,8 +87,8 @@ class TestJSONMetadataStore(MetadataTests):
     def test_load_all_metadata(self, json_metadata):
         self._test_load_all_metadata(json_metadata)
 
-    def test_load_all_metadata_nofile(self, tmpdir):
-        json_metadata = JSONMetadataStore(FileStorage(str(tmpdir)))
+    def test_load_all_metadata_nofile(self, tmp_path):
+        json_metadata = JSONMetadataStore(FileStorage(tmp_path))
         # implicitly called on init anyway
         assert json_metadata._metadata_cache == {}
         # but we also call explicitly

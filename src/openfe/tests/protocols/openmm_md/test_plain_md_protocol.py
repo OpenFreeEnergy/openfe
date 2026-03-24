@@ -101,7 +101,7 @@ def test_create_independent_repeat_ids(benzene_system):
     assert len(repeat_ids) == 6
 
 
-def test_dry_run_default_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
+def test_dry_run_default_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
     protocol = PlainMDProtocol(settings=vac_settings)
 
     # create DAG from protocol and take first (and only) work unit from within
@@ -111,24 +111,25 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
         mapping=None,
     )
     dag_unit = list(dag.protocol_units)[0]
+    result = dag_unit.run(
+        dry=True, verbose=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    system = result["debug"]["system"]
+    assert not ThermodynamicState(
+        system,
+        temperature=to_openmm(protocol.settings.thermo_settings.temperature),
+    ).is_periodic
 
-    with tmpdir.as_cwd():
-        sim = dag_unit.run(dry=True, verbose=True)["debug"]["system"]
-        assert not ThermodynamicState(
-            sim,
+    assert (
+        ThermodynamicState(
+            system,
             temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-        ).is_periodic
-
-        assert (
-            ThermodynamicState(
-                sim,
-                temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-            ).barostat
-            is None
-        )
+        ).barostat
+        is None
+    )
 
 
-def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmpdir, caplog):
+def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, caplog):
     vac_settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
     vac_settings.simulation_settings.equilibration_length = 1 * unit.picosecond
     vac_settings.simulation_settings.production_length = 1 * unit.picosecond
@@ -145,18 +146,17 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmpdir, capl
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        caplog.set_level(logging.INFO)
-        dag_unit.run(dry=False, verbose=True)
+    caplog.set_level(logging.INFO)
+    dag_unit.run(dry=False, verbose=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
-        messages = [r.message for r in caplog.records]
-        assert "minimizing systems" in messages
-        assert "Running NVT equilibration" in messages
-        assert "Running NPT equilibration" in messages
-        assert "running production phase" in messages
+    messages = [r.message for r in caplog.records]
+    assert "minimizing systems" in messages
+    assert "Running NVT equilibration" in messages
+    assert "Running NPT equilibration" in messages
+    assert "running production phase" in messages
 
 
-def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
+def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
     vac_settings.output_settings.forcefield_cache = None
 
     protocol = PlainMDProtocol(
@@ -171,12 +171,10 @@ def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmpdir
         mapping=None,
     )
     dag_unit = list(dag.protocol_units)[0]
-
-    with tmpdir.as_cwd():
-        dag_unit.run(dry=True)["debug"]["system"]
+    dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
 
 
-def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
+def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
     vac_settings.forcefield_settings.small_molecule_forcefield = "gaff-2.11"
 
     protocol = PlainMDProtocol(
@@ -190,12 +188,11 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
         mapping=None,
     )
     dag_unit = list(dag.protocol_units)[0]
-    with tmpdir.as_cwd():
-        system = dag_unit.run(dry=True)["debug"]["system"]
+    dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
 
 
 @pytest.mark.skipif(not HAS_ESPALOMA, reason="espaloma is not available")
-def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_settings, tmpdir):
+def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_settings, tmp_path):
     vac_settings.forcefield_settings.small_molecule_forcefield = "espaloma-0.3.2"
 
     protocol = PlainMDProtocol(
@@ -216,16 +213,16 @@ def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_setting
         mapping=None,
     )
     dag_unit = list(dag.protocol_units)[0]
-    with tmpdir.as_cwd():
-        system = dag_unit.run(dry=True)["debug"]["system"]
-        assert system.getNumParticles() == 12
-        # check the charges assigned
-        nb_force = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
-        charges = []
-        for i in range(nb_force.getNumParticles()):
-            c, _, _ = nb_force.getParticleParameters(i)
-            charges.append(c.value_in_unit(omm_unit.elementary_charge))
-        assert_allclose(charges, expected_charges, rtol=1e-6)
+    result = dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = result["debug"]["system"]
+    assert system.getNumParticles() == 12
+    # check the charges assigned
+    nb_force = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
+    charges = []
+    for i in range(nb_force.getNumParticles()):
+        c, _, _ = nb_force.getParticleParameters(i)
+        charges.append(c.value_in_unit(omm_unit.elementary_charge))
+    assert_allclose(charges, expected_charges, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -256,7 +253,7 @@ def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_setting
     ],
 )
 def test_dry_run_charge_backends(
-    CN_molecule, tmpdir, method, backend, ref_key, vac_settings, am1bcc_ref_charges
+    CN_molecule, tmp_path, method, backend, ref_key, vac_settings, am1bcc_ref_charges
 ):
     vac_settings.partial_charge_settings.partial_charge_method = method
     vac_settings.partial_charge_settings.off_toolkit_backend = backend
@@ -269,22 +266,22 @@ def test_dry_run_charge_backends(
     dag = protocol.create(stateA=csystem, stateB=csystem, mapping=None)
     md_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        system = md_unit.run(dry=True)["debug"]["system"]
+    result = md_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = result["debug"]["system"]
 
-        nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
+    nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
 
-        charges = []
-        for i in range(system.getNumParticles()):
-            c, s, e = nonbond.getParticleParameters(i)
-            charges.append(from_openmm(c))
+    charges = []
+    for i in range(system.getNumParticles()):
+        c, s, e = nonbond.getParticleParameters(i)
+        charges.append(from_openmm(c))
 
     charges = unit.Quantity.from_list(charges)
 
     assert_allclose(am1bcc_ref_charges[ref_key], charges, rtol=1e-4)
 
 
-def test_dry_many_molecules_solvent(benzene_many_solv_system, tmpdir):
+def test_dry_many_molecules_solvent(benzene_many_solv_system, tmp_path):
     """
     A basic test flushing "will it work if you pass multiple molecules"
     """
@@ -301,8 +298,7 @@ def test_dry_many_molecules_solvent(benzene_many_solv_system, tmpdir):
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        system = dag_unit.run(dry=True)["debug"]["system"]
+    dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
 
 
 BENZ = """\
@@ -371,7 +367,7 @@ $$$$
 """
 
 
-def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
+def test_dry_run_ligand_tip4p(benzene_system, tmp_path):
     """
     Test that we can create a system with virtual sites in the
     environment (waters)
@@ -397,13 +393,13 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        system = dag_unit.run(dry=True)["debug"]["system"]
-        assert system
+    result = dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = result["debug"]["system"]
+    assert system
 
 
 @pytest.mark.slow
-def test_dry_run_complex(benzene_complex_system, tmpdir):
+def test_dry_run_complex(benzene_complex_system, tmp_path):
     # this will be very time consuming
     settings = PlainMDProtocol.default_settings()
     settings.engine_settings.compute_platform = None
@@ -416,29 +412,29 @@ def test_dry_run_complex(benzene_complex_system, tmpdir):
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        sim = dag_unit.run(dry=True)["debug"]["system"]
-        assert ThermodynamicState(
+    result = dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    sim = result["debug"]["system"]
+    assert ThermodynamicState(
+        sim,
+        temperature=to_openmm(protocol.settings.thermo_settings.temperature),
+    ).is_periodic
+    assert isinstance(
+        ThermodynamicState(
             sim,
             temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-        ).is_periodic
-        assert isinstance(
-            ThermodynamicState(
-                sim,
-                temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-            ).barostat,
-            MonteCarloBarostat,
-        )
-        assert (
-            ThermodynamicState(
-                sim,
-                temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-            ).pressure
-            == 1 * omm_unit.bar
-        )
+        ).barostat,
+        MonteCarloBarostat,
+    )
+    assert (
+        ThermodynamicState(
+            sim,
+            temperature=to_openmm(protocol.settings.thermo_settings.temperature),
+        ).pressure
+        == 1 * omm_unit.bar
+    )
 
 
-def test_hightimestep(benzene_vacuum_system, tmpdir):
+def test_hightimestep(benzene_vacuum_system, tmp_path):
     settings = PlainMDProtocol.default_settings()
     settings.forcefield_settings.hydrogen_mass = 1.0
     settings.forcefield_settings.nonbonded_method = "nocutoff"
@@ -453,9 +449,8 @@ def test_hightimestep(benzene_vacuum_system, tmpdir):
     dag_unit = list(dag.protocol_units)[0]
 
     errmsg = "too large for hydrogen mass"
-    with tmpdir.as_cwd():
-        with pytest.raises(ValueError, match=errmsg):
-            dag_unit.run(dry=True)
+    with pytest.raises(ValueError, match=errmsg):
+        dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
 
 def test_vaccuum_PME_error(benzene_vacuum_system):
@@ -484,7 +479,7 @@ def solvent_protocol_dag(benzene_system):
     )
 
 
-def test_unit_tagging(solvent_protocol_dag, tmpdir):
+def test_unit_tagging(solvent_protocol_dag, tmp_path):
     # test that executing the Units includes correct generation and repeat info
     dag_units = solvent_protocol_dag.protocol_units
     with mock.patch(
@@ -496,7 +491,7 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
     ):
         results = []
         for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
+            ret = u.execute(context=gufe.Context(tmp_path, tmp_path))
             results.append(ret)
 
     repeats = set()
@@ -508,7 +503,7 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
     assert len(repeats) == 3
 
 
-def test_gather(solvent_protocol_dag, tmpdir):
+def test_gather(solvent_protocol_dag, tmp_path):
     # check .gather behaves as expected
     with mock.patch(
         "openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run",
@@ -519,8 +514,8 @@ def test_gather(solvent_protocol_dag, tmpdir):
     ):
         dagres = gufe.protocols.execute_DAG(
             solvent_protocol_dag,
-            shared_basedir=tmpdir,
-            scratch_basedir=tmpdir,
+            shared_basedir=tmp_path,
+            scratch_basedir=tmp_path,
             keep_shared=True,
         )
 

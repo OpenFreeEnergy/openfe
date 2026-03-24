@@ -743,17 +743,16 @@ benzene >> benzaldehyde
 """
 
 
-def test_bad_orion_network(benzene_modifications, tmpdir):
-    with tmpdir.as_cwd():
-        with open("bad_orion_net.dat", "w") as f:
-            f.write(BAD_ORION_NETWORK)
+def test_bad_orion_network(benzene_modifications, tmp_path):
+    with open(tmp_path / "bad_orion_net.dat", "w") as f:
+        f.write(BAD_ORION_NETWORK)
 
-        with pytest.raises(KeyError, match="line does not match"):
-            _ = openfe.setup.ligand_network_planning.load_orion_network(
-                ligands=[lig for lig in benzene_modifications.values()],
-                mapper=openfe.LomapAtomMapper(),
-                network_file="bad_orion_net.dat",
-            )
+    with pytest.raises(KeyError, match="line does not match"):
+        _ = openfe.setup.ligand_network_planning.load_orion_network(
+            ligands=[lig for lig in benzene_modifications.values()],
+            mapper=openfe.LomapAtomMapper(),
+            network_file=tmp_path / "bad_orion_net.dat",
+        )
 
 
 BAD_EDGES = """\
@@ -766,14 +765,13 @@ BAD_EDGES = """\
 """
 
 
-def test_bad_edges_network(benzene_modifications, tmpdir):
-    with tmpdir.as_cwd():
-        with open("bad_edges.edges", "w") as f:
-            f.write(BAD_EDGES)
+def test_bad_edges_network(benzene_modifications, tmp_path):
+    with open(tmp_path / "bad_edges.edges", "w") as f:
+        f.write(BAD_EDGES)
 
-        with pytest.raises(KeyError, match="line does not match"):
-            _ = openfe.setup.ligand_network_planning.load_fepplus_network(
-                ligands=[lig for lig in benzene_modifications.values()],
-                mapper=openfe.LomapAtomMapper(),
-                network_file="bad_edges.edges",
-            )
+    with pytest.raises(KeyError, match="line does not match"):
+        _ = openfe.setup.ligand_network_planning.load_fepplus_network(
+            ligands=[lig for lig in benzene_modifications.values()],
+            mapper=openfe.LomapAtomMapper(),
+            network_file=tmp_path / "bad_edges.edges",
+        )

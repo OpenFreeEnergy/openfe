@@ -161,9 +161,9 @@ def other_mapping():
 
 
 @pytest.fixture()
-def lomap_basic_test_files_dir(tmpdir_factory):
+def lomap_basic_test_files_dir(tmp_path_factory):
     # for lomap, which wants the files in a directory
-    lomap_files = tmpdir_factory.mktemp("lomap_files")
+    lomap_files = tmp_path_factory.mktemp("lomap_files")
     lomap_basic = "openfe.tests.data.lomap_basic"
 
     for f in resources.contents(lomap_basic):
@@ -171,7 +171,7 @@ def lomap_basic_test_files_dir(tmpdir_factory):
             continue
         stuff = resources.read_binary(lomap_basic, f)
 
-        with open(str(lomap_files.join(f)), "wb") as fout:
+        with open(lomap_files / f, "wb") as fout:
             fout.write(stuff)
 
     yield str(lomap_files)

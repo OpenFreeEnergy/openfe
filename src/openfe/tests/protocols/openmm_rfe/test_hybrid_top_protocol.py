@@ -268,7 +268,7 @@ def test_setup_dry_sim_default_vacuum(
     benzene_to_toluene_mapping,
     method,
     vac_settings,
-    tmpdir,
+    tmp_path,
     benzene_toluene_topology,
 ):
     vac_settings.simulation_settings.sampler_method = method
@@ -286,64 +286,67 @@ def test_setup_dry_sim_default_vacuum(
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
     dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
-    with tmpdir.as_cwd():
-        # Manually run the units
-        setup_results = dag_setup_unit.run(dry=True)
+    # Manually run the units
+    setup_results = dag_setup_unit.run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
 
-        sim_results = dag_sim_unit.run(
-            system=setup_results["hybrid_system"],
-            positions=setup_results["hybrid_positions"],
-            selection_indices=setup_results["selection_indices"],
-            dry=True,
-        )
+    sim_results = dag_sim_unit.run(
+        system=setup_results["hybrid_system"],
+        positions=setup_results["hybrid_positions"],
+        selection_indices=setup_results["selection_indices"],
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
 
-        sampler = sim_results["sampler"]
-        assert isinstance(sampler, MultiStateSampler)
-        assert not sampler.is_periodic
-        assert sampler._thermodynamic_states[0].barostat is None
+    sampler = sim_results["sampler"]
+    assert isinstance(sampler, MultiStateSampler)
+    assert not sampler.is_periodic
+    assert sampler._thermodynamic_states[0].barostat is None
 
-        # Check hybrid OMM and MDTtraj Topologies
-        htf = setup_results["hybrid_factory"]
-        # 16 atoms:
-        # 11 common atoms, 1 extra hydrogen in benzene, 4 extra in toluene
-        # 12 bonds in benzene + 4 extra toluene bonds
-        assert len(list(htf.hybrid_topology.atoms)) == 16
-        assert len(list(htf.omm_hybrid_topology.atoms())) == 16
-        assert len(list(htf.hybrid_topology.bonds)) == 16
-        assert len(list(htf.omm_hybrid_topology.bonds())) == 16
+    # Check hybrid OMM and MDTtraj Topologies
+    htf = setup_results["hybrid_factory"]
+    # 16 atoms:
+    # 11 common atoms, 1 extra hydrogen in benzene, 4 extra in toluene
+    # 12 bonds in benzene + 4 extra toluene bonds
+    assert len(list(htf.hybrid_topology.atoms)) == 16
+    assert len(list(htf.omm_hybrid_topology.atoms())) == 16
+    assert len(list(htf.hybrid_topology.bonds)) == 16
+    assert len(list(htf.omm_hybrid_topology.bonds())) == 16
 
-        # smoke test - can convert back the mdtraj topology
-        ret_top = mdt.Topology.to_openmm(htf.hybrid_topology)
-        assert len(list(ret_top.atoms())) == 16
-        assert len(list(ret_top.bonds())) == 16
+    # smoke test - can convert back the mdtraj topology
+    ret_top = mdt.Topology.to_openmm(htf.hybrid_topology)
+    assert len(list(ret_top.atoms())) == 16
+    assert len(list(ret_top.bonds())) == 16
 
-        # check that our PDB has the right number of atoms
-        pdb = mdt.load_pdb("hybrid_system.pdb")
-        assert pdb.n_atoms == 16
+    # check that our PDB has the right number of atoms
+    pdb = mdt.load_pdb(tmp_path / "hybrid_system.pdb")
+    assert pdb.n_atoms == 16
 
-        # regression test that we have the expected mdtraj topology
-        assert benzene_toluene_topology == htf.hybrid_topology
+    # regression test that we have the expected mdtraj topology
+    assert benzene_toluene_topology == htf.hybrid_topology
 
-        # check we can extract the correct positions for the end states
-        old_positions = htf.old_positions(htf.hybrid_positions)
-        # check the shape and positions match the input
-        assert old_positions.shape == (12, 3)
-        # compare with the input positions which are stored on the htf
-        assert_allclose(
-            old_positions.value_in_unit(omm_unit.angstrom),
-            htf._old_positions.value_in_unit(omm_unit.angstrom),
-        )
-        # same for toluene
-        new_positions = htf.new_positions(htf.hybrid_positions)
-        assert new_positions.shape == (15, 3)
-        assert_allclose(
-            new_positions.value_in_unit(omm_unit.angstrom),
-            htf._new_positions.value_in_unit(omm_unit.angstrom),
-        )
+    # check we can extract the correct positions for the end states
+    old_positions = htf.old_positions(htf.hybrid_positions)
+    # check the shape and positions match the input
+    assert old_positions.shape == (12, 3)
+    # compare with the input positions which are stored on the htf
+    assert_allclose(
+        old_positions.value_in_unit(omm_unit.angstrom),
+        htf._old_positions.value_in_unit(omm_unit.angstrom),
+    )
+    # same for toluene
+    new_positions = htf.new_positions(htf.hybrid_positions)
+    assert new_positions.shape == (15, 3)
+    assert_allclose(
+        new_positions.value_in_unit(omm_unit.angstrom),
+        htf._new_positions.value_in_unit(omm_unit.angstrom),
+    )
 
 
 def test_setup_gaff_vacuum(
-    benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmpdir
+    benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmp_path
 ):
     """
     Simple dry run of the setup unit to make sure that parameterisation
@@ -363,8 +366,7 @@ def test_setup_gaff_vacuum(
     )
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
-    with tmpdir.as_cwd():
-        _ = dag_setup_unit.run(dry=True)
+    _ = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
 
 @pytest.mark.slow
@@ -373,7 +375,7 @@ def test_dry_many_molecules_solvent(
     toluene_many_solv_system,
     benzene_to_toluene_mapping,
     solv_settings,
-    tmpdir,
+    tmp_path,
 ):
     """
     A basic setup test flushing "will it work if you pass multiple molecules"
@@ -390,8 +392,7 @@ def test_dry_many_molecules_solvent(
     )
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
-    with tmpdir.as_cwd():
-        _ = dag_setup_unit.run(dry=True)
+    _ = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
 
 BENZ = """\
@@ -460,7 +461,7 @@ $$$$
 """
 
 
-def test_setup_core_element_change(vac_settings, tmpdir):
+def test_setup_core_element_change(vac_settings, tmp_path):
     benz = openfe.SmallMoleculeComponent(Chem.MolFromMolBlock(BENZ, removeHs=False))
     pyr = openfe.SmallMoleculeComponent(Chem.MolFromMolBlock(PYRIDINE, removeHs=False))
 
@@ -478,24 +479,23 @@ def test_setup_core_element_change(vac_settings, tmpdir):
 
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
-    with tmpdir.as_cwd():
-        results = dag_setup_unit.run(dry=True)
-        system = results["hybrid_system"]
-        assert system.getNumParticles() == 12
-        # Average mass between nitrogen and carbon
-        assert system.getParticleMass(1) == 12.0127235 * omm_unit.amu
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = results["hybrid_system"]
+    assert system.getNumParticles() == 12
+    # Average mass between nitrogen and carbon
+    assert system.getParticleMass(1) == 12.0127235 * omm_unit.amu
 
-        # Get out the CustomNonbondedForce
-        cnf = [f for f in system.getForces() if f.__class__.__name__ == "CustomNonbondedForce"][0]
-        # there should be no new unique atoms
-        assert cnf.getInteractionGroupParameters(6) == [(), ()]
-        # there should be one old unique atom (spare hydrogen from the benzene)
-        assert cnf.getInteractionGroupParameters(7) == [(7,), (7,)]
+    # Get out the CustomNonbondedForce
+    cnf = [f for f in system.getForces() if f.__class__.__name__ == "CustomNonbondedForce"][0]
+    # there should be no new unique atoms
+    assert cnf.getInteractionGroupParameters(6) == [(), ()]
+    # there should be one old unique atom (spare hydrogen from the benzene)
+    assert cnf.getInteractionGroupParameters(7) == [(7,), (7,)]
 
 
 @pytest.mark.parametrize("method", ["repex", "sams", "independent"])
 def test_dry_run_ligand(
-    benzene_system, toluene_system, benzene_to_toluene_mapping, method, solv_settings, tmpdir
+    benzene_system, toluene_system, benzene_to_toluene_mapping, method, solv_settings, tmp_path
 ):
     # this might be a bit time consuming
     solv_settings.simulation_settings.sampler_method = method
@@ -512,30 +512,33 @@ def test_dry_run_ligand(
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
     dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
-    with tmpdir.as_cwd():
-        # Manually run the units
-        setup_results = dag_setup_unit.run(dry=True)
+    # Manually run the units
+    setup_results = dag_setup_unit.run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
 
-        sim_results = dag_sim_unit.run(
-            system=setup_results["hybrid_system"],
-            positions=setup_results["hybrid_positions"],
-            selection_indices=setup_results["selection_indices"],
-            dry=True,
-        )
+    sim_results = dag_sim_unit.run(
+        system=setup_results["hybrid_system"],
+        positions=setup_results["hybrid_positions"],
+        selection_indices=setup_results["selection_indices"],
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
 
-        sampler = sim_results["sampler"]
-        assert isinstance(sampler, MultiStateSampler)
-        assert sampler.is_periodic
-        assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
-        assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
+    sampler = sim_results["sampler"]
+    assert isinstance(sampler, MultiStateSampler)
+    assert sampler.is_periodic
+    assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
+    assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
 
-        # Check we have the right number of atoms in the PDB
-        pdb = mdt.load_pdb("hybrid_system.pdb")
-        assert pdb.n_atoms == 16
+    # Check we have the right number of atoms in the PDB
+    pdb = mdt.load_pdb(tmp_path / "hybrid_system.pdb")
+    assert pdb.n_atoms == 16
 
 
 def test_confgen_mocked_fail(
-    benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmpdir
+    benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmp_path
 ):
     """
     Check that even if conformer generation fails, we can still perform a sim
@@ -547,11 +550,10 @@ def test_confgen_mocked_fail(
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        with mock.patch("rdkit.Chem.AllChem.EmbedMultipleConfs", return_value=0):
-            sampler = dag_unit.run(dry=True)
+    with mock.patch("rdkit.Chem.AllChem.EmbedMultipleConfs", return_value=0):
+        sampler = dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
-            assert sampler
+        assert sampler
 
 
 @pytest.fixture(scope="session")
@@ -681,7 +683,7 @@ def test_tip4p_check_vsite_parameters(tip4p_hybrid_factory):
     ],
 )
 def test_setup_ligand_system_cutoff(
-    cutoff, benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmpdir
+    cutoff, benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmp_path
 ):
     """
     Test that the right nonbonded cutoff is propagated to the hybrid system.
@@ -701,18 +703,19 @@ def test_setup_ligand_system_cutoff(
 
     dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
 
-    with tmpdir.as_cwd():
-        hs = dag_setup_unit.run(dry=True)["hybrid_system"]
+    hs = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)[
+        "hybrid_system"
+    ]
 
-        nbfs = [
-            f
-            for f in hs.getForces()
-            if isinstance(f, CustomNonbondedForce) or isinstance(f, NonbondedForce)
-        ]
+    nbfs = [
+        f
+        for f in hs.getForces()
+        if isinstance(f, CustomNonbondedForce) or isinstance(f, NonbondedForce)
+    ]
 
-        for f in nbfs:
-            f_cutoff = from_openmm(f.getCutoffDistance())
-            assert f_cutoff == cutoff
+    for f in nbfs:
+        f_cutoff = from_openmm(f.getCutoffDistance())
+        assert f_cutoff == cutoff
 
 
 @pytest.mark.parametrize(
@@ -743,7 +746,7 @@ def test_setup_ligand_system_cutoff(
     ],
 )
 def test_setup_charge_backends(
-    CN_molecule, tmpdir, method, backend, ref_key, vac_settings, am1bcc_ref_charges
+    CN_molecule, tmp_path, method, backend, ref_key, vac_settings, am1bcc_ref_charges
 ):
     vac_settings.partial_charge_settings.partial_charge_method = method
     vac_settings.partial_charge_settings.off_toolkit_backend = backend
@@ -768,44 +771,43 @@ def test_setup_charge_backends(
 
     dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
 
-    with tmpdir.as_cwd():
-        results = dag_setup_unit.run(dry=True)
-        htf = results["hybrid_factory"]
-        hybrid_system = results["hybrid_system"]
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+    hybrid_system = results["hybrid_system"]
 
-        # get the standard nonbonded force
-        nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
-        assert len(nonbond) == 1
+    # get the standard nonbonded force
+    nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
+    assert len(nonbond) == 1
 
-        # get the particle parameter offsets
-        c_offsets = {}
-        for i in range(nonbond[0].getNumParticleParameterOffsets()):
-            offset = nonbond[0].getParticleParameterOffset(i)
-            c_offsets[offset[1]] = ensure_quantity(offset[2], "openff")
+    # get the particle parameter offsets
+    c_offsets = {}
+    for i in range(nonbond[0].getNumParticleParameterOffsets()):
+        offset = nonbond[0].getParticleParameterOffset(i)
+        c_offsets[offset[1]] = ensure_quantity(offset[2], "openff")
 
-        # See the user charges test below for an idea of what we're doing here
-        # In this particular case we are solely checking that the old atoms
-        # match the reference charges in am1bcc_ref_charges
-        for i in range(hybrid_system.getNumParticles()):
-            c, s, e = nonbond[0].getParticleParameters(i)
-            # get the particle charge (c)
-            c = ensure_quantity(c, "openff")
-            # particle charge (c) is equal to molA particle charge
-            # offset (c_offsets) is equal to -(molA particle charge)
-            if i in htf._atom_classes["unique_old_atoms"]:
-                idx = htf._hybrid_to_old_map[i]
-                ref = am1bcc_ref_charges[ref_key][idx]
-                np.testing.assert_allclose(c, ref, rtol=1e-4)
-                np.testing.assert_allclose(c_offsets[i], -ref, rtol=1e-4)
-            # particle charge (c) is equal to molA particle charge
-            # offset (c_offsets) is equal to difference between molB and molA
-            elif i in htf._atom_classes["core_atoms"]:
-                old_i = htf._hybrid_to_old_map[i]
-                ref = am1bcc_ref_charges[ref_key][i]
-                np.testing.assert_allclose(c, ref, rtol=1e-4)
+    # See the user charges test below for an idea of what we're doing here
+    # In this particular case we are solely checking that the old atoms
+    # match the reference charges in am1bcc_ref_charges
+    for i in range(hybrid_system.getNumParticles()):
+        c, s, e = nonbond[0].getParticleParameters(i)
+        # get the particle charge (c)
+        c = ensure_quantity(c, "openff")
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offsets) is equal to -(molA particle charge)
+        if i in htf._atom_classes["unique_old_atoms"]:
+            idx = htf._hybrid_to_old_map[i]
+            ref = am1bcc_ref_charges[ref_key][idx]
+            np.testing.assert_allclose(c, ref, rtol=1e-4)
+            np.testing.assert_allclose(c_offsets[i], -ref, rtol=1e-4)
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offsets) is equal to difference between molB and molA
+        elif i in htf._atom_classes["core_atoms"]:
+            old_i = htf._hybrid_to_old_map[i]
+            ref = am1bcc_ref_charges[ref_key][i]
+            np.testing.assert_allclose(c, ref, rtol=1e-4)
 
 
-def test_setup_same_mol_different_charges(benzene_modifications, vac_settings, tmpdir):
+def test_setup_same_mol_different_charges(benzene_modifications, vac_settings, tmp_path):
     """
     Issue #1120 - make sure we can do an RFE of a system with different
     parameters but the same molecule.
@@ -838,39 +840,38 @@ def test_setup_same_mol_different_charges(benzene_modifications, vac_settings, t
     )
     dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
 
-    with tmpdir.as_cwd():
-        results = dag_setup_unit.run(dry=True)
-        htf = results["hybrid_factory"]
-        hybrid_system = results["hybrid_system"]
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+    hybrid_system = results["hybrid_system"]
 
-        # get the standard nonbonded force
-        nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
+    # get the standard nonbonded force
+    nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
 
-        # get the particle parameters & offsets
-        for i in range(hybrid_system.getNumParticles()):
-            # All particles should be core atoms
-            assert i in htf._atom_classes["core_atoms"]
+    # get the particle parameters & offsets
+    for i in range(hybrid_system.getNumParticles()):
+        # All particles should be core atoms
+        assert i in htf._atom_classes["core_atoms"]
 
-            # offsets
-            offset = ensure_quantity(nonbond[0].getParticleParameterOffset(i)[2], "openff")
+        # offsets
+        offset = ensure_quantity(nonbond[0].getParticleParameterOffset(i)[2], "openff")
 
-            # parameters
-            c, s, e = nonbond[0].getParticleParameters(i)
-            c = ensure_quantity(c, "openff")
+        # parameters
+        c, s, e = nonbond[0].getParticleParameters(i)
+        c = ensure_quantity(c, "openff")
 
-            # check state A charge
-            assert pytest.approx(c) == stateA_charges[i]
+        # check state A charge
+        assert pytest.approx(c) == stateA_charges[i]
 
-            # check state B charge
-            c_diff = stateB_charges[i] - stateA_charges[i]
-            assert pytest.approx(offset) == c_diff
+        # check state B charge
+        c_diff = stateB_charges[i] - stateA_charges[i]
+        assert pytest.approx(offset) == c_diff
 
-            # check that the offset value is non-zero
-            assert abs(offset) > 0 * offset.units
+        # check that the offset value is non-zero
+        assert abs(offset) > 0 * offset.units
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
-def test_setup_user_charges(benzene_modifications, vac_settings, tmpdir):
+def test_setup_user_charges(benzene_modifications, vac_settings, tmp_path):
     """
     Create a hybrid system with a set of fictitious user supplied charges
     and ensure that they are properly passed through to the constructed
@@ -926,73 +927,72 @@ def test_setup_user_charges(benzene_modifications, vac_settings, tmpdir):
     )
     dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
 
-    with tmpdir.as_cwd():
-        results = dag_setup_unit.run(dry=True)
-        htf = results["hybrid_factory"]
-        hybrid_system = results["hybrid_system"]
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+    hybrid_system = results["hybrid_system"]
 
-        # get the standard nonbonded force
-        nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
-        assert len(nonbond) == 1
+    # get the standard nonbonded force
+    nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
+    assert len(nonbond) == 1
 
-        # get the particle parameter offsets
-        c_offsets = {}
-        for i in range(nonbond[0].getNumParticleParameterOffsets()):
-            offset = nonbond[0].getParticleParameterOffset(i)
-            c_offsets[offset[1]] = ensure_quantity(offset[2], "openff")
+    # get the particle parameter offsets
+    c_offsets = {}
+    for i in range(nonbond[0].getNumParticleParameterOffsets()):
+        offset = nonbond[0].getParticleParameterOffset(i)
+        c_offsets[offset[1]] = ensure_quantity(offset[2], "openff")
 
-        # Here is a bit of exposition on what we're doing
-        # HTF creates two sets of nonbonded forces, a standard one (for the
-        # PME) and a custom one (for sterics).
-        # Here we specifically check charges, so we only concentrate on the
-        # standard NonbondedForce.
-        # The way the NonbondedForce is constructed is as follows:
-        # - unique old atoms:
-        #  * The particle charge is set to the input molA particle charge
-        #  * The chargeScale offset is set to the negative value of the molA
-        #    particle charge (such that by scaling you effectively zero out
-        #    the charge.
-        # - unique new atoms:
-        #  * The particle charge is set to zero (doesn't exist in the starting
-        #    end state).
-        #  * The chargeScale offset is set to the value of the molB particle
-        #    charge (such that by scaling you effectively go from 0 to molB
-        #    charge).
-        # - core atoms:
-        #  * The particle charge is set to the input molA particle charge
-        #    (i.e. we start from a system that has molA charges).
-        #  * The particle charge offset is set to the difference between
-        #    the molB particle charge and the molA particle charge (i.e.
-        #    we scale by that difference to get to the value of the molB
-        #    particle charge).
-        for i in range(hybrid_system.getNumParticles()):
-            c, s, e = nonbond[0].getParticleParameters(i)
-            # get the particle charge (c)
-            c = ensure_quantity(c, "openff")
-            # particle charge (c) is equal to molA particle charge
-            # offset (c_offsets) is equal to -(molA particle charge)
-            if i in htf._atom_classes["unique_old_atoms"]:
-                idx = htf._hybrid_to_old_map[i]
-                np.testing.assert_allclose(c, benzene_rand_chg[idx])
-                np.testing.assert_allclose(c_offsets[i], -benzene_rand_chg[idx])
-            # particle charge (c) is equal to 0
-            # offset (c_offsets) is equal to molB particle charge
-            elif i in htf._atom_classes["unique_new_atoms"]:
-                idx = htf._hybrid_to_new_map[i]
-                np.testing.assert_allclose(c, 0 * unit.elementary_charge)
-                np.testing.assert_allclose(c_offsets[i], toluene_rand_chg[idx])
-            # particle charge (c) is equal to molA particle charge
-            # offset (c_offsets) is equal to difference between molB and molA
-            elif i in htf._atom_classes["core_atoms"]:
-                old_i = htf._hybrid_to_old_map[i]
-                new_i = htf._hybrid_to_new_map[i]
-                c_exp = toluene_rand_chg[new_i] - benzene_rand_chg[old_i]
-                np.testing.assert_allclose(c, benzene_rand_chg[old_i])
-                np.testing.assert_allclose(c_offsets[i], c_exp)
+    # Here is a bit of exposition on what we're doing
+    # HTF creates two sets of nonbonded forces, a standard one (for the
+    # PME) and a custom one (for sterics).
+    # Here we specifically check charges, so we only concentrate on the
+    # standard NonbondedForce.
+    # The way the NonbondedForce is constructed is as follows:
+    # - unique old atoms:
+    #  * The particle charge is set to the input molA particle charge
+    #  * The chargeScale offset is set to the negative value of the molA
+    #    particle charge (such that by scaling you effectively zero out
+    #    the charge.
+    # - unique new atoms:
+    #  * The particle charge is set to zero (doesn't exist in the starting
+    #    end state).
+    #  * The chargeScale offset is set to the value of the molB particle
+    #    charge (such that by scaling you effectively go from 0 to molB
+    #    charge).
+    # - core atoms:
+    #  * The particle charge is set to the input molA particle charge
+    #    (i.e. we start from a system that has molA charges).
+    #  * The particle charge offset is set to the difference between
+    #    the molB particle charge and the molA particle charge (i.e.
+    #    we scale by that difference to get to the value of the molB
+    #    particle charge).
+    for i in range(hybrid_system.getNumParticles()):
+        c, s, e = nonbond[0].getParticleParameters(i)
+        # get the particle charge (c)
+        c = ensure_quantity(c, "openff")
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offsets) is equal to -(molA particle charge)
+        if i in htf._atom_classes["unique_old_atoms"]:
+            idx = htf._hybrid_to_old_map[i]
+            np.testing.assert_allclose(c, benzene_rand_chg[idx])
+            np.testing.assert_allclose(c_offsets[i], -benzene_rand_chg[idx])
+        # particle charge (c) is equal to 0
+        # offset (c_offsets) is equal to molB particle charge
+        elif i in htf._atom_classes["unique_new_atoms"]:
+            idx = htf._hybrid_to_new_map[i]
+            np.testing.assert_allclose(c, 0 * unit.elementary_charge)
+            np.testing.assert_allclose(c_offsets[i], toluene_rand_chg[idx])
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offsets) is equal to difference between molB and molA
+        elif i in htf._atom_classes["core_atoms"]:
+            old_i = htf._hybrid_to_old_map[i]
+            new_i = htf._hybrid_to_new_map[i]
+            c_exp = toluene_rand_chg[new_i] - benzene_rand_chg[old_i]
+            np.testing.assert_allclose(c, benzene_rand_chg[old_i])
+            np.testing.assert_allclose(c_offsets[i], c_exp)
 
 
 def test_virtual_sites_no_reassign(
-    benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmpdir
+    benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmp_path
 ):
     """
     Because of some as-of-yet not fully identified issue, not reassigning
@@ -1020,21 +1020,24 @@ def test_virtual_sites_no_reassign(
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
     dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
-    with tmpdir.as_cwd():
-        # Manually run the units
-        setup_results = dag_setup_unit.run(dry=True)
-        errmsg = "Simulations with virtual sites without velocity"
-        with pytest.raises(ValueError, match=errmsg):
-            sim_results = dag_sim_unit.run(
-                system=setup_results["hybrid_system"],
-                positions=setup_results["hybrid_positions"],
-                selection_indices=setup_results["selection_indices"],
-                dry=True,
-            )
+    # Manually run the units
+    setup_results = dag_setup_unit.run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    errmsg = "Simulations with virtual sites without velocity"
+    with pytest.raises(ValueError, match=errmsg):
+        _ = dag_sim_unit.run(
+            system=setup_results["hybrid_system"],
+            positions=setup_results["hybrid_positions"],
+            selection_indices=setup_results["selection_indices"],
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
 
 
 def test_setup_dodecahdron_ligand_box(
-    benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmpdir
+    benzene_system, toluene_system, benzene_to_toluene_mapping, solv_settings, tmp_path
 ):
     """
     Test that a hybrid system with a dodechadron is built properly.
@@ -1050,21 +1053,22 @@ def test_setup_dodecahdron_ligand_box(
     )
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
-    with tmpdir.as_cwd():
-        hs = dag_setup_unit.run(dry=True)["hybrid_system"]
+    hs = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)[
+        "hybrid_system"
+    ]
 
-        vectors = hs.getDefaultPeriodicBoxVectors()
+    vectors = hs.getDefaultPeriodicBoxVectors()
 
-        width = float(from_openmm(vectors)[0][0].to("nanometer").m)
-        # dodecahedron has the following shape:
-        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
+    width = float(from_openmm(vectors)[0][0].to("nanometer").m)
+    # dodecahedron has the following shape:
+    # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
 
-        expected_vectors = [
-            [width, 0, 0],
-            [0, width, 0],
-            [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
-        ] * unit.nanometer
-        assert_allclose(expected_vectors, from_openmm(vectors))
+    expected_vectors = [
+        [width, 0, 0],
+        [0, width, 0],
+        [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
+    ] * unit.nanometer
+    assert_allclose(expected_vectors, from_openmm(vectors))
 
 
 @pytest.mark.slow
@@ -1075,7 +1079,7 @@ def test_dry_run_complex(
     benzene_to_toluene_mapping,
     method,
     solv_settings,
-    tmpdir,
+    tmp_path,
 ):
     # this will be very time consuming
     solv_settings.simulation_settings.sampler_method = method
@@ -1092,23 +1096,26 @@ def test_dry_run_complex(
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
     dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
-    with tmpdir.as_cwd():
-        setup_results = dag_setup_unit.run(dry=True)
-        sim_results = dag_sim_unit.run(
-            system=setup_results["hybrid_system"],
-            positions=setup_results["hybrid_positions"],
-            selection_indices=setup_results["selection_indices"],
-            dry=True,
-        )
-        sampler = sim_results["sampler"]
-        assert isinstance(sampler, MultiStateSampler)
-        assert sampler.is_periodic
-        assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
-        assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
+    setup_results = dag_setup_unit.run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    sim_results = dag_sim_unit.run(
+        system=setup_results["hybrid_system"],
+        positions=setup_results["hybrid_positions"],
+        selection_indices=setup_results["selection_indices"],
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
+    sampler = sim_results["sampler"]
+    assert isinstance(sampler, MultiStateSampler)
+    assert sampler.is_periodic
+    assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
+    assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
 
-        # Check we have the right number of atoms in the PDB
-        pdb = mdt.load_pdb("hybrid_system.pdb")
-        assert pdb.n_atoms == 2629
+    # Check we have the right number of atoms in the PDB
+    pdb = mdt.load_pdb(tmp_path / "hybrid_system.pdb")
+    assert pdb.n_atoms == 2629
 
 
 def test_lambda_schedule_default():
@@ -1125,7 +1132,7 @@ def test_lambda_schedule(windows):
 
 
 def test_setup_ligand_overlap_warning(
-    benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmpdir
+    benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmp_path
 ):
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=vac_settings,
@@ -1159,8 +1166,8 @@ def test_setup_ligand_overlap_warning(
         dag_setup_unit = [
             pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)
         ][0]
-        with tmpdir.as_cwd():
-            dag_setup_unit.run(dry=True)
+
+        dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
 
 @pytest.fixture
@@ -1218,7 +1225,7 @@ def unit_mock_patcher():
         yield
 
 
-def test_unit_tagging(solvent_protocol_dag, unit_mock_patcher, tmpdir):
+def test_unit_tagging(solvent_protocol_dag, unit_mock_patcher, tmp_path):
     # test that executing the Units includes correct generation and repeat info
     dag_units = solvent_protocol_dag.protocol_units
 
@@ -1232,18 +1239,18 @@ def test_unit_tagging(solvent_protocol_dag, unit_mock_patcher, tmpdir):
 
     for u in setup_units:
         rid = u.inputs["repeat_id"]
-        setup_results[rid] = u.execute(context=gufe.Context(tmpdir, tmpdir))
+        setup_results[rid] = u.execute(context=gufe.Context(tmp_path, tmp_path))
 
     for u in sim_units:
         rid = u.inputs["repeat_id"]
         sim_results[rid] = u.execute(
-            context=gufe.Context(tmpdir, tmpdir), setup_results=setup_results[rid]
+            context=gufe.Context(tmp_path, tmp_path), setup_results=setup_results[rid]
         )
 
     for u in analysis_units:
         rid = u.inputs["repeat_id"]
         analysis_results[rid] = u.execute(
-            context=gufe.Context(tmpdir, tmpdir),
+            context=gufe.Context(tmp_path, tmp_path),
             setup_results=setup_results[rid],
             simulation_results=sim_results[rid],
         )
@@ -1257,12 +1264,12 @@ def test_unit_tagging(solvent_protocol_dag, unit_mock_patcher, tmpdir):
     assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
 
 
-def test_gather(solvent_protocol_dag, unit_mock_patcher, tmpdir):
+def test_gather(solvent_protocol_dag, unit_mock_patcher, tmp_path):
     # check .gather behaves as expected
     dagres = gufe.protocols.execute_DAG(
         solvent_protocol_dag,
-        shared_basedir=tmpdir,
-        scratch_basedir=tmpdir,
+        shared_basedir=tmp_path,
+        scratch_basedir=tmp_path,
         keep_shared=True,
     )
 
@@ -2040,7 +2047,7 @@ def _assert_total_charge(system, atom_classes, chgA, chgB):
     assert chgB == pytest.approx(np.sum(stateB_charges))
 
 
-def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, tmpdir):
+def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, tmp_path):
     stateA_system = openfe.ChemicalSystem(
         {
             "ligand": benzene_to_benzoic_mapping.componentA,
@@ -2067,14 +2074,13 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, 
 
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
-    with tmpdir.as_cwd():
-        results = dag_setup_unit.run(dry=True)
-        htf = results["hybrid_factory"]
-        _assert_total_charge(htf.hybrid_system, htf._atom_classes, 0, 0)
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+    _assert_total_charge(htf.hybrid_system, htf._atom_classes, 0, 0)
 
-        assert len(htf._atom_classes["core_atoms"]) == 14
-        assert len(htf._atom_classes["unique_new_atoms"]) == 3
-        assert len(htf._atom_classes["unique_old_atoms"]) == 1
+    assert len(htf._atom_classes["core_atoms"]) == 14
+    assert len(htf._atom_classes["unique_new_atoms"]) == 3
+    assert len(htf._atom_classes["unique_old_atoms"]) == 1
 
 
 @pytest.mark.slow
@@ -2098,7 +2104,7 @@ def test_setup_complex_alchemwater_totcharge(
     core_atoms,
     new_uniq,
     old_uniq,
-    tmpdir,
+    tmp_path,
     request,
     T4_protein_component,
     solv_settings,
@@ -2136,24 +2142,24 @@ def test_setup_complex_alchemwater_totcharge(
     )
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
 
-    with tmpdir.as_cwd():
-        setup_results = dag_setup_unit.run(dry=True)
-        htf = setup_results["hybrid_factory"]
-        _assert_total_charge(htf.hybrid_system, htf._atom_classes, chgA, chgB)
+    setup_results = dag_setup_unit.run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    htf = setup_results["hybrid_factory"]
+    _assert_total_charge(htf.hybrid_system, htf._atom_classes, chgA, chgB)
 
-        assert len(htf._atom_classes["core_atoms"]) == core_atoms
-        assert len(htf._atom_classes["unique_new_atoms"]) == new_uniq
-        assert len(htf._atom_classes["unique_old_atoms"]) == old_uniq
+    assert len(htf._atom_classes["core_atoms"]) == core_atoms
+    assert len(htf._atom_classes["unique_new_atoms"]) == new_uniq
+    assert len(htf._atom_classes["unique_old_atoms"]) == old_uniq
 
 
-def test_structural_analysis_error(tmpdir):
-    with tmpdir.as_cwd():
-        ret = openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit._structural_analysis(
-            Path("."),
-            Path("."),
-            Path("."),
-            True,
-        )
+def test_structural_analysis_error(tmp_path):
+    ret = openmm_rfe.hybridtop_units.HybridTopologyMultiStateAnalysisUnit._structural_analysis(
+        Path(tmp_path),
+        Path(tmp_path),
+        Path(tmp_path),
+        True,
+    )
 
     assert "structural_analysis_error" in ret
     assert "structural_analysis" not in ret
@@ -2174,7 +2180,7 @@ def test_dry_run_vacuum_write_frequency(
     positions_write_frequency,
     velocities_write_frequency,
     vac_settings,
-    tmpdir,
+    tmp_path,
 ):
     vac_settings.output_settings.positions_write_frequency = positions_write_frequency
     vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
@@ -2195,24 +2201,27 @@ def test_dry_run_vacuum_write_frequency(
     dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
     dag_sim_unit = _get_units(dag.protocol_units, HybridTopologyMultiStateSimulationUnit)[0]
 
-    with tmpdir.as_cwd():
-        # Manually run the units
-        setup_results = dag_setup_unit.run(dry=True)
+    # Manually run the units
+    setup_results = dag_setup_unit.run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
 
-        sim_results = dag_sim_unit.run(
-            system=setup_results["hybrid_system"],
-            positions=setup_results["hybrid_positions"],
-            selection_indices=setup_results["selection_indices"],
-            dry=True,
-        )
+    sim_results = dag_sim_unit.run(
+        system=setup_results["hybrid_system"],
+        positions=setup_results["hybrid_positions"],
+        selection_indices=setup_results["selection_indices"],
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
 
-        sampler = sim_results["sampler"]
-        reporter = sampler._reporter
-        if positions_write_frequency:
-            assert reporter.position_interval == positions_write_frequency.m
-        else:
-            assert reporter.position_interval == 0
-        if velocities_write_frequency:
-            assert reporter.velocity_interval == velocities_write_frequency.m
-        else:
-            assert reporter.velocity_interval == 0
+    sampler = sim_results["sampler"]
+    reporter = sampler._reporter
+    if positions_write_frequency:
+        assert reporter.position_interval == positions_write_frequency.m
+    else:
+        assert reporter.position_interval == 0
+    if velocities_write_frequency:
+        assert reporter.velocity_interval == velocities_write_frequency.m
+    else:
+        assert reporter.velocity_interval == 0

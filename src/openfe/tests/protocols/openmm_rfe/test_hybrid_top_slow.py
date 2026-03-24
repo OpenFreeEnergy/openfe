@@ -21,7 +21,7 @@ def test_openmm_run_engine(
     platform,
     get_available_openmm_platforms,
     benzene_modifications,
-    tmpdir,
+    tmp_path,
 ):
     if platform not in get_available_openmm_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
@@ -58,15 +58,14 @@ def test_openmm_run_engine(
         mapping=[m],
     )
 
-    cwd = pathlib.Path(str(tmpdir))
-    r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
+    r = execute_DAG(dag, shared_basedir=tmp_path, scratch_basedir=tmp_path, keep_shared=True)
 
     assert r.ok()
 
     # Get the path to the simulation unit shared
     for pur in r.protocol_unit_results:
         if "Simulation" in pur.name:
-            sim_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+            sim_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
             assert sim_shared.exists()
             assert pathlib.Path(sim_shared).is_dir()
 
@@ -74,7 +73,7 @@ def test_openmm_run_engine(
         if "Analysis" not in pur.name:
             continue
 
-        analysis_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+        analysis_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
         assert analysis_shared.exists()
         assert pathlib.Path(analysis_shared).is_dir()
 
@@ -129,7 +128,7 @@ def test_openmm_run_engine(
     HAS_OPENEYE and HAS_NAGL,
     reason="NAGL/openeye incompatibility. See https://github.com/openforcefield/openff-nagl/issues/177",
 )
-def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
+def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmp_path):
     # this runs a very short eg5 complex leg
     # different to previous test:
     # - has a cofactor
@@ -167,15 +166,14 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
 
     dag = p.create(stateA=sys1, stateB=sys2, mapping=[m])
 
-    cwd = pathlib.Path(str(tmpdir))
-    r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
+    r = execute_DAG(dag, shared_basedir=tmp_path, scratch_basedir=tmp_path, keep_shared=True)
 
     assert r.ok()
 
 
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)
-def test_run_dodecahedron_sim(benzene_system, toluene_system, benzene_to_toluene_mapping, tmpdir):
+def test_run_dodecahedron_sim(benzene_system, toluene_system, benzene_to_toluene_mapping, tmp_path):
     """
     Test that we can run a ligand in solvent RFE with a non-cubic box
     """
@@ -195,12 +193,10 @@ def test_run_dodecahedron_sim(benzene_system, toluene_system, benzene_to_toluene
         mapping=benzene_to_toluene_mapping,
     )
 
-    cwd = pathlib.Path(str(tmpdir))
-
     r = execute_DAG(
         dag,
-        shared_basedir=cwd,
-        scratch_basedir=cwd,
+        shared_basedir=tmp_path,
+        scratch_basedir=tmp_path,
         keep_shared=True,
     )
 
