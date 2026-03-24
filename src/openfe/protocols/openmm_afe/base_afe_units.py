@@ -391,7 +391,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings object for the unit.
         solvent_comp : BaseSolventComponent | None
-          The BaseSolventComponent of this system, if there is one.
+          The solvent component of this system, if there is one.
         openff_molecules : list[openff.toolkit.Molecule] | None
           A list of OpenFF Molecules to generate templates for, if any.
         ffcache : pathlib.Path | None
@@ -437,7 +437,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         protein_component : ProteinComponent | None
           Protein Component, if it exists.
         solvent_component : BaseSolventComponent | None
-          Base Solvent Component, if it exists.
+          The solvent component, if it exists.
         small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           Dictionary of OpenFF Molecules to add, keyed by
           SmallMoleculeComponent.
@@ -488,7 +488,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         protein_component : ProteinComponent | None
           Protein component for the system.
         solvent_component : BaseSolventComponent | None
-          BaseSolventComponent for the system.
+         Solvent component for the system, if it exists.
         small_mols : dict[str, openff.toolkit.Molecule]
           Dictionary of SmallMoleculeComponents and OpenFF Molecules
           defining the ligands to be added to the system
@@ -936,7 +936,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         lambdas : dict[str, list[float]]
           A dictionary of lambda scales.
         solvent_component : BaseSolventComponent | None
-          The base solvent component of the system, if there is one.
+          The solvent component of the system, if there is one.
         alchemically_restrained : bool
           Whether or not the system requires a control parameter
           for any alchemical restraints.
