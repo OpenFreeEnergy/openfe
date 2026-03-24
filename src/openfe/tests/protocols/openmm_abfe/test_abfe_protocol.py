@@ -451,7 +451,7 @@ class TestT4LysozymeDryRun:
         # Check the non-alchemical system
         self._assert_expected_nonalchemical_forces(
             setup_results["standard_system"],
-            "complex"
+            "complex",
             settings=settings,
         )
         self._check_box_vectors(setup_results["standard_system"])
