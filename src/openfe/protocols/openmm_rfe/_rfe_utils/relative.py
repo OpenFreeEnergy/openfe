@@ -559,7 +559,7 @@ class HybridTopologyFactory:
             barostat = copy.deepcopy(
                 self._old_system_forces[present_barostat[0]])
             self._hybrid_system.addForce(barostat)
-        if len(present_barostat) > 1:
+        elif len(present_barostat) > 1:
             errmsg = "More than 1 barostat are present which is not supported"
             raise ValueError(errmsg)
 
