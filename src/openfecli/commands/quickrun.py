@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import hashlib
 import json
 import pathlib
 import warnings
@@ -14,6 +15,12 @@ from openfecli.utils import configure_logger, print_duration, write
 def _format_exception(exception) -> str:
     """Takes the exception as stored by Gufe and reformats it."""
     return f"{exception[0]}: {exception[1][0]}"
+
+
+def _hash_quickrun_inputs(output, transformation):
+    string_rep = f"{output.absolute()}{transformation.key}"
+    hasher = hashlib.md5(string_rep.encode(), usedforsecurity=False)
+    return hasher.hexdigest()
 
 
 @click.command("quickrun", short_help="Run a given transformation, saved as a JSON file")
@@ -105,31 +112,34 @@ def quickrun(transformation, work_dir, output, resume):
 
     # Attempt to either deserialize or freshly create DAG
     cache_basedir = work_dir / "quickrun_cache"
-    trans_DAG_json = cache_basedir / f"{trans.key}-ProtocolDAG.json"
+    hashed_key = _hash_quickrun_inputs(output, trans)
+    cached_dag_path = cache_basedir / f"dag-cache-{hashed_key}.json"
 
-    if trans_DAG_json.is_file():
+    if cached_dag_path.is_file():
         if resume:
-            write(f"Attempting to resume execution using existing edges from '{trans_DAG_json}'")
+            write(f"Attempting to resume execution using existing edges from '{cached_dag_path}'")
             try:
-                dag = ProtocolDAG.from_json(trans_DAG_json)
+                dag = ProtocolDAG.from_json(cached_dag_path)
             except JSONDecodeError:
-                errmsg = f"Recovery failed, please remove {trans_DAG_json} and any results from your working directory before continuing to create a new protocol."
+                errmsg = f"Recovery failed, please remove {cached_dag_path} and any results from your working directory before continuing to create a new protocol."
                 raise click.ClickException(errmsg)
+
+            write("Success. Resuming execution...")
         else:
-            errmsg = f"Transformation has been started but is incomplete. Please remove {trans_DAG_json} and rerun, or resume execution using the ``--resume`` flag."
+            errmsg = f"Transformation has been started but is incomplete. Please remove {cached_dag_path} and rerun, or resume execution using the ``--resume`` flag."
             raise click.ClickException(errmsg)
 
     else:
         if resume:
             click.echo(
-                f"openfe quickrun was run with --resume, but no checkpoint found at {trans_DAG_json}. Starting new execution."
+                f"openfe quickrun was run with --resume, but no checkpoint found at {cached_dag_path}. Starting new execution."
             )
 
         # Create the DAG instead and then serialize for later resuming
         write("Planning simulations for this edge...")
         dag = trans.create()
         cache_basedir.mkdir(exist_ok=True)
-        dag.to_json(trans_DAG_json)
+        dag.to_json(cached_dag_path)
 
     write("Starting the simulations for this edge...")
     dagresult = execute_DAG(
@@ -163,7 +173,7 @@ def quickrun(transformation, work_dir, output, resume):
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
     # remove the checkpoint since the job has completed
-    os.remove(trans_DAG_json)
+    os.remove(cached_dag_path)
 
     write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
     write("")

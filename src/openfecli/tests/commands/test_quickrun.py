@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from gufe import Transformation
 from gufe.tokenization import JSON_HANDLER
 
-from openfecli.commands.quickrun import quickrun
+from openfecli.commands.quickrun import _hash_quickrun_inputs, quickrun
 
 from ..utils import assert_click_success
 
@@ -33,10 +33,14 @@ def test_quickrun(extra_args, json_file):
         assert_click_success(result)
         assert "Here is the result" in result.output
         trans = Transformation.from_json(json_file)
+
+        # figure out what cached json should be
+        work_dir = extra_args.get("-d", ".")
+        output_json = pathlib.Path(work_dir, extra_args.get("-o", f"{trans.key}_results.json"))
+        hashed_key = _hash_quickrun_inputs(output_json, trans)
+
         # checkpoint should be deleted when job is complete
-        assert not pathlib.Path(
-            extra_args.get("-d", ""), "quickrun_cache", f"{trans.key}-ProtocolDAG.json"
-        ).exists()
+        assert not pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json").exists()
 
         if outfile := extra_args.get("-o"):
             assert pathlib.Path(outfile).exists()
@@ -64,10 +68,14 @@ def test_quickrun_interrupted(extra_args, json_file):
             result = runner.invoke(quickrun, [json_file] + extras)
 
         assert "Here is the result" not in result.output
+
         trans = Transformation.from_json(json_file)
-        assert pathlib.Path(
-            extra_args.get("-d", ""), "quickrun_cache", f"{trans.key}-ProtocolDAG.json"
-        ).exists()
+        # figure out what cached json should be
+        work_dir = pathlib.Path(extra_args.get("-d", ".")).absolute()
+        output_json = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
+        hashed_key = _hash_quickrun_inputs(output_json, trans)
+
+        assert pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json").exists()
 
 
 def test_quickrun_output_file_exists(json_file):
@@ -122,8 +130,11 @@ def test_quickrun_existing_checkpoint(json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
+        work_dir = pathlib.Path(".")
+        output_json = pathlib.Path(work_dir, f"{trans.key}_results.json")
+        hashed_key = _hash_quickrun_inputs(output_json, trans)
         pathlib.Path("quickrun_cache").mkdir()
-        dag.to_json(pathlib.Path("quickrun_cache", f"{trans.key}-ProtocolDAG.json"))
+        dag.to_json(pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json"))
         result = runner.invoke(quickrun, [json_file])
         assert result.exit_code == 1
         assert "Attempting to resume" not in result.output
@@ -136,8 +147,11 @@ def test_quickrun_resume_from_checkpoint(json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
+        work_dir = pathlib.Path(".")
+        output_json = pathlib.Path(work_dir, f"{trans.key}_results.json")
+        hashed_key = _hash_quickrun_inputs(output_json, trans)
         pathlib.Path("quickrun_cache").mkdir()
-        dag.to_json(pathlib.Path("quickrun_cache", f"{trans.key}-ProtocolDAG.json"))
+        dag.to_json(pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json"))
         result = runner.invoke(quickrun, [json_file, "--resume"])
 
         assert_click_success(result)
@@ -150,8 +164,11 @@ def test_quickrun_resume_invalid_checkpoint(json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
+        work_dir = pathlib.Path(".")
+        output_json = pathlib.Path(work_dir, f"{trans.key}_results.json")
+        hashed_key = _hash_quickrun_inputs(output_json, trans)
         pathlib.Path("quickrun_cache").mkdir()
-        pathlib.Path("quickrun_cache", f"{trans.key}-ProtocolDAG.json").touch()
+        pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json").touch()
         result = runner.invoke(quickrun, [json_file, "--resume"])
 
         assert result.exit_code == 1
