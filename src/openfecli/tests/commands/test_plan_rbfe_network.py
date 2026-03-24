@@ -286,10 +286,7 @@ def eg5_files():
         yield pdb_path, lig_path, cof_path
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
