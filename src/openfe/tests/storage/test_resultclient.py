@@ -14,7 +14,7 @@ from openfe.storage.resultclient import (
 
 
 @pytest.fixture
-def result_client(tmpdir):
+def result_client():
     external = MemoryStorage()
     result_client = ResultClient(external)
 

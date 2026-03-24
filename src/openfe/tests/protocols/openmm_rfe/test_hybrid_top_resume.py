@@ -133,23 +133,22 @@ class TestCheckpointResuming:
         return positions
 
     @staticmethod
-    def _copy_simfiles(cwd: pathlib.Path, filepath):
-        shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
+    def _copy_simfiles(basedir: pathlib.Path, filepath):
+        shutil.copyfile(filepath, f"{basedir}/{filepath.name}")
 
     @pytest.mark.integration
-    def test_resume(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir):
+    def test_resume(self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmp_path):
         """
         Attempt to resume a simulation unit with pre-existing checkpoint &
         trajectory files.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, htop_trajectory_path)
-        self._copy_simfiles(cwd, htop_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, htop_trajectory_path)
+        self._copy_simfiles(tmp_path, htop_checkpoint_path)
 
         # 1. Check that the trajectory / checkpoint contain what we expect
         reporter = MultiStateReporter(
-            f"{cwd}/simulation.nc",
+            tmp_path / "simulation.nc",
             checkpoint_storage="checkpoint.chk",
         )
         sampler = HybridRepexSampler.from_storage(reporter)
@@ -171,15 +170,17 @@ class TestCheckpointResuming:
         analysis_unit = _get_units(pus, HybridTopologyMultiStateAnalysisUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Now we run the simulation in resume mode
         sim_results = simulation_unit.run(
             system=setup_results["hybrid_system"],
             positions=setup_results["hybrid_positions"],
             selection_indices=setup_results["selection_indices"],
-            scratch_basepath=cwd,
-            shared_basepath=cwd,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
         # Finally we analyze the results
@@ -187,13 +188,13 @@ class TestCheckpointResuming:
             pdb_file=setup_results["pdb_structure"],
             trajectory=sim_results["nc"],
             checkpoint=sim_results["checkpoint"],
-            scratch_basepath=cwd,
-            shared_basepath=cwd,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
         # 3. Analyze the trajectory/checkpoint again
         reporter = MultiStateReporter(
-            f"{cwd}/simulation.nc",
+            tmp_path / "simulation.nc",
             checkpoint_storage="checkpoint.chk",
         )
         sampler = HybridRepexSampler.from_storage(reporter)
@@ -214,12 +215,12 @@ class TestCheckpointResuming:
         del sampler
 
         # Check the openfe-analysis outputs are there
-        structural_analysis_file = cwd / "structural_analysis.npz"
+        structural_analysis_file = tmp_path / "structural_analysis.npz"
         assert (structural_analysis_file).exists()
 
     @pytest.mark.slow
     def test_resume_fail_particles(
-        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmp_path
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -227,17 +228,18 @@ class TestCheckpointResuming:
 
         Here we check that we don't have the same particles / mass.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, htop_trajectory_path)
-        self._copy_simfiles(cwd, htop_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, htop_trajectory_path)
+        self._copy_simfiles(tmp_path, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Fake system should trigger a mismatch
         errmsg = "Stored checkpoint System particles do not"
@@ -246,13 +248,13 @@ class TestCheckpointResuming:
                 system=openmm.System(),
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     def test_resume_fail_constraints(
-        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmp_path
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -260,17 +262,18 @@ class TestCheckpointResuming:
 
         Here we check that we don't have the same constraints.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, htop_trajectory_path)
-        self._copy_simfiles(cwd, htop_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, htop_trajectory_path)
+        self._copy_simfiles(tmp_path, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Create a fake system without constraints
         fake_system = copy.deepcopy(setup_results["hybrid_system"])
@@ -285,13 +288,13 @@ class TestCheckpointResuming:
                 system=fake_system,
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     def test_resume_fail_forces(
-        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmp_path
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -299,17 +302,18 @@ class TestCheckpointResuming:
 
         Here we check we don't have the same forces.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, htop_trajectory_path)
-        self._copy_simfiles(cwd, htop_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, htop_trajectory_path)
+        self._copy_simfiles(tmp_path, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Create a fake system without the last force
         fake_system = copy.deepcopy(setup_results["hybrid_system"])
@@ -322,14 +326,14 @@ class TestCheckpointResuming:
                 system=fake_system,
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     @pytest.mark.parametrize("forcetype", [openmm.NonbondedForce, openmm.MonteCarloBarostat])
     def test_resume_differ_forces(
-        self, forcetype, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmpdir
+        self, forcetype, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmp_path
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -337,17 +341,18 @@ class TestCheckpointResuming:
 
         Here we check we have a different force
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-        self._copy_simfiles(cwd, htop_trajectory_path)
-        self._copy_simfiles(cwd, htop_checkpoint_path)
+        # copy files
+        self._copy_simfiles(tmp_path, htop_trajectory_path)
+        self._copy_simfiles(tmp_path, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         # Create a fake system with the fake forcetype
         fake_system = copy.deepcopy(setup_results["hybrid_system"])
@@ -374,77 +379,77 @@ class TestCheckpointResuming:
                 system=fake_system,
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
     def test_resume_bad_files(
-        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, bad_file, tmpdir
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, bad_file, tmp_path
     ):
         """
         Test what happens when you have a bad trajectory and/or checkpoint
         files.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-
+        # copy files
         if bad_file == "trajectory":
-            with open(f"{cwd}/simulation.nc", "w") as f:
+            with open(tmp_path / "simulation.nc", "w") as f:
                 f.write("foo")
         else:
-            self._copy_simfiles(cwd, htop_trajectory_path)
+            self._copy_simfiles(tmp_path, htop_trajectory_path)
 
         if bad_file == "checkpoint":
-            with open(f"{cwd}/checkpoint.chk", "w") as f:
+            with open(tmp_path / "checkpoint.chk", "w") as f:
                 f.write("bar")
         else:
-            self._copy_simfiles(cwd, htop_checkpoint_path)
+            self._copy_simfiles(tmp_path, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         with pytest.raises(OSError, match="Unknown file format"):
             _ = simulation_unit.run(
                 system=setup_results["hybrid_system"],
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     @pytest.mark.parametrize("missing_file", ["trajectory", "checkpoint"])
     def test_missing_file(
-        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, missing_file, tmpdir
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, missing_file, tmp_path
     ):
         """
         Test that an error is thrown if either file is missing but the other isn't.
         """
-        # define a temp directory path & copy files
-        cwd = pathlib.Path(str(tmpdir))
-
+        # copy files
         if missing_file == "trajectory":
             pass
         else:
-            self._copy_simfiles(cwd, htop_trajectory_path)
+            self._copy_simfiles(tmp_path, htop_trajectory_path)
 
         if missing_file == "checkpoint":
             pass
         else:
-            self._copy_simfiles(cwd, htop_checkpoint_path)
+            self._copy_simfiles(tmp_path, htop_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
         simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(dry=True, scratch_basepath=cwd, shared_basepath=cwd)
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
 
         errmsg = f"file is present but not the {missing_file} file."
         with pytest.raises(IOError, match=errmsg):
@@ -452,6 +457,6 @@ class TestCheckpointResuming:
                 system=setup_results["hybrid_system"],
                 positions=setup_results["hybrid_positions"],
                 selection_indices=setup_results["selection_indices"],
-                scratch_basepath=cwd,
-                shared_basepath=cwd,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
             )
