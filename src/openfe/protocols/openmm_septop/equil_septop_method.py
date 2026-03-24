@@ -1171,16 +1171,9 @@ class SepTopProtocol(gufe.Protocol):
         else:
             protocol_settings = cls.default_settings()
 
-        # adapt the barostat and lipid forcefield based on the ProteinComponent
+        # adapt the barostat based on the ProteinComponent
         if stateA.contains(ProteinMembraneComponent):
             protocol_settings.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
-            protocol_settings.forcefield_settings.forcefields = [
-                "amber/ff14SB.xml",
-                "amber/tip3p_standard.xml",
-                "amber/tip3p_HFE_multivalent.xml",
-                "amber/lipid17_merged.xml",
-                "amber/phosaa10.xml",
-            ]
 
         return protocol_settings
 
