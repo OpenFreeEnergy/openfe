@@ -417,106 +417,121 @@ class TestT4LysozymeDryRun:
             positions=positions,
         )
 
-    def test_complex_dry_run(self, complex_setup_units, complex_sim_units, settings, tmpdir):
-        with tmpdir.as_cwd():
-            setup_results = complex_setup_units[0].run(dry=True, verbose=True)
-            sim_results = complex_sim_units[0].run(
-                system=setup_results["alchem_system"],
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=True,
-                dry=True,
-            )
+    def test_complex_dry_run(self, complex_setup_units, complex_sim_units, settings, tmp_path):
+        setup_results = complex_setup_units[0].run(
+            dry=True,
+            verbose=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+        sim_results = complex_sim_units[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=True,
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
 
-            # Check the sampler
-            self._verify_sampler(sim_results["sampler"], phase="complex", settings=settings)
+        # Check the sampler
+        self._verify_sampler(sim_results["sampler"], phase="complex", settings=settings)
 
-            # Check the alchemical system
-            self._assert_expected_alchemical_forces(
-                setup_results["alchem_system"], phase="complex", settings=settings
-            )
-            self._check_box_vectors(setup_results["alchem_system"])
+        # Check the alchemical system
+        self._assert_expected_alchemical_forces(
+            setup_results["alchem_system"], phase="complex", settings=settings
+        )
+        self._check_box_vectors(setup_results["alchem_system"])
 
-            # Check the alchemical indices
-            expected_indices = [i + self.num_complex_atoms for i in range(self.num_ligand_atoms)]
-            assert expected_indices == setup_results["alchem_indices"]
+        # Check the alchemical indices
+        expected_indices = [i + self.num_complex_atoms for i in range(self.num_ligand_atoms)]
+        assert expected_indices == setup_results["alchem_indices"]
 
-            # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                setup_results["standard_system"], "complex", settings=settings
-            )
-            self._check_box_vectors(setup_results["standard_system"])
+        # Check the non-alchemical system
+        self._assert_expected_nonalchemical_forces(
+            setup_results["standard_system"],
+            "complex"
+            settings=settings,
+        )
+        self._check_box_vectors(setup_results["standard_system"])
+        # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+        assert_allclose(
+            from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
+            from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
+        )
 
-            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
-            assert_allclose(
-                from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
-                from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
-            )
+        # Check the PDB
+        pdb = mdt.load_pdb(setup_results["pdb_structure"])
+        assert pdb.n_atoms == self.num_all_not_water
 
-            # Check the PDB
-            pdb = mdt.load_pdb(setup_results["pdb_structure"])
-            assert pdb.n_atoms == self.num_all_not_water
+        # Check energies
+        alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
+        self._test_energies(
+            reference_system=setup_results["standard_system"],
+            alchemical_system=setup_results["alchem_system"],
+            alchemical_regions=alchem_region,
+            positions=setup_results["debug_positions"],
+        )
 
-            # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
-            self._test_energies(
-                reference_system=setup_results["standard_system"],
-                alchemical_system=setup_results["alchem_system"],
-                alchemical_regions=alchem_region,
-                positions=setup_results["debug_positions"],
-            )
+    def test_solvent_dry_run(self, solvent_setup_units, solvent_sim_units, settings, tmp_path):
+        setup_results = solvent_setup_units[0].run(
+            dry=True,
+            verbose=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+        sim_results = solvent_sim_units[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
 
-    def test_solvent_dry_run(self, solvent_setup_units, solvent_sim_units, settings, tmpdir):
-        with tmpdir.as_cwd():
-            setup_results = solvent_setup_units[0].run(dry=True, verbose=True)
-            sim_results = solvent_sim_units[0].run(
-                system=setup_results["alchem_system"],
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
-                dry=True,
-            )
+        # Check the sampler
+        self._verify_sampler(sim_results["sampler"], phase="solvent", settings=settings)
 
-            # Check the sampler
-            self._verify_sampler(sim_results["sampler"], phase="solvent", settings=settings)
+        # Check the alchemical system
+        self._assert_expected_alchemical_forces(
+            setup_results["alchem_system"], phase="solvent", settings=settings
+        )
+        self._test_cubic_vectors(setup_results["alchem_system"])
 
-            # Check the alchemical system
-            self._assert_expected_alchemical_forces(
-                setup_results["alchem_system"], phase="solvent", settings=settings
-            )
-            self._test_cubic_vectors(setup_results["alchem_system"])
+        # Check the alchemical indices
+        expected_indices = [i for i in range(self.num_ligand_atoms)]
+        assert expected_indices == setup_results["alchem_indices"]
 
-            # Check the alchemical indices
-            expected_indices = [i for i in range(self.num_ligand_atoms)]
-            assert expected_indices == setup_results["alchem_indices"]
+        # Check the non-alchemical system
+        self._assert_expected_nonalchemical_forces(setup_results["standard_system"], settings)
+        self._test_cubic_vectors(
+            setup_results["standard_system"],
+            "solvent",
+            settings=settings,
+        )
 
-            # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                setup_results["standard_system"], "solvent", settings=settings
-            )
-            self._test_cubic_vectors(setup_results["standard_system"])
+        # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+        assert_allclose(
+            from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
+            from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
+        )
 
-            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
-            assert_allclose(
-                from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
-                from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
-            )
+        # Check the PDB
+        pdb = mdt.load_pdb(setup_results["pdb_structure"])
+        assert pdb.n_atoms == self.num_ligand_atoms
 
-            # Check the PDB
-            pdb = mdt.load_pdb(setup_results["pdb_structure"])
-            assert pdb.n_atoms == self.num_ligand_atoms
+        # Check energies
+        alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
 
-            # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
-
-            self._test_energies(
-                reference_system=setup_results["standard_system"],
-                alchemical_system=setup_results["alchem_system"],
-                alchemical_regions=alchem_region,
-                positions=setup_results["debug_positions"],
-            )
+        self._test_energies(
+            reference_system=setup_results["standard_system"],
+            alchemical_system=setup_results["alchem_system"],
+            alchemical_regions=alchem_region,
+            positions=setup_results["debug_positions"],
+        )
 
 
 @pytest.mark.slow
@@ -550,7 +565,7 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         return s
 
 
-def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
+def test_user_charges(benzene_modifications, T4_protein_component, tmp_path):
     s = openmm_afe.AbsoluteBindingProtocol.default_settings()
     s.protocol_repeats = 1
     s.engine_settings.compute_platform = "cpu"
@@ -597,27 +612,29 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
 
     complex_setup_units = _get_units(dag.protocol_units, UNIT_TYPES["complex"]["setup"])
 
-    with tmpdir.as_cwd():
-        results = complex_setup_units[0].run(dry=True)
+    results = complex_setup_units[0].run(
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
 
-        system_nbf = [
-            f for f in results["standard_system"].getForces() if isinstance(f, NonbondedForce)
-        ][0]
-        alchem_system_nbf = [
-            f
-            for f in results["alchem_system"].getForces()
-            if isinstance(f, NonbondedForce)
-        ][0]  # fmt: skip
+    system_nbf = [
+        f for f in results["standard_system"].getForces() if isinstance(f, NonbondedForce)
+    ][0]
+    alchem_system_nbf = [
+        f
+        for f in results["alchem_system"].getForces()
+        if isinstance(f, NonbondedForce)
+    ][0]  # fmt: skip
 
-        for i in range(12):
-            # add 2613 to account for the protein
-            index = i + 2613
+    for i in range(12):
+        # add 2613 to account for the protein
+        index = i + 2613
 
-            c, s, e = system_nbf.getParticleParameters(index)
-            assert pytest.approx(prop_chgs[i]) == c.value_in_unit(ommunit.elementary_charge)
-
-            offsets = alchem_system_nbf.getParticleParameterOffset(i)
-            assert pytest.approx(prop_chgs[i]) == offsets[2]
+        c, s, e = system_nbf.getParticleParameters(index)
+        assert pytest.approx(prop_chgs[i]) == c.value_in_unit(ommunit.elementary_charge)
+        offsets = alchem_system_nbf.getParticleParameterOffset(i)
+        assert pytest.approx(prop_chgs[i]) == offsets[2]
 
 
 @pytest.mark.slow
@@ -718,3 +735,5 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
         assert_allclose(
             vectors, expected_vectors, atol=1e-5, err_msg=f"Box is not orthogonal:\n{vectors}"
         )
+        offsets = alchem_system_nbf.getParticleParameterOffset(i)
+        assert pytest.approx(prop_chgs[i]) == offsets[2]
