@@ -30,12 +30,17 @@ def test_quickrun(extra_args, json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
+        trans = Transformation.from_json(json_file)
+        outfile = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
+
+        # output json shouldn't be created before quickrun is executed
+        assert not pathlib.Path(outfile).exists()
+
         result = runner.invoke(quickrun, [json_file] + extras)
         assert result.exit_code == 0
         assert "Here is the result" in result.output
-        trans = Transformation.from_json(json_file)
 
-        outfile = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
+        # output json should exist and have results after execution
         assert pathlib.Path(outfile).exists()
         with open(outfile, mode="r") as outf:
             dct = json.load(outf, cls=JSON_HANDLER.decoder)
