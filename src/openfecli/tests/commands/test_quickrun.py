@@ -28,6 +28,12 @@ def test_quickrun(extra_args, json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
+        trans = Transformation.from_json(json_file)
+        outfile = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
+
+        # output json shouldn't be created before quickrun is executed
+        assert not pathlib.Path(outfile).exists()
+
         result = runner.invoke(quickrun, [json_file] + extras)
 
         assert_click_success(result)
@@ -38,12 +44,12 @@ def test_quickrun(extra_args, json_file):
             extra_args.get("-d", ""), "quickrun_cache", f"{trans.key}-ProtocolDAG.json"
         ).exists()
 
-        if outfile := extra_args.get("-o"):
-            assert pathlib.Path(outfile).exists()
-            with open(outfile, mode="r") as outf:
-                dct = json.load(outf, cls=JSON_HANDLER.decoder)
+        # output json should exist and have results after execution
+        assert pathlib.Path(outfile).exists()
+        with open(outfile, mode="r") as outf:
+            dct = json.load(outf, cls=JSON_HANDLER.decoder)
 
-            assert set(dct) == {"estimate", "uncertainty", "protocol_result", "unit_results"}
+        assert set(dct) == {"estimate", "uncertainty", "protocol_result", "unit_results"}
 
         # TODO: need a protocol that drops files to actually do this!
         # if directory := extra_args.get('-d'):
