@@ -97,18 +97,23 @@ def quickrun(transformation, work_dir, output, resume):
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
 
+    click.secho(f"\nCurrent directory: {os.getcwd()}/")
     if work_dir is None:
+        click.secho(f"Creating working directory: {work_dir}/")
         work_dir = pathlib.Path(os.getcwd())
     else:
+        click.secho(f"Using existing working directory: {work_dir}/")
         work_dir.mkdir(exist_ok=True, parents=True)
 
-    write("Loading file...")
     trans = Transformation.from_json(transformation)
 
     if output is None:
         output = work_dir / (str(trans.key) + "_results.json")
     else:
         output.parent.mkdir(exist_ok=True, parents=True)
+
+    click.secho(f"Loading transformation from: {transformation.name}")
+    click.secho(f"When simulation is complete, results will be written to: {output}\n")
 
     # Attempt to either deserialize or freshly create DAG
     cache_basedir = work_dir / "quickrun_cache"
@@ -121,7 +126,9 @@ def quickrun(transformation, work_dir, output, resume):
             try:
                 dag = ProtocolDAG.from_json(cached_dag_path)
             except JSONDecodeError:
-                errmsg = f"Recovery failed, please remove {cached_dag_path} and any results from your working directory before continuing to create a new protocol."
+                # we can't tell the user which gufe-generated cache dir to delete, since we'd need to load the JSON to know the DAG's key
+                # however, just removing the cached_dag_path is sufficient to trigger a fresh DAG to be generated, and the gufe-generated cached dir will just be stale.
+                errmsg = f"Recovery failed, please remove {cached_dag_path} before continuing to create a new protocol."
                 raise click.ClickException(errmsg)
 
             write("Success. Resuming execution...")
@@ -131,7 +138,7 @@ def quickrun(transformation, work_dir, output, resume):
 
     else:
         if resume:
-            click.echo(
+            write(
                 f"openfe quickrun was run with --resume, but no checkpoint found at {cached_dag_path}. Starting new execution."
             )
 
