@@ -28,27 +28,28 @@ def test_quickrun(extra_args, json_file):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
+        # figure out what cached json should be
+        trans = Transformation.from_json(json_file)
+        work_dir = extra_args.get("-d", ".")
+        outfile = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
+        hashed_key = _hash_quickrun_inputs(outfile, trans)
+
+        # output json shouldn't be created before quickrun is executed
+        assert not pathlib.Path(outfile).exists()
         result = runner.invoke(quickrun, [json_file] + extras)
 
         assert_click_success(result)
         assert "Here is the result" in result.output
-        trans = Transformation.from_json(json_file)
-
-        # figure out what cached json should be
-        work_dir = extra_args.get("-d", ".")
-        output_json = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
-        hashed_key = _hash_quickrun_inputs(output_json, trans)
 
         # checkpoint should be deleted when job is complete
         assert not pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json").exists()
 
-        if outfile := extra_args.get("-o"):
-            assert pathlib.Path(outfile).exists()
-            with open(outfile, mode="r") as outf:
-                dct = json.load(outf, cls=JSON_HANDLER.decoder)
+        # output json should exist with data when job is complete
+        assert pathlib.Path(outfile).exists()
+        with open(outfile, mode="r") as outf:
+            dct = json.load(outf, cls=JSON_HANDLER.decoder)
 
-            assert set(dct) == {"estimate", "uncertainty", "protocol_result", "unit_results"}
-
+        assert set(dct) == {"estimate", "uncertainty", "protocol_result", "unit_results"}
         # TODO: need a protocol that drops files to actually do this!
         # if directory := extra_args.get('-d'):
         #     dirpath = pathlib.Path(directory)
@@ -72,8 +73,8 @@ def test_quickrun_interrupted(extra_args, json_file):
         trans = Transformation.from_json(json_file)
         # figure out what cached json should be
         work_dir = pathlib.Path(extra_args.get("-d", ".")).absolute()
-        output_json = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
-        hashed_key = _hash_quickrun_inputs(output_json, trans)
+        outfile = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
+        hashed_key = _hash_quickrun_inputs(outfile, trans)
 
         assert pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json").exists()
 
@@ -131,8 +132,8 @@ def test_quickrun_existing_checkpoint(json_file):
     runner = CliRunner()
     with runner.isolated_filesystem():
         work_dir = pathlib.Path(".")
-        output_json = pathlib.Path(work_dir, f"{trans.key}_results.json")
-        hashed_key = _hash_quickrun_inputs(output_json, trans)
+        outfile = pathlib.Path(work_dir, f"{trans.key}_results.json")
+        hashed_key = _hash_quickrun_inputs(outfile, trans)
         pathlib.Path("quickrun_cache").mkdir()
         dag.to_json(pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json"))
         result = runner.invoke(quickrun, [json_file])
@@ -148,8 +149,8 @@ def test_quickrun_resume_from_checkpoint(json_file):
     runner = CliRunner()
     with runner.isolated_filesystem():
         work_dir = pathlib.Path(".")
-        output_json = pathlib.Path(work_dir, f"{trans.key}_results.json")
-        hashed_key = _hash_quickrun_inputs(output_json, trans)
+        outfile = pathlib.Path(work_dir, f"{trans.key}_results.json")
+        hashed_key = _hash_quickrun_inputs(outfile, trans)
         pathlib.Path("quickrun_cache").mkdir()
         dag.to_json(pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json"))
         result = runner.invoke(quickrun, [json_file, "--resume"])
@@ -165,8 +166,8 @@ def test_quickrun_resume_invalid_checkpoint(json_file):
     runner = CliRunner()
     with runner.isolated_filesystem():
         work_dir = pathlib.Path(".")
-        output_json = pathlib.Path(work_dir, f"{trans.key}_results.json")
-        hashed_key = _hash_quickrun_inputs(output_json, trans)
+        outfile = pathlib.Path(work_dir, f"{trans.key}_results.json")
+        hashed_key = _hash_quickrun_inputs(outfile, trans)
         pathlib.Path("quickrun_cache").mkdir()
         pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json").touch()
         result = runner.invoke(quickrun, [json_file, "--resume"])
