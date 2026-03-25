@@ -115,6 +115,14 @@ def quickrun(transformation, work_dir, output, resume):
     click.secho(f"Loading transformation from: {transformation.name}")
     click.secho(f"When simulation is complete, results will be written to: {output}\n")
 
+    resume_command = f"openfe quickrun {transformation.name} -o {output} -d {work_dir} --resume\n"
+
+    click.secho(
+        "If this simulation is interrupted or fails, you may attempt to resume execution using:",
+        bold=True,
+    )
+    click.secho(resume_command)
+
     # Attempt to either deserialize or freshly create DAG
     cache_basedir = work_dir / "quickrun_cache"
     hashed_key = _hash_quickrun_inputs(output, trans)
@@ -134,7 +142,7 @@ def quickrun(transformation, work_dir, output, resume):
             write("Success. Resuming execution...")
         else:
             errmsg = f"Transformation has been started but is incomplete. Please remove {cached_dag_path} and rerun, or resume execution using the ``--resume`` flag."
-            raise click.ClickException(errmsg)
+            raise click.ClickException(click.style(errmsg, fg="red"))
 
     else:
         if resume:
