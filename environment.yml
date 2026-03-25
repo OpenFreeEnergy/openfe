@@ -13,7 +13,7 @@ dependencies:
   - networkx
   - numpy
   - openfe-analysis>=0.4.0 # min pin https://github.com/OpenFreeEnergy/openfe/issues/1834#issuecomment-3920079481, no max to check issues with new versions
-  - openff-interchange-base != 0.5.1  # https://github.com/openforcefield/openff-interchange/issues/1450
+  - openff-interchange-base >=0.5.0,!= 0.5.1  # https://github.com/openforcefield/openff-interchange/issues/1450
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
   - openff-toolkit-base >=0.16.2
