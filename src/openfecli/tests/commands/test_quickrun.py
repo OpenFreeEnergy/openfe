@@ -36,7 +36,7 @@ def test_quickrun(extra_args, json_file):
 
         # figure out what cached json should be
         work_dir = extra_args.get("-d", ".")
-        output_json = pathlib.Path(work_dir, extra_args.get("-o", f"{trans.key}_results.json"))
+        output_json = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
         hashed_key = _hash_quickrun_inputs(output_json, trans)
 
         # checkpoint should be deleted when job is complete
@@ -59,7 +59,7 @@ def test_quickrun(extra_args, json_file):
 
 @pytest.mark.parametrize("extra_args", [{}, {"-d": "foo_dir", "-o": "foo.json"}])
 def test_quickrun_interrupted(extra_args, json_file):
-    """If a quickrun is unable to complete, the ProtocolDAG.json checkpoint should exist."""
+    """If quickrun is unable to complete, the ProtocolDAG.json checkpoint should exist."""
     extras = sum([list(kv) for kv in extra_args.items()], [])
 
     runner = CliRunner()
