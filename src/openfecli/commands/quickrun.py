@@ -156,7 +156,7 @@ def quickrun(transformation, work_dir, output, resume):
         cache_basedir.mkdir(exist_ok=True)
         dag.to_json(cached_dag_path)
 
-    write("Starting the simulations for this edge...")
+    write("\nStarting the simulations for this edge...\n")
     dagresult = execute_DAG(
         dag,
         shared_basedir=work_dir,
