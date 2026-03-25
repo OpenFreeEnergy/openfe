@@ -2,9 +2,9 @@ import json
 import pathlib
 from importlib import resources
 
-import click
 import pytest
 from click.testing import CliRunner
+from gufe import Transformation
 from gufe.tokenization import JSON_HANDLER
 
 from openfecli.commands.quickrun import quickrun
@@ -33,13 +33,14 @@ def test_quickrun(extra_args, json_file):
         result = runner.invoke(quickrun, [json_file] + extras)
         assert result.exit_code == 0
         assert "Here is the result" in result.output
+        trans = Transformation.from_json(json_file)
 
-        if outfile := extra_args.get("-o"):
-            assert pathlib.Path(outfile).exists()
-            with open(outfile, mode="r") as outf:
-                dct = json.load(outf, cls=JSON_HANDLER.decoder)
+        outfile = pathlib.Path(extra_args.get("-o", f"{trans.key}_results.json"))
+        assert pathlib.Path(outfile).exists()
+        with open(outfile, mode="r") as outf:
+            dct = json.load(outf, cls=JSON_HANDLER.decoder)
 
-            assert set(dct) == {"estimate", "uncertainty", "protocol_result", "unit_results"}
+        assert set(dct) == {"estimate", "uncertainty", "protocol_result", "unit_results"}
 
         # TODO: need a protocol that drops files to actually do this!
         # if directory := extra_args.get('-d'):
