@@ -130,7 +130,7 @@ def quickrun(transformation, work_dir, output, resume):
 
     if cached_dag_path.is_file():
         if resume:
-            write(f"Attempting to resume execution using existing edges from '{cached_dag_path}'")
+            write(f"Attempting to resume execution using '{cached_dag_path}'")
             try:
                 dag = ProtocolDAG.from_json(cached_dag_path)
             except JSONDecodeError:
@@ -147,7 +147,7 @@ def quickrun(transformation, work_dir, output, resume):
     else:
         if resume:
             write(
-                f"openfe quickrun was run with --resume, but no checkpoint found at {cached_dag_path}. Starting new execution."
+                f"openfe quickrun was run with --resume, but no cached results found at {cached_dag_path}. Starting new execution."
             )
 
         # Create the DAG instead and then serialize for later resuming
