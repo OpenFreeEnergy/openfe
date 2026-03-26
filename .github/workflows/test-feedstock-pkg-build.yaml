@@ -55,6 +55,7 @@ jobs:
           # Backup original recipe.yaml
           cp recipe/recipe.yaml recipe/recipe.yaml.bak
 
+          # NOTE: now that we use v1 feedstock, we  can use yq to directly parse the YAML here.
           # Add path after source: and delete url line
           sed -i '/^source:/a\  path: ./openfe_source' recipe/recipe.yaml
           sed -i '/^  url:/d' recipe/recipe.yaml
