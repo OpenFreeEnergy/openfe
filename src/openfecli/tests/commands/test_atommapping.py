@@ -114,17 +114,17 @@ def test_atommapping_print_dict_main(capsys, mols_AB):
         assert captured.out == str(mapping.componentA_to_componentB) + "\n"
 
 
-def test_atommapping_visualize_main(mols_AB, tmpdir):
+def test_atommapping_visualize_main(mols_AB):
     molA, molB = mols_AB
     mapper = LomapAtomMapper
     pytest.skip()  # TODO: probably with a smoke test
 
 
-def test_atommapping_visualize_main_bad_extension(mols_AB, tmpdir):
+def test_atommapping_visualize_main_bad_extension(mols_AB, tmp_path):
     molA, molB = mols_AB
     mapper = LomapAtomMapper
     mapping = LigandAtomMapping(molA, molB, {i: i for i in range(7)})
     with mock.patch("openfecli.commands.atommapping.generate_mapping", mock.Mock(return_value=mapping)):  # fmt: skip
-        with open(tmpdir / "foo.bar", mode="w") as f:
+        with open(tmp_path / "foo.bar", mode="w") as f:
             with pytest.raises(click.BadParameter, match="Unknown file format"):
                 atommapping_visualize_main(mapper, molA, molB, f, "bar")
