@@ -187,7 +187,7 @@ def quickrun(transformation, work_dir, output, resume):
     with open(output, mode="w") as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
-    # remove the checkpoint since the job has completed
+    # remove the cached dag since the job has completed
     os.remove(cached_dag_path)
 
     write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")

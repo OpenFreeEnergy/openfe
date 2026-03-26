@@ -41,7 +41,7 @@ def test_quickrun(extra_args, json_file):
         assert_click_success(result)
         assert "Here is the result" in result.output
 
-        # checkpoint should be deleted when job is complete
+        # cache should be deleted when job is complete
         assert not pathlib.Path(work_dir, "quickrun_cache", f"dag-cache-{hashed_key}.json").exists()
 
         # output json should exist with data when job is complete
@@ -60,7 +60,7 @@ def test_quickrun(extra_args, json_file):
 
 @pytest.mark.parametrize("extra_args", [{}, {"-d": "foo_dir", "-o": "foo.json"}])
 def test_quickrun_interrupted(extra_args, json_file):
-    """If quickrun starts but is unable to complete, the ProtocolDAG.json cached checkpoint should exist."""
+    """If quickrun starts but is unable to complete, the cached DAG should exist."""
     extras = sum([list(kv) for kv in extra_args.items()], [])
 
     runner = CliRunner()
@@ -123,8 +123,8 @@ def test_quickrun_unit_error():
         # protocol dag results maybe?
 
 
-def test_quickrun_existing_checkpoint_error(json_file):
-    """In the default case where resume=False, if the checkpoint exists, quickrun should error out and not attempt to execute."""
+def test_quickrun_existing_cache_error(json_file):
+    """In the default case where resume=False, if the cache exists, quickrun should error out and not attempt to execute."""
     trans = Transformation.from_json(json_file)
     dag = trans.create()
 
@@ -140,7 +140,7 @@ def test_quickrun_existing_checkpoint_error(json_file):
         assert "Transformation has been started but is incomplete." in result.stderr
 
 
-def test_quickrun_resume_from_checkpoint(json_file):
+def test_quickrun_resume_from_cache(json_file):
     trans = Transformation.from_json(json_file)
     dag = trans.create()
 
@@ -158,7 +158,7 @@ def test_quickrun_resume_from_checkpoint(json_file):
         assert "Success" in result.output
 
 
-def test_quickrun_resume_invalid_checkpoint(json_file):
+def test_quickrun_resume_invalid_cache(json_file):
     """Fail if the output file doesn't load properly."""
     trans = Transformation.from_json(json_file)
 
@@ -176,8 +176,8 @@ def test_quickrun_resume_invalid_checkpoint(json_file):
         assert "Recovery failed" in result.stderr
 
 
-def test_quickrun_resume_missing_checkpoint(json_file):
-    """If --resume is passed but there's no checkpoint, just echo a message and start from scratch."""
+def test_quickrun_resume_missing_cache(json_file):
+    """If --resume is passed but there's no cache, just echo a message and start from scratch."""
     runner = CliRunner()
     with runner.isolated_filesystem():
         # determine what the cache to be looked for should be named
