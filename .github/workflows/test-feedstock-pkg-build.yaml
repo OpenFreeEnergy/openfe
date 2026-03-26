@@ -52,15 +52,16 @@ jobs:
         run: |
           cd openfe-feedstock
           
-          # Backup original meta.yaml
-          cp recipe/meta.yaml recipe/meta.yaml.bak
+          # Backup original recipe.yaml
+          cp recipe/recipe.yaml recipe/recipe.yaml.bak
 
+          # NOTE: now that we use v1 feedstock, we  can use yq to directly parse the YAML here.
           # Add path after source: and delete url line
-          sed -i '/^source:/a\  path: ./openfe_source' recipe/meta.yaml
-          sed -i '/^  url:/d' recipe/meta.yaml
+          sed -i '/^source:/a\  path: ./openfe_source' recipe/recipe.yaml
+          sed -i '/^  url:/d' recipe/recipe.yaml
           
-          echo "Modified meta.yaml:"
-          cat recipe/meta.yaml
+          echo "Modified recipe.yaml:"
+          cat recipe/recipe.yaml
                 
       - name: Run conda-forge build test
         run: |
@@ -78,8 +79,8 @@ jobs:
           #          name: conda-build-logs
           #          path: |
           #            openfe-feedstock/build_artifacts/
-          #            openfe-feedstock/recipe/meta.yaml
-          #            openfe-feedstock/recipe/meta.yaml.bak
+          #            openfe-feedstock/recipe/recipe.yaml
+          #            openfe-feedstock/recipe/recipe.yaml.bak
           #          if-no-files-found: warn
       
       - name: Check build status
