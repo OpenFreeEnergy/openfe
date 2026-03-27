@@ -1,4 +1,4 @@
-name: Test example notebooks
+name: "release prep: test example notebooks"
 
 on:
   workflow_dispatch:

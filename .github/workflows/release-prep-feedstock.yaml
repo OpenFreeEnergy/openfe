@@ -1,4 +1,4 @@
-name: Test conda-forge package build
+name: "release prep: test conda-forge package build"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
