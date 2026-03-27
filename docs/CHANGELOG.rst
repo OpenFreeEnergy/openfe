@@ -10,19 +10,19 @@ v1.10.0
 **Added:**
 
 * Added ``--resume`` flag to ``openfe quickrun``.
-  Quickrun now temporarily caches ``protocolDAG`` information and, when used with the ``--resume`` flag, quickrun will attempt to resume execution of an incomplete transformation (`PR 1848 <https://github.com/OpenFreeEnergy/openfe/pull/1848>`_).
-* Added API support to resume ``RelativeHybridTopologyProtocol`` simulations (`PR 1774 <https://github.com/OpenFreeEnergy/openfe/pull/1774>`_).
-* Added API support to resume ``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol`` simulations (`PR 1808 <https://github.com/OpenFreeEnergy/openfe/pull/1808>`_).
+  Quickrun now temporarily caches ``protocolDAG`` information and, when used with the ``--resume`` flag, quickrun will attempt to resume execution of an incomplete transformation (`PR #1848 <https://github.com/OpenFreeEnergy/openfe/pull/1848>`_).
+* Added API support to resume ``RelativeHybridTopologyProtocol`` simulations (`PR #1774 <https://github.com/OpenFreeEnergy/openfe/pull/1774>`_).
+* Added API support to resume ``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol`` simulations (`PR #1808 <https://github.com/OpenFreeEnergy/openfe/pull/1808>`_).
 
 **Deprecated:**
 
 * Perses atom mapper and scorer functionality is deprecated, slated to be removed in ``openfe v2.0``. 
-  This includes ``PersesAtomMapper`` and ``default_perses_scorer`` (`PR 1857 <https://github.com/OpenFreeEnergy/openfe/pull/1857>`_).
+  This includes ``PersesAtomMapper`` and ``default_perses_scorer`` (`PR #1857 <https://github.com/OpenFreeEnergy/openfe/pull/1857>`_).
 
 **Fixed:**
 
 * Fixed bug introduced in v1.9.0 to ``openfe gather-abfe --report=raw`` where additional unit results for Setup and Simulation units would be shown.
-  This fix restores the behavior prior to v1.9.0 (`PR 1876 <https://github.com/OpenFreeEnergy/openfe/pull/1876>`_).
+  This fix restores the behavior prior to v1.9.0 (`PR #1876 <https://github.com/OpenFreeEnergy/openfe/pull/1876>`_).
 
 
 
@@ -32,7 +32,7 @@ v1.9.1
 **Fixed:**
 
 * Fixed a bug in Protocol termination for the HybridTop and AFE Protocols which would unnecessarily declare an ``UnboundLocalError``.
-* Updated ``openfe_analysis`` dependency  to fix issue with RMSD analysis (`Issue 1834 <https://github.com/OpenFreeEnergy/openfe/issues/1834>`_).
+* Updated ``openfe_analysis`` dependency  to fix issue with RMSD analysis (`Issue #1834 <https://github.com/OpenFreeEnergy/openfe/issues/1834>`_).
 
 
 
@@ -42,26 +42,26 @@ v1.9.0
 **Added:**
 
 * The ``validate`` method for the RelativeHybridTopologyProtocol has been implemented.
-  This means that settings and system validation can mostly be done prior to Protocol execution by calling ``RelativeHybridTopologyProtocol.validate(stateA, stateB, mapping)`` (`PR 1740 <https://github.com/OpenFreeEnergy/openfe/pull/1740>`_).
+  This means that settings and system validation can mostly be done prior to Protocol execution by calling ``RelativeHybridTopologyProtocol.validate(stateA, stateB, mapping)`` (`PR #1740 <https://github.com/OpenFreeEnergy/openfe/pull/1740>`_).
 
-* Added ``openfe test --download-only`` flag, which downloads all test data stored remotely to the local cache (`PR 1814 <https://github.com/OpenFreeEnergy/openfe/pull/1814>`_).
+* Added ``openfe test --download-only`` flag, which downloads all test data stored remotely to the local cache (`PR #1814 <https://github.com/OpenFreeEnergy/openfe/pull/1814>`_).
 
 **Changed:**
 
 * The absolute free energy protocols (AbsoluteBindingProtocol and AbsoluteSolvationProtocol) have been broken into multiple
   protocol units, allowing for setup, run, and analysis to happen
   separately in the future when relevant changes to protocol execution are
-  made (`PR 1776 <https://github.com/OpenFreeEnergy/openfe/pull/1776>`_).
+  made (`PR #1776 <https://github.com/OpenFreeEnergy/openfe/pull/1776>`_).
 * The relative free energy protocol (RelativeHybridTopologyProtocol) has been
   broken into multiple protocol units, allowing for the setup, run, analysis to happen
-  separately (`PR 1773 <https://github.com/OpenFreeEnergy/openfe/pull/1773>`_).
+  separately (`PR #1773 <https://github.com/OpenFreeEnergy/openfe/pull/1773>`_).
 
 **Fixed:**
 
-* Fixed bug in ligand network visualization (such as with ``openfe view-ligand-network``) so that ligand names are no longer cut off by the plot border (`PR 1822 <https://github.com/OpenFreeEnergy/openfe/pull/1822>`_).
+* Fixed bug in ligand network visualization (such as with ``openfe view-ligand-network``) so that ligand names are no longer cut off by the plot border (`PR #1822 <https://github.com/OpenFreeEnergy/openfe/pull/1822>`_).
 * Endstates in the RelativeHybridTopologyProtocol are now being created
   in a manner that allows for isomorphic molecules that differ between
-  endstates to have different parameters (`PR 1772 <https://github.com/OpenFreeEnergy/openfe/pull/1772>`_).
+  endstates to have different parameters (`PR #1772 <https://github.com/OpenFreeEnergy/openfe/pull/1772>`_).
 
 
 
