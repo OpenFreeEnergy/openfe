@@ -350,13 +350,12 @@ class TestFEAnalysis:
             rtol=5e-01,
         )  # fmt: skip
 
-    def test_plots(self, analyzer, tmpdir):
-        with tmpdir.as_cwd():
-            analyzer.plot(filepath=Path("."), filename_prefix="")
-            assert Path("forward_reverse_convergence.png").is_file()
-            assert Path("mbar_overlap_matrix.png").is_file()
-            assert Path("replica_exchange_matrix.png").is_file()
-            assert Path("replica_state_timeseries.png").is_file()
+    def test_plots(self, analyzer, tmp_path):
+        analyzer.plot(filepath=Path(tmp_path), filename_prefix="")
+        assert Path(tmp_path / "forward_reverse_convergence.png").is_file()
+        assert Path(tmp_path / "mbar_overlap_matrix.png").is_file()
+        assert Path(tmp_path / "replica_exchange_matrix.png").is_file()
+        assert Path(tmp_path / "replica_state_timeseries.png").is_file()
 
     def test_plot_convergence_bad_units(self, analyzer):
         with pytest.raises(ValueError, match="Unknown plotting units"):

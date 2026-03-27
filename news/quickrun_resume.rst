@@ -1,7 +1,7 @@
 **Added:**
 
 * Added ``--resume`` flag to ``openfe quickrun``.
-  Quickrun now temporarily caches ``protocolDAG`` information and when used with the ``--resume`` flag, quickrun will attempt resume execution of an incomplete transformation.
+  Quickrun now temporarily caches ``protocolDAG`` information and, when used with the ``--resume`` flag, quickrun will attempt to resume execution of an incomplete transformation.
 
 **Changed:**
 

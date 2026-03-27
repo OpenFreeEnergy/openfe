@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import hashlib
 import json
 import pathlib
 import warnings
@@ -14,6 +15,12 @@ from openfecli.utils import configure_logger, print_duration, write
 def _format_exception(exception) -> str:
     """Takes the exception as stored by Gufe and reformats it."""
     return f"{exception[0]}: {exception[1][0]}"
+
+
+def _hash_quickrun_inputs(output, transformation):
+    string_rep = f"{output.absolute()}{transformation.key}"
+    hasher = hashlib.md5(string_rep.encode(), usedforsecurity=False)
+    return hasher.hexdigest()
 
 
 @click.command("quickrun", short_help="Run a given transformation, saved as a JSON file")
@@ -90,12 +97,14 @@ def quickrun(transformation, work_dir, output, resume):
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
 
+    click.secho(f"\nCurrent directory: {os.getcwd()}/")
     if work_dir is None:
+        click.secho(f"Creating working directory: {work_dir}/")
         work_dir = pathlib.Path(os.getcwd())
     else:
+        click.secho(f"Using existing working directory: {work_dir}/")
         work_dir.mkdir(exist_ok=True, parents=True)
 
-    write("Loading file...")
     trans = Transformation.from_json(transformation)
 
     if output is None:
@@ -103,37 +112,56 @@ def quickrun(transformation, work_dir, output, resume):
     else:
         output.parent.mkdir(exist_ok=True, parents=True)
 
-    # Attempt to either deserialize or freshly create DAG
-    trans_DAG_json = work_dir / "quickrun_cache" / f"{trans.key}-protocolDAG.json"
+    click.secho(f"Loading transformation from: {transformation.name}")
+    click.secho(f"When simulation is complete, results will be written to: {output}\n")
 
-    if trans_DAG_json.is_file():
+    resume_command = f"openfe quickrun {transformation.name} -o {output} -d {work_dir} --resume\n"
+
+    click.secho(
+        "If this simulation is interrupted or fails, you may attempt to resume execution using:",
+        bold=True,
+    )
+    click.secho(resume_command)
+
+    # Attempt to either deserialize or freshly create DAG
+    cache_basedir = work_dir / "quickrun_cache"
+    hashed_key = _hash_quickrun_inputs(output, trans)
+    cached_dag_path = cache_basedir / f"dag-cache-{hashed_key}.json"
+
+    if cached_dag_path.is_file():
         if resume:
-            write(f"Attempting to resume execution using existing edges from '{trans_DAG_json}'")
+            write(f"Attempting to resume execution using '{cached_dag_path}'")
             try:
-                dag = ProtocolDAG.from_json(trans_DAG_json)
+                dag = ProtocolDAG.from_json(cached_dag_path)
             except JSONDecodeError:
-                errmsg = f"Recovery failed, please remove {trans_DAG_json} and any results from your working directory before continuing to create a new protocol, or run without `--resume`."
+                # we can't tell the user which gufe-generated cache dir to delete, since we'd need to load the JSON to know the DAG's key
+                # however, just removing the cached_dag_path is sufficient to trigger a fresh DAG to be generated, and the gufe-generated cached dir will just be stale.
+                errmsg = f"Recovery failed, please remove {cached_dag_path} before continuing to create a new protocol."
                 raise click.ClickException(errmsg)
+
+            write("Success. Resuming execution...")
         else:
-            errmsg = f"Transformation has been started but is incomplete. Please remove {trans_DAG_json} and rerun, or resume execution using the ``--resume`` flag."
-            raise RuntimeError(errmsg)
+            errmsg = f"Transformation has been started but is incomplete. Please remove {cached_dag_path} and rerun, or resume execution using the ``--resume`` flag."
+            raise click.ClickException(click.style(errmsg, fg="red"))
 
     else:
         if resume:
-            warnings.warn(f"No checkpoint found at {trans_DAG_json}! Starting new execution.")
+            write(
+                f"openfe quickrun was run with --resume, but no cached results found at {cached_dag_path}. Starting new execution."
+            )
 
         # Create the DAG instead and then serialize for later resuming
         write("Planning simulations for this edge...")
         dag = trans.create()
-        pathlib.Path(work_dir, "quickrun_cache").mkdir(exist_ok=True)
-        dag.to_json(trans_DAG_json)
+        cache_basedir.mkdir(exist_ok=True)
+        dag.to_json(cached_dag_path)
 
-    write("Starting the simulations for this edge...")
+    write("\nStarting the simulations for this edge...\n")
     dagresult = execute_DAG(
         dag,
         shared_basedir=work_dir,
         scratch_basedir=work_dir,
-        unitresults_basedir=work_dir,
+        cache_basedir=cache_basedir,
         keep_shared=True,
         raise_error=False,
         n_retries=2,
@@ -159,8 +187,8 @@ def quickrun(transformation, work_dir, output, resume):
     with open(output, mode="w") as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
-    # remove the checkpoint since the job has completed
-    os.remove(trans_DAG_json)
+    # remove the cached dag since the job has completed
+    os.remove(cached_dag_path)
 
     write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
     write("")
