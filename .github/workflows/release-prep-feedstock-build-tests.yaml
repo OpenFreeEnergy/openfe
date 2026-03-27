@@ -1,0 +1,102 @@
+# tests this openfe commit with the latest gufe release
+# meant to be used for release prep to catch feedstock issues before releasing on github
+name: "release prep: test conda-forge package build"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - release*
+  push:
+    branches:
+      - release*
+
+jobs:
+  test-conda-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout openfe repository
+        uses: actions/checkout@v4
+        with:
+          path: openfe
+      
+      - name: Checkout conda-forge feedstock
+        uses: actions/checkout@v4
+        with:
+          repository: conda-forge/openfe-feedstock
+          path: openfe-feedstock
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      
+      - name: Install conda-build dependencies
+        run: |
+          pip install pyyaml'
+
+      # TODO just checkout the repo where we need it?
+      - name: Copy source code to recipe folder
+        run: cp -r openfe openfe-feedstock/recipe/openfe_source
+
+      - name: Get Latest gufe Version
+        id: latest-gufe-version
+        run: |
+          REPO="gufe"
+          VERSION=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name | ltrimstr("v")')
+          echo $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Modify feedstock to use local path and latest gufe
+        run: |
+          cd openfe-feedstock
+          
+          # Backup original recipe.yaml
+          cp recipe/recipe.yaml recipe/recipe.yaml.bak
+
+          # Add path after 'source:' and delete url line
+          yq -i '.source.path="./openfe_source"' recipe.yaml
+          yq -i 'del(.source.url)' recipe.yaml
+
+          # remove existing gufe entry and add the gufe pin we want
+          yq -i 'del(.outputs.[0].requirements.run[] | select(. =="*gufe*"))' recipe.yaml          
+          yq -i '.outputs.[0].requirements.run += "${{ steps.latest-version.outputs.VERSION }}"' recipe.yaml
+          
+          
+          echo "Modified recipe.yaml:"
+          cat recipe/recipe.yaml
+                
+      - name: Run conda-forge build test
+        run: |
+          cd openfe-feedstock
+          python build-locally.py
+        continue-on-error: true
+        id: build_test
+
+          # Uncomment if build_artifacts is needed to troubleshoot build
+      
+          #      - name: Upload build logs
+          #        if: always()
+          #        uses: actions/upload-artifact@v4
+          #        with:
+          #          name: conda-build-logs
+          #          path: |
+          #            openfe-feedstock/build_artifacts/
+          #            openfe-feedstock/recipe/recipe.yaml
+          #            openfe-feedstock/recipe/recipe.yaml.bak
+          #          if-no-files-found: warn
+      
+      - name: Check build status
+        if: steps.build_test.outcome == 'failure'
+        run: |
+          echo "❌ Conda forge build test failed. Check the uploaded logs for details."
+          exit 1
