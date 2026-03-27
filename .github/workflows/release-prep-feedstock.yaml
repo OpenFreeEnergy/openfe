@@ -51,7 +51,7 @@ jobs:
       - name: Get Latest gufe Version
         id: latest-gufe-version
         run: |
-          REPO="gufe"
+          REPO="openfreeenergy/gufe"
           VERSION=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name | ltrimstr("v")')
           echo $VERSION
@@ -72,7 +72,7 @@ jobs:
 
             # remove existing gufe entry and add the gufe pin we want
             yq -i 'del(.outputs.[0].requirements.run[] | select(. =="*gufe*"))' recipe/recipe.yaml
-            yq -i '.outputs.[0].requirements.run += "${{ steps.latest-version.outputs.VERSION }}"' recipe/recipe.yaml
+            yq -i '.outputs.[0].requirements.run += "gufe==${{ steps.latest-gufe-version.outputs.VERSION }}"' recipe/recipe.yaml
             
             
             echo "Modified recipe.yaml:"
