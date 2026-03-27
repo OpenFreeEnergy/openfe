@@ -57,6 +57,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Modify feedstock to use local path and latest gufe
+        uses: mikefarah/yq@master
         run: |
           cd openfe-feedstock
           
