@@ -42,7 +42,7 @@ jobs:
       
       - name: Install conda-build dependencies
         run: |
-          pip install pyyaml'
+          pip install pyyaml
 
       # TODO just checkout the repo where we need it?
       - name: Copy source code to recipe folder
