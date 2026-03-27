@@ -1,4 +1,6 @@
-name: "release prep: test conda-forge package build"
+# tests this openfe commit and gufe main to check for 
+# conda-feedstock build issues
+name: "cron: weekly conda-forge package build tests"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -12,12 +14,6 @@ on:
   schedule:
     # 3 am weekly on monday
     - cron: "0 3 * * MON"
-  pull_request:
-    branches:
-      - release*
-  push:
-    branches:
-      - release*
 
 jobs:
   test-conda-build:
