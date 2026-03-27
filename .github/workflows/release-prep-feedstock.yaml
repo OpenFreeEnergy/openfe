@@ -11,13 +11,7 @@ defaults:
     shell: bash -leo pipefail {0}
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - main  # TEMPORARY
-    #   - release*
-  push:
-    branches:
-      - release*
+  # TODO: run when "release prep" label is added
 
 jobs:
   test-conda-build:
