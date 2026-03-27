@@ -4,28 +4,25 @@ Changelog
 
 .. current developments
 
-v1.10.10
+v1.10.0
 ====================
 
 **Added:**
 
 * Added ``--resume`` flag to ``openfe quickrun``.
-  Quickrun now temporarily caches ``protocolDAG`` information and, when used with the ``--resume`` flag, quickrun will attempt to resume execution of an incomplete transformation.
-* Added API support to resume `RelativeHybridTopologyProtocol`
-  simulations (`PR 1774 <https://github.com/OpenFreeEnergy/openfe/pull/1774>`_).
-* Added API support to resume `AbsoluteBindingProtocol` and
-  `AbsoluteSolvationProtocol` simulations
-  (`PR 1808 <https://github.com/OpenFreeEnergy/openfe/pull/1808>`_).
+  Quickrun now temporarily caches ``protocolDAG`` information and, when used with the ``--resume`` flag, quickrun will attempt to resume execution of an incomplete transformation (`PR 1848 <https://github.com/OpenFreeEnergy/openfe/pull/1848>`_).
+* Added API support to resume ``RelativeHybridTopologyProtocol`` simulations (`PR 1774 <https://github.com/OpenFreeEnergy/openfe/pull/1774>`_).
+* Added API support to resume ``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol`` simulations (`PR 1808 <https://github.com/OpenFreeEnergy/openfe/pull/1808>`_).
 
 **Deprecated:**
 
 * Perses atom mapper and scorer functionality is deprecated, slated to be removed in ``openfe v2.0``. 
-This includes ``PersesAtomMapper`` and ``default_perses_scorer``.
+  This includes ``PersesAtomMapper`` and ``default_perses_scorer`` (`PR 1857 <https://github.com/OpenFreeEnergy/openfe/pull/1857>`_).
 
 **Fixed:**
 
 * Fixed bug introduced in v1.9.0 to ``openfe gather-abfe --report=raw`` where additional unit results for Setup and Simulation units would be shown.
-This fix restores the behavior prior to v1.9.0.
+  This fix restores the behavior prior to v1.9.0 (`PR 1876 <https://github.com/OpenFreeEnergy/openfe/pull/1876>`_).
 
 
 
@@ -35,7 +32,7 @@ v1.9.1
 **Fixed:**
 
 * Fixed a bug in Protocol termination for the HybridTop and AFE Protocols which would unnecessarily declare an ``UnboundLocalError``.
-* Updated ``openfe_analysis`` dependency  to fix issue with RMSD analysis (`Issue 1834 <https://github.com/OpenFreeEnergy/openfe/issues/1834>`).
+* Updated ``openfe_analysis`` dependency  to fix issue with RMSD analysis (`Issue 1834 <https://github.com/OpenFreeEnergy/openfe/issues/1834>`_).
 
 
 
