@@ -59,23 +59,24 @@ jobs:
       
       - name: Modify feedstock to use local path and latest gufe
         uses: mikefarah/yq@master
-        run: |
-          cd openfe-feedstock
-          
-          # Backup original recipe.yaml
-          cp recipe/recipe.yaml recipe/recipe.yaml.bak
+        with:
+          cmd: |
+            cd openfe-feedstock
+            
+            # Backup original recipe.yaml
+            cp recipe/recipe.yaml recipe/recipe.yaml.bak
 
-          # Add path after 'source:' and delete url line
-          yq -i '.source.path="./openfe_source"' recipe.yaml
-          yq -i 'del(.source.url)' recipe.yaml
+            # Add path after 'source:' and delete url line
+            yq -i '.source.path="./openfe_source"' recipe.yaml
+            yq -i 'del(.source.url)' recipe.yaml
 
-          # remove existing gufe entry and add the gufe pin we want
-          yq -i 'del(.outputs.[0].requirements.run[] | select(. =="*gufe*"))' recipe.yaml          
-          yq -i '.outputs.[0].requirements.run += "${{ steps.latest-version.outputs.VERSION }}"' recipe.yaml
-          
-          
-          echo "Modified recipe.yaml:"
-          cat recipe/recipe.yaml
+            # remove existing gufe entry and add the gufe pin we want
+            yq -i 'del(.outputs.[0].requirements.run[] | select(. =="*gufe*"))' recipe.yaml          
+            yq -i '.outputs.[0].requirements.run += "${{ steps.latest-version.outputs.VERSION }}"' recipe.yaml
+            
+            
+            echo "Modified recipe.yaml:"
+            cat recipe/recipe.yaml
                 
       - name: Run conda-forge build test
         run: |
