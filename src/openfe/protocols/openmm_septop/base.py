@@ -985,6 +985,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         self,
         forcefield_settings: OpenMMSystemGeneratorFFSettings,
         engine_settings: OpenMMEngineSettings,
+        use_dummy: bool = True,
     ) -> tuple[openmmtools.cache.ContextCache, openmmtools.cache.ContextCache]:
         """
         Set the context caches based on the chosen platform
@@ -993,6 +994,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         ----------
         forcefield_settings: OpenMMSystemGeneratorFFSettings
         engine_settings : OpenMMEngineSettings
+        use_dummy: bool
+          Whether to use a dummy context cache
 
         Returns
         -------
@@ -1010,17 +1013,22 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             restrict_cpu_count=restrict_cpu,
         )
 
-        energy_context_cache = openmmtools.cache.ContextCache(
-            capacity=None,
-            time_to_live=None,
-            platform=platform,
-        )
+        if use_dummy:
+            energy_context_cache = openmmtools.cache.DummyContextCache(platform=platform)
+            sampler_context_cache = openmmtools.cache.DummyContextCache(platform=platform)
 
-        sampler_context_cache = openmmtools.cache.ContextCache(
-            capacity=None,
-            time_to_live=None,
-            platform=platform,
-        )
+        else:
+            energy_context_cache = openmmtools.cache.ContextCache(
+                capacity=None,
+                time_to_live=None,
+                platform=platform,
+            )
+
+            sampler_context_cache = openmmtools.cache.ContextCache(
+                capacity=None,
+                time_to_live=None,
+                platform=platform,
+            )
 
         return energy_context_cache, sampler_context_cache
 
@@ -1315,7 +1323,9 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         try:
             # 5. Get context caches
             energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
-                settings["forcefield_settings"], settings["engine_settings"]
+                settings["forcefield_settings"],
+                settings["engine_settings"],
+                use_dummy=True,
             )
 
             # 6. Get integrator
