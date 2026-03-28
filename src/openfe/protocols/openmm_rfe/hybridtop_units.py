@@ -30,6 +30,7 @@ from gufe import (
     LigandAtomMapping,
     ProteinComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
 )
 from gufe.protocols.errors import ProtocolUnitExecutionError
@@ -199,6 +200,10 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         _, _, smcs_B = system_validation.get_components(stateB)
 
         small_mols = {m: m.to_openff() for m in set(smcs_A).union(set(smcs_B))}
+
+        # If there is a SolvatedPDBComponent, we set the solvent_comp
+        if isinstance(protein_comp, SolvatedPDBComponent):
+            solvent_comp = protein_comp
 
         return solvent_comp, protein_comp, small_mols
 

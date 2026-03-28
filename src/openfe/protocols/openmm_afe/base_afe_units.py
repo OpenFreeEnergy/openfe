@@ -29,6 +29,7 @@ import numpy.typing as npt
 import openmm
 import openmmtools
 from gufe import (
+    BaseSolventComponent,
     ProteinComponent,
     SmallMoleculeComponent,
     SolventComponent,
@@ -377,7 +378,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
     @staticmethod
     def _get_system_generator(
         settings: dict[str, SettingsBaseModel],
-        solvent_component: SolventComponent | None,
+        solvent_component: BaseSolventComponent | None,
         openff_molecules: list[OFFMolecule],
         ffcache: pathlib.Path | None,
     ) -> SystemGenerator:
@@ -389,7 +390,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         ----------
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings object for the unit.
-        solvent_comp : SolventComponent | None
+        solvent_comp : BaseSolventComponent | None
           The solvent component of this system, if there is one.
         openff_molecules : list[openff.toolkit.Molecule] | None
           A list of OpenFF Molecules to generate templates for, if any.
@@ -422,7 +423,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
     @staticmethod
     def _get_modeller(
         protein_component: ProteinComponent | None,
-        solvent_component: SolventComponent | None,
+        solvent_component: BaseSolventComponent | None,
         small_mols: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
         solvation_settings: BaseSolvationSettings,
@@ -435,8 +436,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         ----------
         protein_component : ProteinComponent | None
           Protein Component, if it exists.
-        solvent_component : SolventComponent | None
-          Solvent Component, if it exists.
+        solvent_component : BaseSolventComponent | None
+          The solvent component, if it exists.
         small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           Dictionary of OpenFF Molecules to add, keyed by
           SmallMoleculeComponent.
@@ -468,7 +469,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         self,
         settings: dict[str, SettingsBaseModel],
         protein_component: ProteinComponent | None,
-        solvent_component: SolventComponent | None,
+        solvent_component: BaseSolventComponent | None,
         small_mols: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> tuple[
         app.Topology,
@@ -486,8 +487,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
           Protocol settings
         protein_component : ProteinComponent | None
           Protein component for the system.
-        solvent_component : SolventComponent | None
-          Solvent component for the system.
+        solvent_component : BaseSolventComponent | None
+         Solvent component for the system, if it exists.
         small_mols : dict[str, openff.toolkit.Molecule]
           Dictionary of SmallMoleculeComponents and OpenFF Molecules
           defining the ligands to be added to the system
@@ -915,7 +916,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         box_vectors: openmm.unit.Quantity,
         thermodynamic_settings: ThermoSettings,
         lambdas: dict[str, list[float]],
-        solvent_component: SolventComponent | None,
+        solvent_component: BaseSolventComponent | None,
         alchemically_restrained: bool,
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
@@ -934,7 +935,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
           Settings controlling the thermodynamic parameters.
         lambdas : dict[str, list[float]]
           A dictionary of lambda scales.
-        solvent_component : SolventComponent | None
+        solvent_component : BaseSolventComponent | None
           The solvent component of the system, if there is one.
         alchemically_restrained : bool
           Whether or not the system requires a control parameter
