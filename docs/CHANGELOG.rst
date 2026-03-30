@@ -7,6 +7,9 @@ Changelog
 v1.10.0
 ====================
 
+This release introduces the ability to resume execution of an incomplete transformation using ``openfe quickrun`` with the ``--resume`` flag.
+See the `quickrun documentation <https://docs.openfree.energy/en/v1.10.0/guide/execution/quickrun_execution.html>`_ details.
+
 **Added:**
 
 * Added ``--resume`` flag to ``openfe quickrun``.
