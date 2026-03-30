@@ -46,7 +46,7 @@ If a job is interrupted (e.g. due to a wall-time limit, node failure, or manual 
 
     > openfe quickrun transformation.json -d workdir/ -o workdir/results.json --resume
 
-The planned simulation cache will be used to identify where in the simulation process it left off, if supported by the Transformation Protocol, how to resume.
+The planned simulation cache will be used to identify where in the simulation process it left off and, if supported by the Transformation Protocol, how to resume.
 
 .. note::
 
@@ -133,25 +133,64 @@ This should result in the following file structure after execution:
 
 ::
 
-    results_parallel/
+    results_parallel
     ├── results_0
-    │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
-    │   │   └── shared_RelativeHybridTopologyProtocolUnit-79c279f04ec84218b7935bc0447539a9_attempt_0
-    │   │       ├── checkpoint.nc
-    │   │       ├── simulation.nc
     │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+    │   ├── shared_HybridTopologyMultiStateAnalysisUnit-5e0825de1dd045818cdc3428205c1cf7_attempt_0
+    │   │   ├── forward_reverse_convergence.png
+    │   │   ├── ligand_RMSD.png
+    │   │   ├── mbar_overlap_matrix.png
+    │   │   ├── replica_exchange_matrix.png
+    │   │   ├── replica_state_timeseries.png
+    │   │   └── structural_analysis.npz
+    │   ├── shared_HybridTopologyMultiStateSimulationUnit-144be594cf024cb19152cfe5e0b3fb7d_attempt_0
+    │   │   ├── checkpoint.chk
+    │   │   ├── simulation.nc
+    │   │   └── simulation_real_time_analysis.yaml
+    │   └── shared_HybridTopologySetupUnit-01b5afe1972c4e2f9d0943da43b4b19c_attempt_0
+    │       ├── A_db.json
+    │       ├── B_db.json
+    │       ├── hybrid_positions.npy
+    │       ├── hybrid_system.pdb
+    │       └── hybrid_system.xml.bz2
     ├── results_1
-    │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
-    │   │   └── shared_RelativeHybridTopologyProtocolUnit-a3cef34132aa4e9cbb824fcbcd043b0e_attempt_0
-    │   │       ├── checkpoint.nc
-    │   │       ├── simulation.nc
     │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+    │   ├── shared_HybridTopologyMultiStateAnalysisUnit-7986bec616a74929aee85e900535f4a2_attempt_0
+    │   │   ├── forward_reverse_convergence.png
+    │   │   ├── ligand_RMSD.png
+    │   │   ├── mbar_overlap_matrix.png
+    │   │   ├── replica_exchange_matrix.png
+    │   │   ├── replica_state_timeseries.png
+    │   │   └── structural_analysis.npz
+    │   ├── shared_HybridTopologyMultiStateSimulationUnit-18eb295b7123444f9ac66ff3caffcab8_attempt_0
+    │   │   ├── checkpoint.chk
+    │   │   ├── simulation.nc
+    │   │   └── simulation_real_time_analysis.yaml
+    │   └── shared_HybridTopologySetupUnit-3d8ccb1ef5124bd4ba20e0047aad0b5f_attempt_0
+    │       ├── A_db.json
+    │       ├── B_db.json
+    │       ├── hybrid_positions.npy
+    │       ├── hybrid_system.pdb
+    │       └── hybrid_system.xml.bz2
     └── results_2
-        ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
-        │   └── shared_RelativeHybridTopologyProtocolUnit-abb2b104151c45fc8b0993fa0a7ee0af_attempt_0
-        │       ├── checkpoint.nc
-        │       ├── simulation.nc
-        └── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+        ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+        ├── shared_HybridTopologyMultiStateAnalysisUnit-ac5fad8ad1fb49598f80018713dce070_attempt_0
+        │   ├── forward_reverse_convergence.png
+        │   ├── ligand_RMSD.png
+        │   ├── mbar_overlap_matrix.png
+        │   ├── replica_exchange_matrix.png
+        │   ├── replica_state_timeseries.png
+        │   └── structural_analysis.npz
+        ├── shared_HybridTopologyMultiStateSimulationUnit-73abea21b423444881bd8f21415c937f_attempt_0
+        │   ├── checkpoint.chk
+        │   ├── simulation.nc
+        │   └── simulation_real_time_analysis.yaml
+        └── shared_HybridTopologySetupUnit-79bc9b63321945338a3b69d9f94ee15b_attempt_0
+            ├── A_db.json
+            ├── B_db.json
+            ├── hybrid_positions.npy
+            ├── hybrid_system.pdb
+            └── hybrid_system.xml.bz2
 
 The results of which can be gathered from the CLI using the ``openfe gather`` command, in this case you should direct
 it to the root directory which includes the repeat results and it will automatically collate the information
