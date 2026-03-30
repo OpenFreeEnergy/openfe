@@ -11,7 +11,7 @@ These serialized JSON files are the currency of executing a campaign of simulati
 To read the ``Transformation`` information and execute the simulation, the command line interface provides the ``openfe quickrun`` command, the full details of which are given in :ref:`the CLI reference section<cli_quickrun>`.
 
 
-Basic Quickrun usage
+Basic quickrun usage
 --------------------
 
 The ``quickrun`` command takes in the ``Transformation`` information represented as JSON, then executes a simulation according to those specifications.
@@ -28,12 +28,12 @@ The ``-o`` flag controls where the results file will be written.
 If it is omitted, results are written to a file named ``<transformation_key>_results.json`` in the working directory, where ``<transformation_key>`` is a unique identifier.
 
 
-Resuming a halted Job
+Resuming a halted job
 ---------------------
 
 When ``openfe quickrun`` starts, it saves a plan of the simulation to a cache file before execution begins:
 
-.. code::
+.. code:: bash
 
     <work-dir>/quickrun_cache/dag-cache-<key>.json
 
@@ -42,7 +42,7 @@ This cache is automatically removed once the job completes.
 
 If a job is interrupted (e.g. due to a wall-time limit, node failure, or manual cancellation), you can resume the interrupted job by passing the ``--resume`` flag:
 
-.. code::
+.. code:: bash
 
     > openfe quickrun transformation.json -d workdir/ -o workdir/results.json --resume
 
@@ -55,14 +55,14 @@ The planned simulation cache will be used to identify where in the simulation pr
 
 If you pass ``--resume`` but no cache file is found (e.g. the job never started), the following warning is printed and a fresh execution begins.
 
-.. code::
+.. code:: bash
 
     openfe quickrun was run with --resume, but no cached results found at
     <path-to-cache-file>. Starting new execution.
 
 If the cache file is corrupted (e.g. due to an incomplete write at the moment of interruption), ``quickrun --resume`` will raise an error with instructions to rerun the simulation:
 
-.. code::
+.. code:: bash
 
     Recovery failed, please remove <work-dir>/quickrun_cache/dag-cache-<key>.json
     before executing a new transformation simulation.
@@ -70,7 +70,7 @@ If the cache file is corrupted (e.g. due to an incomplete write at the moment of
 If you do not pass the ``--resume`` flag, the code will detect the partially complete transformation and prevent you from accidentally starting a duplicate run.
 The following error will be raised:
 
-.. code::
+.. code:: bash
 
     Transformation has been started but is incomplete. Please remove
     <work-dir>/quickrun_cache/dag-cache-<key>.json and rerun, or resume
@@ -83,7 +83,7 @@ Executing within a job submission script
 You may need to submit computational jobs to a queueing engine, such as Slurm.
 The ``openfe quickrun`` command can be used within a submission script as follows:
 
-::
+.. code-block:: bash
 
   #!/bin/bash
 
@@ -103,8 +103,8 @@ Serial execution of multiple repeats of a transformation can be inefficient when
 Higher throughput can be achieved with parallel execution by running one repeat per HPC job.
 Most protocols are set up to run three repeats in serial by default, but this can be changed by either:
 
- 1. Defining the protocol setting ``protocol_repeats`` - see the :ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details.
- 2. Using the ``openfe plan-rhfe-network`` (or ``plan-rbfe-network``) command line flag ``--n-protocol-repeats``.
+1. Defining the protocol setting ``protocol_repeats`` - see the :ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details.
+2. Using the ``openfe plan-rhfe-network`` (or ``plan-rbfe-network``) command line flag ``--n-protocol-repeats``.
 
 Each transformation can then be executed multiple times via the ``openfe quickrun`` command to produce a set of repeats.
 However, **you must use unique results files for each repeat to ensure they don't overwrite each other**.
