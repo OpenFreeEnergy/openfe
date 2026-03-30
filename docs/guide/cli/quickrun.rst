@@ -4,7 +4,7 @@ Using Quickrun to execute Transformations
 =========================================
 
 The ``openfe quickrun`` command executes a single alchemical Transformation.
-This is currrently the primary way to execute Transformations after they
+This is currently the primary way to execute Transformations after they
 have been created during network planning.
 
 
@@ -18,7 +18,7 @@ To run a Transformation (``transformation.json``) and save results to ``results.
     openfe quickrun transformation.json -d workdir/ -o workdir/results.json
 
 The ``-d`` / ``--work-dir`` flag controls where working files (checkpoints, 
-trajectory data, etc...) are written. If it is ommited, the current directory
+trajectory data, etc...) are written. If it is omitted, the current directory
 will be used.
 
 The ``-o`` flag controls where the results file will be written. If it is omitted,
@@ -33,9 +33,10 @@ cache file before execution begins:
 
 .. code:: none
 
-    <work-dir>/quickrun_cache/<transformation_key>-ProtocolDAG.json
+    <work-dir>/quickrun_cache/dag-cache-<key>.json
 
-This cache is automatically removed once the job completes successfully.
+Where ``<key>`` is a unique identifier based on the ``-o`` file path and the
+Transformation details. This cache is automatically removed once the job completes successfully.
 
 If a job is interrupted (e.g. due to a wall-time limit, node failure, or
 manual cancellation), you can resume the interrupted job by passing the ``--resume`` flag:
@@ -49,24 +50,25 @@ process it is and, if supported by the Transformation Protocol, how to resume.
 
 .. note::
 
-    The same ``-d`` / ``--work-dir`` used in the original run
-    must be specified so that ``quickrun`` can locate the cache file.
+    The same ``-d`` / ``--work-dir`` and ``-o`` flag arguments used in the
+    original run must be specified so that ``quickrun`` can locate the cache file.
 
 If you pass ``--resume`` but no cache file is found (e.g. the job never
 started), the following warning is printed and a fresh execution begins:
 
 .. code:: none
 
-    No checkpoint found at <work-dir>/quickrun_cache/<transformation_key>-protocolDAG.json!
-    Starting new execution.
+    openfe quickrun was run with --resume, but no cached results found at
+    <path-to-cache-file>. Starting new execution.
 
 If the cache file is corrupted (e.g. due to an incomplete write at
-the moment of interruption), ``quickrun --resume`` will raise an error with instructions to rerun the simulation:
+the moment of interruption), ``quickrun --resume`` will raise an error with
+instructions to rerun the simulation:
 
 .. code:: none
 
-    Recovery failed, please remove <work-dir>/quickrun_cache/<transformation_key>-protocolDAG.json
-    and any results from your working directory before continuing to create a new protocol, or run without `--resume`.
+    Recovery failed, please remove <work-dir>/quickrun_cache/dag-cache-<key>.json
+    before executing a new transformation simulation.
 
 If you do not pass the ``--resume`` flag, the code will detect the partially
 complete transformation and prevent you from accidentally starting a duplicate
@@ -74,8 +76,8 @@ run. The following error will be raised:
 
 .. code:: none
 
-    RuntimeError: Transformation has been started but is incomplete. Please
-    remove <path>/quickrun_cache/<key>-protocolDAG.json and rerun, or resume
+    Transformation has been started but is incomplete. Please remove
+    <work-dir>/quickrun_cache/dag-cache-<key>.json and rerun, or resume
     execution using the ``--resume`` flag.
 
 See Also
