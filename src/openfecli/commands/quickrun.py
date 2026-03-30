@@ -136,7 +136,7 @@ def quickrun(transformation, work_dir, output, resume):
             except JSONDecodeError:
                 # we can't tell the user which gufe-generated cache dir to delete, since we'd need to load the JSON to know the DAG's key
                 # however, just removing the cached_dag_path is sufficient to trigger a fresh DAG to be generated, and the gufe-generated cached dir will just be stale.
-                errmsg = f"Recovery failed, please remove {cached_dag_path} before continuing to create a new protocol."
+                errmsg = f"Recovery failed, please remove {cached_dag_path} before executing a new transformation simulation."
                 raise click.ClickException(errmsg)
 
             write("Success. Resuming execution...")
