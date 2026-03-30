@@ -19,7 +19,7 @@ For example, the following command executes a simulation defined by ``transforma
 
 ::
 
-  openfe quickrun transformation.json -d workdir/ -o workdir/results.json
+  > openfe quickrun transformation.json -d workdir/ -o workdir/results.json
 
 The ``-d`` / ``--work-dir`` flag controls where working files (checkpoints, trajectory data, etc...) are written.
 If it is omitted, the current directory will be used.
@@ -197,7 +197,7 @@ it to the root directory which includes the repeat results and it will automatic
 
 ::
 
- openfe gather results_parallel
+  > openfe gather results_parallel
 
 Optimizing GPU performance with NVIDIA MPS
 ==========================================
