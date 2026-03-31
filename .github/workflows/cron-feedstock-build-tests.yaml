@@ -1,6 +1,6 @@
 # tests this openfe commit and gufe main to check for 
 # conda-feedstock build issues
-name: "cron: weekly conda-forge package build tests"
+name: "cron: weekly feedstock package build tests"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
