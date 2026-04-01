@@ -364,7 +364,7 @@ See our guide on :ref:`containers <installation:containers>` for how to get star
 .. _installation:mamba_hpc:
 
 ``micromamba`` in HPC Environments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _virtual packages: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-virtual.html#managing-virtual-packages
 
