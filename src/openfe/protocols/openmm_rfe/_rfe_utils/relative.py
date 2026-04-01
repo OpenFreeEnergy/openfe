@@ -1220,9 +1220,7 @@ class HybridTopologyFactory:
                     r0_new = r0_old
                     k_new = 0.0*unit.kilojoule_per_mole/unit.angstrom**2
                 else:
-                    # TODO - why is this being recalculated?
-                    [index1, index2, r0_new, k_new] = self._find_bond_parameters(
-                        new_system_bond_force, index1_new, index2_new)
+                    [_, _, r0_new, k_new] = new_bond_parameters
                 self._hybrid_system_forces['core_bond_force'].addBond(
                     index1_hybrid, index2_hybrid,
                     [r0_old, k_old, r0_new, k_new])
