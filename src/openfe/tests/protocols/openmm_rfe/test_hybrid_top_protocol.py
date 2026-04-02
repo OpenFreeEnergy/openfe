@@ -1143,7 +1143,7 @@ def test_dry_run_membrane_complex(
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.protocol_repeats = 1
     settings.engine_settings.compute_platform = "cpu"
-    settings.output_settings.output_indices = "protein or resname  UNK"
+    settings.output_settings.output_indices = "all"
 
     systemA = openfe.ChemicalSystem(
         {"ligand": mapping.componentA, "protein": a2a_protein_membrane_component},
@@ -1188,7 +1188,9 @@ def test_dry_run_membrane_complex(
 
         # Check we have the right number of atoms in the PDB
         pdb = mdt.load_pdb("hybrid_system.pdb")
-        assert pdb.n_atoms == 4690
+        # 39391 protein + membrane + water atoms
+        # 36 ligand atoms
+        assert pdb.n_atoms == 39427
         box = sampler._thermodynamic_states[0].system.getDefaultPeriodicBoxVectors()
         vectors = from_openmm(box)  # convert to a Quantity array
 

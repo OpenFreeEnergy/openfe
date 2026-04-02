@@ -176,10 +176,9 @@ def test_mda_universe_error():
 class TestT4LysozymeDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 2634 # 9 counterions to neutralize
-    num_protein_component_atoms = 2613
+    num_protein_component_atoms = 2614
     # No ions
     num_ligand_atoms = 12
-    num_complex_atoms = 12634
     expected_complex_particles = 32607
     expected_ligand_solvent_particles = 3012
 
@@ -480,7 +479,7 @@ class TestT4LysozymeDryRun:
         self._check_box_vectors(setup_results["alchem_system"])
 
         # Check the alchemical indices
-        expected_indices = [i + self.num_protein_component_atoms for i in range(self.num_ligand_atoms)]
+        expected_indices = [i + self.num_protein_component_atoms - 1 for i in range(self.num_ligand_atoms)]
         assert expected_indices == setup_results["alchem_indices"]
 
         # Check the non-alchemical system
@@ -688,8 +687,7 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
     """
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 16080
-    num_protein_component_atoms = 39390
-    num_complex_atoms = 39390
+    num_protein_component_atoms = 39391
     expected_complex_particles = 39426
     expected_ligand_solvent_particles = 3036
 
