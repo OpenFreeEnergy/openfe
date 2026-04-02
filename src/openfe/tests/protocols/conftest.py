@@ -26,7 +26,7 @@ from openfe.data._registry import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def available_platforms() -> set[str]:
     return {
         Platform.getPlatform(i).getName()

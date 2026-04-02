@@ -175,15 +175,46 @@ def test_mda_universe_error():
 
 class TestT4LysozymeDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
-    num_all_not_water = 2634
-    num_complex_atoms = 2613
+    num_all_not_water = 2634 # 9 counterions to neutralize
+    num_protein_component_atoms = 2613
     # No ions
     num_ligand_atoms = 12
+    num_complex_atoms = 12634
+    expected_complex_particles = 32607
+    expected_ligand_solvent_particles = 3012
 
     barostat_by_phase = {
         "complex": MonteCarloBarostat,
         "solvent": MonteCarloBarostat,
     }
+
+    @pytest.fixture(scope="class", autouse=True)
+    def set_platform(self, available_platforms):
+        """
+        Set the platform used by this test, overriding the openmmtools default.
+
+        If a CUDA-enabled GPU is present, it will attempt to set the platform
+        to CUDA + mixed precision. Otherwise the Reference platform will be used.
+
+        We need this because system size discrepancies can occur see <https://github.com/openmm/openmm/issues/5230> for more details.
+
+        Note
+        ----
+        - must keep autouse=True to ensure it is used without being called explicitly
+        """
+        original_platform = test_alchemy.GLOBAL_ALCHEMY_PLATFORM
+
+        # set the new platform
+        # Try cuda if available, then CPU
+        if "CUDA" in available_platforms:
+            test_platform = openmm.Platform.getPlatformByName("CUDA")
+            test_platform.setPropertyDefaultValue("Precision", "mixed")
+        else:
+            raise ValueError()
+            test_alchemy.GLOBAL_ALCHEMY_PLATFORM = openmm.Platform.getPlatformByName("Reference")
+        yield
+        # restore the old value
+        test_alchemy.GLOBAL_ALCHEMY_PLATFORM = original_platform
 
     @pytest.fixture(scope="class")
     def protocol(self, settings):
@@ -198,8 +229,11 @@ class TestT4LysozymeDryRun:
         s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.complex_solvation_settings.box_shape = "dodecahedron"
-        s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
+        s.complex_solvation_settings.solvent_padding = None
+        s.complex_solvation_settings.number_of_solvent_molecules = 10000
         s.solvent_solvation_settings.box_shape = "cube"
+        s.solvent_solvation_settings.solvent_padding = None
+        s.solvent_solvation_settings.number_of_solvent_molecules = 1000
         return s
 
     @pytest.fixture(scope="class")
@@ -439,16 +473,18 @@ class TestT4LysozymeDryRun:
         self._verify_sampler(sim_results["sampler"], phase="complex", settings=settings)
 
         # Check the alchemical system
+        assert setup_results["alchem_system"].getNumParticles() == self.expected_complex_particles
         self._assert_expected_alchemical_forces(
             setup_results["alchem_system"], phase="complex", settings=settings
         )
         self._check_box_vectors(setup_results["alchem_system"])
 
         # Check the alchemical indices
-        expected_indices = [i + self.num_complex_atoms for i in range(self.num_ligand_atoms)]
+        expected_indices = [i + self.num_protein_component_atoms for i in range(self.num_ligand_atoms)]
         assert expected_indices == setup_results["alchem_indices"]
 
         # Check the non-alchemical system
+        assert setup_results["standard_system"].getNumParticles() == self.expected_complex_particles
         self._assert_expected_nonalchemical_forces(
             setup_results["standard_system"],
             "complex",
@@ -496,6 +532,7 @@ class TestT4LysozymeDryRun:
         self._verify_sampler(sim_results["sampler"], phase="solvent", settings=settings)
 
         # Check the alchemical system
+        assert setup_results["alchem_system"].getNumParticles() == self.expected_ligand_solvent_particles
         self._assert_expected_alchemical_forces(
             setup_results["alchem_system"], phase="solvent", settings=settings
         )
@@ -506,12 +543,9 @@ class TestT4LysozymeDryRun:
         assert expected_indices == setup_results["alchem_indices"]
 
         # Check the non-alchemical system
-        self._assert_expected_nonalchemical_forces(setup_results["standard_system"], settings)
-        self._test_cubic_vectors(
-            setup_results["standard_system"],
-            "solvent",
-            settings=settings,
-        )
+        assert setup_results["standard_system"].getNumParticles() == self.expected_ligand_solvent_particles
+        self._assert_expected_nonalchemical_forces(setup_results["standard_system"], phase="solvent", settings=settings)
+        self._test_cubic_vectors(setup_results["standard_system"])
 
         # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
         assert_allclose(
@@ -539,6 +573,8 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
     """
     TIP4P and a few extra settings to test out the dry run.
     """
+    expected_complex_particles = 42598
+    expected_ligand_solvent_particles = 4012
 
     @pytest.fixture(scope="class")
     def settings(self):
@@ -547,9 +583,12 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.complex_solvation_settings.box_shape = "dodecahedron"
-        s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
+        s.complex_solvation_settings.solvent_padding = None
+        s.complex_solvation_settings.number_of_solvent_molecules = 10000
         s.complex_solvation_settings.solvent_model = "tip4pew"
         s.solvent_solvation_settings.box_shape = "cube"
+        s.solvent_solvation_settings.solvent_padding = None
+        s.solvent_solvation_settings.number_of_solvent_molecules = 1000
         s.solvent_solvation_settings.solvent_model = "tip4pew"
         s.forcefield_settings.nonbonded_cutoff = 0.8 * offunit.nanometer
         s.forcefield_settings.forcefields = [
@@ -639,34 +678,29 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmp_path):
 
 @pytest.mark.slow
 class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
+    """
+    A test case for a membrane.
+
+    TODO
+    ----
+    * The energies coming from this system are very high. Maybe replace with
+      a larger test case?
+    """
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 16080
+    num_protein_component_atoms = 39390
     num_complex_atoms = 39390
+    expected_complex_particles = 39426
+    expected_ligand_solvent_particles = 3036
+
     # No ions
     num_ligand_atoms = 36
+    expected_ligand_solvent_particles = 3036
 
     barostat_by_phase = {
         "complex": MonteCarloMembraneBarostat,
         "solvent": MonteCarloBarostat,
     }
-
-
-    @pytest.fixture(scope="class", autouse=True)
-    def set_platform(self):
-        """Set the platform used by this test **Only** to Reference to ensure double precision is used for all energy operations.
-        Due to the system size discrepancies can occur see <https://github.com/openmm/openmm/issues/5230> for more details.
-
-        Note
-        ----
-        - must keep autouse=True to ensure it is used without being called explicitly
-        """
-        original_platform = test_alchemy.GLOBAL_ALCHEMY_PLATFORM
-        # set the new platform
-        test_alchemy.GLOBAL_ALCHEMY_PLATFORM = openmm.Platform.getPlatformByName("Reference")
-        yield
-        # restore the old value
-        test_alchemy.GLOBAL_ALCHEMY_PLATFORM = original_platform
-
 
     @pytest.fixture(scope="class")
     def settings(self):
@@ -675,6 +709,8 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
         s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.solvent_solvation_settings.box_shape = "cube"
+        s.solvent_solvation_settings.solvent_padding = None
+        s.solvent_solvation_settings.number_of_solvent_molecules = 1000
         return s
 
     @pytest.fixture(scope="class")
@@ -735,5 +771,3 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
         assert_allclose(
             vectors, expected_vectors, atol=1e-5, err_msg=f"Box is not orthogonal:\n{vectors}"
         )
-        offsets = alchem_system_nbf.getParticleParameterOffset(i)
-        assert pytest.approx(prop_chgs[i]) == offsets[2]
