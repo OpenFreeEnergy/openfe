@@ -252,6 +252,7 @@ def _get_type(result: dict) -> Literal["vacuum", "solvent", "complex"]:
     if (
         "gufe.components.proteincomponent" in component_types
         or "gufe.components.solvatedpdbcomponent" in component_types
+        or "gufe.components.proteinmembranecomponent" in component_types
     ):
         return "complex"
 
