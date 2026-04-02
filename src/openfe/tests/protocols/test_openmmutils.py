@@ -563,6 +563,28 @@ class TestSystemCreation:
             generator.forcefield,
             OpenMMSolvationSettings(),
         )
+
+        # Check the number of particles hasn't changed
+        assert model.topology.getNumAtoms() == 39426
+
+        # check residue contents
+        residues = [r for r in model.topology.residues()]
+        # No waters should have been added / removed
+        # Note: waters are renamed to HOH
+        water_residues = [r for r in residues if r.name == "HOH"]
+        assert len(water_residues) == 7782
+
+        # Should be one ligand
+        ligand_residues = [r for r in residues if r.name == "UNK"]
+        assert len(ligand_residues) == 1
+
+        # Should be one sodium, no chloride
+        sodium_residues = [r for r in residues if r.name == "NA"]
+        assert len(sodium_residues) == 1
+        chloride_residues = [r for r in residues if r.name == "CL"]
+        assert len(chloride_residues) == 0
+
+        # Check the periodic box vectors are the same
         box_modeller = model.topology.getPeriodicBoxVectors()
         box_protein = a2a_protein_membrane_component.box_vectors
 
