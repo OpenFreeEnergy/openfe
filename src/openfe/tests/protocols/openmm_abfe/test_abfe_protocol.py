@@ -28,12 +28,12 @@ from openmmtools.alchemy import (
     AlchemicalRegion,
 )
 from openmmtools.multistate.multistatesampler import MultiStateSampler
+from openmmtools.tests import test_alchemy
 from openmmtools.tests.test_alchemy import (
     check_interacting_energy_components,
     check_noninteracting_energy_components,
     compare_system_energies,
 )
-from openmmtools.tests import test_alchemy
 
 import openfe
 from openfe import ChemicalSystem, SmallMoleculeComponent, SolventComponent
@@ -175,7 +175,7 @@ def test_mda_universe_error():
 
 class TestT4LysozymeDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
-    num_all_not_water = 2634 # 9 counterions to neutralize
+    num_all_not_water = 2634  # 9 counterions to neutralize
     num_protein_component_atoms = 2614
     # No ions
     num_ligand_atoms = 12
@@ -479,7 +479,9 @@ class TestT4LysozymeDryRun:
         self._check_box_vectors(setup_results["alchem_system"])
 
         # Check the alchemical indices
-        expected_indices = [i + self.num_protein_component_atoms - 1 for i in range(self.num_ligand_atoms)]
+        expected_indices = [
+            i + self.num_protein_component_atoms - 1 for i in range(self.num_ligand_atoms)
+        ]
         assert expected_indices == setup_results["alchem_indices"]
 
         # Check the non-alchemical system
@@ -531,7 +533,10 @@ class TestT4LysozymeDryRun:
         self._verify_sampler(sim_results["sampler"], phase="solvent", settings=settings)
 
         # Check the alchemical system
-        assert setup_results["alchem_system"].getNumParticles() == self.expected_ligand_solvent_particles
+        assert (
+            setup_results["alchem_system"].getNumParticles()
+            == self.expected_ligand_solvent_particles
+        )
         self._assert_expected_alchemical_forces(
             setup_results["alchem_system"], phase="solvent", settings=settings
         )
@@ -542,8 +547,13 @@ class TestT4LysozymeDryRun:
         assert expected_indices == setup_results["alchem_indices"]
 
         # Check the non-alchemical system
-        assert setup_results["standard_system"].getNumParticles() == self.expected_ligand_solvent_particles
-        self._assert_expected_nonalchemical_forces(setup_results["standard_system"], phase="solvent", settings=settings)
+        assert (
+            setup_results["standard_system"].getNumParticles()
+            == self.expected_ligand_solvent_particles
+        )
+        self._assert_expected_nonalchemical_forces(
+            setup_results["standard_system"], phase="solvent", settings=settings
+        )
         self._test_cubic_vectors(setup_results["standard_system"])
 
         # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
@@ -572,6 +582,7 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
     """
     TIP4P and a few extra settings to test out the dry run.
     """
+
     expected_complex_particles = 42598
     expected_ligand_solvent_particles = 4012
 
@@ -685,6 +696,7 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
     * The energies coming from this system are very high. Maybe replace with
       a larger test case?
     """
+
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 16080
     num_protein_component_atoms = 39391
