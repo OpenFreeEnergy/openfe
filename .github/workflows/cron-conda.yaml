@@ -1,4 +1,4 @@
-name: "conda_cron"
+name: "cron: conda builds daily tests"
 on:
   workflow_dispatch:
   schedule:

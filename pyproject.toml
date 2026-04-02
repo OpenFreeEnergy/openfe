@@ -48,6 +48,7 @@ fallback_version = "0.0.0"
 
 [tool.ruff]
 line-length = 100
+format.docstring-code-format = true
 
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 lint.select = [

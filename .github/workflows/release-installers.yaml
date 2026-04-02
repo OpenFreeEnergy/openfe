@@ -1,4 +1,4 @@
-name: Make single-file installers (manual dispatch)
+name: "release: make single-file installers"
 
 on:
   workflow_dispatch:
