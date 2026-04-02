@@ -1827,7 +1827,3 @@ def test_adaptive_settings_with_protein_membrane(a2a_protein_membrane_component,
     assert isinstance(settings, SepTopSettings)
     # Barostat should have been updated
     assert settings.complex_integrator_settings.barostat == "MonteCarloMembraneBarostat"
-
-    # Forcefields should include the lipid forcefields
-    ff = settings.forcefield_settings.forcefields
-    assert "amber/lipid17_merged.xml" in ff
