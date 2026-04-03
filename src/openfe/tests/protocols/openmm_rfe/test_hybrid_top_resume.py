@@ -1,8 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
-import os
 import logging
+import os
 import pathlib
 import shutil
 
@@ -360,7 +360,9 @@ class TestCheckpointResuming:
                 findex = i
 
         fake_system.removeForce(findex)
-        new_force = openmm.MonteCarloBarostat(1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100)
+        new_force = openmm.MonteCarloBarostat(
+            1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100
+        )
         fake_system.addForce(new_force)
 
         # Fake system should trigger a mismatch
@@ -416,7 +418,7 @@ class TestCheckpointResuming:
             selection_indices=setup_results["selection_indices"],
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,
-            dry=True
+            dry=True,
         )
 
         assert wmsg in caplog.text

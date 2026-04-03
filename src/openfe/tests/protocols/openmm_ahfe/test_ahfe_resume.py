@@ -388,7 +388,6 @@ class TestCheckpointResuming:
                 shared_basepath=tmp_path,
             )
 
-
     @pytest.mark.slow
     def test_resume_differ_forces(
         self,
@@ -427,7 +426,9 @@ class TestCheckpointResuming:
         fake_system.removeForce(findex)
 
         # Now add the new barostat
-        new_force = openmm.MonteCarloBarostat(1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100)
+        new_force = openmm.MonteCarloBarostat(
+            1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100
+        )
         fake_system.addForce(new_force)
 
         # Fake system should trigger a mismatch

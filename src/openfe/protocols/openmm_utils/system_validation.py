@@ -5,8 +5,8 @@ Reusable utility methods to validate input systems to OpenMM-based alchemical
 Protocols.
 """
 
-from typing import Optional, Tuple
 import logging
+from typing import Optional, Tuple
 
 import numpy as np
 import openmm
@@ -18,7 +18,6 @@ from gufe import (
     SolventComponent,
 )
 from openff.toolkit import Molecule as OFFMol
-
 
 logger = logging.getLogger(__name__)
 
@@ -281,8 +280,8 @@ def assert_multistate_system_equality(
         else:
             if sfhash not in ref_force_dict:
                 wmsg = (
-                   f"Force {sforce.getName()} in the stored checkpoint System "
-                   "does not exactly match one of the forces in the simulated System "
-                   "this may be due to machine precision issues."
+                    f"Force {sforce.getName()} in the stored checkpoint System "
+                    "does not exactly match one of the forces in the simulated System "
+                    "this may be due to machine precision issues."
                 )
                 logger.warn(wmsg)
