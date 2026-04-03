@@ -734,7 +734,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
         if self.verbose:
-            self.logger.info("Starting system setup unit")  # type: ignore[attr-defined]
+            self.logger.info("Starting system setup unit")
 
         # Get settings
         settings = self._get_settings(self._inputs["protocol"].settings)
@@ -1304,7 +1304,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
         if self.verbose:
-            self.logger.info("Starting simulation unit")  # type: ignore[attr-defined]
+            self.logger.info("Starting simulation unit")
 
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
@@ -1608,7 +1608,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
         if self.verbose:
-            self.logger.info("Starting simulation analysis unit")  # type: ignore[attr-defined]
+            self.logger.info("Starting simulation analysis unit")
 
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
