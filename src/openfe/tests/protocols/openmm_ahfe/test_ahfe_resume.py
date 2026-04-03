@@ -389,7 +389,7 @@ class TestCheckpointResuming:
             )
 
     @pytest.mark.slow
-    def test_resume_differ_forces(
+    def test_resume_differ_barostat(
         self,
         protocol_dag,
         ahfe_solv_trajectory_path,
