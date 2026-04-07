@@ -246,7 +246,7 @@ def convert_real_time_analysis_iterations(
 ) -> tuple[Optional[int], Optional[int]]:
     """Convert time units in Settings to various other units
 
-    Interally openmmtools uses various quantities with units of time,
+    Internally openmmtools uses various quantities with units of time,
     steps, and iterations.
 
     Our Settings objects instead have things defined in time (fs or ps).

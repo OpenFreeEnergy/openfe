@@ -175,6 +175,9 @@ class PlainMDProtocol(gufe.Protocol):
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
+        # Validate the ChcemicalSystem
+        system_validation.validate_chemical_system(stateA)
+
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
@@ -700,7 +703,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             if not output["last_checkpoint"].exists():
                 output["last_checkpoint"] = None
 
-            # The NVT PDB can be ommitted if we don't run the simulation
+            # The NVT PDB can be omitted if we don't run the simulation
             # Note: we could also just check the file exist
             if (
                 output_settings.equil_nvt_structure

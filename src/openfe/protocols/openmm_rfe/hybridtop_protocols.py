@@ -203,13 +203,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # adapt the barostat based on the system components
         if stateA.contains(ProteinMembraneComponent):
             protocol_settings.integrator_settings.barostat = "MonteCarloMembraneBarostat"
-            protocol_settings.forcefield_settings.forcefields = [
-                "amber/ff14SB.xml",
-                "amber/tip3p_standard.xml",
-                "amber/tip3p_HFE_multivalent.xml",
-                "amber/lipid17_merged.xml",
-                "amber/phosaa10.xml",
-            ]
 
         return protocol_settings
 
@@ -270,7 +263,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         mapping : Optional[Union[ComponentMapping, list[ComponentMapping]]]
           all mappings between transforming components.
         alchemical_components : dict[str, list[Component]]
-          Dictionary contatining the alchemical components for
+          Dictionary containing the alchemical components for
           states A and B.
 
         Raises
@@ -532,6 +525,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             raise ValueError("Can't extend simulations yet")
 
         # Validate the end states
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
         # Validate the mapping

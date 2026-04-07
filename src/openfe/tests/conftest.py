@@ -12,7 +12,6 @@ import mdtraj
 import numpy as np
 import openmm
 import pandas as pd
-import pooch
 import pytest
 from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
 from openff.toolkit import ForceField
@@ -162,9 +161,9 @@ def other_mapping():
 
 
 @pytest.fixture()
-def lomap_basic_test_files_dir(tmpdir_factory):
+def lomap_basic_test_files_dir(tmp_path_factory):
     # for lomap, which wants the files in a directory
-    lomap_files = tmpdir_factory.mktemp("lomap_files")
+    lomap_files = tmp_path_factory.mktemp("lomap_files")
     lomap_basic = "openfe.tests.data.lomap_basic"
 
     for f in resources.contents(lomap_basic):
@@ -172,7 +171,7 @@ def lomap_basic_test_files_dir(tmpdir_factory):
             continue
         stuff = resources.read_binary(lomap_basic, f)
 
-        with open(str(lomap_files.join(f)), "wb") as fout:
+        with open(lomap_files / f, "wb") as fout:
             fout.write(stuff)
 
     yield str(lomap_files)
@@ -288,10 +287,15 @@ def T4_protein_component():
 
 
 @pytest.fixture(scope="session")
-def a2a_protein_membrane_component():
-    with resources.as_file(resources.files("openfe.tests.data")) as d:
-        with gzip.open(d / "a2a/protein.pdb.gz", "rb") as f:
-            yield openfe.ProteinMembraneComponent.from_pdb_file(f, name="a2a")
+def a2a_protein_membrane_pdb():
+    with resources.as_file(resources.files("openfe.tests.data.a2a")) as d:
+        yield str(d / "protein.pdb.gz")
+
+
+@pytest.fixture(scope="session")
+def a2a_protein_membrane_component(a2a_protein_membrane_pdb):
+    with gzip.open(a2a_protein_membrane_pdb, "rb") as f:
+        yield openfe.ProteinMembraneComponent.from_pdb_file(f, name="a2a")
 
 
 @pytest.fixture(scope="session")

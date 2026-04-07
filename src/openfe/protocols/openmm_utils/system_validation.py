@@ -9,6 +9,8 @@ import logging
 import warnings
 from typing import Optional, Tuple
 
+import numpy as np
+import openmm
 from gufe import (
     BaseSolventComponent,
     ChemicalSystem,
@@ -19,6 +21,7 @@ from gufe import (
     SolvatedPDBComponent,
     SolventComponent,
 )
+from gufe.components.errors import ComponentValidationError
 from openff.toolkit import Molecule as OFFMol
 
 logger = logging.getLogger(__name__)
@@ -242,3 +245,125 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
     small_mols = state.get_components_of_type(SmallMoleculeComponent)
 
     return solvent_comp, protein_comp, small_mols
+
+
+def assert_multistate_system_equality(
+    ref_system: openmm.System,
+    stored_system: openmm.System,
+):
+    """
+    Verify the equality of a MultiStateReporter
+    stored system, with that of a pre-exisiting
+    standard system.
+
+
+    Raises
+    ------
+    ValueError
+      * If the particles in the two System don't match.
+      * If the constraints in the two System don't match.
+      * If the forces in the two systems don't match.
+    """
+
+    # Assert particle equality
+    def _get_masses(system):
+        return np.array(
+            [
+                system.getParticleMass(i).value_in_unit(openmm.unit.dalton)
+                for i in range(system.getNumParticles())
+            ]
+        )
+
+    ref_masses = _get_masses(ref_system)
+    stored_masses = _get_masses(stored_system)
+
+    if not ((ref_masses.shape == stored_masses.shape) and (np.allclose(ref_masses, stored_masses))):
+        errmsg = "Stored checkpoint System particles do not match those of the simulated System"
+        raise ValueError(errmsg)
+
+    # Assert constraint equality
+    def _get_constraints(system):
+        constraints = []
+        for index in range(system.getNumConstraints()):
+            i, j, d = system.getConstraintParameters(index)
+            constraints.append([i, j, d.value_in_unit(openmm.unit.nanometer)])
+
+        return np.array(constraints)
+
+    ref_constraints = _get_constraints(ref_system)
+    stored_constraints = _get_constraints(stored_system)
+
+    if not (
+        (ref_constraints.shape == stored_constraints.shape)
+        and (np.allclose(ref_constraints, stored_constraints))
+    ):
+        errmsg = "Stored checkpoint System constraints do not match those of the simulation System"
+        raise ValueError(errmsg)
+
+    # Assert force equality
+    # Notes:
+    # * Store forces are in different order
+    # * The barostat doesn't exactly match because seeds have changed
+
+    # Create dictionaries of forces keyed by their hash
+    # Note: we can't rely on names because they may clash
+    ref_force_dict = {hash(openmm.XmlSerializer.serialize(f)): f for f in ref_system.getForces()}
+    stored_force_dict = {
+        hash(openmm.XmlSerializer.serialize(f)): f for f in stored_system.getForces()
+    }
+
+    # Assert the number of forces is equal
+    if len(ref_force_dict) != len(stored_force_dict):
+        errmsg = "Number of forces stored in checkpoint System does not match simulation System"
+        raise ValueError(errmsg)
+
+    # Loop through forces and check for equality
+    for sfhash, sforce in stored_force_dict.items():
+        errmsg = (
+            f"Force {sforce.getName()} in the stored checkpoint System "
+            "does not match the same force in the simulated System"
+        )
+
+        # Barostat case - seed changed so we need to check manually
+        if isinstance(sforce, (openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat)):
+            # Find the equivalent force in the reference
+            rforce = [
+                f
+                for f in ref_force_dict.values()
+                if isinstance(f, (openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat))
+            ][0]
+
+            if (
+                (sforce.getFrequency() != rforce.getFrequency())
+                or (sforce.getForceGroup() != rforce.getForceGroup())
+                or (sforce.getDefaultPressure() != rforce.getDefaultPressure())
+                or (sforce.getDefaultTemperature() != rforce.getDefaultTemperature())
+            ):
+                raise ValueError(errmsg)
+
+        else:
+            if sfhash not in ref_force_dict:
+                raise ValueError(errmsg)
+
+
+def validate_chemical_system(system: ChemicalSystem):
+    """
+    Validate that the input ChemicalSystem is suitable for use in an OpenMM-based
+    alchemical protocol.
+
+    Parameters
+    ----------
+    state : ChemicalSystem
+      The chemical system to validate.
+
+    Raises
+    ------
+    ComponentValidationError
+      If any component in the ChemicalSystem fails validation.
+    """
+    for entry in system.components:
+        try:
+            system.components[entry].validate()
+        except ComponentValidationError as e:
+            errmsg = f"Component {entry} from ChemicalSystem {system.name} failed validation: {e}"
+            raise ComponentValidationError(errmsg)

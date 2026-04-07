@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
+import gzip
 import os
 import sys
 from importlib import resources
@@ -11,6 +12,7 @@ import numpy as np
 import pooch
 import pytest
 from gufe import BaseSolventComponent
+from gufe.components.errors import ComponentValidationError
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
 from openff.toolkit import Molecule as OFFMol
@@ -286,6 +288,30 @@ def test_components_complex(T4_protein_component, benzene_modifications):
     assert len(mols) == 2
 
 
+def test_validate_chemical_system(a2a_protein_membrane_pdb):
+    inflated_box_vectors = (
+        np.asarray(
+            [
+                [1000, 0, 0],
+                [0, 1000, 0],
+                [0, 0, 1000],
+            ]
+        )
+        * unit.nanometer
+    )
+
+    with gzip.open(a2a_protein_membrane_pdb, "rb") as f:
+        comp = openfe.ProteinMembraneComponent.from_pdb_file(
+            f, name="a2a", box_vectors=inflated_box_vectors
+        )
+
+    chemical_system = openfe.ChemicalSystem({"protein": comp}, name="A")
+
+    errmsg = "Component protein from ChemicalSystem A failed validation"
+    with pytest.raises(ComponentValidationError, match=errmsg):
+        system_validation.validate_chemical_system(chemical_system)
+
+
 @pytest.fixture(scope="module")
 def get_settings():
     forcefield_settings = OpenMMSystemGeneratorFFSettings()
@@ -382,13 +408,12 @@ class TestFEAnalysis:
             rtol=5e-01,
         )  # fmt: skip
 
-    def test_plots(self, analyzer, tmpdir):
-        with tmpdir.as_cwd():
-            analyzer.plot(filepath=Path("."), filename_prefix="")
-            assert Path("forward_reverse_convergence.png").is_file()
-            assert Path("mbar_overlap_matrix.png").is_file()
-            assert Path("replica_exchange_matrix.png").is_file()
-            assert Path("replica_state_timeseries.png").is_file()
+    def test_plots(self, analyzer, tmp_path):
+        analyzer.plot(filepath=Path(tmp_path), filename_prefix="")
+        assert Path(tmp_path / "forward_reverse_convergence.png").is_file()
+        assert Path(tmp_path / "mbar_overlap_matrix.png").is_file()
+        assert Path(tmp_path / "replica_exchange_matrix.png").is_file()
+        assert Path(tmp_path / "replica_state_timeseries.png").is_file()
 
     def test_plot_convergence_bad_units(self, analyzer):
         with pytest.raises(ValueError, match="Unknown plotting units"):
@@ -538,6 +563,28 @@ class TestSystemCreation:
             generator.forcefield,
             OpenMMSolvationSettings(),
         )
+
+        # Check the number of particles hasn't changed
+        assert model.topology.getNumAtoms() == 39426
+
+        # check residue contents
+        residues = [r for r in model.topology.residues()]
+        # No waters should have been added / removed
+        # Note: waters are renamed to HOH
+        water_residues = [r for r in residues if r.name == "HOH"]
+        assert len(water_residues) == 7782
+
+        # Should be one ligand
+        ligand_residues = [r for r in residues if r.name == "UNK"]
+        assert len(ligand_residues) == 1
+
+        # Should be one sodium, no chloride
+        sodium_residues = [r for r in residues if r.name == "NA"]
+        assert len(sodium_residues) == 1
+        chloride_residues = [r for r in residues if r.name == "CL"]
+        assert len(chloride_residues) == 0
+
+        # Check the periodic box vectors are the same
         box_modeller = model.topology.getPeriodicBoxVectors()
         box_protein = a2a_protein_membrane_component.box_vectors
 

@@ -20,12 +20,13 @@ import openfe
 from openfe.data._registry import (
     POOCH_CACHE,
     zenodo_industry_benchmark_systems,
+    zenodo_resume_data,
     zenodo_rfe_simulation_nc,
     zenodo_t4_lysozyme_traj,
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def available_platforms() -> set[str]:
     return {
         Platform.getPlatform(i).getName()
@@ -332,6 +333,67 @@ def simulation_nc():
         known_hash=zenodo_rfe_simulation_nc["known_hash"],
         path=POOCH_CACHE,
     )
+
+
+pooch_resume_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_resume_data["base_url"],
+    registry={zenodo_resume_data["fname"]: zenodo_resume_data["known_hash"]},
+)
+
+
+@pytest.fixture(scope="session")
+def htop_trajectory_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "hybrid_top"
+    filename = "simulation.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="session")
+def htop_checkpoint_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "hybrid_top"
+    filename = "checkpoint.chk"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def ahfe_vac_trajectory_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "ahfes"
+    filename = "vacuum.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def vac_checkpoint_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "ahfes"
+    filename = "vacuum_checkpoint.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def ahfe_solv_trajectory_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "ahfes"
+    filename = "solvent.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def ahfe_solv_checkpoint_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "ahfes"
+    filename = "solvent_checkpoint.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
 
 
 @pytest.fixture

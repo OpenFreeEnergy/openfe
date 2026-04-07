@@ -14,7 +14,7 @@ alchemical sampling methods:
 Current limitations
 -------------------
 * Alchemical species with a net charge are not currently supported.
-* Disapearing molecules are only allowed in state A.
+* Disappearing molecules are only allowed in state A.
 * Only small molecules are allowed to act as alchemical molecules.
 
 Acknowledgements
@@ -245,16 +245,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         else:
             protocol_settings = cls.default_settings()
 
-        # adapt the barostat and lipid forcefield based on the ProteinComponent
+        # adapt the barostat based on the ProteinComponent
         if stateA.contains(ProteinMembraneComponent):
             protocol_settings.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
-            protocol_settings.forcefield_settings.forcefields = [
-                "amber/ff14SB.xml",
-                "amber/tip3p_standard.xml",
-                "amber/tip3p_HFE_multivalent.xml",
-                "amber/lipid17_merged.xml",
-                "amber/phosaa10.xml",
-            ]
 
         return protocol_settings
 
@@ -304,7 +297,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         if not isinstance(diff[0][0], SmallMoleculeComponent):
             errmsg = (
-                "Only dissapearing small molecule components "
+                "Only disappearing small molecule components "
                 "are supported by this protocol. "
                 f"Found a {type(diff[0][0])}"
             )
@@ -407,6 +400,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             warnings.warn(wmsg)
 
         # Validate the end states & alchemical components
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
         # Validate the complex lambda schedule
@@ -416,7 +411,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         )
 
         # If the complex restraints schedule is all zero, it might be bad
-        # but we don't dissallow it.
+        # but we don't disallow it.
         if all([i == 0.0 for i in self.settings.complex_lambda_settings.lambda_restraints]):
             wmsg = (
                 "No restraints are being applied in the complex phase, "

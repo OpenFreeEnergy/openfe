@@ -696,7 +696,7 @@ def benzene_toluene_dag(
     )
 
 
-def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
+def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     prot_units = list(benzene_toluene_dag.protocol_units)
 
     assert len(prot_units) == 4
@@ -710,81 +710,84 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     assert len(complex_setup_unit) == 1
     assert len(complex_run_unit) == 1
 
-    with tmpdir.as_cwd():
-        solv_setup_output = solv_setup_unit[0].run(dry=True)["debug"]
-        pdb = md.load_pdb("topology.pdb")
-        assert pdb.n_atoms == 1762
-        central_atoms = np.array([[2, 19]], dtype=np.int32)
-        distance = md.compute_distances(pdb, central_atoms)[0][0]
-        assert np.isclose(distance, 0.8661)
-        serialized_topology = solv_setup_output["topology"]
-        serialized_system = solv_setup_output["system"]
-        solv_sampler = sol_run_unit[0].run(
-            serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]  # fmt: skip
+    solv_setup_output = solv_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]
+    pdb = md.load_pdb(tmp_path / "topology.pdb")
+    assert pdb.n_atoms == 1762
+    central_atoms = np.array([[2, 19]], dtype=np.int32)
+    distance = md.compute_distances(pdb, central_atoms)[0][0]
+    assert np.isclose(distance, 0.8661)
+    serialized_topology = solv_setup_output["topology"]
+    serialized_system = solv_setup_output["system"]
+    solv_sampler = sol_run_unit[0].run(
+        serialized_system, serialized_topology, dry=True,scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]["sampler"]  # fmt: skip
 
-        assert solv_sampler.is_periodic
-        assert isinstance(solv_sampler, MultiStateSampler)
-        assert isinstance(solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
-        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
-        # Check we have the right number of atoms in the PDB
-        pdb = md.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == 31
+    assert solv_sampler.is_periodic
+    assert isinstance(solv_sampler, MultiStateSampler)
+    assert isinstance(solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
+    assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+    # Check we have the right number of atoms in the PDB
+    pdb = md.load_pdb(tmp_path / "alchemical_system.pdb")
+    assert pdb.n_atoms == 31
 
-        # Test the solvent system
-        alchem_system = deserialize(serialized_system)
-        assert len(alchem_system.getForces()) == 14
-        _assert_num_forces(alchem_system, NonbondedForce, 1)
-        _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
-        _assert_num_forces(alchem_system, CustomBondForce, 4)
-        _assert_num_forces(alchem_system, HarmonicBondForce, 2)
-        _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
-        _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
-        _assert_num_forces(alchem_system, MonteCarloBarostat, 1)
+    # Test the solvent system
+    alchem_system = deserialize(serialized_system)
+    assert len(alchem_system.getForces()) == 14
+    _assert_num_forces(alchem_system, NonbondedForce, 1)
+    _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
+    _assert_num_forces(alchem_system, CustomBondForce, 4)
+    _assert_num_forces(alchem_system, HarmonicBondForce, 2)
+    _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
+    _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
+    _assert_num_forces(alchem_system, MonteCarloBarostat, 1)
 
-        # Check steric forces
-        for f in alchem_system.getForces():
-            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction():
-                _verify_alchemical_sterics_force_parameters(f)
+    # Check steric forces
+    for f in alchem_system.getForces():
+        if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction():
+            _verify_alchemical_sterics_force_parameters(f)
 
-        complex_setup_output = complex_setup_unit[0].run(dry=True)["debug"]
-        serialized_topology = complex_setup_output["topology"]
-        serialized_system = complex_setup_output["system"]
-        complex_sampler = complex_run_unit[0].run(
-            serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]  # fmt: skip
+    complex_setup_output = complex_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]
+    serialized_topology = complex_setup_output["topology"]
+    serialized_system = complex_setup_output["system"]
+    complex_sampler = complex_run_unit[0].run(
+        serialized_system, serialized_topology, dry=True,scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]["sampler"]  # fmt: skip
 
-        assert complex_sampler.is_periodic
-        assert isinstance(complex_sampler, MultiStateSampler)
-        assert isinstance(complex_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
-        assert complex_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
-        # Check we have the right number of atoms in the PDB
-        pdb = md.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == 2687
+    assert complex_sampler.is_periodic
+    assert isinstance(complex_sampler, MultiStateSampler)
+    assert isinstance(complex_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
+    assert complex_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+    # Check we have the right number of atoms in the PDB
+    pdb = md.load_pdb(tmp_path / "alchemical_system.pdb")
+    assert pdb.n_atoms == 2687
 
-        # Test the complex system
-        alchem_system = deserialize(serialized_system)
-        assert len(alchem_system.getForces()) == 15
-        _assert_num_forces(alchem_system, NonbondedForce, 1)
-        _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
-        _assert_num_forces(alchem_system, CustomBondForce, 4)
-        _assert_num_forces(alchem_system, HarmonicBondForce, 1)
-        _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
-        _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
-        _assert_num_forces(alchem_system, CustomCompoundBondForce, 2)
-        _assert_num_forces(alchem_system, MonteCarloBarostat, 1)
+    # Test the complex system
+    alchem_system = deserialize(serialized_system)
+    assert len(alchem_system.getForces()) == 15
+    _assert_num_forces(alchem_system, NonbondedForce, 1)
+    _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
+    _assert_num_forces(alchem_system, CustomBondForce, 4)
+    _assert_num_forces(alchem_system, HarmonicBondForce, 1)
+    _assert_num_forces(alchem_system, HarmonicAngleForce, 1)
+    _assert_num_forces(alchem_system, PeriodicTorsionForce, 1)
+    _assert_num_forces(alchem_system, CustomCompoundBondForce, 2)
+    _assert_num_forces(alchem_system, MonteCarloBarostat, 1)
 
-        # Check steric forces
-        for f in alchem_system.getForces():
-            if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction():
-                _verify_alchemical_sterics_force_parameters(f)
+    # Check steric forces
+    for f in alchem_system.getForces():
+        if isinstance(f, CustomNonbondedForce) and "U_sterics" in f.getEnergyFunction():
+            _verify_alchemical_sterics_force_parameters(f)
 
 
 @pytest.mark.parametrize("method", ["repex", "sams", "independent"])
 def test_dry_run_methods(
     benzene_complex_system,
     toluene_complex_system,
-    tmpdir,
+    tmp_path,
     protocol_dry_settings,
     method,
 ):
@@ -805,22 +808,24 @@ def test_dry_run_methods(
     # Only check the cutoff for the Solvent SetUp Unit
     solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in dag_units if isinstance(u, SepTopSolventRunUnit)]
-    with tmpdir.as_cwd():
-        solv_setup_output = solv_setup_unit[0].run(dry=True)["debug"]
-        serialized_topology = solv_setup_output["topology"]
-        serialized_system = solv_setup_output["system"]
-        solv_sampler = sol_run_unit[0].run(
-            serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]  # fmt: skip
 
-        assert isinstance(solv_sampler, MultiStateSampler)
-        assert solv_sampler.is_periodic
-        assert isinstance(solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
-        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+    solv_setup_output = solv_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]
+    serialized_topology = solv_setup_output["topology"]
+    serialized_system = solv_setup_output["system"]
+    solv_sampler = sol_run_unit[0].run(
+        serialized_system, serialized_topology, dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]["sampler"]  # fmt: skip
 
-        # Check we have the right number of atoms in the PDB
-        pdb = md.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == 27
+    assert isinstance(solv_sampler, MultiStateSampler)
+    assert solv_sampler.is_periodic
+    assert isinstance(solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
+    assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+
+    # Check we have the right number of atoms in the PDB
+    pdb = md.load_pdb(tmp_path / "alchemical_system.pdb")
+    assert pdb.n_atoms == 27
 
 
 @pytest.mark.parametrize(
@@ -835,7 +840,7 @@ def test_dry_run_ligand_system_pressure(
     pressure,
     benzene_complex_system,
     toluene_complex_system,
-    tmpdir,
+    tmp_path,
     protocol_dry_settings,
 ):
     """
@@ -856,22 +861,24 @@ def test_dry_run_ligand_system_pressure(
     # Only check the cutoff for the Solvent SetUp Unit
     solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in dag_units if isinstance(u, SepTopSolventRunUnit)]
-    with tmpdir.as_cwd():
-        solv_setup_output = solv_setup_unit[0].run(dry=True)["debug"]
-        serialized_topology = solv_setup_output["topology"]
-        serialized_system = solv_setup_output["system"]
-        solv_sampler = sol_run_unit[0].run(
-            serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]  # fmt: skip
 
-        # at this point, the units will be in openmm units
-        assert solv_sampler._thermodynamic_states[1].pressure == pressure * openmm.unit.bar
+    solv_setup_output = solv_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]
+    serialized_topology = solv_setup_output["topology"]
+    serialized_system = solv_setup_output["system"]
+    solv_sampler = sol_run_unit[0].run(
+        serialized_system, serialized_topology, dry=True,scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]["sampler"]  # fmt: skip
+
+    # at this point, the units will be in openmm units
+    assert solv_sampler._thermodynamic_states[1].pressure == pressure * openmm.unit.bar
 
 
 def test_virtual_sites_no_reassign(
     benzene_complex_system,
     toluene_complex_system,
-    tmpdir,
+    tmp_path,
     protocol_dry_settings,
 ):
     """
@@ -896,10 +903,9 @@ def test_virtual_sites_no_reassign(
     dag_units = list(dag.protocol_units)
     # Only check the Solvent Unit
     solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
-    with tmpdir.as_cwd():
-        errmsg = "Simulations with virtual sites without velocity"
-        with pytest.raises(ValueError, match=errmsg):
-            solv_setup_output = solv_setup_unit[0].run(dry=True)
+    errmsg = "Simulations with virtual sites without velocity"
+    with pytest.raises(ValueError, match=errmsg):
+        _ = solv_setup_unit[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
 
 @pytest.mark.parametrize(
@@ -910,7 +916,7 @@ def test_dry_run_ligand_system_cutoff(
     cutoff,
     benzene_complex_system,
     toluene_complex_system,
-    tmpdir,
+    tmp_path,
     protocol_dry_settings,
 ):
     """
@@ -931,29 +937,30 @@ def test_dry_run_ligand_system_cutoff(
     # Only check the cutoff for the Solvent SetUp Unit
     solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
 
-    with tmpdir.as_cwd():
-        serialized_system = solv_setup_unit[0].run(dry=True)["debug"]["system"]
-        system = deserialize(serialized_system)
-        nbfs = [
-            f
-            for f in system.getForces()
-            if isinstance(f, CustomNonbondedForce) or isinstance(f, NonbondedForce)
-        ]
+    serialized_system = solv_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]["system"]
+    system = deserialize(serialized_system)
+    nbfs = [
+        f
+        for f in system.getForces()
+        if isinstance(f, CustomNonbondedForce) or isinstance(f, NonbondedForce)
+    ]
 
-        for f in nbfs:
-            f_cutoff = from_openmm(f.getCutoffDistance())
-            assert f_cutoff == cutoff
+    for f in nbfs:
+        f_cutoff = from_openmm(f.getCutoffDistance())
+        assert f_cutoff == cutoff
 
 
 def test_dry_run_benzene_toluene_tip4p(
     benzene_complex_system,
     toluene_complex_system,
-    tmpdir,
+    tmp_path,
     protocol_dry_settings,
 ):
     protocol_dry_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     protocol_dry_settings.solvent_solvation_settings.solvent_model = "tip4pew"
@@ -979,21 +986,22 @@ def test_dry_run_benzene_toluene_tip4p(
     assert len(solv_setup_unit) == 1
     assert len(sol_run_unit) == 1
 
-    with tmpdir.as_cwd():
-        solv_setup_output = solv_setup_unit[0].run(dry=True)["debug"]
-        serialized_topology = solv_setup_output["topology"]
-        serialized_system = solv_setup_output["system"]
-        solv_run = sol_run_unit[0].run(
-            serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]  # fmt: skip
+    solv_setup_output = solv_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]
+    serialized_topology = solv_setup_output["topology"]
+    serialized_system = solv_setup_output["system"]
+    solv_run = sol_run_unit[0].run(
+        serialized_system, serialized_topology, dry=True,scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]["sampler"]  # fmt: skip
 
-        assert solv_run.is_periodic
+    assert solv_run.is_periodic
 
 
 def test_dry_run_benzene_toluene_noncubic(
     benzene_complex_system,
     toluene_complex_system,
-    tmpdir,
+    tmp_path,
     protocol_dry_settings,
 ):
     protocol_dry_settings.solvent_solvation_settings.solvent_padding = 1.5 * offunit.nanometer
@@ -1017,31 +1025,32 @@ def test_dry_run_benzene_toluene_noncubic(
 
     assert len(solv_setup_unit) == 1
 
-    with tmpdir.as_cwd():
-        solv_setup_output = solv_setup_unit[0].run(dry=True)["debug"]
-        serialized_system = solv_setup_output["system"]
-        system = deserialize(serialized_system)
-        vectors = system.getDefaultPeriodicBoxVectors()
-        width = float(from_openmm(vectors)[0][0].to("nanometer").m)
+    solv_setup_output = solv_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]
+    serialized_system = solv_setup_output["system"]
+    system = deserialize(serialized_system)
+    vectors = system.getDefaultPeriodicBoxVectors()
+    width = float(from_openmm(vectors)[0][0].to("nanometer").m)
 
-        # dodecahedron has the following shape:
-        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
+    # dodecahedron has the following shape:
+    # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
 
-        expected_vectors = [
-            [width, 0, 0],
-            [0, width, 0],
-            [0.5 * width, 0.5 * width, 0.5 * math.sqrt(2) * width],
-        ] * offunit.nanometer
-        assert_allclose(
-            expected_vectors,
-            from_openmm(vectors),
-        )
+    expected_vectors = [
+        [width, 0, 0],
+        [0, width, 0],
+        [0.5 * width, 0.5 * width, 0.5 * math.sqrt(2) * width],
+    ] * offunit.nanometer
+    assert_allclose(
+        expected_vectors,
+        from_openmm(vectors),
+    )
 
 
 def test_dry_run_solv_user_charges_benzene_toluene(
     benzene_modifications,
     T4_protein_component,
-    tmpdir,
+    tmp_path,
     protocol_dry_settings,
 ):
     """
@@ -1106,48 +1115,50 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     complex_setup_unit = [u for u in prot_units if isinstance(u, SepTopComplexSetupUnit)]
 
     # check sol_unit charges
-    with tmpdir.as_cwd():
-        serialized_system = solv_setup_unit[0].run(dry=True)["debug"]["system"]
-        system = deserialize(serialized_system)
-        nonbond = [f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)]
-        assert len(nonbond) == 1
+    serialized_system = solv_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]["system"]
+    system = deserialize(serialized_system)
+    nonbond = [f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)]
+    assert len(nonbond) == 1
 
-        # loop through the 12 benzene atoms
-        # partial charge is stored in the offset
-        for i in range(12):
-            offsets = nonbond[0].getParticleParameterOffset(i)
-            c = ensure_quantity(offsets[2], "openff")
-            assert pytest.approx(c) == benzene_charge[i]
-        # loop through 15 toluene atoms
-        for inx, i in enumerate(range(12, 27)):
-            offsets = nonbond[0].getParticleParameterOffset(i)
-            c = ensure_quantity(offsets[2], "openff")
-            assert pytest.approx(c) == toluene_charge[inx]
+    # loop through the 12 benzene atoms
+    # partial charge is stored in the offset
+    for i in range(12):
+        offsets = nonbond[0].getParticleParameterOffset(i)
+        c = ensure_quantity(offsets[2], "openff")
+        assert pytest.approx(c) == benzene_charge[i]
+    # loop through 15 toluene atoms
+    for inx, i in enumerate(range(12, 27)):
+        offsets = nonbond[0].getParticleParameterOffset(i)
+        c = ensure_quantity(offsets[2], "openff")
+        assert pytest.approx(c) == toluene_charge[inx]
 
     # check complex_unit charges
-    with tmpdir.as_cwd():
-        serialized_system = complex_setup_unit[0].run(dry=True)["debug"]["system"]
-        system = deserialize(serialized_system)
-        nonbond = [f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)]
-        assert len(nonbond) == 1
+    serialized_system = complex_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )["debug"]["system"]
+    system = deserialize(serialized_system)
+    nonbond = [f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)]
+    assert len(nonbond) == 1
 
-        # loop through the 12 benzene atoms
-        # partial charge is stored in the offset
-        for i in range(12):
-            offsets = nonbond[0].getParticleParameterOffset(i)
-            c = ensure_quantity(offsets[2], "openff")
-            assert pytest.approx(c) == benzene_charge[i]
-        # loop through 15 toluene atoms
-        for inx, i in enumerate(range(12, 27)):
-            offsets = nonbond[0].getParticleParameterOffset(i)
-            c = ensure_quantity(offsets[2], "openff")
-            assert pytest.approx(c) == toluene_charge[inx]
+    # loop through the 12 benzene atoms
+    # partial charge is stored in the offset
+    for i in range(12):
+        offsets = nonbond[0].getParticleParameterOffset(i)
+        c = ensure_quantity(offsets[2], "openff")
+        assert pytest.approx(c) == benzene_charge[i]
+    # loop through 15 toluene atoms
+    for inx, i in enumerate(range(12, 27)):
+        offsets = nonbond[0].getParticleParameterOffset(i)
+        c = ensure_quantity(offsets[2], "openff")
+        assert pytest.approx(c) == toluene_charge[inx]
 
 
 def test_high_timestep(
     benzene_complex_system,
     toluene_complex_system,
-    tmpdir,
+    tmp_path,
     protocol_dry_settings,
 ):
     protocol_dry_settings.forcefield_settings.hydrogen_mass = 1.0
@@ -1162,10 +1173,9 @@ def test_high_timestep(
     )
     prot_units = list(dag.protocol_units)
 
-    with tmpdir.as_cwd():
-        errmsg = "too large for hydrogen mass"
-        with pytest.raises(ValueError, match=errmsg):
-            prot_units[0].run(dry=True)
+    errmsg = "too large for hydrogen mass"
+    with pytest.raises(ValueError, match=errmsg):
+        prot_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
 
 @pytest.fixture
@@ -1236,7 +1246,7 @@ class TestT4LXmlRegression:
             assert a[2] == b[2]
 
 
-def test_unit_tagging(benzene_toluene_dag, tmpdir):
+def test_unit_tagging(benzene_toluene_dag, tmp_path):
     # test that executing the units includes correct gen and repeat info
     dag_units = benzene_toluene_dag.protocol_units
     with (
@@ -1281,7 +1291,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     ):
         results = []
         for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
+            ret = u.execute(context=gufe.Context(tmp_path, tmp_path))
             results.append(ret)
     solv_repeats = set()
     complex_repeats = set()
@@ -1296,7 +1306,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     assert len(complex_repeats) == len(solv_repeats) == 2
 
 
-def test_gather(benzene_toluene_dag, tmpdir):
+def test_gather(benzene_toluene_dag, tmp_path):
     # check that .gather behaves as expected
     with (
         mock.patch(
@@ -1340,8 +1350,8 @@ def test_gather(benzene_toluene_dag, tmpdir):
     ):
         dagres = gufe.protocols.execute_DAG(
             benzene_toluene_dag,
-            shared_basedir=tmpdir,
-            scratch_basedir=tmpdir,
+            shared_basedir=tmp_path,
+            scratch_basedir=tmp_path,
             keep_shared=True,
         )
 
@@ -1817,7 +1827,3 @@ def test_adaptive_settings_with_protein_membrane(a2a_protein_membrane_component,
     assert isinstance(settings, SepTopSettings)
     # Barostat should have been updated
     assert settings.complex_integrator_settings.barostat == "MonteCarloMembraneBarostat"
-
-    # Forcefields should include the lipid forcefields
-    ff = settings.forcefield_settings.forcefields
-    assert "amber/lipid17_merged.xml" in ff

@@ -8,6 +8,9 @@ Make the PR:
 * [ ] Run [rever](https://regro.github.io/rever-docs/index.html#), e.g. `rever 1.2.0`. This will auto-commit `docs/CHANGELOG.md` and remove the `.rst` files from `news/`. 
 * [ ] Verify that`docs/CHANGELOG.rst` looks correct.
 * [ ] Make the PR and verify that CI/CD passes. 
+  * [ ] (feedstock packaging tests)[https://github.com/OpenFreeEnergy/openfe/actions/workflows/release-prep-feedstock.yaml]
+  * [ ] (example notebooks)[https://github.com/OpenFreeEnergy/openfe/actions/workflows/release-prep-examplenotebooks.yaml]
+  * [ ] (GPU tests)[https://github.com/OpenFreeEnergy/openfe/actions/workflows/aws-gpu-integration-tests.yaml]
 * [ ] Merge the PR into `main`.
 * [ ] Make a PR into the [example notebooks repository](https://github.com/OpenFreeEnergy/ExampleNotebooks) to update the version used in `showcase/openfe_showcase.ipynb` and `.binder/environment.yml`
 

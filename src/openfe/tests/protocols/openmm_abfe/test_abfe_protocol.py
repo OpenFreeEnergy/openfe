@@ -28,6 +28,7 @@ from openmmtools.alchemy import (
     AlchemicalRegion,
 )
 from openmmtools.multistate.multistatesampler import MultiStateSampler
+from openmmtools.tests import test_alchemy
 from openmmtools.tests.test_alchemy import (
     check_interacting_energy_components,
     check_noninteracting_energy_components,
@@ -39,12 +40,6 @@ from openfe import ChemicalSystem, SmallMoleculeComponent, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
-)
-from openfe.protocols.openmm_afe.abfe_units import (
-    ABFEComplexSetupUnit,
-    ABFEComplexSimUnit,
-    ABFESolventSetupUnit,
-    ABFESolventSimUnit,
 )
 
 from .utils import UNIT_TYPES, _get_units
@@ -180,15 +175,45 @@ def test_mda_universe_error():
 
 class TestT4LysozymeDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
-    num_all_not_water = 2634
-    num_complex_atoms = 2613
+    num_all_not_water = 2634  # 9 counterions to neutralize
+    num_protein_component_atoms = 2614
     # No ions
     num_ligand_atoms = 12
+    expected_complex_particles = 32607
+    expected_ligand_solvent_particles = 3012
 
     barostat_by_phase = {
         "complex": MonteCarloBarostat,
         "solvent": MonteCarloBarostat,
     }
+
+    @pytest.fixture(scope="class", autouse=True)
+    def set_platform(self, available_platforms):
+        """
+        Set the platform used by this test, overriding the openmmtools default.
+
+        If a CUDA-enabled GPU is present, it will attempt to set the platform
+        to CUDA + mixed precision. Otherwise the Reference platform will be used.
+
+        We need this because system size discrepancies can occur see <https://github.com/openmm/openmm/issues/5230> for more details.
+
+        Note
+        ----
+        - must keep autouse=True to ensure it is used without being called explicitly
+        """
+        original_platform = test_alchemy.GLOBAL_ALCHEMY_PLATFORM
+
+        # set the new platform
+        # Try cuda if available, then CPU
+        if "CUDA" in available_platforms:
+            test_platform = openmm.Platform.getPlatformByName("CUDA")
+            test_platform.setPropertyDefaultValue("Precision", "mixed")
+        else:
+            raise ValueError()
+            test_alchemy.GLOBAL_ALCHEMY_PLATFORM = openmm.Platform.getPlatformByName("Reference")
+        yield
+        # restore the old value
+        test_alchemy.GLOBAL_ALCHEMY_PLATFORM = original_platform
 
     @pytest.fixture(scope="class")
     def protocol(self, settings):
@@ -203,8 +228,11 @@ class TestT4LysozymeDryRun:
         s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.complex_solvation_settings.box_shape = "dodecahedron"
-        s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
+        s.complex_solvation_settings.solvent_padding = None
+        s.complex_solvation_settings.number_of_solvent_molecules = 10000
         s.solvent_solvation_settings.box_shape = "cube"
+        s.solvent_solvation_settings.solvent_padding = None
+        s.solvent_solvation_settings.number_of_solvent_molecules = 1000
         return s
 
     @pytest.fixture(scope="class")
@@ -422,106 +450,131 @@ class TestT4LysozymeDryRun:
             positions=positions,
         )
 
-    def test_complex_dry_run(self, complex_setup_units, complex_sim_units, settings, tmpdir):
-        with tmpdir.as_cwd():
-            setup_results = complex_setup_units[0].run(dry=True, verbose=True)
-            sim_results = complex_sim_units[0].run(
-                system=setup_results["alchem_system"],
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=True,
-                dry=True,
-            )
+    def test_complex_dry_run(self, complex_setup_units, complex_sim_units, settings, tmp_path):
+        setup_results = complex_setup_units[0].run(
+            dry=True,
+            verbose=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+        sim_results = complex_sim_units[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=True,
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
 
-            # Check the sampler
-            self._verify_sampler(sim_results["sampler"], phase="complex", settings=settings)
+        # Check the sampler
+        self._verify_sampler(sim_results["sampler"], phase="complex", settings=settings)
 
-            # Check the alchemical system
-            self._assert_expected_alchemical_forces(
-                setup_results["alchem_system"], phase="complex", settings=settings
-            )
-            self._check_box_vectors(setup_results["alchem_system"])
+        # Check the alchemical system
+        assert setup_results["alchem_system"].getNumParticles() == self.expected_complex_particles
+        self._assert_expected_alchemical_forces(
+            setup_results["alchem_system"], phase="complex", settings=settings
+        )
+        self._check_box_vectors(setup_results["alchem_system"])
 
-            # Check the alchemical indices
-            expected_indices = [i + self.num_complex_atoms for i in range(self.num_ligand_atoms)]
-            assert expected_indices == setup_results["alchem_indices"]
+        # Check the alchemical indices
+        expected_indices = [
+            i + self.num_protein_component_atoms - 1 for i in range(self.num_ligand_atoms)
+        ]
+        assert expected_indices == setup_results["alchem_indices"]
 
-            # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                setup_results["standard_system"], "complex", settings=settings
-            )
-            self._check_box_vectors(setup_results["standard_system"])
+        # Check the non-alchemical system
+        assert setup_results["standard_system"].getNumParticles() == self.expected_complex_particles
+        self._assert_expected_nonalchemical_forces(
+            setup_results["standard_system"],
+            "complex",
+            settings=settings,
+        )
+        self._check_box_vectors(setup_results["standard_system"])
+        # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+        assert_allclose(
+            from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
+            from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
+        )
 
-            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
-            assert_allclose(
-                from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
-                from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
-            )
+        # Check the PDB
+        pdb = mdt.load_pdb(setup_results["pdb_structure"])
+        assert pdb.n_atoms == self.num_all_not_water
 
-            # Check the PDB
-            pdb = mdt.load_pdb(setup_results["pdb_structure"])
-            assert pdb.n_atoms == self.num_all_not_water
+        # Check energies
+        alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
+        self._test_energies(
+            reference_system=setup_results["standard_system"],
+            alchemical_system=setup_results["alchem_system"],
+            alchemical_regions=alchem_region,
+            positions=setup_results["debug_positions"],
+        )
 
-            # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
-            self._test_energies(
-                reference_system=setup_results["standard_system"],
-                alchemical_system=setup_results["alchem_system"],
-                alchemical_regions=alchem_region,
-                positions=setup_results["debug_positions"],
-            )
+    def test_solvent_dry_run(self, solvent_setup_units, solvent_sim_units, settings, tmp_path):
+        setup_results = solvent_setup_units[0].run(
+            dry=True,
+            verbose=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+        sim_results = solvent_sim_units[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
 
-    def test_solvent_dry_run(self, solvent_setup_units, solvent_sim_units, settings, tmpdir):
-        with tmpdir.as_cwd():
-            setup_results = solvent_setup_units[0].run(dry=True, verbose=True)
-            sim_results = solvent_sim_units[0].run(
-                system=setup_results["alchem_system"],
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
-                dry=True,
-            )
+        # Check the sampler
+        self._verify_sampler(sim_results["sampler"], phase="solvent", settings=settings)
 
-            # Check the sampler
-            self._verify_sampler(sim_results["sampler"], phase="solvent", settings=settings)
+        # Check the alchemical system
+        assert (
+            setup_results["alchem_system"].getNumParticles()
+            == self.expected_ligand_solvent_particles
+        )
+        self._assert_expected_alchemical_forces(
+            setup_results["alchem_system"], phase="solvent", settings=settings
+        )
+        self._test_cubic_vectors(setup_results["alchem_system"])
 
-            # Check the alchemical system
-            self._assert_expected_alchemical_forces(
-                setup_results["alchem_system"], phase="solvent", settings=settings
-            )
-            self._test_cubic_vectors(setup_results["alchem_system"])
+        # Check the alchemical indices
+        expected_indices = [i for i in range(self.num_ligand_atoms)]
+        assert expected_indices == setup_results["alchem_indices"]
 
-            # Check the alchemical indices
-            expected_indices = [i for i in range(self.num_ligand_atoms)]
-            assert expected_indices == setup_results["alchem_indices"]
+        # Check the non-alchemical system
+        assert (
+            setup_results["standard_system"].getNumParticles()
+            == self.expected_ligand_solvent_particles
+        )
+        self._assert_expected_nonalchemical_forces(
+            setup_results["standard_system"], phase="solvent", settings=settings
+        )
+        self._test_cubic_vectors(setup_results["standard_system"])
 
-            # Check the non-alchemical system
-            self._assert_expected_nonalchemical_forces(
-                setup_results["standard_system"], "solvent", settings=settings
-            )
-            self._test_cubic_vectors(setup_results["standard_system"])
+        # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+        assert_allclose(
+            from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
+            from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
+        )
 
-            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
-            assert_allclose(
-                from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
-                from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
-            )
+        # Check the PDB
+        pdb = mdt.load_pdb(setup_results["pdb_structure"])
+        assert pdb.n_atoms == self.num_ligand_atoms
 
-            # Check the PDB
-            pdb = mdt.load_pdb(setup_results["pdb_structure"])
-            assert pdb.n_atoms == self.num_ligand_atoms
+        # Check energies
+        alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
 
-            # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
-
-            self._test_energies(
-                reference_system=setup_results["standard_system"],
-                alchemical_system=setup_results["alchem_system"],
-                alchemical_regions=alchem_region,
-                positions=setup_results["debug_positions"],
-            )
+        self._test_energies(
+            reference_system=setup_results["standard_system"],
+            alchemical_system=setup_results["alchem_system"],
+            alchemical_regions=alchem_region,
+            positions=setup_results["debug_positions"],
+        )
 
 
 @pytest.mark.slow
@@ -530,6 +583,9 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
     TIP4P and a few extra settings to test out the dry run.
     """
 
+    expected_complex_particles = 42598
+    expected_ligand_solvent_particles = 4012
+
     @pytest.fixture(scope="class")
     def settings(self):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
@@ -537,14 +593,17 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.complex_solvation_settings.box_shape = "dodecahedron"
-        s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
+        s.complex_solvation_settings.solvent_padding = None
+        s.complex_solvation_settings.number_of_solvent_molecules = 10000
         s.complex_solvation_settings.solvent_model = "tip4pew"
         s.solvent_solvation_settings.box_shape = "cube"
+        s.solvent_solvation_settings.solvent_padding = None
+        s.solvent_solvation_settings.number_of_solvent_molecules = 1000
         s.solvent_solvation_settings.solvent_model = "tip4pew"
         s.forcefield_settings.nonbonded_cutoff = 0.8 * offunit.nanometer
         s.forcefield_settings.forcefields = [
             "amber/ff14SB.xml",  # ff14SB protein force field
-            "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+            "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
             "amber/phosaa10.xml",  # Handles THE TPO
         ]
         s.complex_integrator_settings.reassign_velocities = True
@@ -555,7 +614,7 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         return s
 
 
-def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
+def test_user_charges(benzene_modifications, T4_protein_component, tmp_path):
     s = openmm_afe.AbsoluteBindingProtocol.default_settings()
     s.protocol_repeats = 1
     s.engine_settings.compute_platform = "cpu"
@@ -602,36 +661,51 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
 
     complex_setup_units = _get_units(dag.protocol_units, UNIT_TYPES["complex"]["setup"])
 
-    with tmpdir.as_cwd():
-        results = complex_setup_units[0].run(dry=True)
+    results = complex_setup_units[0].run(
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
 
-        system_nbf = [
-            f for f in results["standard_system"].getForces() if isinstance(f, NonbondedForce)
-        ][0]
-        alchem_system_nbf = [
-            f
-            for f in results["alchem_system"].getForces()
-            if isinstance(f, NonbondedForce)
-        ][0]  # fmt: skip
+    system_nbf = [
+        f for f in results["standard_system"].getForces() if isinstance(f, NonbondedForce)
+    ][0]
+    alchem_system_nbf = [
+        f
+        for f in results["alchem_system"].getForces()
+        if isinstance(f, NonbondedForce)
+    ][0]  # fmt: skip
 
-        for i in range(12):
-            # add 2613 to account for the protein
-            index = i + 2613
+    for i in range(12):
+        # add 2613 to account for the protein
+        index = i + 2613
 
-            c, s, e = system_nbf.getParticleParameters(index)
-            assert pytest.approx(prop_chgs[i]) == c.value_in_unit(ommunit.elementary_charge)
-
-            offsets = alchem_system_nbf.getParticleParameterOffset(i)
-            assert pytest.approx(prop_chgs[i]) == offsets[2]
+        c, s, e = system_nbf.getParticleParameters(index)
+        assert pytest.approx(prop_chgs[i]) == c.value_in_unit(ommunit.elementary_charge)
+        offsets = alchem_system_nbf.getParticleParameterOffset(i)
+        assert pytest.approx(prop_chgs[i]) == offsets[2]
 
 
 @pytest.mark.slow
 class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
+    """
+    A test case for a membrane.
+
+    TODO
+    ----
+    * The energies coming from this system are very high. Maybe replace with
+      a larger test case?
+    """
+
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 16080
-    num_complex_atoms = 39390
+    num_protein_component_atoms = 39391
+    expected_complex_particles = 39426
+    expected_ligand_solvent_particles = 3036
+
     # No ions
     num_ligand_atoms = 36
+    expected_ligand_solvent_particles = 3036
 
     barostat_by_phase = {
         "complex": MonteCarloMembraneBarostat,
@@ -645,6 +719,8 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
         s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.solvent_solvation_settings.box_shape = "cube"
+        s.solvent_solvation_settings.solvent_padding = None
+        s.solvent_solvation_settings.number_of_solvent_molecules = 1000
         return s
 
     @pytest.fixture(scope="class")

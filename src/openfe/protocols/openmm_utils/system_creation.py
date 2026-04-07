@@ -42,7 +42,7 @@ def get_system_generator(
     """
     Create a SystemGenerator based on Protocol settings.
 
-    Paramters
+    Parameters
     ---------
     forcefield_settings : OpenMMSystemGeneratorFFSettings
       Force field settings, including necessary information

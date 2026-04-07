@@ -5,8 +5,8 @@
 
 Base classes for the equilibrium OpenMM SepTop free energy ProtocolUnits.
 
-Thist mostly implements BaseSepTopUnit whose methods can be
-overriden to define different types of alchemical transformations.
+This mostly implements BaseSepTopUnit whose methods can be
+overridden to define different types of alchemical transformations.
 
 TODO
 ----

@@ -5,8 +5,8 @@
 
 Base classes for the OpenMM absolute free energy ProtocolUnits.
 
-Thist mostly implements BaseAbsoluteUnit whose methods can be
-overriden to define different types of alchemical transformations.
+This mostly implements BaseAbsoluteUnit whose methods can be
+overridden to define different types of alchemical transformations.
 
 TODO
 ----
@@ -35,6 +35,7 @@ from gufe import (
     SolventComponent,
 )
 from gufe.components import Component
+from gufe.protocols.errors import ProtocolUnitExecutionError
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity
 from openff.units import unit as offunit
@@ -55,6 +56,7 @@ from openmmtools.states import (
     create_thermodynamic_state_protocol,
 )
 
+import openfe
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AlchemicalSettings,
     BaseSolvationSettings,
@@ -62,8 +64,6 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
-    OpenMMEngineSettings,
-    OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
@@ -73,6 +73,7 @@ from openfe.protocols.openmm_utils import (
     omm_compute,
     settings_validation,
     system_creation,
+    system_validation,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
@@ -149,6 +150,26 @@ class AbsoluteUnitMixin:
         Must be implemented in the child class.
         """
         ...
+
+    @staticmethod
+    def _verify_execution_environment(
+        setup_outputs: dict[str, Any],
+    ) -> None:
+        """
+        Check that the Python environment hasn't changed based on the
+        relevant Python library versions stored in the setup outputs.
+        """
+        try:
+            if (
+                (gufe.__version__ != setup_outputs["gufe_version"])
+                or (openfe.__version__ != setup_outputs["openfe_version"])
+                or (openmm.__version__ != setup_outputs["openmm_version"])
+            ):
+                errmsg = "Python environment has changed, cannot continue Protocol execution."
+                raise ProtocolUnitExecutionError(errmsg)
+        except KeyError:
+            errmsg = "Missing environment information from setup outputs."
+            raise ProtocolUnitExecutionError(errmsg)
 
 
 class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
@@ -370,7 +391,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings object for the unit.
         solvent_comp : BaseSolventComponent | None
-          The BaseSolventComponent of this system, if there is one.
+          The solvent component of this system, if there is one.
         openff_molecules : list[openff.toolkit.Molecule] | None
           A list of OpenFF Molecules to generate templates for, if any.
         ffcache : pathlib.Path | None
@@ -416,7 +437,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         protein_component : ProteinComponent | None
           Protein Component, if it exists.
         solvent_component : BaseSolventComponent | None
-          Base Solvent Component, if it exists.
+          The solvent component, if it exists.
         small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           Dictionary of OpenFF Molecules to add, keyed by
           SmallMoleculeComponent.
@@ -467,7 +488,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         protein_component : ProteinComponent | None
           Protein component for the system.
         solvent_component : BaseSolventComponent | None
-          BaseSolventComponent for the system.
+         Solvent component for the system, if it exists.
         small_mols : dict[str, openff.toolkit.Molecule]
           Dictionary of SmallMoleculeComponents and OpenFF Molecules
           defining the ligands to be added to the system
@@ -783,11 +804,58 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
             "simtype": self.simtype,
+            "openmm_version": openmm.__version__,
+            "openfe_version": openfe.__version__,
+            "gufe_version": gufe.__version__,
             **outputs,
         }
 
 
 class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
+    @staticmethod
+    def _check_restart(output_settings: SettingsBaseModel, shared_path: pathlib.Path):
+        """
+        Check if we are doing a restart.
+
+        Parameters
+        ----------
+        output_settings : SettingsBaseModel
+          The simulation output settings
+        shared_path : pathlib.Path
+          The shared directory where we should be looking for existing files.
+
+        Raises
+        ------
+        IOError
+          If one of the trajectory or checkpoint files are present
+          without the other.
+
+        Notes
+        -----
+        For now this just checks if the netcdf files are present in the
+        shared directory but in the future this may expand depending on
+        how warehouse works.
+        """
+        trajectory = shared_path / output_settings.output_filename
+        checkpoint = shared_path / output_settings.checkpoint_storage_filename
+
+        if trajectory.is_file() and checkpoint.is_file():
+            return True
+        elif trajectory.is_file() ^ checkpoint.is_file():
+            if trajectory.is_file():
+                errmsg = "the trajectory file is present but not the checkpoint file. "
+            else:
+                errmsg = "the checkpoint file is present but not the trajectory file. "
+
+            errmsg = (
+                "Attempting to restart but "
+                + errmsg
+                + "This should not happen under normal circumstances."
+            )
+            raise IOError(errmsg)
+        else:
+            return False
+
     @abc.abstractmethod
     def _get_components(
         self,
@@ -868,7 +936,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         lambdas : dict[str, list[float]]
           A dictionary of lambda scales.
         solvent_component : BaseSolventComponent | None
-          The base solvent component of the system, if there is one.
+          The solvent component of the system, if there is one.
         alchemically_restrained : bool
           Whether or not the system requires a control parameter
           for any alchemical restraints.
@@ -1004,7 +1072,13 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         -------
         reporter : multistate.MultiStateReporter
           The reporter for the simulation.
+
+        Notes
+        -----
+        All this does is create the reporter, it works for both
+        new reporters and if we are doing a restart.
         """
+        # Define the trajectory & checkpoint files
         nc = storage_path / output_settings.output_filename
         # The checkpoint file in openmmtools is taken as a file relative
         # to the location of the nc file, so you only want the filename
@@ -1035,7 +1109,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             time_per_iteration=simulation_settings.time_per_iteration,
         )
 
-        reporter = multistate.MultiStateReporter(
+        return multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
@@ -1043,8 +1117,6 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             position_interval=pos_interval,
             velocity_interval=vel_interval,
         )
-
-        return reporter
 
     @staticmethod
     def _get_sampler(
@@ -1055,6 +1127,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         compound_states: list[ThermodynamicState],
         sampler_states: list[SamplerState],
         platform: openmm.Platform,
+        restart: bool,
     ) -> multistate.MultiStateSampler:
         """
         Get a sampler based on the equilibrium sampling method requested.
@@ -1075,51 +1148,115 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
           A list of sampler states.
         platform : openmm.Platform
           The compute platform to use.
+        restart : bool
+          ``True`` if we are doing a simulation restart.
 
         Returns
         -------
         sampler : multistate.MultistateSampler
           A sampler configured for the chosen sampling method.
         """
+        _SAMPLERS = {
+            "repex": multistate.ReplicaExchangeSampler,
+            "sams": multistate.SAMSSampler,
+            "independent": multistate.MultiStateSampler,
+        }
+
+        sampler_method = simulation_settings.sampler_method.lower()
+        try:
+            sampler_class = _SAMPLERS[sampler_method]
+        except KeyError:
+            errmsg = f"Unknown sampler {sampler_method}"
+            raise AttributeError(errmsg)
+
+        # Get the real time analysis values to use
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
             simulation_settings=simulation_settings,
         )
-        et_target_err = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
-            thermodynamic_settings.temperature,
-            simulation_settings.early_termination_target_error,
+
+        # Get the number of production iterations to run for
+        steps_per_iteration = integrator.n_steps
+        timestep = from_openmm(integrator.timestep)
+        number_of_iterations = int(
+            settings_validation.get_simsteps(
+                sim_length=simulation_settings.production_length,
+                timestep=timestep,
+                mc_steps=steps_per_iteration,
+            )
+            / steps_per_iteration
         )
 
-        # Select the right sampler
-        # Note: doesn't need else, settings already validates choices
-        if simulation_settings.sampler_method.lower() == "repex":
-            sampler = multistate.ReplicaExchangeSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=et_target_err,
-                online_analysis_minimum_iterations=rta_min_its,
+        # convert early_termination_target_error from kcal/mol to kT
+        early_termination_target_error = (
+            settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+                thermodynamic_settings.temperature,
+                simulation_settings.early_termination_target_error,
             )
-        elif simulation_settings.sampler_method.lower() == "sams":
-            sampler = multistate.SAMSSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_minimum_iterations=rta_min_its,
-                flatness_criteria=simulation_settings.sams_flatness_criteria,
-                gamma0=simulation_settings.sams_gamma0,
-            )
-        elif simulation_settings.sampler_method.lower() == "independent":
-            sampler = multistate.MultiStateSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=et_target_err,
-                online_analysis_minimum_iterations=rta_min_its,
-            )
-
-        sampler.create(
-            thermodynamic_states=compound_states,
-            sampler_states=sampler_states,
-            storage=reporter,
         )
 
+        sampler_kwargs = {
+            "mcmc_moves": integrator,
+            "online_analysis_interval": rta_its,
+            "online_analysis_target_error": early_termination_target_error,
+            "online_analysis_minimum_iterations": rta_min_its,
+            "number_of_iterations": number_of_iterations,
+        }
+
+        if sampler_method == "sams":
+            sampler_kwargs |= {
+                "flatness_criteria": simulation_settings.sams_flatness_criteria,
+                "gamma0": simulation_settings.sams_gamma0,
+            }
+
+        if sampler_method == "repex":
+            sampler_kwargs |= {
+                "replica_mixing_scheme": "swap-all",
+            }
+
+        # Restarting so we just rebuild from storage.
+        if restart:
+            sampler = sampler_class.from_storage(reporter)
+
+            # We do some checks to make sure we are running the same system
+            # including ensuring that we have the same thermodynamic parameters and
+            # that the lambda schedule is the same.
+            for index, thermostate in enumerate(sampler._thermodynamic_states):
+                system_validation.assert_multistate_system_equality(
+                    ref_system=compound_states[index].get_system(remove_thermostat=True),
+                    stored_system=thermostate.get_system(remove_thermostat=True),
+                )
+
+                # Loop over each composable state (e.g. GlobalParameterState object)
+                # get the parameters and check that the values are the same.
+                for composable_state in compound_states[index]._composable_states:
+                    for param in composable_state._parameters:
+                        expected = getattr(compound_states[index], param)
+                        stored = getattr(thermostate, param)
+                        if expected != stored:
+                            errmsg = (
+                                f"System parameter {param} in checkpoint does "
+                                "not match protocol system, cannot resume"
+                            )
+                            raise ValueError(errmsg)
+
+            if (
+                (simulation_settings.n_replicas != sampler.n_states)
+                or (simulation_settings.n_replicas != sampler.n_replicas)
+                or (sampler.mcmc_moves[0].n_steps != steps_per_iteration)
+                or (sampler.mcmc_moves[0].timestep != integrator.timestep)
+            ):
+                errmsg = "System in checkpoint does not match protocol system, cannot resume"
+                raise ValueError(errmsg)
+        else:
+            sampler = sampler_class(**sampler_kwargs)
+
+            sampler.create(
+                thermodynamic_states=compound_states,
+                sampler_states=sampler_states,
+                storage=reporter,
+            )
+
+        # Get and set the context caches
         sampler.energy_context_cache = openmmtools.cache.ContextCache(
             capacity=None,
             time_to_live=None,
@@ -1173,22 +1310,27 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         )
 
         if not dry:  # pragma: no-cover
-            # minimize
-            if self.verbose:
-                self.logger.info("minimizing systems")
+            # No production steps have been taken, so start from scratch
+            if sampler._iteration == 0:
+                # minimize
+                if self.verbose:
+                    self.logger.info("minimizing systems")
 
-            sampler.minimize(max_iterations=settings["simulation_settings"].minimization_steps)
+                sampler.minimize(max_iterations=settings["simulation_settings"].minimization_steps)
 
-            # equilibrate
-            if self.verbose:
-                self.logger.info("equilibrating systems")
+                # equilibrate
+                if self.verbose:
+                    self.logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps / mc_steps))
+                sampler.equilibrate(int(equil_steps / mc_steps))
 
-            # production
+            # At this point we are ready for production
             if self.verbose:
                 self.logger.info("running production phase")
-            sampler.extend(int(prod_steps / mc_steps))
+
+            # We use `run` so that we're limited by the number of iterations
+            # we passed when we built the sampler.
+            sampler.run(n_iterations=int(prod_steps / mc_steps) - sampler._iteration)
 
             if self.verbose:
                 self.logger.info("production phase complete")
@@ -1258,6 +1400,12 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         # Get the settings
         settings = self._get_settings()
 
+        # Check for a restart
+        self.restart = self._check_restart(
+            output_settings=settings["output_settings"],
+            shared_path=self.shared_basepath,
+        )
+
         # Get the components
         alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
 
@@ -1300,7 +1448,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
                 output_settings=settings["output_settings"],
             )
 
-            # Get sampler
+            # Get the sampler
             sampler = self._get_sampler(
                 integrator=integrator,
                 reporter=reporter,
@@ -1309,9 +1457,10 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
                 compound_states=cmp_states,
                 sampler_states=sampler_states,
                 platform=platform,
+                restart=self.restart,
             )
 
-            # Run simulation
+            # Run the simulation
             self._run_simulation(
                 sampler=sampler,
                 reporter=reporter,
@@ -1368,6 +1517,10 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
+        # Ensure the environment hasn't changed
+        self._verify_execution_environment(setup_results.outputs)
+
+        # Get the relevant inputs for running the unit
         system = deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nanometer)
         selection_indices = setup_results.outputs["selection_indices"]
@@ -1510,6 +1663,10 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
+        # Ensure the environment hasn't changed
+        self._verify_execution_environment(setup_results.outputs)
+
+        # Get the relevant inputs for running the unit
         pdb_file = setup_results.outputs["pdb_structure"]
         selection_indices = setup_results.outputs["selection_indices"]
         restraint_geometry = setup_results.outputs["restraint_geometry"]
