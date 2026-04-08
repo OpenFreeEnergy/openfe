@@ -95,563 +95,218 @@ from ..restraint_utils.settings import (
     BoreschRestraintSettings,
     DistanceRestraintSettings,
 )
-from .base import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
-
-due.cite(
-    Doi("10.1021/acs.jctc.3c00282"),
-    description="Separated Topologies method",
-    path="openfe.protocols.openmm_septop.equil_septop_method",
-    cite_module=True,
-)
-
-due.cite(
-    Doi("10.5281/zenodo.596622"),
-    description="OpenMMTools",
-    path="openfe.protocols.openmm_septop.equil_septop_method",
-    cite_module=True,
-)
-
-due.cite(
-    Doi("10.1371/journal.pcbi.1005659"),
-    description="OpenMM",
-    path="openfe.protocols.openmm_septop.equil_septop_method",
-    cite_module=True,
-)
+from .base_units import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
 
 
 logger = logging.getLogger(__name__)
 
 
-def _check_alchemical_charge_difference(
-    ligandA: SmallMoleculeComponent,
-    ligandB: SmallMoleculeComponent,
+def _get_mdtraj_from_openmm(
+    omm_topology: openmm.app.Topology,
+    omm_positions: openmm.unit.Quantity,
 ):
     """
-    Checks and returns the difference in formal charge between state A
-    and B.
-
-    Raises
-    ------
-    ValueError
-      * If a change in net charge is detected.
+    Get an mdtraj object from an OpenMM topology and positions.
 
     Parameters
     ----------
-    ligandA: SmallMoleculeComponent
-    ligandB: SmallMoleculeComponent
+    omm_topology: openmm.app.Topology
+      The OpenMM topology
+    omm_positions: openmm.unit.Quantity
+      The OpenMM positions
+
+    Returns
+    -------
+    mdtraj_system: md.Trajectory
     """
-    chg_A = Chem.rdmolops.GetFormalCharge(ligandA.to_rdkit())
-    chg_B = Chem.rdmolops.GetFormalCharge(ligandB.to_rdkit())
+    mdtraj_topology = md.Topology.from_openmm(omm_topology)
+    positions_in_mdtraj_format = omm_positions.value_in_unit(omm_units.nanometers)
 
-    difference = chg_A - chg_B
+    box = omm_topology.getPeriodicBoxVectors()
+    x, y, z = [np.array(b._value) for b in box]
+    lx = np.linalg.norm(x)
+    ly = np.linalg.norm(y)
+    lz = np.linalg.norm(z)
+    # angle between y and z
+    alpha = np.arccos(np.dot(y, z) / (ly * lz))
+    # angle between x and z
+    beta = np.arccos(np.dot(x, z) / (lx * lz))
+    # angle between x and y
+    gamma = np.arccos(np.dot(x, y) / (lx * ly))
 
-    if abs(difference) != 0:
-        errmsg = (
-            f"A charge difference of {difference} is observed "
-            "between the end states. Unfortunately this protocol "
-            "currently does not support net charge changes."
-        )
-        raise ValueError(errmsg)
+    mdtraj_system = md.Trajectory(
+        positions_in_mdtraj_format,
+        mdtraj_topology,
+        unitcell_lengths=np.array([lx, ly, lz]),
+        unitcell_angles=np.array([np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)]),
+    )
+
+    return mdtraj_system
 
 
-class SepTopProtocol(gufe.Protocol):
+class SepTopComplexMixin:
     """
-    SepTop RBFE calculations using OpenMM and OpenMMTools.
-
-    See Also
-    --------
-    :mod:`openfe.protocols`
-    :class:`openfe.protocols.openmm_septop.SepTopSettings`
-    :class:`openfe.protocols.openmm_septop.SepTopProtocolResult`
-    :class:`openfe.protocols.openmm_septop.SepTopComplexSetupUnit`
-    :class:`openfe.protocols.openmm_septop.SepTopComplexRunUnit`
-    :class:`openfe.protocols.openmm_septop.SepTopSolventSetupUnit
-    :class:`openfe.protocols.openmm_septop.SepTopSolventRunUnit`
+    A mixin to get the components and the settings for the Complex Units.
     """
 
-    result_cls = SepTopProtocolResult
-    _settings_cls = SepTopSettings
-    _settings: SepTopSettings
-
-    @classmethod
-    def _default_settings(cls):
-        """A dictionary of initial settings for this creating this Protocol
-
-        These settings are intended as a suitable starting point for creating
-        an instance of this protocol.  It is recommended, however that care is
-        taken to inspect and customize these before performing a Protocol.
+    def _get_components(self):
+        """
+        Get the relevant components for a complex transformation.
 
         Returns
         -------
-        Settings
-          a set of default settings
+        alchem_comps : dict[str, Component]
+          A list of alchemical components
+        solv_comp : SolventComponent
+          The SolventComponent of the system
+        prot_comp : Optional[ProteinComponent]
+          The protein component of the system, if it exists.
+        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
+          SmallMoleculeComponents to add to the system.
         """
-        return SepTopSettings(
-            protocol_repeats=3,
-            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
-            thermo_settings=settings.ThermoSettings(
-                temperature=298.15 * unit.kelvin,
-                pressure=1 * unit.bar,
-            ),
-            alchemical_settings=AlchemicalSettings(),
-            solvent_lambda_settings=LambdaSettings(
-                lambda_elec_A=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                ],
-                lambda_elec_B=[
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                    1.0, 0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                ],
-                lambda_vdw_A=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.15, 0.23, 0.3, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0,
-                ],
-                lambda_vdw_B=[
-                    1.0,
-                    0.85,
-                    0.77,
-                    0.7,
-                    0.6,
-                    0.48,
-                    0.36,
-                    0.24,
-                    0.12,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
-                lambda_restraints_A=[
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
-                lambda_restraints_B=[
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
-            ),
-            complex_lambda_settings=LambdaSettings(),
-            partial_charge_settings=OpenFFPartialChargeSettings(),
-            solvent_solvation_settings=OpenMMSolvationSettings(),
-            complex_solvation_settings=OpenMMSolvationSettings(
-                solvent_padding=1.0 * unit.nanometer,
-            ),
-            engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
-            solvent_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=0.1 * unit.nanosecond,
-                equilibration_length=0.1 * unit.nanosecond,
-                production_length=2.0 * unit.nanosecond,
-            ),
-            solvent_equil_output_settings=SepTopEquilOutputSettings(
-                equil_nvt_structure=None,
-                equil_npt_structure="equil_npt",
-                production_trajectory_filename="equil_npt",
-                log_output="equil_simulation",
-            ),
-            solvent_simulation_settings=MultiStateSimulationSettings(
-                n_replicas=27,
-                minimization_steps=5000,
-                equilibration_length=1.0 * unit.nanosecond,
-                production_length=10.0 * unit.nanosecond,
-            ),
-            solvent_output_settings=MultiStateOutputSettings(
-                output_structure="alchemical_system.pdb",
-                output_filename="solvent.nc",
-                checkpoint_storage_filename="solvent_checkpoint.nc",
-            ),
-            complex_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=0.1 * unit.nanosecond,
-                equilibration_length=0.1 * unit.nanosecond,
-                production_length=2.0 * unit.nanosecond,
-            ),
-            complex_equil_output_settings=SepTopEquilOutputSettings(
-                equil_nvt_structure=None,
-                equil_npt_structure="equil_npt",
-                production_trajectory_filename="equil_production",
-                log_output="equil_simulation",
-            ),
-            complex_simulation_settings=MultiStateSimulationSettings(
-                n_replicas=19,
-                equilibration_length=1.0 * unit.nanosecond,
-                production_length=10.0 * unit.nanosecond,
-            ),
-            complex_output_settings=MultiStateOutputSettings(
-                output_structure="alchemical_system.pdb",
-                output_filename="complex.nc",
-                checkpoint_storage_filename="complex_checkpoint.nc",
-            ),
-            solvent_restraint_settings=DistanceRestraintSettings(
-                spring_constant=1000.0 * unit.kilojoule_per_mole / unit.nanometer**2,
-            ),
-            complex_restraint_settings=BoreschRestraintSettings(),
-        )
+        stateA = self._inputs["stateA"]
+        alchem_comps = self._inputs["alchemical_components"]
 
-    @staticmethod
-    def _validate_complex_endstates(
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-    ) -> None:
+        solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
+        small_mols = {m: m.to_openff() for m in small_mols}
+        # Also get alchemical smc from state B
+        small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
+        small_mols = small_mols | small_mols_B
+
+        return alchem_comps, solv_comp, prot_comp, small_mols
+
+    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
-        A complex transformation is defined (in terms of gufe components)
-        as starting from one or more ligands and a protein in solvent and
-        ending up in a state with one less ligand.
+        Extract the relevant settings for a complex transformation.
 
-        Parameters
-        ----------
-        stateA : ChemicalSystem
-          The chemical system of end state A
-        stateB : ChemicalSystem
-          The chemical system of end state B
-
-        Raises
-        ------
-        ValueError
-          If there is no SolventComponent and no ProteinComponent
-          in either stateA or stateB.
+        Returns
+        -------
+        settings : dict[str, SettingsBaseModel]
+          A dictionary with the following entries:
+            * forcefield_settings : OpenMMSystemGeneratorFFSettings
+            * thermo_settings : ThermoSettings
+            * charge_settings : OpenFFPartialChargeSettings
+            * solvation_settings : OpenMMSolvationSettings
+            * alchemical_settings : AlchemicalSettings
+            * lambda_settings : LambdaSettings
+            * engine_settings : OpenMMEngineSettings
+            * integrator_settings : IntegratorSettings
+            * equil_simulation_settings : MDSimulationSettings
+            * equil_output_settings : SepTopEquilOutputSettings
+            * simulation_settings : SimulationSettings
+            * output_settings: MultiStateOutputSettings
+            * restraint_settings: BoreschRestraintSettings
         """
-        # check that there is a protein component
-        if not any(isinstance(comp, ProteinComponent) for comp in stateA.values()):
-            errmsg = "No ProteinComponent found in stateA"
-            raise ValueError(errmsg)
+        prot_settings = self._inputs["protocol"].settings  # type: ignore
 
-        if not any(isinstance(comp, ProteinComponent) for comp in stateB.values()):
-            errmsg = "No ProteinComponent found in stateB"
-            raise ValueError(errmsg)
-
-        # check that there is a solvent component
-        if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
-            errmsg = "No SolventComponent found in stateA"
-            raise ValueError(errmsg)
-
-        if not any(isinstance(comp, SolventComponent) for comp in stateB.values()):
-            errmsg = "No SolventComponent found in stateB"
-            raise ValueError(errmsg)
-
-    @staticmethod
-    def _validate_alchemical_components(alchemical_components: dict[str, list[Component]]) -> None:
-        """
-        Checks that the ChemicalSystem alchemical components are correct.
-
-        Parameters
-        ----------
-        alchemical_components : Dict[str, list[Component]]
-          Dictionary containing the alchemical components for
-          stateA and stateB.
-
-        Raises
-        ------
-        ValueError
-          * If there are no or more than one alchemical components in state A.
-          * If there are no or more than one alchemical components in state B.
-          * If there are any alchemical components that are not
-            SmallMoleculeComponents
-        * If a change in net charge between the alchemical components is detected.
-
-        Notes
-        -----
-        * Currently doesn't support alchemical components which are not
-          SmallMoleculeComponents.
-        * Currently doesn't support more than one alchemical component
-          being desolvated.
-        """
-
-        # Crash out if there are less or more than one alchemical components
-        # in state A and B
-        for state in ["stateA", "stateB"]:
-            n = len(alchemical_components[state])
-            if n != 1:
-                raise ValueError(
-                    "Exactly one alchemical component must be present in "
-                    f"{state}. Found {n} alchemical components."
-                )
-
-        # Crash out if any of the alchemical components are not
-        # SmallMoleculeComponent
-        for state in ["stateA", "stateB"]:
-            for comp in alchemical_components[state]:
-                if not isinstance(comp, SmallMoleculeComponent):
-                    raise ValueError(
-                        "Only SmallMoleculeComponent alchemical species are supported."
-                    )
-
-        # Raise an error if there is a change in netcharge
-        _check_alchemical_charge_difference(
-            alchemical_components["stateA"][0], alchemical_components["stateB"][0]
-        )
-
-    @staticmethod
-    def _validate_lambda_schedule(
-        lambda_settings: LambdaSettings,
-        simulation_settings: MultiStateSimulationSettings,
-    ) -> None:
-        """
-        Checks that the lambda schedule is set up correctly.
-
-        Parameters
-        ----------
-        lambda_settings : LambdaSettings
-          the lambda schedule Settings
-        simulation_settings : MultiStateSimulationSettings
-          the settings for either the complex or solvent phase
-
-        Raises
-        ------
-        ValueError
-          If the number of lambda windows differs for electrostatics and sterics.
-          If the number of replicas does not match the number of lambda windows.
-        Warnings
-          If there are non-zero values for restraints (lambda_restraints).
-        """
-
-        lambda_elec_A = lambda_settings.lambda_elec_A
-        lambda_elec_B = lambda_settings.lambda_elec_B
-        lambda_vdw_A = lambda_settings.lambda_vdw_A
-        lambda_vdw_B = lambda_settings.lambda_vdw_B
-        lambda_restraints_A = lambda_settings.lambda_restraints_A
-        lambda_restraints_B = lambda_settings.lambda_restraints_B
-        n_replicas = simulation_settings.n_replicas
-
-        # Ensure that all lambda components have equal amount of windows
-        lambda_components = [
-            lambda_vdw_A,
-            lambda_vdw_B,
-            lambda_elec_A,
-            lambda_elec_B,
-            lambda_restraints_A,
-            lambda_restraints_B,
-        ]
-        lengths = {len(lam) for lam in lambda_components}
-        if len(lengths) != 1:
-            errmsg = (
-                "Components elec, vdw, and restraints must have equal amount"
-                f" of lambda windows. Got {len(lambda_elec_A)} and "
-                f"{len(lambda_elec_B)} elec lambda windows, "
-                f"{len(lambda_vdw_A)} and {len(lambda_vdw_B)} vdw "
-                f"lambda windows, and {len(lambda_restraints_A)} and "
-                f"{len(lambda_restraints_B)} restraints lambda windows."
-            )
-            raise ValueError(errmsg)
-
-        # Ensure that number of overall lambda windows matches number of lambda
-        # windows for individual components
-        if n_replicas != len(lambda_vdw_B):
-            errmsg = (
-                f"Number of replicas {n_replicas} does not equal the"
-                f" number of lambda windows {len(lambda_vdw_B)}"
-            )
-            raise ValueError(errmsg)
-
-        # Check if there are lambda windows with naked charges
-        for state, elec, vdw in (
-            ("A", lambda_elec_A, lambda_vdw_A),
-            ("B", lambda_elec_B, lambda_vdw_B),
-        ):
-            for idx, (e, v) in enumerate(zip(elec, vdw)):
-                if e < 1 and v == 1:
-                    raise ValueError(
-                        "There are states along this lambda schedule where "
-                        "there are atoms with charges but no LJ interactions: "
-                        f"State {state}: lambda {idx}: elec {e} vdW {v}"
-                    )
-
-    def _create(
-        self,
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
-        extends: Optional[gufe.ProtocolDAGResult] = None,
-    ) -> list[gufe.ProtocolUnit]:
-        # TODO: extensions
-        if extends:  # pragma: no-cover
-            raise NotImplementedError("Can't extend simulations yet")
-
-        # Validate components and get alchemical components
-        self._validate_complex_endstates(stateA, stateB)
-        alchem_comps = system_validation.get_alchemical_components(
-            stateA,
-            stateB,
-        )
-        self._validate_alchemical_components(alchem_comps)
-
-        # Validate the lambda schedule
-        self._validate_lambda_schedule(
-            self.settings.solvent_lambda_settings,
-            self.settings.solvent_simulation_settings,
-        )
-        self._validate_lambda_schedule(
-            self.settings.complex_lambda_settings,
-            self.settings.complex_simulation_settings,
-        )
-
-        # Check nonbonded and solvent compatibility
-        nonbonded_method = self.settings.forcefield_settings.nonbonded_method
-        # Use the more complete system validation solvent checks
-        system_validation.validate_solvent(stateA, nonbonded_method)
-
-        # Validate solvation settings
-        settings_validation.validate_openmm_solvation_settings(
-            self.settings.solvent_solvation_settings
-        )
-
-        # Validate protein component
-        system_validation.validate_protein(stateA)
-
-        # Create list units for complex and solvent transforms
-        def create_setup_units(unit_cls, leg):
-            return [
-                unit_cls(
-                    protocol=self,
-                    stateA=stateA,
-                    stateB=stateB,
-                    alchemical_components=alchem_comps,
-                    generation=0,
-                    repeat_id=int(uuid.uuid4()),
-                    name=(
-                        f"SepTop RBFE Setup, transformation {alchname_A} to "
-                        f"{alchname_B}, {leg} leg: repeat {i} generation 0"
-                    ),
-                )
-                for i in range(self.settings.protocol_repeats)
-            ]
-
-        def create_run_units(unit_cls, leg, setup):
-            return [
-                unit_cls(
-                    protocol=self,
-                    stateA=stateA,
-                    stateB=stateB,
-                    alchemical_components=alchem_comps,
-                    setup=setup[i],
-                    generation=0,
-                    repeat_id=int(uuid.uuid4()),
-                    name=(
-                        f"SepTop RBFE Run, transformation {alchname_A} to "
-                        f"{alchname_B}, {leg} leg: repeat {i} generation 0"
-                    ),
-                )
-                for i in range(self.settings.protocol_repeats)
-            ]
-
-        alchname_A = alchem_comps["stateA"][0].name
-        alchname_B = alchem_comps["stateB"][0].name
-
-        solvent_setup = create_setup_units(SepTopSolventSetupUnit, "solvent")
-        solvent_run = create_run_units(SepTopSolventRunUnit, "solvent", setup=solvent_setup)
-        complex_setup = create_setup_units(SepTopComplexSetupUnit, "complex")
-        complex_run = create_run_units(SepTopComplexRunUnit, "complex", setup=complex_setup)
-
-        return solvent_setup + solvent_run + complex_setup + complex_run
-
-    def _gather(
-        self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
-    ) -> dict[str, dict[str, Any]]:
-        # result units will have a repeat_id and generation
-        # first group according to repeat_id
-        unsorted_solvent_repeats_setup = defaultdict(list)
-        unsorted_solvent_repeats_run = defaultdict(list)
-        unsorted_complex_repeats_setup = defaultdict(list)
-        unsorted_complex_repeats_run = defaultdict(list)
-        for d in protocol_dag_results:
-            pu: gufe.ProtocolUnitResult
-            for pu in d.protocol_unit_results:
-                if not pu.ok():
-                    continue
-                if pu.outputs["simtype"] == "solvent":
-                    if "Run" in pu.name:
-                        unsorted_solvent_repeats_run[pu.outputs["repeat_id"]].append(pu)
-                    elif "Setup" in pu.name:
-                        unsorted_solvent_repeats_setup[pu.outputs["repeat_id"]].append(pu)
-                else:
-                    if "Run" in pu.name:
-                        unsorted_complex_repeats_run[pu.outputs["repeat_id"]].append(pu)
-                    elif "Setup" in pu.name:
-                        unsorted_complex_repeats_setup[pu.outputs["repeat_id"]].append(pu)
-
-        repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {
-            "solvent_setup": {},
-            "solvent": {},
-            "complex_setup": {},
-            "complex": {},
+        settings = {
+            "forcefield_settings": prot_settings.forcefield_settings,
+            "thermo_settings": prot_settings.thermo_settings,
+            "charge_settings": prot_settings.partial_charge_settings,
+            "solvation_settings": prot_settings.complex_solvation_settings,
+            "alchemical_settings": prot_settings.alchemical_settings,
+            "lambda_settings": prot_settings.complex_lambda_settings,
+            "engine_settings": prot_settings.engine_settings,
+            "integrator_settings": prot_settings.integrator_settings,
+            "equil_simulation_settings": prot_settings.complex_equil_simulation_settings,
+            "equil_output_settings": prot_settings.complex_equil_output_settings,
+            "simulation_settings": prot_settings.complex_simulation_settings,
+            "output_settings": prot_settings.complex_output_settings,
+            "restraint_settings": prot_settings.complex_restraint_settings,
         }
-        for k, v in unsorted_solvent_repeats_setup.items():
-            repeats["solvent_setup"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
-        for k, v in unsorted_solvent_repeats_run.items():
-            repeats["solvent"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
 
-        for k, v in unsorted_complex_repeats_setup.items():
-            repeats["complex_setup"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
-        for k, v in unsorted_complex_repeats_run.items():
-            repeats["complex"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
-        return repeats
+        settings_validation.validate_timestep(
+            settings["forcefield_settings"].hydrogen_mass,
+            settings["integrator_settings"].timestep,
+        )
+
+        return settings
+
+
+class SepTopSolventMixin:
+    """
+    A mixin to get the components and the settings for the Solvent Units.
+    """
+
+    def _get_components(self):
+        """
+        Get the relevant components for a solvent transformation.
+
+        Note
+        -----
+        The solvent portion of the transformation is the transformation of one
+        ligand into the other in the solvent. The only thing that
+        should be present is the alchemical species in state A and state B
+        and the SolventComponent.
+
+        Returns
+        -------
+        alchem_comps : dict[str, Component]
+          A list of alchemical components
+        solv_comp : SolventComponent
+          The SolventComponent of the system
+        prot_comp : Optional[ProteinComponent]
+          The protein component of the system, if it exists.
+        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
+          SmallMoleculeComponents to add to the system.
+        """
+        stateA = self._inputs["stateA"]
+        alchem_comps = self._inputs["alchemical_components"]
+
+        small_mols_A = {m: m.to_openff() for m in alchem_comps["stateA"]}
+        small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
+        small_mols = small_mols_A | small_mols_B
+
+        solv_comp, _, _ = system_validation.get_components(stateA)
+
+        return alchem_comps, solv_comp, None, small_mols
+
+    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+        """
+        Extract the relevant settings for a complex transformation.
+
+        Returns
+        -------
+        settings : dict[str, SettingsBaseModel]
+          A dictionary with the following entries:
+            * forcefield_settings : OpenMMSystemGeneratorFFSettings
+            * thermo_settings : ThermoSettings
+            * charge_settings : OpenFFPartialChargeSettings
+            * solvation_settings : OpenMMSolvationSettings
+            * alchemical_settings : AlchemicalSettings
+            * lambda_settings : LambdaSettings
+            * engine_settings : OpenMMEngineSettings
+            * integrator_settings : IntegratorSettings
+            * equil_simulation_settings : MDSimulationSettings
+            * equil_output_settings : SepTopEquilOutputSettings
+            * simulation_settings : MultiStateSimulationSettings
+            * output_settings: MultiStateOutputSettings
+            * restraint_settings: BaseRestraintsSettings
+        """
+        prot_settings = self._inputs["protocol"].settings  # type: ignore
+
+        settings = {
+            "forcefield_settings": prot_settings.forcefield_settings,
+            "thermo_settings": prot_settings.thermo_settings,
+            "charge_settings": prot_settings.partial_charge_settings,
+            "solvation_settings": prot_settings.solvent_solvation_settings,
+            "alchemical_settings": prot_settings.alchemical_settings,
+            "lambda_settings": prot_settings.solvent_lambda_settings,
+            "engine_settings": prot_settings.engine_settings,
+            "integrator_settings": prot_settings.integrator_settings,
+            "equil_simulation_settings": prot_settings.solvent_equil_simulation_settings,
+            "equil_output_settings": prot_settings.solvent_equil_output_settings,
+            "simulation_settings": prot_settings.solvent_simulation_settings,
+            "output_settings": prot_settings.solvent_output_settings,
+            "restraint_settings": prot_settings.solvent_restraint_settings,
+        }
+
+        settings_validation.validate_timestep(
+            settings["forcefield_settings"].hydrogen_mass,
+            settings["integrator_settings"].timestep,
+        )
+
+        return settings
 
 
 class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
