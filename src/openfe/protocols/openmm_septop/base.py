@@ -44,7 +44,6 @@ from openmmtools.states import (
     create_thermodynamic_state_protocol,
 )
 
-from openfe.utils import log_system_probe
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AlchemicalSettings,
     BaseSolvationSettings,
@@ -60,7 +59,7 @@ from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
-from openfe.utils import without_oechem_backend
+from openfe.utils import log_system_probe, without_oechem_backend
 
 from ..openmm_utils import (
     charge_generation,

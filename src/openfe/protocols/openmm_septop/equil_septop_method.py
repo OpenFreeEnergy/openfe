@@ -2284,6 +2284,7 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
     """
+
     simtype = "solvent"
 
     def _get_lambda_schedule(
@@ -2318,6 +2319,7 @@ class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
     """
     Protocol Unit for the complex phase of an relative SepTop free energy
     """
+
     simtype = "complex"
 
     def _get_lambda_schedule(
