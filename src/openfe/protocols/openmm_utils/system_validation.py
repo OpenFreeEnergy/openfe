@@ -279,9 +279,9 @@ def assert_multistate_system_equality(
 
         else:
             if sfhash not in ref_force_dict:
-                wmsg = (
+                msg = (
                     f"Force {sforce.getName()} in the stored checkpoint System "
                     "does not exactly match one of the forces in the simulated System "
                     "this may be due to machine precision issues."
                 )
-                logger.warn(wmsg)
+                logger.info(wmsg)
