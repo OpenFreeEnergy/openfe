@@ -33,7 +33,6 @@ from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
 from gufe.settings import SettingsBaseModel
-)
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
