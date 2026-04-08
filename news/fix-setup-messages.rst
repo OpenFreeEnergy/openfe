@@ -18,7 +18,7 @@
 
 * Fix erroneous logging information message which would mention
   setting up the alchemical system when running simulation or
-  analysis units (PR #1915).
+  analysis units with the hybrid topology, AHFE or ABFE Protocols (PR #1915).
 
 **Security:**
 
