@@ -1639,7 +1639,7 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
         if self.verbose:
-            self.logger.info("Starting analysis unit")
+            self.logger.info("Starting simulation analysis unit")
 
         # Get the settings
         settings = self._get_settings()
