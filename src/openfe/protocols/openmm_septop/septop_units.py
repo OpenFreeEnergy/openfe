@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""OpenMM Equilibrium SepTop RBFE Protocol Units
+r"""OpenMM Equilibrium SepTop RBFE Protocol Units
 ================================================
 
 This module implements the :class:`gufe.ProtocolUnit`\s for the
@@ -25,6 +25,7 @@ from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
 )
+from gufe.settings import SettingsBaseModel
 from MDAnalysis.coordinates.memory import MemoryReader
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity
@@ -32,7 +33,6 @@ from openff.units.openmm import from_openmm, to_openmm
 from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
-from gufe.settings import SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -48,7 +48,6 @@ from ..restraint_utils.settings import (
     DistanceRestraintSettings,
 )
 from .base_units import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
-
 
 logger = logging.getLogger(__name__)
 

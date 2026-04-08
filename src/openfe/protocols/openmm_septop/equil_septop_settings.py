@@ -52,6 +52,7 @@ class LambdaSettings(SettingsBaseModel):
       the same length, defining all the windows of the transformation.
 
     """
+
     # fmt: off
     lambda_elec_A: list[float] = [
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
