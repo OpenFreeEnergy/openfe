@@ -1,8 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from multiprocessing import Value
-
 from plugcli.params import NOT_PARSED, MultiStrategyGetter, Option
 
 
@@ -48,7 +46,7 @@ PROTEIN = Option(
 )
 
 
-def _load_protein_membrane_from_pdb(user_input, context):
+def _load_protein_membrane_file(user_input, context):
     # TODO: is there an advantage to using MultiStrategyGetter here?
     if not any(
         [ext in str(user_input) for ext in [".pdb", ".cif", ".pdbx"]]
@@ -62,11 +60,11 @@ def _load_protein_membrane_from_pdb(user_input, context):
     except ValueError:
         return ProteinMembraneComponent.from_pdbx_file(user_input)
     except ValueError:
-        raise ValueError(f"Unable to parse {user_input}")
+        raise ValueError(f"Unable to parse {user_input} as a ProteinMembraneComponent.")
 
 
 PROTEIN_MEMBRANE = Option(
     "--protein-membrane",
     help=("ProteinMembraneComponent. Can be provided as an PDB or as a PDBx/mmCIF file."),
-    getter=_load_protein_membrane_from_pdb,
+    getter=_load_protein_membrane_file,
 )
