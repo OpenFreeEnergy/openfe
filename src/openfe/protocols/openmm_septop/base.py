@@ -44,6 +44,7 @@ from openmmtools.states import (
     create_thermodynamic_state_protocol,
 )
 
+from openfe.utils import log_system_probe
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AlchemicalSettings,
     BaseSolvationSettings,

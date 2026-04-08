@@ -89,7 +89,6 @@ from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     add_force_in_separate_group,
 )
-from openfe.utils import log_system_probe
 
 from ..openmm_utils import settings_validation, system_validation
 from ..restraint_utils.settings import (
