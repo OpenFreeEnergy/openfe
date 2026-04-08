@@ -31,24 +31,12 @@ femto (https://github.com/Psivant/femto).
 
 from __future__ import annotations
 
-import copy
-import itertools
 import logging
-import pathlib
 import uuid
-import warnings
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
 
 import gufe
-import MDAnalysis as mda
-import MDAnalysis.transformations as trans
-import mdtraj as md
-import numpy as np
-import numpy.typing as npt
-import openmm
-import openmm.unit
-import openmm.unit as omm_units
 from gufe import (
     ChemicalSystem,
     ProteinComponent,
@@ -57,13 +45,7 @@ from gufe import (
     settings,
 )
 from gufe.components import Component
-from MDAnalysis.analysis import align
-from MDAnalysis.coordinates.memory import MemoryReader
-from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import Quantity, unit
-from openff.units.openmm import from_openmm, to_openmm
-from openmmtools import multistate
-from openmmtools.states import ThermodynamicState
+from openff.units import unit as offunit
 from rdkit import Chem
 
 from openfe.due import Doi, due
@@ -81,21 +63,20 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     SepTopSettings,
     SettingsBaseModel,
 )
-from openfe.protocols.openmm_utils.serialization import serialize
-from openfe.protocols.restraint_utils import geometry
-from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
-from openfe.protocols.restraint_utils.openmm import omm_restraints
-from openfe.protocols.restraint_utils.openmm.omm_restraints import (
-    BoreschRestraint,
-    add_force_in_separate_group,
-)
 
 from ..openmm_utils import settings_validation, system_validation
 from ..restraint_utils.settings import (
     BoreschRestraintSettings,
     DistanceRestraintSettings,
 )
-from .base import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
+from .septop_units import (
+    SepTopComplexSetupUnit,
+    SepTopComplexRunUnit,
+    SepTopSolventSetupUnit,
+    SepTopSolventRunUnit,
+)
+from .septop_protocol_results import SepTopProtocolResult
+
 
 due.cite(
     Doi("10.1021/acs.jctc.3c00282"),
@@ -190,8 +171,8 @@ class SepTopProtocol(gufe.Protocol):
             protocol_repeats=3,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
-                temperature=298.15 * unit.kelvin,
-                pressure=1 * unit.bar,
+                temperature=298.15 * offunit.kelvin,
+                pressure=1 * offunit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
             # fmt: off
@@ -232,14 +213,14 @@ class SepTopProtocol(gufe.Protocol):
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvent_solvation_settings=OpenMMSolvationSettings(),
             complex_solvation_settings=OpenMMSolvationSettings(
-                solvent_padding=1.0 * unit.nanometer,
+                solvent_padding=1.0 * offunit.nanometer,
             ),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=0.1 * unit.nanosecond,
-                equilibration_length=0.1 * unit.nanosecond,
-                production_length=2.0 * unit.nanosecond,
+                equilibration_length_nvt=0.1 * offunit.nanosecond,
+                equilibration_length=0.1 * offunit.nanosecond,
+                production_length=2.0 * offunit.nanosecond,
             ),
             solvent_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
@@ -250,8 +231,8 @@ class SepTopProtocol(gufe.Protocol):
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=27,
                 minimization_steps=5000,
-                equilibration_length=1.0 * unit.nanosecond,
-                production_length=10.0 * unit.nanosecond,
+                equilibration_length=1.0 * offunit.nanosecond,
+                production_length=10.0 * offunit.nanosecond,
             ),
             solvent_output_settings=MultiStateOutputSettings(
                 output_structure="alchemical_system.pdb",
@@ -259,9 +240,9 @@ class SepTopProtocol(gufe.Protocol):
                 checkpoint_storage_filename="solvent_checkpoint.nc",
             ),
             complex_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=0.1 * unit.nanosecond,
-                equilibration_length=0.1 * unit.nanosecond,
-                production_length=2.0 * unit.nanosecond,
+                equilibration_length_nvt=0.1 * offunit.nanosecond,
+                equilibration_length=0.1 * offunit.nanosecond,
+                production_length=2.0 * offunit.nanosecond,
             ),
             complex_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
@@ -271,8 +252,8 @@ class SepTopProtocol(gufe.Protocol):
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=19,
-                equilibration_length=1.0 * unit.nanosecond,
-                production_length=10.0 * unit.nanosecond,
+                equilibration_length=1.0 * offunit.nanosecond,
+                production_length=10.0 * offunit.nanosecond,
             ),
             complex_output_settings=MultiStateOutputSettings(
                 output_structure="alchemical_system.pdb",
@@ -280,7 +261,7 @@ class SepTopProtocol(gufe.Protocol):
                 checkpoint_storage_filename="complex_checkpoint.nc",
             ),
             solvent_restraint_settings=DistanceRestraintSettings(
-                spring_constant=1000.0 * unit.kilojoule_per_mole / unit.nanometer**2,
+                spring_constant=1000.0 * offunit.kilojoule_per_mole / offunit.nanometer**2,
             ),
             complex_restraint_settings=BoreschRestraintSettings(),
         )

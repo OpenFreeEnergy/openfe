@@ -1,32 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""OpenMM Equilibrium SepTop RBFE Protocol --- :mod:`openfe.protocols.openmm_septop.equil_septop_method`
-========================================================================================================
+"""OpenMM Equilibrium SepTop RBFE Protocol Units
+================================================
 
-This module implements the necessary methodology tooling to run a
-Separated Topologies RBFE calculation using OpenMM tools and one of the
-following alchemical sampling methods:
-
-* Hamiltonian Replica Exchange
-* Self-adjusted mixture sampling
-* Independent window sampling
-
-Current limitations
--------------------
-
-* Transformations that involve net charge changes are currently not supported.
-  The ligands must have the same net charge.
-* Only small molecules are allowed to act as alchemical molecules.
-  Alchemically changing protein or solvent components would induce
-  perturbations which are too large to be handled by this Protocol.
-
-
-Acknowledgements
-----------------
-This Protocol is based on and inspired by the SepTop implementation from
-the Mobleylab (https://github.com/MobleyLab/SeparatedTopologies) as well as
-femto (https://github.com/Psivant/femto).
-
+This module implements the :class:`gufe.ProtocolUnit`\s for the
+Separated Topologies RBFE protocol.
 """
 
 from __future__ import annotations
@@ -35,51 +13,26 @@ import copy
 import itertools
 import logging
 import pathlib
-import uuid
-import warnings
-from collections import defaultdict
-from typing import Any, Iterable, Optional, Union
+from typing import Any
 
-import gufe
 import MDAnalysis as mda
-import MDAnalysis.transformations as trans
 import mdtraj as md
 import numpy as np
-import numpy.typing as npt
 import openmm
 import openmm.unit
 import openmm.unit as omm_units
 from gufe import (
-    ChemicalSystem,
-    ProteinComponent,
     SmallMoleculeComponent,
     SolventComponent,
-    settings,
 )
-from gufe.components import Component
-from MDAnalysis.analysis import align
 from MDAnalysis.coordinates.memory import MemoryReader
 from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import Quantity, unit
+from openff.units import Quantity
 from openff.units.openmm import from_openmm, to_openmm
-from openmmtools import multistate
 from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
-from openfe.due import Doi, due
-from openfe.protocols.openmm_septop.equil_septop_settings import (
-    AlchemicalSettings,
-    IntegratorSettings,
-    LambdaSettings,
-    MDSimulationSettings,
-    MultiStateOutputSettings,
-    MultiStateSimulationSettings,
-    OpenFFPartialChargeSettings,
-    OpenMMEngineSettings,
-    OpenMMSolvationSettings,
-    SepTopEquilOutputSettings,
-    SepTopSettings,
-    SettingsBaseModel,
+from gufe.settings import SettingsBaseModel
 )
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
@@ -159,7 +112,7 @@ class SepTopComplexMixin:
           A list of alchemical components
         solv_comp : SolventComponent
           The SolventComponent of the system
-        prot_comp : Optional[ProteinComponent]
+        prot_comp : ProteinComponent | None
           The protein component of the system, if it exists.
         small_mols : dict[SmallMoleculeComponent: OFFMolecule]
           SmallMoleculeComponents to add to the system.
@@ -245,7 +198,7 @@ class SepTopSolventMixin:
           A list of alchemical components
         solv_comp : SolventComponent
           The SolventComponent of the system
-        prot_comp : Optional[ProteinComponent]
+        prot_comp : ProteinComponent | None
           The protein component of the system, if it exists.
         small_mols : dict[SmallMoleculeComponent: OFFMolecule]
           SmallMoleculeComponents to add to the system.
@@ -451,8 +404,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
     def _get_mda_universe(
         topology: openmm.app.Topology,
         positions: openmm.unit.Quantity,
-        trajectory: Optional[pathlib.Path],
-        settings,
+        trajectory: pathlib.Path | None,
+        settings: dict[str, SettingsBaseModel],
     ) -> mda.Universe:
         """
         Helper method to get a Universe from an openmm Topology,

@@ -1,101 +1,28 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""OpenMM Equilibrium SepTop RBFE Protocol --- :mod:`openfe.protocols.openmm_septop.equil_septop_method`
-========================================================================================================
+"""Result class for the SepTop Protocol :class:`openfe.protocols.openmm_septop.SepTopProtocolResult`
+====================================================================================================
 
-This module implements the necessary methodology tooling to run a
-Separated Topologies RBFE calculation using OpenMM tools and one of the
-following alchemical sampling methods:
-
-* Hamiltonian Replica Exchange
-* Self-adjusted mixture sampling
-* Independent window sampling
-
-Current limitations
--------------------
-
-* Transformations that involve net charge changes are currently not supported.
-  The ligands must have the same net charge.
-* Only small molecules are allowed to act as alchemical molecules.
-  Alchemically changing protein or solvent components would induce
-  perturbations which are too large to be handled by this Protocol.
-
-
-Acknowledgements
-----------------
-This Protocol is based on and inspired by the SepTop implementation from
-the Mobleylab (https://github.com/MobleyLab/SeparatedTopologies) as well as
-femto (https://github.com/Psivant/femto).
-
+This module implement a :class:`gufe.ProtocolResult` class to contain the results of
+a :class:`openfe.protocols.openmm_septop.SepTopProtocol` free energy simulation.
 """
 
 from __future__ import annotations
 
-import copy
 import itertools
 import logging
 import pathlib
-import uuid
 import warnings
-from collections import defaultdict
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Optional, Union
 
 import gufe
-import MDAnalysis as mda
-import MDAnalysis.transformations as trans
-import mdtraj as md
 import numpy as np
 import numpy.typing as npt
-import openmm
-import openmm.unit
-import openmm.unit as omm_units
-from gufe import (
-    ChemicalSystem,
-    ProteinComponent,
-    SmallMoleculeComponent,
-    SolventComponent,
-    settings,
-)
-from gufe.components import Component
-from MDAnalysis.analysis import align
-from MDAnalysis.coordinates.memory import MemoryReader
-from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import Quantity, unit
-from openff.units.openmm import from_openmm, to_openmm
+from openff.units import unit as offunit
+from openff.units import Quantity
 from openmmtools import multistate
-from openmmtools.states import ThermodynamicState
-from rdkit import Chem
 
-from openfe.due import Doi, due
-from openfe.protocols.openmm_septop.equil_septop_settings import (
-    AlchemicalSettings,
-    IntegratorSettings,
-    LambdaSettings,
-    MDSimulationSettings,
-    MultiStateOutputSettings,
-    MultiStateSimulationSettings,
-    OpenFFPartialChargeSettings,
-    OpenMMEngineSettings,
-    OpenMMSolvationSettings,
-    SepTopEquilOutputSettings,
-    SepTopSettings,
-    SettingsBaseModel,
-)
-from openfe.protocols.openmm_utils.serialization import serialize
-from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
-from openfe.protocols.restraint_utils.openmm import omm_restraints
-from openfe.protocols.restraint_utils.openmm.omm_restraints import (
-    BoreschRestraint,
-    add_force_in_separate_group,
-)
-
-from ..openmm_utils import settings_validation, system_validation
-from ..restraint_utils.settings import (
-    BoreschRestraintSettings,
-    DistanceRestraintSettings,
-)
-from .base import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
 
 
 logger = logging.getLogger(__name__)
@@ -144,13 +71,13 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             complex_correction_dGs_A.append(
                 (
                     pus[0].outputs["standard_state_correction_A"],
-                    0 * unit.kilocalorie_per_mole,  # correction has no error
+                    0 * offunit.kilocalorie_per_mole,  # correction has no error
                 )
             )
             complex_correction_dGs_B.append(
                 (
                     pus[0].outputs["standard_state_correction_B"],
-                    0 * unit.kilocalorie_per_mole,  # correction has no error
+                    0 * offunit.kilocalorie_per_mole,  # correction has no error
                 )
             )
 
@@ -163,7 +90,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             solv_correction_dGs.append(
                 (
                     pus[0].outputs["standard_state_correction"],
-                    0 * unit.kilocalorie_per_mole,  # correction has no error
+                    0 * offunit.kilocalorie_per_mole,  # correction has no error
                 )
             )
 
