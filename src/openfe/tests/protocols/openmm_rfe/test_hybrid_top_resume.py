@@ -410,7 +410,7 @@ class TestCheckpointResuming:
 
         # Mismatching force should trigger a warning
         wmsg = "does not exactly match one of the forces in the simulated System"
-        caplog.set_level(logging.WARNING)
+        caplog.set_level(logging.INFO)
 
         _ = simulation_unit.run(
             system=fake_system,
