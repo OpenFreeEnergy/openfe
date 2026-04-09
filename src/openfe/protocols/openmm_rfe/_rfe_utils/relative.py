@@ -1772,7 +1772,8 @@ class HybridTopologyFactory:
                 # with zeroed out parameters; add old charge to
                 # standard_nonbonded and zero sterics
                 check_index = self._hybrid_system_forces['standard_nonbonded_force'].addParticle(
-                    charge_old, 0.5*(sigma_old+sigma_new), 0.0)
+                    # this term is off due to epsilon = 0, but just set sigma to the initial value to not confuse things
+                    charge_old, sigma_old, 0.0)
                 _check_indices(particle_index, check_index)
 
                 # Charge is charge_old at lambda_electrostatics = 0,
