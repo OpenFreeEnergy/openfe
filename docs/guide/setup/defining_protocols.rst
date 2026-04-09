@@ -10,6 +10,8 @@ there are multiple available ``Protocol``\s to choose from.
 
 For example, included in the ``openfe`` package are the following:
    * :class:`.RelativeHybridTopologyProtocol`
+   * :class:`.AbsoluteBindingProtocol`
+   * :class:`.SepTopProtocol`
    * :class:`.AbsoluteSolvationProtocol`
    * :class:`.PlainMDProtocol`
 

@@ -23,6 +23,11 @@ A :class:`.ChemicalSystem` does **NOT** include the following:
 * forcefield applied to any component, including details on water model or virtual particles
 * thermodynamic conditions (e.g. temperature or pressure)
 
+For some protocols, such as :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`, a single
+:class:`.ChemicalSystem` may define both legs of the thermodynamic cycle (complex and solvent) directly.
+This is in contrast to the :class:`.RelativeHybridTopologyProtocol`, where each leg is typically defined by
+separate :class:`.ChemicalSystem`\s.
+
 .. _userguide_components:
 
 Components
@@ -35,12 +40,21 @@ Examples of components include:
 * :class:`.ProteinComponent`: an entire biological assembly, typically the contents of a PDB file.
 * :class:`.SmallMoleculeComponent`: typically ligands and cofactors
 * :class:`.SolventComponent`: solvent conditions
+* :ckass:`.ProteinMembraneComponent`: an explicitly solvated protein-membrane system, including box vectors.
 
 Splitting the total system into components serves three purposes:
 
 1. alchemical transformations can be easily understood by comparing the differences in components.
 2. components can be reused to compose different systems.
 3. :class:`.Protocol`\s can have component-specific behavior. E.g. different force fields for each component.
+
+When dealing with membrane-protein systems, the :class:`.ProteinComponent` is replaced by a
+:class:`.ProteinMembraneComponent`, which is already explicitly solvated.
+In such cases:
+
+* In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not required.
+* In contrast, in :class:`.SepTopProtocol` or :class:`.AbsoluteBindingProtocol`, a :class:`.SolventComponent` is still
+needed because the :class:`.ChemicalSystem` represents both the complex and solvent legs.
 
 Thermodynamic Cycles
 --------------------
