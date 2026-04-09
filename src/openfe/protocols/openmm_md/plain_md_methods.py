@@ -25,8 +25,8 @@ import openmm.unit as omm_unit
 from gufe import (
     BaseSolventComponent,
     ChemicalSystem,
-    SolvatedPDBComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     settings,
 )
 from gufe.settings.typing import KelvinQuantity
