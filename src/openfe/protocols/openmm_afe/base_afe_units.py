@@ -112,9 +112,6 @@ class AbsoluteUnitMixin:
         """
         self.verbose = verbose
 
-        if self.verbose:
-            self.logger.info("setting up alchemical system")  # type: ignore[attr-defined]
-
         # set basepaths
         def _set_optional_path(basepath):
             if basepath is None:
@@ -691,6 +688,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         """
         # General preparation tasks
         self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        if self.verbose:
+            self.logger.info("Starting system setup unit")
 
         # Get components
         alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
@@ -1397,6 +1397,9 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
+        if self.verbose:
+            self.logger.info("Starting simulation unit")
+
         # Get the settings
         settings = self._get_settings()
 
@@ -1635,6 +1638,9 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         """
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        if self.verbose:
+            self.logger.info("Starting simulation analysis unit")
 
         # Get the settings
         settings = self._get_settings()

@@ -103,9 +103,6 @@ class HybridTopologyUnitMixin:
         """
         self.verbose = verbose
 
-        if self.verbose:
-            self.logger.info("Setting up the hybrid topology simulation")  # type: ignore[attr-defined]
-
         # set basepaths
         def _set_optional_path(basepath):
             if basepath is None:
@@ -741,6 +738,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
+        if self.verbose:
+            self.logger.info("Starting system setup unit")
+
         # Get settings
         settings = self._get_settings(self._inputs["protocol"].settings)
 
@@ -1308,6 +1308,9 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
+        if self.verbose:
+            self.logger.info("Starting simulation unit")
+
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
 
@@ -1608,6 +1611,9 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         """
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        if self.verbose:
+            self.logger.info("Starting simulation analysis unit")
 
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
