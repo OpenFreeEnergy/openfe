@@ -92,7 +92,6 @@ from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     add_force_in_separate_group,
 )
-from openfe.utils import log_system_probe
 
 from ..openmm_utils import settings_validation, system_validation
 from ..restraint_utils.settings import (
@@ -1488,6 +1487,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
     Protocol Unit for the complex phase of a SepTop free energy calculation
     """
 
+    simtype = "complex"
+
     def get_system_AB(
         self,
         solv_comp: SolventComponent,
@@ -2100,27 +2101,13 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 }
             }
 
-    def _execute(
-        self,
-        ctx: gufe.Context,
-        **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
-
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            "simtype": "complex",
-            **outputs,
-        }
-
 
 class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
     """
     Protocol Unit for the solvent phase of a relative SepTop free energy
     """
+
+    simtype = "solvent"
 
     @staticmethod
     def _update_positions(
@@ -2381,27 +2368,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 }
             }
 
-    def _execute(
-        self,
-        ctx: gufe.Context,
-        **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
-
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            "simtype": "solvent",
-            **outputs,
-        }
-
 
 class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
     """
+
+    simtype = "solvent"
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
@@ -2430,36 +2403,13 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
 
         return lambdas
 
-    def _execute(
-        self,
-        ctx: gufe.Context,
-        *,
-        setup,
-        **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        serialized_system = setup.outputs["system"]
-        serialized_topology = setup.outputs["topology"]
-        outputs = self.run(
-            serialized_system,
-            serialized_topology,
-            scratch_basepath=ctx.scratch,
-            shared_basepath=ctx.shared,
-        )
-
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            "simtype": "solvent",
-            **outputs,
-        }
-
 
 class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
     """
     Protocol Unit for the complex phase of a relative SepTop free energy
     """
+
+    simtype = "complex"
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
@@ -2488,28 +2438,3 @@ class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
         lambdas["lambda_restraints_B"] = lambda_restraints_B
 
         return lambdas
-
-    def _execute(
-        self,
-        ctx: gufe.Context,
-        *,
-        setup,
-        **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        serialized_system = setup.outputs["system"]
-        serialized_topology = setup.outputs["topology"]
-        outputs = self.run(
-            serialized_system,
-            serialized_topology,
-            scratch_basepath=ctx.scratch,
-            shared_basepath=ctx.shared,
-        )
-
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            "simtype": "complex",
-            **outputs,
-        }
