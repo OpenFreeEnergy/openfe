@@ -33,14 +33,14 @@ separate :class:`.ChemicalSystem`\s.
 Components
 ----------
 
-A :class:`.ChemicalSystem` is composed of many 'component' objects, which together define overall system.
+A :class:`.ChemicalSystem` is composed of many 'component' objects, which together define the overall system.
 
 Examples of components include:
 
 * :class:`.ProteinComponent`: an entire biological assembly, typically the contents of a PDB file.
 * :class:`.SmallMoleculeComponent`: typically ligands and cofactors
 * :class:`.SolventComponent`: solvent conditions
-* :ckass:`.ProteinMembraneComponent`: an explicitly solvated protein-membrane system, including box vectors.
+* :class:`.ProteinMembraneComponent`: an explicitly solvated protein-membrane system, including box vectors.
 
 Splitting the total system into components serves three purposes:
 
@@ -54,7 +54,7 @@ In such cases:
 
 * In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not required.
 * In contrast, in :class:`.SepTopProtocol` or :class:`.AbsoluteBindingProtocol`, a :class:`.SolventComponent` is still
-needed because the :class:`.ChemicalSystem` represents both the complex and solvent legs.
+  needed because the :class:`.ChemicalSystem` represents both the complex and solvent legs.
 
 Thermodynamic Cycles
 --------------------
@@ -89,12 +89,12 @@ a protein, and a solvent:
   ligand_B_complex = openfe.ChemicalSystem(components={'ligand': ligand_B, 'protein': protein, 'solvent': solvent})
   # ligand_A + solvent
   ligand_A_solvent = openfe.ChemicalSystem(components={'ligand': ligand_A, 'solvent': solvent})
-  # ligand_A + solvent
+  # ligand_B + solvent
   ligand_B_solvent = openfe.ChemicalSystem(components={'ligand': ligand_B, 'solvent': solvent})
 
 
 See Also
 --------
 
-* To see how to construct a :class:`.ChemicalSystem` \s from your files, see :ref:`the cookbook entry on loading molecules <Loading Molecules>`
+* To see how to construct a :class:`.ChemicalSystem`\s from your files, see :ref:`the cookbook entry on loading molecules <Loading Molecules>`
 * For details of what thermodynamic cycles to construct, consult the :ref:`pages for each specific Protocol <userguide_protocols>`
