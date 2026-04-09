@@ -1002,16 +1002,9 @@ def test_dry_run_benzene_toluene_tip4p(
 
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-<<<<<<< membrane_prototype
     )["debug"]
-    serialized_topology = solv_setup_output["topology"]
-    serialized_system = solv_setup_output["system"]
-=======
-    )
-
     pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
     alchem_system = deserialize(solv_setup_output["system"])
->>>>>>> main
     solv_run = sol_run_unit[0].run(
         alchem_system,
         pdb_file,
