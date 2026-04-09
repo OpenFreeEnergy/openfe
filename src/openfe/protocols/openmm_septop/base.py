@@ -1387,7 +1387,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 **unit_result_dict,
             }
         else:
-<<<<<<< membrane_prototype
             return {
                 "debug": {
                     "sampler": sampler,
@@ -1396,8 +1395,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                     "positions": equil_positions,
                 }
             }
-=======
-            return {"debug": {"sampler": sampler}}
 
     def _execute(
         self,
@@ -1424,4 +1421,3 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             "simtype": self.simtype,
             **outputs,
         }
->>>>>>> main
