@@ -1,4 +1,4 @@
-name: GPU Integration Tests (manual dispatch)
+name: "manual AWS: GPU integration tests"
 on:
   workflow_dispatch:
 

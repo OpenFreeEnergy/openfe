@@ -69,6 +69,8 @@ the subcommand name, e.g., ``openfe quickrun --help``, which returns
                                 exist, it will be created at runtime.
       -o PATH                   Filepath at which to create and write the JSON-
                                 formatted results.
+      --resume                  Attempt to resume this transformation's execution
+                                using the cache.
       -h, --help                Show this message and exit.
 
 For more details on various commands, see the :ref:`cli-reference`.
