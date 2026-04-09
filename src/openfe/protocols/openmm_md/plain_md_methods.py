@@ -25,6 +25,7 @@ import openmm.unit as omm_unit
 from gufe import (
     BaseSolventComponent,
     ChemicalSystem,
+    SolvatedPDBComponent,
     SmallMoleculeComponent,
     settings,
 )
@@ -591,6 +592,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
+        if isinstance(protein_comp, SolvatedPDBComponent):
+            solvent_comp = protein_comp
 
         # 1. Create stateA system
         # Create a dictionary of OFFMol for each SMC for bookkeeping
@@ -645,9 +648,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # f. Save pdb of entire system
         if output_settings.preminimized_structure:
-            # roundtrip box vectors to remove vec3 issues
-            box = to_openmm(from_openmm(stateA_system.getDefaultPeriodicBoxVectors()))
-            stateA_topology.setPeriodicBoxVectors(box)
             with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
                 openmm.app.PDBFile.writeFile(
                     stateA_topology, stateA_positions, file=f, keepIds=True
