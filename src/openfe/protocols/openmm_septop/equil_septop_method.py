@@ -2058,14 +2058,11 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             self.verbose,
             self.logger,
         )
-        # roundtrip box vectors to remove vec3 issues
-        box_AB = to_openmm(from_openmm(box_AB))
+        # Update box vectors
         omm_topology_AB.setPeriodicBoxVectors(box_AB)
 
-        # ToDo: also apply REST
-        system_outfile = self.shared_basepath / "system.xml.bz2"
-
         # Serialize system, state and integrator
+        system_outfile = self.shared_basepath / "system.xml.bz2"
         serialize(system, system_outfile)
 
         topology_file = self.shared_basepath / "topology.pdb"

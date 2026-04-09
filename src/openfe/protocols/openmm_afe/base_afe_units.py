@@ -315,7 +315,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
 
         # Don't do anything if we're doing a dry run
         if dry:
-            return positions, system.getDefaultPeriodicBoxVectors()
+            box = system.getDefaultPeriodicBoxVectors()
+            return positions, to_openmm(from_openmm(box))
 
         # Use the _run_MD method from the PlainMDProtocolUnit
         # Should in-place modify the simulation
@@ -343,7 +344,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         # cautiously delete out contexts & integrator
         del simulation.context, integrator
 
-        return equilibrated_positions, box
+        return equilibrated_positions, to_openmm(from_openmm(box))
 
     @staticmethod
     def _assign_partial_charges(
