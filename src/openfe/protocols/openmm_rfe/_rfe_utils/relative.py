@@ -437,22 +437,21 @@ class HybridTopologyFactory:
         self._new_to_hybrid_map = {}
 
         # Get unique atoms
-        # old system first
-        self._unique_old_atoms = []
-        for particle_idx in range(self._old_system.getNumParticles()):
-            if particle_idx not in self._old_to_new_map.keys():
-                self._unique_old_atoms.append(particle_idx)
+        old_mapped = self._old_to_new_map.keys()
+        self._unique_old_atoms = sorted(
+            set(range(self._old_system.getNumParticles())) - old_mapped
+        )
 
-        self._unique_new_atoms = []
-        for particle_idx in range(self._new_system.getNumParticles()):
-            if particle_idx not in self._new_to_old_map.keys():
-                self._unique_new_atoms.append(particle_idx)
+        new_mapped = self._new_to_old_map.keys()
+        self._unique_new_atoms = sorted(
+            set(range(self._new_system.getNumParticles())) - new_mapped
+        )
 
         # Get env atoms (i.e. atoms mapped not in core)
-        self._env_old_to_new_map = {}
-        for key, value in old_to_new_map.items():
-            if key not in self._core_old_to_new_map.keys():
-                self._env_old_to_new_map[key] = value
+        self._env_old_to_new_map = {
+            k: v for k, v in old_to_new_map.items()
+            if k not in self._core_old_to_new_map
+        }
 
         self._env_new_to_old_map = self._invert_dict(self._env_old_to_new_map)
 
@@ -1221,9 +1220,7 @@ class HybridTopologyFactory:
                     r0_new = r0_old
                     k_new = 0.0*unit.kilojoule_per_mole/unit.angstrom**2
                 else:
-                    # TODO - why is this being recalculated?
-                    [index1, index2, r0_new, k_new] = self._find_bond_parameters(
-                        new_system_bond_force, index1_new, index2_new)
+                    [_, _, r0_new, k_new] = new_bond_parameters
                 self._hybrid_system_forces['core_bond_force'].addBond(
                     index1_hybrid, index2_hybrid,
                     [r0_old, k_old, r0_new, k_new])
