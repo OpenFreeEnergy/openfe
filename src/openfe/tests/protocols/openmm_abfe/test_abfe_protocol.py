@@ -209,7 +209,6 @@ class TestT4LysozymeDryRun:
             test_platform = openmm.Platform.getPlatformByName("CUDA")
             test_platform.setPropertyDefaultValue("Precision", "mixed")
         else:
-            raise ValueError()
             test_alchemy.GLOBAL_ALCHEMY_PLATFORM = openmm.Platform.getPlatformByName("Reference")
         yield
         # restore the old value
