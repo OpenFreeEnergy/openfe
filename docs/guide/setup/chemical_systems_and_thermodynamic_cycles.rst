@@ -50,7 +50,20 @@ Splitting the total system into components serves three purposes:
 
 When dealing with membrane-protein systems, the :class:`.ProteinComponent` is replaced by a
 :class:`.ProteinMembraneComponent`, which is already explicitly solvated.
-In such cases, no further solvation of the complex system is done in the protocol, meaning:
+
+The :class:`.ProteinMembraneComponent` requires periodic box vectors to define the simulation box.
+There are several ways to provide these vectors:
+
+1. CRYST record in the PDB file
+   If the PDB file includes a CRYST record, OpenMM can automatically read the box vectors from it.
+2. Manually specifying box vectors
+   Box vectors can be provided explicitly in OpenMM format.
+3. Inferring from atomic positions
+   Box vectors can be estimated from the atomic coordinates in the PDB file.
+   Caveat: This approach can be inaccurate if the PDB comes from a previous simulation and some atoms are positioned in
+   periodic images.
+
+In membrane-protein systems, no further solvation of the complex system is done in the protocol, meaning:
 
 * In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not
   required. The :class:`.ChemicalSystem` of the complex end states consists of the :class:`.ProteinMembraneComponent`,
@@ -58,6 +71,7 @@ In such cases, no further solvation of the complex system is done in the protoco
 * In contrast, in the :class:`.SepTopProtocol` or :class:`.AbsoluteBindingProtocol`, a :class:`.SolventComponent` is still
   needed because the :class:`.ChemicalSystem` represents both the complex and solvent legs. The :class:`.SolventComponent`
   is then only used for solvating the solvent leg of the transformation.
+
 
 Thermodynamic Cycles
 --------------------
