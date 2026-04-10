@@ -50,7 +50,7 @@ For example, to customise the production run length of the RFE Protocol::
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
 Adaptive Settings
------------------
+~~~~~~~~~~~~~~~~~
 
 In addition to the ``.default_settings()`` method, some protocols
 provide an ``_adaptive_settings`` method. This method generates recommended settings
