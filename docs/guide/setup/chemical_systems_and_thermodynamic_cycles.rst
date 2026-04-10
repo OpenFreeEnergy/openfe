@@ -24,7 +24,7 @@ A :class:`.ChemicalSystem` does **NOT** include the following:
 * thermodynamic conditions (e.g. temperature or pressure)
 
 For some protocols, such as :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`, a single
-:class:`.ChemicalSystem` defines both legs of the thermodynamic cycle (complex and solvent) directly.
+:class:`.ChemicalSystem` is used to represent both legs of the thermodynamic cycle (complex and solvent).
 This is in contrast to the :class:`.RelativeHybridTopologyProtocol`, where each leg is defined by
 separate :class:`.ChemicalSystem`\s.
 
@@ -48,29 +48,34 @@ Splitting the total system into components serves three purposes:
 2. components can be reused to compose different systems.
 3. :class:`.Protocol`\s can have component-specific behavior. E.g. different force fields for each component.
 
-When dealing with membrane-protein systems, the :class:`.ProteinComponent` is replaced by a
-:class:`.ProteinMembraneComponent`, which is already explicitly solvated.
+When dealing with membrane-protein systems, the protein is represented using an explicitly solvated
+:class:`.ProteinMembraneComponent` instead of a :class:`.ProteinComponent`.
 
 The :class:`.ProteinMembraneComponent` requires periodic box vectors to define the simulation box.
 There are several ways to provide these vectors:
 
 1. CRYST record in the PDB file
-   If the PDB file includes a CRYST record, OpenMM can automatically read the box vectors from it.
-2. Manually specifying box vectors
-   Box vectors can be provided explicitly in OpenMM format.
-3. Inferring from atomic positions
-   Box vectors can be estimated from the atomic coordinates in the PDB file.
-   Caveat: This approach can be inaccurate if the PDB comes from a previous simulation and some atoms are positioned in
-   periodic images.
 
-In membrane-protein systems, no further solvation of the complex system is done in the protocol, meaning:
+   If the PDB file includes a CRYST record, OpenMM can automatically read the box vectors from it.
+
+2. Manually specifying box vectors
+
+   Box vectors can be provided explicitly in OpenMM format.
+
+3. Inferring from atomic positions
+
+   Box vectors can be estimated from the atomic coordinates in the PDB file.
+
+   Caveat: This approach can be inaccurate if the PDB comes from a previous simulation and some atoms are positioned in periodic images.
+
+In membrane-protein systems, no further solvation of the complex system is performed by the protocol. This means:
 
 * In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not
-  required. The :class:`.ChemicalSystem` of the complex end states consists of the :class:`.ProteinMembraneComponent`,
-  the ligand (and optionally cofactors) as :class:`.SmallMoleculeComponent`\s.
+  required. The :class:`.ChemicalSystem` for the complex end states consists of the :class:`.ProteinMembraneComponent`
+  and the ligand (and optionally cofactors) as :class:`.SmallMoleculeComponent`\s.
 * In contrast, in the :class:`.SepTopProtocol` or :class:`.AbsoluteBindingProtocol`, a :class:`.SolventComponent` is still
-  needed because the :class:`.ChemicalSystem` represents both the complex and solvent legs. The :class:`.SolventComponent`
-  is then only used for solvating the solvent leg of the transformation.
+  needed because the :class:`.ChemicalSystem` represents both complex and solvent legs. The :class:`.SolventComponent`
+  is then only used to solvate the solvent leg of the transformation.
 
 
 Thermodynamic Cycles
@@ -109,8 +114,8 @@ a protein, and a solvent:
   # ligand_B + solvent
   ligand_B_solvent = openfe.ChemicalSystem(components={'ligand': ligand_B, 'solvent': solvent})
 
-For a protein-membrane complex, the `ligand_A_complex` with a :class:`.ProteinMembraneComponent` while a :class:`.SolventComponent`
-would not be required:
+For a protein-membrane complex, the `ligand_A_complex` would instead use a
+:class:`.ProteinMembraneComponent`, and a :class:`.SolventComponent` would not be required:
 
 ::
 
