@@ -50,11 +50,14 @@ Splitting the total system into components serves three purposes:
 
 When dealing with membrane-protein systems, the :class:`.ProteinComponent` is replaced by a
 :class:`.ProteinMembraneComponent`, which is already explicitly solvated.
-In such cases:
+In such cases, no further solvation of the complex system is done in the protocol, meaning:
 
-* In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not required.
+* In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not
+  required. The :class:`.ChemicalSystem` of the complex end states consists of the :class:`.ProteinMembraneComponent`,
+  the ligand and optionally cofactors as :class:`.SmallMoleculeComponent`\s.
 * In contrast, in :class:`.SepTopProtocol` or :class:`.AbsoluteBindingProtocol`, a :class:`.SolventComponent` is still
-  needed because the :class:`.ChemicalSystem` represents both the complex and solvent legs.
+  needed because the :class:`.ChemicalSystem` represents both the complex and solvent legs. The :class:`.SolventComponent`
+  is then only used for solvating the solvent leg of the transformation.
 
 Thermodynamic Cycles
 --------------------
@@ -96,5 +99,5 @@ a protein, and a solvent:
 See Also
 --------
 
-* To see how to construct a :class:`.ChemicalSystem`\s from your files, see :ref:`the cookbook entry on loading molecules <Loading Molecules>`
+* To see how to construct a :class:`.ChemicalSystem` from your files, see :ref:`the cookbook entry on loading molecules <Loading Molecules>`
 * For details of what thermodynamic cycles to construct, consult the :ref:`pages for each specific Protocol <userguide_protocols>`
