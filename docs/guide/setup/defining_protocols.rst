@@ -80,6 +80,10 @@ If an ``initial_settings`` object is provided, the adaptive settings are based o
 In systems containing membrane-protein complexes (i.e. using a
 :class:`.ProteinMembraneComponent`), adaptive settings select a membrane-appropriate barostat, the ``MonteCarloMembraneBarostat``.
 
+.. warning::
+
+  The ``_adaptive_settings()`` method is experimental and subject to change.
+
 Creating Transformations from Protocols
 -----------------------------------------
 
