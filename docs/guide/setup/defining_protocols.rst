@@ -54,7 +54,7 @@ Adaptive Settings
 
 In addition to the ``.default_settings()`` method, some protocols
 provide an ``_adaptive_settings`` method. This method generates recommended settings
-based on the input :class:`.ChemicalSystem`\s and, where required, the :class:`.AtomMapping`.
+based on properties of the input :class:`.ChemicalSystem`\s and, where required, the :class:`.AtomMapping`.
 
 For example::
 
@@ -63,7 +63,7 @@ For example::
    settings = openmm_rfe.RelativeHybridTopologyProtocol._adaptive_settings(
        stateA=stateA,
        stateB=stateB,
-       mapping=mapping
+       mapping=mapping,
    )
 
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
@@ -71,15 +71,14 @@ For example::
 The adaptive settings may modify parameters based on properties of the input systems.
 For example (:class:`.RelativeHybridTopologyProtocol`):
 
-* Transformation involving a change in net charge use a larger number of lambda windows and longer production simulations.
+* Transformations involving a change in net charge use a larger number of lambda windows and longer production simulations.
 * If both states contain a :class:`.ProteinComponent`, the solvation padding is set to 1 nm.
 
-If an ``initial_settings`` object is provided, the adaptive settings are based on a copy
-of those settings rather than the defaults.
+If an ``initial_settings`` object is provided, the adaptive settings are based on a copy of the provided
+``initial_settings`` rather than the default settings.
 
 In systems containing membrane-protein complexes (i.e. using a
-:class:`.ProteinMembraneComponent`), adaptive settings will use a membrane-appropriate barostat
-(``MonteCarloMembraneBarostat``).
+:class:`.ProteinMembraneComponent`), adaptive settings select a membrane-appropriate barostat, the ``MonteCarloMembraneBarostat``.
 
 Creating Transformations from Protocols
 -----------------------------------------
