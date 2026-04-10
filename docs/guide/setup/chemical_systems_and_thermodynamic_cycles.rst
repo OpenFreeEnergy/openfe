@@ -24,8 +24,8 @@ A :class:`.ChemicalSystem` does **NOT** include the following:
 * thermodynamic conditions (e.g. temperature or pressure)
 
 For some protocols, such as :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`, a single
-:class:`.ChemicalSystem` may define both legs of the thermodynamic cycle (complex and solvent) directly.
-This is in contrast to the :class:`.RelativeHybridTopologyProtocol`, where each leg is typically defined by
+:class:`.ChemicalSystem` defines both legs of the thermodynamic cycle (complex and solvent) directly.
+This is in contrast to the :class:`.RelativeHybridTopologyProtocol`, where each leg is defined by
 separate :class:`.ChemicalSystem`\s.
 
 .. _userguide_components:
@@ -54,8 +54,8 @@ In such cases, no further solvation of the complex system is done in the protoco
 
 * In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not
   required. The :class:`.ChemicalSystem` of the complex end states consists of the :class:`.ProteinMembraneComponent`,
-  the ligand and optionally cofactors as :class:`.SmallMoleculeComponent`\s.
-* In contrast, in :class:`.SepTopProtocol` or :class:`.AbsoluteBindingProtocol`, a :class:`.SolventComponent` is still
+  the ligand (and optionally cofactors) as :class:`.SmallMoleculeComponent`\s.
+* In contrast, in the :class:`.SepTopProtocol` or :class:`.AbsoluteBindingProtocol`, a :class:`.SolventComponent` is still
   needed because the :class:`.ChemicalSystem` represents both the complex and solvent legs. The :class:`.SolventComponent`
   is then only used for solvating the solvent leg of the transformation.
 
@@ -94,6 +94,16 @@ a protein, and a solvent:
   ligand_A_solvent = openfe.ChemicalSystem(components={'ligand': ligand_A, 'solvent': solvent})
   # ligand_B + solvent
   ligand_B_solvent = openfe.ChemicalSystem(components={'ligand': ligand_B, 'solvent': solvent})
+
+For a protein-membrane complex, the `ligand_A_complex` with a :class:`.ProteinMembraneComponent` while a :class:`.SolventComponent`
+would not be required:
+
+::
+
+  # explicitly solvated protein-membrane complex, including box vectors (here read from CRYST1 records in the PDB)
+  protein_membrane = openfe.ProteinMembraneComponent.from_pdb_file('./protein_membrane.pdb')
+  # ligand_A + explicitly solvated protein-membrane
+  ligand_A_complex = openfe.ChemicalSystem(components={'ligand': ligand_A, 'protein_membrane': protein_membrane})
 
 
 See Also
