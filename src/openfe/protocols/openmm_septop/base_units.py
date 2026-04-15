@@ -1192,7 +1192,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         positions = pdb_file.getPositions(asNumpy=True)
 
         # Get the compute platform
-        restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
         platform = omm_compute.get_openmm_platform(
             platform_name=settings["engine_settings"].compute_platform,
             gpu_device_index=settings["engine_settings"].gpu_device_index,
