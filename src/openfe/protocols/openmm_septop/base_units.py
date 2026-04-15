@@ -32,7 +32,7 @@ from gufe import (
 )
 from gufe.components import Component
 from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import unit
+from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SystemGenerator
@@ -80,6 +80,7 @@ def _pre_equilibrate(
     endstate: Literal["A", "B", "AB"],
     dry: bool,
     shared_basepath: pathlib.Path,
+    platform: openmm.Platform,
     verbose: bool,
     logger,
 ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
@@ -121,14 +122,6 @@ def _pre_equilibrate(
       Box vectors of the equilibrated system.
     """
     # Prep the simulation object
-    # Restrict CPU count if no cutoff
-    restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
-    platform = omm_compute.get_openmm_platform(
-        platform_name=settings["engine_settings"].compute_platform,
-        gpu_device_index=settings["engine_settings"].gpu_device_index,
-        restrict_cpu_count=restrict_cpu,
-    )
-
     integrator = openmm.LangevinMiddleIntegrator(
         to_openmm(settings["thermo_settings"].temperature),
         to_openmm(settings["integrator_settings"].langevin_collision_rate),
@@ -233,7 +226,70 @@ def _pre_equilibrate(
     return equilibrated_positions, box
 
 
-class BaseSepTopSetupUnit(gufe.ProtocolUnit):
+class SepTopUnitMixin:
+    """
+    Mixin for SepTop ProtocolUnits, defining some of the common methods.
+    """
+
+    def _prepare(
+        self,
+        verbose: bool,
+        scratch_basepath: pathlib.Path | None,
+        shared_basepath: pathlib.Path | None,
+    ):
+        """
+        Set basepaths and do some initial logging.
+
+        Parameters
+        ----------
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        scratch_basepath : pathlib.Path | None
+          Optional base path to write scratch files to.
+        shared_basepath : pathlib.Path | None
+          Optional base path to write shared files to.
+        """
+        self.verbose = verbose
+
+        # set basepaths
+        def _set_optional_path(basepath):
+            if basepath is None:
+                return pathlib.Path(".")
+            return basepath
+
+        self.scratch_basepath = _set_optional_path(scratch_basepath)
+        self.shared_basepath = _set_optional_path(shared_basepath)
+
+    @abc.abstractmethod
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
+        """
+        Get a dictionary with the following entries:
+          * forcefield_settings : OpenMMSystemGeneratorFFSettings
+          * thermo_settings : ThermoSettings
+          * solvation_settings : BaseSolvationSettings
+          * alchemical_settings : AlchemicalSettings
+          * lambda_settings : LambdaSettings
+          * engine_settings : OpenMMEngineSettings
+          * integrator_settings : IntegratorSettings
+          * equil_simulation_settings : MDSimulationSettings
+          * equil_output_settings : MDOutputSettings
+          * simulation_settings : MultiStateSimulationSettings
+          * output_settings : MultiStateOutputSettings
+
+        Settings may change depending on what type of simulation you are
+        running. Cherry pick them and return them to be available later on.
+
+        This method should also add various validation checks as necessary.
+
+        Note
+        ----
+        Must be implemented in the child class.
+        """
+        ...
+
+
+class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     """
     Base class for the setup of ligand SepTop RBFE free energy transformations.
     """
@@ -315,7 +371,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         alchemical_factory = AbsoluteAlchemicalFactory(
             consistent_exceptions=False,
-            switch_width=1.0 * unit.angstroms,
+            switch_width=1.0 * offunit.angstroms,
             alchemical_pme_treatment="exact",
             alchemical_rf_treatment="switched",
             disable_alchemical_dispersion_correction=alchemical_settings.disable_alchemical_dispersion_correction,
@@ -360,37 +416,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         return alchemical_factory, alchemical_system
 
-    def _prepare(
-        self,
-        verbose: bool,
-        scratch_basepath: Optional[pathlib.Path],
-        shared_basepath: Optional[pathlib.Path],
-    ):
-        """
-        Set basepaths and do some initial logging.
-
-        Parameters
-        ----------
-        verbose : bool
-          Verbose output of the simulation progress. Output is provided via
-          INFO level logging.
-        basepath : Optional[pathlib.Path]
-          Optional base path to write files to.
-        """
-        self.verbose = verbose
-
-        if self.verbose:
-            self.logger.info("setting up alchemical system")
-
-        # set basepaths
-        def _set_optional_path(basepath):
-            if basepath is None:
-                return pathlib.Path(".")
-            return basepath
-
-        self.scratch_basepath = _set_optional_path(scratch_basepath)
-        self.shared_basepath = _set_optional_path(shared_basepath)
-
     @abc.abstractmethod
     def _get_components(
         self,
@@ -402,33 +427,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     ]:
         """
         Get the relevant components to create the alchemical system with.
-
-        Note
-        ----
-        Must be implemented in the child class.
-        """
-        ...
-
-    @abc.abstractmethod
-    def _handle_settings(self):
-        """
-        Get a dictionary with the following entries:
-          * forcefield_settings : OpenMMSystemGeneratorFFSettings
-          * thermo_settings : ThermoSettings
-          * solvation_settings : BaseSolvationSettings
-          * alchemical_settings : AlchemicalSettings
-          * lambda_settings : LambdaSettings
-          * engine_settings : OpenMMEngineSettings
-          * integrator_settings : IntegratorSettings
-          * equil_simulation_settings : MDSimulationSettings
-          * equil_output_settings : MDOutputSettings
-          * simulation_settings : MultiStateSimulationSettings
-          * output_settings : MultiStateOutputSettings
-
-        Settings may change depending on what type of simulation you are
-        running. Cherry pick them and return them to be available later on.
-
-        This method should also add various validation checks as necessary.
 
         Note
         ----
@@ -472,41 +470,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                 has_solvent=solvent_comp is not None,
             )
         return system_generator
-
-    @staticmethod
-    def check_assign_velocities_with_virtual_site(
-        system: openmm.System,
-        integrator_settings: IntegratorSettings,
-    ):
-        """
-        Virtual sites sanity check - ensure we restart velocities when
-        there are virtual sites in the system
-
-        Parameters
-        ----------
-        system: openmm.System
-            The OpenMM System being checked.
-        integrator_settings: IntegratorSettings
-           Multistate sampler integrator settings.
-
-        Raises
-        ------
-        ValueError
-        * If the system has a virtual site but the integrator settings specify
-          that velocities are not reassigned.
-        """
-        # Virtual sites sanity check - ensure we restart velocities when
-        # there are virtual sites in the system
-        if integrator_settings.reassign_velocities:
-            return
-
-        for ix in range(system.getNumParticles()):
-            if system.isVirtualSite(ix):
-                errmsg = (
-                    "Simulations with virtual sites without velocity "
-                    "reassignments are unstable in openmmtools"
-                )
-                raise ValueError(errmsg)
 
     @staticmethod
     def _assign_partial_charges(
@@ -737,6 +700,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
 
         return omm_system, omm_topology, positions, system_modeller, comp_resids
+    
+# TODO: Add PDB writing somewhere here
 
     def _execute(
         self,
@@ -755,41 +720,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         }
 
 
-class BaseSepTopRunUnit(gufe.ProtocolUnit):
+class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     """
     Base class for running ligand SepTop RBFE free energy transformations.
     """
-
-    def _prepare(
-        self,
-        verbose: bool,
-        scratch_basepath: Optional[pathlib.Path],
-        shared_basepath: Optional[pathlib.Path],
-    ):
-        """
-        Set basepaths and do some initial logging.
-
-        Parameters
-        ----------
-        verbose : bool
-          Verbose output of the simulation progress. Output is provided via
-          INFO level logging.
-        basepath : Optional[pathlib.Path]
-          Optional base path to write files to.
-        """
-        self.verbose = verbose
-
-        if self.verbose:
-            self.logger.info("setting up alchemical system")
-
-        # set basepaths
-        def _set_optional_path(basepath):
-            if basepath is None:
-                return pathlib.Path(".")
-            return basepath
-
-        self.scratch_basepath = _set_optional_path(scratch_basepath)
-        self.shared_basepath = _set_optional_path(shared_basepath)
 
     @abc.abstractmethod
     def _get_components(
@@ -802,33 +736,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
     ]:
         """
         Get the relevant components to create the alchemical system with.
-
-        Note
-        ----
-        Must be implemented in the child class.
-        """
-        ...
-
-    @abc.abstractmethod
-    def _handle_settings(self):
-        """
-        Get a dictionary with the following entries:
-          * forcefield_settings : OpenMMSystemGeneratorFFSettings
-          * thermo_settings : ThermoSettings
-          * solvation_settings : BaseSolvationSettings
-          * alchemical_settings : AlchemicalSettings
-          * lambda_settings : LambdaSettings
-          * engine_settings : OpenMMEngineSettings
-          * integrator_settings : IntegratorSettings
-          * equil_simulation_settings : MDSimulationSettings
-          * equil_output_settings : MDOutputSettings
-          * simulation_settings : MultiStateSimulationSettings
-          * output_settings : MultiStateOutputSettings
-
-        Settings may change depending on what type of simulation you are
-        running. Cherry pick them and return them to be available later on.
-
-        This method should also add various validation checks as necessary.
 
         Note
         ----
@@ -917,10 +824,61 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         return sampler_states, cmp_states
 
+    @staticmethod
+    def _get_integrator(
+        integrator_settings: IntegratorSettings,
+        simulation_settings: MultiStateSimulationSettings,
+        system: openmm.System,
+    ) -> openmmtools.mcmc.LangevinDynamicsMove:
+        """
+        Return a LangevinDynamicsMove integrator
+
+        Parameters
+        ----------
+        integrator_settings : IntegratorSettings
+          Settings controlling the Langevin integrator.
+        simulation_settings : MultiStateSimulationSettings
+          Settings controlling the simulation.
+        system: openmm.System
+          The OpenMM System being simulated.
+
+        Returns
+        -------
+        integrator : openmmtools.mcmc.LangevinDynamicsMove
+          A configured integrator object.
+        """
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings, integrator_settings
+        )
+
+        integrator = openmmtools.mcmc.LangevinDynamicsMove(
+            timestep=to_openmm(integrator_settings.timestep),
+            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
+            n_steps=steps_per_iteration,
+            reassign_velocities=integrator_settings.reassign_velocities,
+            n_restart_attempts=integrator_settings.n_restart_attempts,
+            constraint_tolerance=integrator_settings.constraint_tolerance,
+        )
+
+        # Validate for known issue when dealing with virtual sites
+        # and mutltistate simulations
+        if not integrator_settings.reassign_velocities:
+            for particle_idx in range(system.getNumParticles()):
+                if system.isVirtualSite(particle_idx):
+                    errmsg = (
+                        "Simulations with virtual sites without velocity "
+                        "reassignments are unstable with MCMC integrators. "
+                        "You can set `reassign_velocities` to ``True`` in the "
+                        "`integrator_settings` to avoid this issue."
+                    )
+                    raise ValueError(errmsg)
+
+        return integrator
+
+    @staticmethod
     def _get_reporter(
-        self,
-        topology: openmm.app.Topology,
-        positions: openmm.unit.Quantity,
+        storage_path: pathlib.Path,
+        selection_indices: npt.NDArray,
         simulation_settings: MultiStateSimulationSettings,
         output_settings: MultiStateOutputSettings,
     ) -> multistate.MultiStateReporter:
@@ -945,18 +903,11 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         reporter : multistate.MultiStateReporter
           The reporter for the simulation.
         """
-        mdt_top = mdt.Topology.from_openmm(topology)
-
-        # We store selection indices in self to avoid re-creating the MDTraj Topology
-        # in the future
-        self.selection_indices = mdt_top.select(output_settings.output_indices)
-
-        nc = self.shared_basepath / output_settings.output_filename
+        # Define the trajectory & checkpoint files
+        nc = storage_path / output_settings.output_filename
+        # The checkpoint file in openmmtools is taken as the file relative
+        # to the location of the nc file, so you only want the filename
         chk = output_settings.checkpoint_storage_filename
-        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
-            checkpoint_interval=output_settings.checkpoint_interval,
-            time_per_iteration=simulation_settings.time_per_iteration,
-        )
 
         if output_settings.positions_write_frequency is not None:
             pos_interval = settings_validation.divmod_time_and_check(
@@ -978,111 +929,29 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         else:
             vel_interval = 0
 
-        reporter = multistate.MultiStateReporter(
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
+
+        return multistate.MultiStateReporter(
             storage=nc,
-            analysis_particle_indices=self.selection_indices,
+            analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
             position_interval=pos_interval,
             velocity_interval=vel_interval,
         )
 
-        # Write out the structure's PDB whilst we're here
-        if len(self.selection_indices) > 0:
-            traj = mdt.Trajectory(
-                positions[self.selection_indices, :],
-                mdt_top.subset(self.selection_indices),
-            )
-            traj.save_pdb(self.shared_basepath / output_settings.output_structure)
-
-        return reporter
-
-    def _get_ctx_caches(
-        self,
-        forcefield_settings: OpenMMSystemGeneratorFFSettings,
-        engine_settings: OpenMMEngineSettings,
-    ) -> tuple[openmmtools.cache.ContextCache, openmmtools.cache.ContextCache]:
-        """
-        Set the context caches based on the chosen platform
-
-        Parameters
-        ----------
-        forcefield_settings: OpenMMSystemGeneratorFFSettings
-        engine_settings : OpenMMEngineSettings
-
-        Returns
-        -------
-        energy_context_cache : openmmtools.cache.ContextCache
-          The energy state context cache.
-        sampler_context_cache : openmmtools.cache.ContextCache
-          The sampler state context cache.
-        """
-        # Get the compute platform
-        # Set the number of CPUs to 1 if running a simulation with no cutoff
-        restrict_cpu = forcefield_settings.nonbonded_method.lower() == "nocutoff"
-        platform = omm_compute.get_openmm_platform(
-            platform_name=engine_settings.compute_platform,
-            gpu_device_index=engine_settings.gpu_device_index,
-            restrict_cpu_count=restrict_cpu,
-        )
-
-        energy_context_cache = openmmtools.cache.ContextCache(
-            capacity=None,
-            time_to_live=None,
-            platform=platform,
-        )
-
-        sampler_context_cache = openmmtools.cache.ContextCache(
-            capacity=None,
-            time_to_live=None,
-            platform=platform,
-        )
-
-        return energy_context_cache, sampler_context_cache
-
-    @staticmethod
-    def _get_integrator(
-        integrator_settings: IntegratorSettings,
-        simulation_settings: MultiStateSimulationSettings,
-    ) -> openmmtools.mcmc.LangevinDynamicsMove:
-        """
-        Return a LangevinDynamicsMove integrator
-
-        Parameters
-        ----------
-        integrator_settings : IntegratorSettings
-        simulation_settings : MultiStateSimulationSettings
-
-        Returns
-        -------
-        integrator : openmmtools.mcmc.LangevinDynamicsMove
-          A configured integrator object.
-        """
-        steps_per_iteration = settings_validation.convert_steps_per_iteration(
-            simulation_settings, integrator_settings
-        )
-
-        integrator = openmmtools.mcmc.LangevinDynamicsMove(
-            timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
-            n_steps=steps_per_iteration,
-            reassign_velocities=integrator_settings.reassign_velocities,
-            n_restart_attempts=integrator_settings.n_restart_attempts,
-            constraint_tolerance=integrator_settings.constraint_tolerance,
-        )
-
-        return integrator
-
     @staticmethod
     def _get_sampler(
         integrator: openmmtools.mcmc.LangevinDynamicsMove,
         reporter: openmmtools.multistate.MultiStateReporter,
         simulation_settings: MultiStateSimulationSettings,
-        thermo_settings: ThermoSettings,
-        cmp_states: list[ThermodynamicState],
+        thermodynamic_settings: ThermoSettings,
+        compound_states: list[ThermodynamicState],
         sampler_states: list[SamplerState],
-        energy_context_cache: openmmtools.cache.ContextCache,
-        sampler_context_cache: openmmtools.cache.ContextCache,
+        platform: openmm.Platform,
     ) -> multistate.MultiStateSampler:
         """
         Get a sampler based on the equilibrium sampling method requested.
@@ -1095,63 +964,99 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
           The reporter to hook up to the sampler.
         simulation_settings : MultiStateSimulationSettings
           Settings for the alchemical sampler.
-        thermo_settings : ThermoSettings
+        thermodynamic_settings : ThermoSettings
           Thermodynamic settings
-        cmp_states : list[ThermodynamicState]
+        compound_states : list[ThermodynamicState]
           A list of thermodynamic states to sample.
         sampler_states : list[SamplerState]
           A list of sampler states.
-        energy_context_cache : openmmtools.cache.ContextCache
-          Context cache for the energy states.
-        sampler_context_cache : openmmtool.cache.ContextCache
-          Context cache for the sampler states.
+        platform : openmm.Platform
+          The compute platform to use.
+        restart : bool
+          ``True`` if we are doing a simulation restart.
 
         Returns
         -------
         sampler : multistate.MultistateSampler
           A sampler configured for the chosen sampling method.
         """
+        _SAMPLERS = {
+            "repex": multistate.ReplicaExchangeSampler,
+            "sams": multistate.SAMSSampler,
+            "independent": multistate.MultiStateSampler,
+        }
+
+        sampler_method = simulation_settings.sampler_method.lower()
+        try:
+            sampler_class = _SAMPLERS[sampler_method]
+        except KeyError:
+            errmsg = f"Unknown sampler {sampler_method}"
+            raise AttributeError(errmsg)
+
+        # Get the real time analysis values to use
         rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
             simulation_settings=simulation_settings,
         )
-        et_target_err = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
-            thermo_settings.temperature,
-            simulation_settings.early_termination_target_error,
+
+        # Get the number of production iterations to run for
+        steps_per_iteration = integrator.n_steps
+        timestep = from_openmm(integrator.timestep)
+        number_of_iterations = int(
+            settings_validation.get_simsteps(
+                sim_length=simulation_settings.production_length,
+                timestep=timestep,
+                mc_steps=steps_per_iteration,
+            )
+            / steps_per_iteration
         )
 
-        # Select the right sampler
-        # Note: doesn't need else, settings already validates choices
-        if simulation_settings.sampler_method.lower() == "repex":
-            sampler = multistate.ReplicaExchangeSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=et_target_err,
-                online_analysis_minimum_iterations=rta_min_its,
+        # convert early_termination_target_error from kcal/mol to kT
+        early_termination_target_error = (
+            settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+                thermodynamic_settings.temperature,
+                simulation_settings.early_termination_target_error,
             )
-        elif simulation_settings.sampler_method.lower() == "sams":
-            sampler = multistate.SAMSSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_minimum_iterations=rta_min_its,
-                flatness_criteria=simulation_settings.sams_flatness_criteria,
-                gamma0=simulation_settings.sams_gamma0,
-            )
-        elif simulation_settings.sampler_method.lower() == "independent":
-            sampler = multistate.MultiStateSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=et_target_err,
-                online_analysis_minimum_iterations=rta_min_its,
-            )
+        )
+
+        sampler_kwargs = {
+            "mcmc_moves": integrator,
+            "online_analysis_interval": rta_its,
+            "online_analysis_target_error": early_termination_target_error,
+            "online_analysis_minimum_iterations": rta_min_its,
+            "number_of_iterations": number_of_iterations,
+        }
+
+        if sampler_method == "sams":
+            sampler_kwargs |= {
+                "flatness_criteria": simulation_settings.sams_flatness_criteria,
+                "gamma0": simulation_settings.sams_gamma0,
+            }
+
+        if sampler_method == "repex":
+            sampler_kwargs |= {
+                "replica_mixing_scheme": "swap-all",
+            }
+
+        sampler = sampler_class(**sampler_kwargs)
 
         sampler.create(
-            thermodynamic_states=cmp_states,
+            thermodynamic_states=compound_states,
             sampler_states=sampler_states,
             storage=reporter,
         )
 
-        sampler.energy_context_cache = energy_context_cache
-        sampler.sampler_context_cache = sampler_context_cache
+        # Get and set the context caches
+        sampler.energy_context_cache = openmmtools.cache.ContextCache(
+            capacity=None,
+            time_to_live=None,
+            platform=platform,
+        )
+
+        sampler.sampler_context_cache = openmmtools.cache.ContextCache(
+            capacity=None,
+            time_to_live=None,
+            platform=platform,
+        )
 
         return sampler
 
@@ -1203,7 +1108,9 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             # minimize
             if self.verbose:
                 self.logger.info("minimizing systems")
+
             sampler.minimize(max_iterations=settings["simulation_settings"].minimization_steps)
+
             # equilibrate
             if self.verbose:
                 self.logger.info("equilibrating systems")
@@ -1213,23 +1120,11 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             # production
             if self.verbose:
                 self.logger.info("running production phase")
+
             sampler.extend(int(prod_steps / mc_steps))
 
             if self.verbose:
                 self.logger.info("production phase complete")
-
-            if self.verbose:
-                self.logger.info("post-simulation result analysis")
-
-            analyzer = multistate_analysis.MultistateEquilFEAnalysis(
-                reporter,
-                sampling_method=settings["simulation_settings"].sampler_method.lower(),
-                result_units=unit.kilocalorie_per_mole,
-            )
-            analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
-            analyzer.close()
-
-            return analyzer.unit_results_dict
 
         else:
             # close reporter when you're done, prevent file handle clashes
@@ -1249,6 +1144,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         self,
         system: openmm.System,
         pdb_file: openmm.app.pdbfile.PDBFile,
+        selection_indices: npt.NDArray,
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
@@ -1263,6 +1159,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
           System used for the SepTop calculation.
         pdb_file: openmm.app.pdbfile.PDBFile
           OpenMM PDBFile object representing the SepTop System.
+        selection_indices: npt.NDArray
+          The indices of the particles to output in the trajectory.
         dry: bool
           Do a dry run of the calculation, creating all necessary alchemical
           system components (topology, system, sampler, etc...) but without
@@ -1285,68 +1183,75 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         # 0. General preparation tasks
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
-        # 1. Get components
-        self.logger.info("Running the SepTop simulation.")
+        if self.verbose:
+            self.logger.info("Running the SepTop simulation.")
 
-        settings = self._handle_settings()
+        # Get settings, components, and positions
+        settings = self._get_settings()
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         positions = pdb_file.getPositions(asNumpy=True)
 
-        # 2. Check that the restraints are correctly applied by running a short equilibration
-        equil_positions, box_AB = _pre_equilibrate(
-            system,
-            pdb_file.topology,
-            positions,
-            settings,
-            "AB",
-            dry,
-            self.shared_basepath,
-            self.verbose,
-            self.logger,
+        # Get the compute platform
+        restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
+        platform = omm_compute.get_openmm_platform(
+            platform_name=settings["engine_settings"].compute_platform,
+            gpu_device_index=settings["engine_settings"].gpu_device_index,
+            restrict_cpu_count=restrict_cpu,
         )
+
+        # Check that the restraints are correctly applied by running a short equilibration
+        equil_positions, box_AB = _pre_equilibrate(
+            system=system,
+            topology=pdb_file.topology,
+            positions=positions,
+            settings=settings,
+            endstate="AB",
+            dry=dry,
+            shared_basepath=self.shared_basepath,
+            platform=platform,
+            verbose=self.verbose,
+            logger=self.logger,
+        )
+
+        # Get the lambda schedule
         lambdas = self._get_lambda_schedule(settings)
 
-        # 3. Get compound and sampler states
+        # Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
-            system,
-            equil_positions,
-            box_AB,
-            settings,
-            lambdas,
-            solv_comp,
+            alchemical_system=system,
+            positions=equil_positions,
+            box_vectors=box_AB,
+            settings=settings,
+            lambdas=lambdas,
+            solvent_comp=solv_comp,
         )
 
-        # 4. Create the multistate reporter & create PDB
-        reporter = self._get_reporter(
-            pdb_file.topology,
-            equil_positions,
-            settings["simulation_settings"],
-            settings["output_settings"],
+        # Get the integrator
+        integrator = self._get_integrator(
+            integrator_settings=settings["integrator_settings"],
+            simulation_settings=settings["simulation_settings"],
+            system=system,
         )
 
         # Wrap in try/finally to avoid memory leak issues
         try:
-            # 5. Get context caches
-            energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
-                settings["forcefield_settings"], settings["engine_settings"]
+            # Get the reporter
+            reporter = self._get_reporter(
+                storage_path=self.shared_basepath,
+                selection_indices=selection_indices,
+                simulation_settings=settings["simulation_settings"],
+                output_settings=settings["output_settings"],
             )
 
-            # 6. Get integrator
-            integrator = self._get_integrator(
-                settings["integrator_settings"],
-                settings["simulation_settings"],
-            )
-
-            # 7. Get sampler
+            # Get the sampler
             sampler = self._get_sampler(
-                integrator,
-                reporter,
-                settings["simulation_settings"],
-                settings["thermo_settings"],
-                cmp_states,
-                sampler_states,
-                energy_ctx_cache,
-                sampler_ctx_cache,
+                integrator=integrator,
+                reporter=reporter,
+                simulation_settings=settings["simulation_settings"],
+                thermodynamic_settings=settings["thermo_settings"],
+                compound_states=cmp_states,
+                sampler_states=sampler_states,
+                platform=platform,
             )
 
             # 8. Run simulation
@@ -1358,36 +1263,42 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             )
 
         finally:
-            # close reporter when you're done to prevent file handle clashes
-            reporter.close()
+            # Have to wrap this in a try/except, because we might
+            # be in a situatino where the reporter and sampler weren't created
+            try:
+                # Order is reporter, contexts, sampler, integrator
+                reporter.close()
 
-            # clear GPU context
-            # Note: use cache.empty() when openmmtools #690 is resolved
-            for context in list(energy_ctx_cache._lru._data.keys()):
-                del energy_ctx_cache._lru._data[context]
-            for context in list(sampler_ctx_cache._lru._data.keys()):
-                del sampler_ctx_cache._lru._data[context]
-            # cautiously clear out the global context cache too
-            for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
-                del openmmtools.cache.global_context_cache._lru._data[context]
+                # clear GPU context
+                # Note: use cache.empty() when openmmtools #690 is resolved
+                for context in list(sampler.energy_context_cache._lru._data.keys()):
+                    del sampler.energy_context_cache._lru._data[context]
+                for context in list(sampler.sampler_context_cache._lru._data.keys()):
+                    del sampler.sampler_context_cache._lru._data[context]
+                # cautiously clear out the global context cache too
+                for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
+                    del openmmtools.cache.global_context_cache._lru._data[context]
 
-            del sampler_ctx_cache, energy_ctx_cache
+                del sampler.sampler_context_cache, sampler.energy_context_cache
 
-            # Keep these around in a dry run so we can inspect things
-            if not dry:
-                del integrator, sampler
+                # Keep these around in a dry run so we can inspect things
+                if not dry:
+                    # At this point we know the sampler exists, so we del the integrator
+                    # first since it's associated with the sampler
+                    del integrator, sampler
+            except UnboundLocalError:
+                pass
 
         if not dry:
             nc = self.shared_basepath / settings["output_settings"].output_filename
-            chk = settings["output_settings"].checkpoint_storage_filename
+            chk = self.shared_basepath /settings["output_settings"].checkpoint_storage_filename
             return {
-                "nc": nc,
-                "last_checkpoint": chk,
-                "selection_indices": self.selection_indices,
+                "trajectory": nc,
+                "checkpoint": chk,
                 **unit_result_dict,
             }
         else:
-            return {"debug": {"sampler": sampler}}
+            return {"sampler": sampler, "integrator": integrator}
 
     def _execute(
         self,
@@ -1400,10 +1311,12 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         system = deserialize(setup.outputs["system"])
         pdb_file = openmm.app.pdbfile.PDBFile(str(setup.outputs["topology"]))
+        selection_indices = setup_results.outputs["selection_indices"]
 
         outputs = self.run(
-            system,
-            pdb_file,
+            system=system,
+            pdb_file=pdb_file,
+            selection_indices=selection_indices,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
@@ -1412,5 +1325,154 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
             "simtype": self.simtype,
+            **outputs,
+        }
+
+
+class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
+    @staticmethod
+    def _analyze_multistate_energies(
+        trajectory: pathlib.Path,
+        checkpoint: pathlib.Path,
+        sampler_method: str,
+        output_directory: pathlib.Path,
+        dry: bool,
+    ):
+        """
+        Analyze multistate energies and generate plots.
+
+        Parameters
+        ----------
+        trajectory : pathlib.Path
+          Path to the NetCDF trajectory file.
+        checkpoint : pathlib.Path
+          The name of the checkpoint file. Note this is
+          relative in path to the trajectory file.
+        sampler_method : str
+          The multistate sampler method used.
+        output_directory : pathlib.Path
+          The path to where plots will be written.
+        dry : bool
+          Whether or not we are running a dry run.
+        """
+        reporter = multistate.MultiStateReporter(
+            storage=trajectory,
+            # Note: openmmtools only wants the name of the checkpoint
+            # file, it assumes it to be in the same place as the trajectory
+            checkpoint_storage=checkpoint.name,
+            open_mode="r",
+        )
+
+        analyzer = multistate_analysis.MultistateEquilFEAnalysis(
+            reporter=reporter,
+            sampling_method=sampler_method,
+            result_units=offunit.kilocalorie_per_mole,
+        )
+
+        # Only create plots when not doing a dry run
+        if not dry:
+            analyzer.plot(filepath=output_directory, filename_prefix="")
+
+        analyzer.close()
+        reporter.close()
+        return analyzer.unit_results_dict
+
+    def run(
+        self,
+        *,
+        trajectory: pathlib.Path,
+        checkpoint: pathlib.Path,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
+    ) -> dict[str, Any]:
+        """Analyze the multistate simulation.
+
+        Parameters
+        ----------
+        trajectory : pathlib.Path
+          Path to the MultiStateReporter generated NetCDF file.
+        checkpoint : pathlib.Path
+          Path to the checkpoint file generated by MultiStateReporter.
+        dry : bool
+          Do a dry run of the calculation, creating all necessary hybrid
+          system components (topology, system, sampler, etc...) but without
+          running the simulation.
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        scratch_basepath: pathlib.Path | None
+          Where to store temporary files, defaults to current working directory
+        shared_basepath : pathlib.Path | None
+          Where to run the calculation, defaults to current working directory
+
+        Returns
+        -------
+        dict
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
+        """
+        # Prepare paths & verbosity
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        if self.verbose:
+            self.logger.info("Starting simulation analysis unit")
+
+        # Get the settings
+        settings = self._get_settings()
+
+        # Energies analysis
+        if verbose:
+            self.logger.info("Analyzing energies")
+
+        energy_analysis = self._analyze_multistate_energies(
+            trajectory=trajectory,
+            checkpoint=checkpoint,
+            sampler_method=settings["simulation_settings"].sampler_method.lower(),
+            output_directory=self.shared_basepath,
+            dry=dry,
+        )
+
+        return energy_analysis
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        *,
+        setup_results,
+        simulation_results,
+        **inputs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        # TODO update these for SepTop
+        # Get the relevant inputs for running the unit
+        pdb_file = setup_results.outputs["subsampled_pdb_structure"]
+        selection_indices = setup_results.outputs["selection_indices"]
+        restraint_geometry = setup_results.outputs["restraint_geometry"]
+        standard_state_corr = setup_results.outputs["standard_state_correction"]\
+        trajectory = simulation_results.outputs["trajectory"]
+        checkpoint = simulation_results.outputs["checkpoint"]
+
+        outputs = self.run(
+            trajectory=trajectory,
+            checkpoint=checkpoint,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared,
+        )
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": self.simtype,
+            # We re-include things here also to make
+            # life easier when gathering results.
+            "pdb_structure": pdb_file,
+            "trajectory": trajectory,
+            "checkpoint": checkpoint,
+            "selection_indices": selection_indices,
+            "restraint_geometry": restraint_geometry,
+            "standard_state_correction": standard_state_corr,
             **outputs,
         }

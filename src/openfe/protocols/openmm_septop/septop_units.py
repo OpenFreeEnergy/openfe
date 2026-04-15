@@ -33,6 +33,7 @@ from openff.units.openmm import from_openmm, to_openmm
 from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
+from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -47,7 +48,12 @@ from ..restraint_utils.settings import (
     BoreschRestraintSettings,
     DistanceRestraintSettings,
 )
-from .base_units import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
+from .base_units import (
+    BaseSepTopRunUnit,
+    BaseSepTopSetupUnit,
+    BaseSepTopAnalysisUnit,
+    _pre_equilibrate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +132,7 @@ class SepTopComplexMixin:
 
         return alchem_comps, solv_comp, prot_comp, small_mols
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a complex transformation.
 
@@ -212,7 +218,7 @@ class SepTopSolventMixin:
 
         return alchem_comps, solv_comp, None, small_mols
 
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a complex transformation.
 
@@ -695,13 +701,15 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # 0. General preparation tasks
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
+        self.logger.info("Setting up SepTop complex system.")
+
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
         # 3. Get settings
-        settings = self._handle_settings()
+        settings = self._get_settings()
 
         # 4. Assign partial charges
         self._assign_partial_charges(settings["charge_settings"], smc_comps_AB)
@@ -734,11 +742,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             smc_comp_B_unique,
             settings,
         )
-        # Virtual sites sanity check - ensure we restart velocities when
-        # there are virtual sites in the system
-        self.check_assign_velocities_with_virtual_site(
-            omm_system_AB, settings["integrator_settings"]
-        )
 
         # Get the comp_resids of the AB system
         resids_A = list(itertools.chain(*comp_resids_A.values()))
@@ -747,28 +750,38 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         comp_resids_AB = comp_resids_A | {alchem_comps["stateB"][0]: np.array(diff_resids)}
 
         # 6. Pre-equilbrate System (for restraint selection)
-        self.logger.info("Pre-equilibrating the systems")
-        equil_positions_A, box_A = _pre_equilibrate(
-            omm_system_A,
-            omm_topology_A,
-            positions_A,
-            settings,
-            "A",
-            dry,
-            self.shared_basepath,
-            self.verbose,
-            self.logger,
+        platform = omm_compute.get_openmm_platform(
+            platform_name=settings["engine_settings"].compute_platform,
+            gpu_device_index=settings["engine_settings"].gpu_device_index,
+            restrict_cpu_count=restrict_cpu,
         )
+
+        self.logger.info("Pre-equilibrating the systems")
+
+        equil_positions_A, box_A = _pre_equilibrate(
+            system=omm_system_A,
+            topology=omm_topology_A,
+            positions=positions_A,
+            settings=settings,
+            endstate="A",
+            dry=dry,
+            shared_basepath=self.shared_basepath,
+            platform=platform,
+            verbose=self.verbose,
+            logger=self.logger,
+        )
+
         equil_positions_B, box_B = _pre_equilibrate(
-            omm_system_B,
-            omm_topology_B,
-            positions_B,
-            settings,
-            "B",
-            dry,
-            self.shared_basepath,
-            self.verbose,
-            self.logger,
+            system=omm_system_B,
+            topology=omm_topology_B,
+            positions=positions_B,
+            settings=settings,
+            endstate="B",
+            dry=dry,
+            shared_basepath=self.shared_basepath,
+            platform=platform,
+            verbose= self.verbose,
+            logger=self.logger,
         )
 
         # 7. Get all the right atom indices for alignments
@@ -826,15 +839,16 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         )
 
         equil_positions_AB, box_AB = _pre_equilibrate(
-            system,
-            omm_topology_AB,
-            positions_AB,
-            settings,
-            "AB",
-            dry,
-            self.shared_basepath,
-            self.verbose,
-            self.logger,
+            system=system,
+            topology=omm_topology_AB,
+            positions=positions_AB,
+            settings=settings,
+            endstate="AB",
+            dry=dry,
+            platform=platform,
+            shared_basepath=self.shared_basepath,
+            verbose=self.verbose,
+            logger=self.logger,
         )
 
         topology_file = self.shared_basepath / "topology.pdb"
@@ -844,11 +858,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             open(topology_file, "w"),
         )
 
-        # ToDo: also apply REST
-
+        # Serialize the system
         system_outfile = self.shared_basepath / "system.xml.bz2"
-
-        # Serialize system, state and integrator
         serialize(system, system_outfile)
 
         return {
@@ -1028,13 +1039,15 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # 0. General preparation tasks
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
+        self.logger.info("Setting up SepTop solvent system.")
+
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
         # 2. Get settings
-        settings = self._handle_settings()
+        settings = self._get_settings()
 
         # 3. Assign partial charges
         self._assign_partial_charges(settings["charge_settings"], smc_comps_AB)
@@ -1056,12 +1069,6 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 settings,
             )
         )  # fmt: skip
-
-        # Virtual sites sanity check - ensure we restart velocities when
-        # there are virtual sites in the system
-        self.check_assign_velocities_with_virtual_site(
-            omm_system_AB, settings["integrator_settings"]
-        )
 
         # 6. Get atom indices for ligand A and ligand B and the solvent in the
         # system AB
@@ -1100,11 +1107,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
             omm_topology_AB, positions_AB, open(topology_file, "w")
         )
 
-        # ToDo: also apply REST
-
+        # Serialize the system
         system_outfile = self.shared_basepath / "system.xml.bz2"
-
-        # Serialize system, state and integrator
         serialize(system, system_outfile)
 
         return {
@@ -1183,3 +1187,19 @@ class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
         lambdas["lambda_restraints_B"] = lambda_restraints_B
 
         return lambdas
+
+
+class SepTopSolventAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
+    """
+    Protocol Unit for the analysis of the solvent phase of a relative SepTop free energy
+    """
+
+    simtype = "solvent"
+
+
+class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
+    """
+    Protocol Unit for the analysis of the complex phase of a relative SepTop free energy
+    """
+
+    simtype = "complex"
