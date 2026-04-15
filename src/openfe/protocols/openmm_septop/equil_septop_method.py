@@ -1157,7 +1157,7 @@ class SepTopProtocol(gufe.Protocol):
         stateB : ChemicalSystem
             The final state of the transformation.
         initial_settings : None | SepTopSettings, optional
-            Initial settings to base the adaptive settings on. If None, default settings are used.
+            Initial settings to adapt. If None, default settings are used.
 
         Returns
         -------
