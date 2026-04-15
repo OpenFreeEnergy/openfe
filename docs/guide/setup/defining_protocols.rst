@@ -74,8 +74,8 @@ For example (:class:`.RelativeHybridTopologyProtocol`):
 * Transformations involving a change in net charge use a larger number of lambda windows and longer production simulations.
 * If both states contain a :class:`.ProteinComponent`, the solvation padding is set to 1 nm.
 
-If an ``initial_settings`` object is provided, the adaptive settings are based on a copy of the provided
-``initial_settings`` rather than the default settings.
+Optionally, the `_adaptive_settings` method can be provided a pre-existing settings object via the ``initial_settings`` argument. If provided, an adapted copy of these settings will be returned instead
+of using the default settings.
 
 In systems containing membrane-protein complexes (i.e. using a
 :class:`.ProteinMembraneComponent`), adaptive settings select a membrane-appropriate barostat, the ``MonteCarloMembraneBarostat``.
