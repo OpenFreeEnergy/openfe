@@ -1147,8 +1147,8 @@ class SepTopProtocol(gufe.Protocol):
         Get the recommended OpenFE settings for this Protocol based on the input states involved in the
         transformation.
 
-        These are intended as a suitable starting point for creating an instance of this protocol, which can be further
-        customized before performing a Protocol.
+        These are intended as a suitable starting point, which can be further
+        customized before creating a Protocol.
 
         Parameters
         ----------
