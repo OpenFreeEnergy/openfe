@@ -1757,11 +1757,9 @@ class TestA2AMembraneDryRun:
                 == "MonteCarloMembraneBarostat"
             )
             complex_setup_output = complex_setup_units[0].run(dry=True)["debug"]
-            serialized_topology = complex_setup_output["topology"]
-            serialized_system = complex_setup_output["system"]
-            data = complex_run_units[0].run(
-                serialized_system, serialized_topology, dry=True
-            )["debug"]  # fmt: skip
+            pdb_file = openmm.app.pdbfile.PDBFile(str(complex_setup_output["topology"]))
+            system = deserialize(complex_setup_output["system"])
+            data = complex_run_units[0].run(system, pdb_file, dry=True)["debug"]  # fmt: skip
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=True, settings=adaptive_settings)
 
@@ -1792,11 +1790,9 @@ class TestA2AMembraneDryRun:
     def test_solvent_dry_run(self, solvent_setup_units, solvent_run_units, settings, tmpdir):
         with tmpdir.as_cwd():
             solv_setup_output = solvent_setup_units[0].run(dry=True)["debug"]
-            serialized_topology = solv_setup_output["topology"]
-            serialized_system = solv_setup_output["system"]
-            data = solvent_run_units[0].run(
-                serialized_system, serialized_topology, dry=True
-            )["debug"]  # fmt: skip
+            pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
+            system = deserialize(solv_setup_output["system"])
+            data = solvent_run_units[0].run(system, pdb_file, dry=True)["debug"]  # fmt: skip
 
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=False, settings=settings)
