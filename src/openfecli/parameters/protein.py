@@ -55,12 +55,14 @@ def _load_protein_membrane_file(user_input, context):
 
     from gufe import ProteinMembraneComponent
 
+    # TODO: upstream gufe work may make this change for the better
     try:
         return ProteinMembraneComponent.from_pdb_file(user_input)
     except ValueError:
-        return ProteinMembraneComponent.from_pdbx_file(user_input)
-    except ValueError:
-        raise ValueError(f"Unable to parse {user_input} as a ProteinMembraneComponent.")
+        try:
+            return ProteinMembraneComponent.from_pdbx_file(user_input)
+        except ValueError:
+            raise ValueError(f"Unable to parse {user_input} as a ProteinMembraneComponent.")
 
 
 PROTEIN_MEMBRANE = Option(
