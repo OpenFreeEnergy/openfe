@@ -42,16 +42,44 @@ describe the full simulated system.
 Components are composable building blocks that are combined additively, defining
 the chemical composition of the system.
 
+System composition overview
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 For a conventional protein–ligand system in water, a :class:`.ChemicalSystem` is typically composed of:
 
-* :class:`.ProteinComponent`: an entire biological assembly, typically the contents of a PDB file.
+* :class:`.ProteinComponent`
+* one or more :class:`.SmallMoleculeComponent`\s
+* a :class:`.SolventComponent`
 
-  It may include crystallographic waters or ions, and can define
-  disulfide bonds via CONECT records.
+For a protein-membrane RBFE system:
 
-* one or more :class:`.SmallMoleculeComponent`\s: Ligands and cofactors
+* :class:`.ProteinMembraneComponent`
+* one or more :class:`.SmallMoleculeComponent`\s
 
-* a :class:`.SolventComponent`: Solvent conditions
+Component types
+~~~~~~~~~~~~~~~
+
+* :class:`.ProteinComponent`
+
+  A biological assembly, typically the contents of a PDB file.
+
+  It may include crystallographic waters or ions, and can define disulfide bonds via CONECT records.
+
+* :class:`.SmallMoleculeComponent`
+
+  Ligands and cofactors
+
+* :class:`.SolventComponent`
+
+  Solvent conditions, including the ion concentration
+
+* :class:`.ProteinMembraneComponent`
+
+  A protein-membrane system with explicit solvation and
+  periodic box vectors. This replaces :class:`.ProteinComponent` in membrane systems.
+
+Advantages of hte composable design
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Splitting the total system into components serves three purposes:
 
@@ -59,12 +87,13 @@ Splitting the total system into components serves three purposes:
 2. components can be reused to compose different systems.
 3. :class:`.Protocol`\s can have component-specific behavior. E.g. different force fields for each component.
 
+Box vectors for membrane systems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 For protein-membrane systems, the protein is represented using a solvated
 :class:`.ProteinMembraneComponent` instead of a :class:`.ProteinComponent`.
-The :class:`.ProteinMembraneComponent` is an explicitly solvated protein-membrane system, including box vectors.
-
-The :class:`.ProteinMembraneComponent` requires periodic box vectors to define the simulation box.
-These can be provided in several ways:
+The :class:`.ProteinMembraneComponent` is an explicitly solvated protein-membrane system and requires periodic box vectors to define the simulation box.
+These box vectors can be provided in several ways:
 
 1. CRYST record in the PDB file
 
@@ -82,6 +111,9 @@ These can be provided in several ways:
 
    Inferring box vectors from atomic positions can be inaccurate,
    if the PDB originates from a previous simulation where atoms may be distributed across periodic images.
+
+Membrane systems and solvation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In protein-membrane systems, no further solvation of the complex system is performed by the protocol. This means:
 
