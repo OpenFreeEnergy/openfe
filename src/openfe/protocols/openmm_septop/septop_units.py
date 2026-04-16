@@ -23,8 +23,8 @@ import openmm.unit
 import openmm.unit as omm_units
 from gufe import (
     SmallMoleculeComponent,
-    SolventComponent,
     SolvatedPDBComponent,
+    SolventComponent,
 )
 from gufe.settings import SettingsBaseModel
 from MDAnalysis.coordinates.memory import MemoryReader
@@ -845,7 +845,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # Update box vectors
         omm_topology_AB.setPeriodicBoxVectors(box_AB)
 
-
         # Serialize system, state and integrator
         system_outfile = self.shared_basepath / "system.xml.bz2"
         serialize(system, system_outfile)
@@ -867,7 +866,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "restraint_geometry_B": restraint_geom_B.model_dump(),
             }
         else:
-
             return {
                 # Add in various objects we can use to test the system
                 "debug": {
