@@ -294,6 +294,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     """
     Base class for the setup of ligand SepTop RBFE free energy transformations.
     """
+
     def _get_alchemical_system(
         self,
         system: openmm.System,
