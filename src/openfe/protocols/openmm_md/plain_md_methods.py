@@ -183,6 +183,12 @@ class PlainMDProtocol(gufe.Protocol):
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
+        # Validate the BaseSolventComponents
+        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
+        if len(base_solvent) > 1:
+            errmsg = "Multiple BaseSolventComponents found, only one is supported."
+            raise ValueError(errmsg)
+
         # Validate protein component
         system_validation.validate_protein(stateA)
 
