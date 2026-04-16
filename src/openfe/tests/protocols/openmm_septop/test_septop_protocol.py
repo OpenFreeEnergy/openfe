@@ -1798,7 +1798,7 @@ class TestA2AMembraneDryRun:
             solv_setup_output = solvent_setup_units[0].run(dry=True)
             pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
             system = deserialize(solv_setup_output["system"])
-            indices = solvv_setup_output["selection_indices"]
+            indices = solv_setup_output["selection_indices"]
             data = solvent_run_units[0].run(system, pdb_file, indices, dry=True)  # fmt: skip
 
             # Check the sampler
