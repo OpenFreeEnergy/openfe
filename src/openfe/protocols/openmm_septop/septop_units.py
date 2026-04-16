@@ -24,6 +24,7 @@ import openmm.unit as omm_units
 from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
+    SolvatedPDBComponent,
 )
 from gufe.settings import SettingsBaseModel
 from MDAnalysis.coordinates.memory import MemoryReader
@@ -123,6 +124,11 @@ class SepTopComplexMixin:
         # Also get alchemical smc from state B
         small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         small_mols = small_mols | small_mols_B
+
+        # If there is a SolvatedPDBComponent, we set the solv_comp in the
+        # complex to that, as the SolventComponent is only used in the solvent leg
+        if isinstance(prot_comp, SolvatedPDBComponent):
+            solv_comp = prot_comp
 
         return alchem_comps, solv_comp, prot_comp, small_mols
 
