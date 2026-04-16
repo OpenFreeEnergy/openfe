@@ -723,6 +723,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     solv_sampler = sol_run_unit[0].run(
         alchem_system,
         pdb_file,
+        solv_setup_output["selection_indices"],
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
@@ -759,6 +760,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     complex_sampler = complex_run_unit[0].run(
         alchem_system,
         pdb_file,
+        complex_setup_output["selection_indices"],
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
@@ -823,6 +825,7 @@ def test_dry_run_methods(
     solv_sampler = sol_run_unit[0].run(
         alchem_system,
         pdb_file,
+        solv_setup_output["selection_indices"],
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
@@ -880,6 +883,7 @@ def test_dry_run_ligand_system_pressure(
     solv_sampler = sol_run_unit[0].run(
         alchem_system,
         pdb_file,
+        solv_setup_output["selection_indices"],
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
@@ -1008,6 +1012,7 @@ def test_dry_run_benzene_toluene_tip4p(
     solv_run = sol_run_unit[0].run(
         alchem_system,
         pdb_file,
+        solv_setup_output["selection_indices"],
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
@@ -1759,7 +1764,8 @@ class TestA2AMembraneDryRun:
             complex_setup_output = complex_setup_units[0].run(dry=True)
             pdb_file = openmm.app.pdbfile.PDBFile(str(complex_setup_output["topology"]))
             system = deserialize(complex_setup_output["system"])
-            data = complex_run_units[0].run(system, pdb_file, dry=True)  # fmt: skip
+            indices = complex_setup_output["selection_indices"]
+            data = complex_run_units[0].run(system, pdb_file, indices, dry=True)  # fmt: skip
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=True, settings=adaptive_settings)
 
@@ -1792,7 +1798,8 @@ class TestA2AMembraneDryRun:
             solv_setup_output = solvent_setup_units[0].run(dry=True)
             pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
             system = deserialize(solv_setup_output["system"])
-            data = solvent_run_units[0].run(system, pdb_file, dry=True)  # fmt: skip
+            indices = solvv_setup_output["selection_indices"]
+            data = solvent_run_units[0].run(system, pdb_file, indices, dry=True)  # fmt: skip
 
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=False, settings=settings)

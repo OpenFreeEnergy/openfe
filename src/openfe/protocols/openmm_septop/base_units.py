@@ -1234,7 +1234,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         platform = omm_compute.get_openmm_platform(
             platform_name=settings["engine_settings"].compute_platform,
             gpu_device_index=settings["engine_settings"].gpu_device_index,
-            restrict_cpu_count=restrict_cpu,
+            restrict_cpu_count=False,
         )
 
         # Check that the restraints are correctly applied by running a short equilibration
