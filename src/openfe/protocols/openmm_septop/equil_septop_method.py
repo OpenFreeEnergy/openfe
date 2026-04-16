@@ -50,7 +50,6 @@ import openmm
 import openmm.unit
 import openmm.unit as omm_units
 from gufe import (
-    BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
     ProteinMembraneComponent,
