@@ -76,10 +76,8 @@ from .setup import (
     LigandAtomMapper,
     LigandNetwork,
     LomapAtomMapper,
-    PersesAtomMapper,
     ligand_network_planning,
     lomap_scorers,
-    perses_scorers,
 )
 
 __version__ = version("openfe")

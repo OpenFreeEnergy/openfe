@@ -7,9 +7,7 @@ from .atom_mapping import (
     LigandAtomMapper,
     LigandAtomMapping,
     LomapAtomMapper,
-    PersesAtomMapper,
     lomap_scorers,
-    perses_scorers,
 )
 
 # TODO: circular import risk with LigandNetwork

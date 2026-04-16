@@ -23,7 +23,6 @@ Tools for mapping atoms in one molecule to those in another. Used to generate ef
 
     KartografAtomMapper
     LomapAtomMapper
-    PersesAtomMapper
 
 .. rubric:: Data Types
 
@@ -65,17 +64,3 @@ Scorers implemented by the `LOMAP <https://github.com/OpenFreeEnergy/Lomap>`_ pa
     heterocycles_score
     transmuting_methyl_into_ring_score
     transmuting_ring_sizes_score
-
-
-Perses Scorers
-~~~~~~~~~~~~~~
-
-Scorers implemented by the `Perses <https://github.com/choderalab/perses>`_ package.
-
-.. module:: openfe.setup.atom_mapping.perses_scorers
-
-.. autosummary::
-    :nosignatures:
-    :toctree: generated/
-
-    default_perses_scorer
