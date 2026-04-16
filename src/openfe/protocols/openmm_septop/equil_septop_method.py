@@ -40,7 +40,9 @@ import gufe
 from gufe import (
     ChemicalSystem,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -213,7 +215,8 @@ class SepTopProtocol(gufe.Protocol):
                 solvent_padding=1.0 * offunit.nanometer,
             ),
             engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
+            solvent_integrator_settings=IntegratorSettings(),
+            complex_integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
                 equilibration_length=0.1 * offunit.nanosecond,
@@ -263,6 +266,46 @@ class SepTopProtocol(gufe.Protocol):
             complex_restraint_settings=BoreschRestraintSettings(),
         )  # fmt: skip
 
+    @classmethod
+    def _adaptive_settings(
+        cls,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        initial_settings: None | SepTopSettings = None,
+    ) -> SepTopSettings:
+        """
+        Get the recommended OpenFE settings for this Protocol based on the input states involved in the
+        transformation.
+
+        These are intended as a suitable starting point, which can be further
+        customized before creating a Protocol.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+            The initial state of the transformation.
+        stateB : ChemicalSystem
+            The final state of the transformation.
+        initial_settings : None | SepTopSettings, optional
+            Initial settings to adapt. If None, default settings are used.
+
+        Returns
+        -------
+        SepTopSettings
+            The recommended settings for this protocol based on the input states.
+        """
+        # use initial settings or default settings
+        if initial_settings is not None:
+            protocol_settings = initial_settings.model_copy(deep=True)
+        else:
+            protocol_settings = cls.default_settings()
+
+        # adapt the barostat based on the ProteinComponent
+        if stateA.contains(ProteinMembraneComponent):
+            protocol_settings.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
+
+        return protocol_settings
+
     @staticmethod
     def _validate_complex_endstates(
         stateA: ChemicalSystem,
@@ -295,7 +338,7 @@ class SepTopProtocol(gufe.Protocol):
             errmsg = "No ProteinComponent found in stateB"
             raise ValueError(errmsg)
 
-        # check that there is a solvent component
+        # check that there is a SolventComponent
         if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
             errmsg = "No SolventComponent found in stateA"
             raise ValueError(errmsg)
@@ -443,6 +486,8 @@ class SepTopProtocol(gufe.Protocol):
             raise NotImplementedError("Can't extend simulations yet")
 
         # Validate components and get alchemical components
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_complex_endstates(stateA, stateB)
         alchem_comps = system_validation.get_alchemical_components(
             stateA,
@@ -462,7 +507,7 @@ class SepTopProtocol(gufe.Protocol):
 
         # Check nonbonded and solvent compatibility
         nonbonded_method = self.settings.forcefield_settings.nonbonded_method
-        # Use the more complete system validation solvent checks
+        # Validate solvent component
         system_validation.validate_solvent(stateA, nonbonded_method)
 
         # Validate solvation settings
@@ -472,6 +517,11 @@ class SepTopProtocol(gufe.Protocol):
 
         # Validate protein component
         system_validation.validate_protein(stateA)
+
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_barostat(
+            stateA, self.settings.complex_integrator_settings.barostat
+        )
 
         # Create list units for complex and solvent transforms
         def create_setup_units(unit_cls, leg):

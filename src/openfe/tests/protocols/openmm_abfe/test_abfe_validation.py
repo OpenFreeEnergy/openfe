@@ -167,7 +167,7 @@ def test_validate_endstates_nosolvcomp_stateB(benzene_modifications, T4_protein_
         }
     )
 
-    with pytest.raises(ValueError, match="No SolventComponent"):
+    with pytest.raises(ValueError, match="No SolventComponent found"):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 

@@ -23,8 +23,10 @@ import mdtraj
 import openmm
 import openmm.unit as omm_unit
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     settings,
 )
 from gufe.settings.typing import KelvinQuantity
@@ -32,6 +34,7 @@ from mdtraj.reporters import XTCReporter
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity, unit
 from openff.units.openmm import from_openmm, to_openmm
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat
 
 from openfe.protocols.openmm_md.plain_md_settings import (
     IntegratorSettings,
@@ -173,12 +176,24 @@ class PlainMDProtocol(gufe.Protocol):
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
+        # Validate the ChcemicalSystem
+        system_validation.validate_chemical_system(stateA)
+
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
+        # Validate the BaseSolventComponents
+        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
+        if len(base_solvent) > 1:
+            errmsg = "Multiple BaseSolventComponents found, only one is supported."
+            raise ValueError(errmsg)
+
         # Validate protein component
         system_validation.validate_protein(stateA)
+
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_barostat(stateA, self.settings.integrator_settings.barostat)
 
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
@@ -187,7 +202,7 @@ class PlainMDProtocol(gufe.Protocol):
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
-        system_name = "Solvent MD" if solvent_comp is not None else "Vacuum MD"
+        system_name = "Solvent MD" if stateA.contains(BaseSolventComponent) else "Vacuum MD"
 
         for comp in [protein_comp] + small_mols:
             if comp is not None:
@@ -363,9 +378,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 logger.info("Running NVT equilibration")
 
             # Set barostat frequency to zero for NVT
-            for x in simulation.context.getSystem().getForces():
-                if x.getName() == "MonteCarloBarostat":
-                    x.setFrequency(0)
+            for force in simulation.context.getSystem().getForces():
+                if isinstance(force, (MonteCarloBarostat, MonteCarloMembraneBarostat)):
+                    force.setFrequency(0)
 
             simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
 
@@ -397,9 +412,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
 
         # Enable the barostat for NPT
-        for x in simulation.context.getSystem().getForces():
-            if x.getName() == "MonteCarloBarostat":
-                x.setFrequency(barostat_frequency.m)
+        for force in simulation.context.getSystem().getForces():
+            if isinstance(force, (MonteCarloBarostat, MonteCarloMembraneBarostat)):
+                force.setFrequency(barostat_frequency.m)
 
         t0 = time.time()
         simulation.step(equil_steps_npt)
@@ -583,6 +598,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
+        if isinstance(protein_comp, SolvatedPDBComponent):
+            solvent_comp = protein_comp
 
         # 1. Create stateA system
         # Create a dictionary of OFFMol for each SMC for bookkeeping

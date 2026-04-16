@@ -158,7 +158,7 @@ class SepTopComplexMixin:
             "alchemical_settings": prot_settings.alchemical_settings,
             "lambda_settings": prot_settings.complex_lambda_settings,
             "engine_settings": prot_settings.engine_settings,
-            "integrator_settings": prot_settings.integrator_settings,
+            "integrator_settings": prot_settings.complex_integrator_settings,
             "equil_simulation_settings": prot_settings.complex_equil_simulation_settings,
             "equil_output_settings": prot_settings.complex_equil_output_settings,
             "simulation_settings": prot_settings.complex_simulation_settings,
@@ -244,7 +244,7 @@ class SepTopSolventMixin:
             "alchemical_settings": prot_settings.alchemical_settings,
             "lambda_settings": prot_settings.solvent_lambda_settings,
             "engine_settings": prot_settings.engine_settings,
-            "integrator_settings": prot_settings.integrator_settings,
+            "integrator_settings": prot_settings.solvent_integrator_settings,
             "equil_simulation_settings": prot_settings.solvent_equil_simulation_settings,
             "equil_output_settings": prot_settings.solvent_equil_output_settings,
             "simulation_settings": prot_settings.solvent_simulation_settings,
@@ -836,6 +836,13 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             self.verbose,
             self.logger,
         )
+        # Update box vectors
+        omm_topology_AB.setPeriodicBoxVectors(box_AB)
+
+
+        # Serialize system, state and integrator
+        system_outfile = self.shared_basepath / "system.xml.bz2"
+        serialize(system, system_outfile)
 
         topology_file = self.shared_basepath / "topology.pdb"
         openmm.app.pdbfile.PDBFile.writeFile(
@@ -844,21 +851,31 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             open(topology_file, "w"),
         )
 
-        # ToDo: also apply REST
+        if not dry:
+            return {
+                "system": system_outfile,
+                "topology": topology_file,
+                "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
+                "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
+                "restraint_geometry_A": restraint_geom_A.model_dump(),
+                "restraint_geometry_B": restraint_geom_B.model_dump(),
+            }
+        else:
 
-        system_outfile = self.shared_basepath / "system.xml.bz2"
-
-        # Serialize system, state and integrator
-        serialize(system, system_outfile)
-
-        return {
-            "system": system_outfile,
-            "topology": topology_file,
-            "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
-            "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
-            "restraint_geometry_A": restraint_geom_A.model_dump(),
-            "restraint_geometry_B": restraint_geom_B.model_dump(),
-        }
+            return {
+                # Add in various objects we can use to test the system
+                "debug": {
+                    "system": system_outfile,
+                    "topology": topology_file,
+                    "system_A": omm_system_A,
+                    "system_B": omm_system_B,
+                    "system_AB": omm_system_AB,
+                    "restrained_system": system,
+                    "alchem_system": alchemical_system,
+                    "alchem_factory": alchemical_factory,
+                    "positions": equil_positions_AB,
+                }
+            }
 
 
 class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
@@ -1107,16 +1124,30 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # Serialize system, state and integrator
         serialize(system, system_outfile)
 
-        return {
-            "system": system_outfile,
-            "topology": topology_file,
-            "standard_state_correction": corr.to("kilocalorie_per_mole"),
-        }
+        if not dry:
+            return {
+                "system": system_outfile,
+                "topology": topology_file,
+                "standard_state_correction": corr.to("kilocalorie_per_mole"),
+            }
+        else:
+            return {
+                # Add in various objects we can used to test the system
+                "debug": {
+                    "system": system_outfile,
+                    "topology": topology_file,
+                    "system_AB": omm_system_AB,
+                    "restrained_system": system,
+                    "alchem_system": alchemical_system,
+                    "alchem_factory": alchemical_factory,
+                    "positions": positions_AB,
+                }
+            }
 
 
 class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
     """
-    Protocol Unit for the solvent phase of an relative SepTop free energy
+    Protocol Unit for the solvent phase of a relative SepTop free energy
     """
 
     simtype = "solvent"
@@ -1151,7 +1182,7 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
 
 class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
     """
-    Protocol Unit for the complex phase of an relative SepTop free energy
+    Protocol Unit for the complex phase of a relative SepTop free energy
     """
 
     simtype = "complex"
