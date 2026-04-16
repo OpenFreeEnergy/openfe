@@ -4,6 +4,7 @@ import pytest
 from gufe import ProteinComponent, ProteinMembraneComponent
 from rdkit import Chem
 
+from openfe.tests.conftest import a2a_protein_membrane_pdb
 from openfecli.parameters.protein import _load_protein_membrane_file, get_protein
 
 
@@ -29,8 +30,8 @@ def test_load_protein_membrane_error():
     with resources.as_file(resources.files("gufe.tests.data")) as d:
         filename = str(d / "181l.cif")
 
-        with pytest.raises(ValueError, "as ProteinMembraneComponent"):
-            _ = _load_protein_membrane_file(filename)
+        with pytest.raises(ValueError, match="as ProteinMembraneComponent"):
+            _ = _load_protein_membrane_file(filename, None)
 
 
 def test_load_protein_membrane_a2a(a2a_protein_membrane_pdb):
