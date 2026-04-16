@@ -45,8 +45,9 @@ def plan_rbfe_network_main(
         ligands of the system
     solvent : SolventComponent
         Solvent component used for solvation
-    protein : ProteinComponent
-        protein component for complex simulations, to which the ligands are bound
+    protein : ProteinComponent | ProteinMembraneComponent
+        protein component for complex simulations, to which the ligands are bound.
+        If a ProteinMembraneComponent is used, the
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongside the protein, can be empty list
     n_protocol_repeats: int
@@ -200,7 +201,6 @@ def plan_rbfe_network(
     elif protein_membrane:
         protein = PROTEIN_MEMBRANE.get(protein_membrane)
         write("\t\tProteinMembraneComponent: " + str(protein))
-        protein.validate()
     else:
         raise ValueError()
 
@@ -235,6 +235,7 @@ def plan_rbfe_network(
     write("")
     write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  # fmt: skip
 
+    # protein.validate()
     # DO
     write("Planning RBFE-Campaign:")
     alchemical_network, ligand_network = plan_rbfe_network_main(
