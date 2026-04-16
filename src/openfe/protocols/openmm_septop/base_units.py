@@ -1353,7 +1353,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         system = deserialize(setup.outputs["system"])
         pdb_file = openmm.app.pdbfile.PDBFile(str(setup.outputs["topology"]))
-        selection_indices = setup_results.outputs["selection_indices"]
+        selection_indices = setup.outputs["selection_indices"]
 
         outputs = self.run(
             system=system,
@@ -1482,14 +1482,14 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         self,
         ctx: gufe.Context,
         *,
-        setup_results,
-        simulation_results,
+        setup,
+        simulation,
         **inputs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        trajectory = simulation_results.outputs["trajectory"]
-        checkpoint = simulation_results.outputs["checkpoint"]
+        trajectory = simulation.outputs["trajectory"]
+        checkpoint = simulation.outputs["checkpoint"]
 
         outputs = self.run(
             trajectory=trajectory,
@@ -1499,22 +1499,20 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         )
 
         # We re-include things here to make life easier when gathering results
-        if simtype == "complex":
+        if self.simtype == "complex":
             previous_outputs = {
-                "standard_state_correction_A": setup_results.outputs["standard_state_correction_A"],
-                "standard_state_correction_B": setup_results.outputs["standard_state_correction_B"],
-                "restraint_geometry_A": setup_results.outputs["restraint_geometry_A"],
-                "restraint_geometry_B": setup_results.outputs["restraint_goemetry_B"],
+                "standard_state_correction_A": setup.outputs["standard_state_correction_A"],
+                "standard_state_correction_B": setup.outputs["standard_state_correction_B"],
+                "restraint_geometry_A": setup.outputs["restraint_geometry_A"],
+                "restraint_geometry_B": setup.outputs["restraint_goemetry_B"],
             }
         else:
             previous_outputs = {
-                "standard_state_correction": setup_results.outputs["standard_state_correction"]
+                "standard_state_correction": setup.outputs["standard_state_correction"]
             }
 
-        previous_outputs["subsampled_pdb_structure"] = setup_results.outputs[
-            "subsampled_pdb_structure"
-        ]
-        previous_outputs["selection_indices"] = setup_results.outputs["selection_indices"]
+        previous_outputs["subsampled_pdb_structure"] = setup.outputs["subsampled_pdb_structure"]
+        previous_outputs["selection_indices"] = setup.outputs["selection_indices"]
 
         return {
             "repeat_id": self._inputs["repeat_id"],
