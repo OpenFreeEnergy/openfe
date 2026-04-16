@@ -699,7 +699,7 @@ def benzene_toluene_dag(
 def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     prot_units = list(benzene_toluene_dag.protocol_units)
 
-    assert len(prot_units) == 4
+    assert len(prot_units) == 6
 
     solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in prot_units if isinstance(u, SepTopSolventRunUnit)]
@@ -712,7 +712,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
 
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]
+    )
     pdb = md.load_pdb(tmp_path / "topology.pdb")
     assert pdb.n_atoms == 1762
     central_atoms = np.array([[2, 19]], dtype=np.int32)
@@ -726,7 +726,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
-    )["debug"]["sampler"]  # fmt: skip
+    )["sampler"]  # fmt: skip
 
     assert solv_sampler.is_periodic
     assert isinstance(solv_sampler, MultiStateSampler)
@@ -753,7 +753,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
 
     complex_setup_output = complex_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]
+    )
     pdb_file = openmm.app.pdbfile.PDBFile(str(complex_setup_output["topology"]))
     alchem_system = deserialize(complex_setup_output["system"])
     complex_sampler = complex_run_unit[0].run(
@@ -762,7 +762,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
-    )["debug"]["sampler"]  # fmt: skip
+    )["sampler"]  # fmt: skip
 
     assert complex_sampler.is_periodic
     assert isinstance(complex_sampler, MultiStateSampler)
@@ -817,7 +817,7 @@ def test_dry_run_methods(
 
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]
+    )
     pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
     alchem_system = deserialize(solv_setup_output["system"])
     solv_sampler = sol_run_unit[0].run(
@@ -826,7 +826,7 @@ def test_dry_run_methods(
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
-    )["debug"]["sampler"]  # fmt: skip
+    )["sampler"]  # fmt: skip
 
     assert isinstance(solv_sampler, MultiStateSampler)
     assert solv_sampler.is_periodic
@@ -874,7 +874,7 @@ def test_dry_run_ligand_system_pressure(
 
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]
+    )
     pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
     alchem_system = deserialize(solv_setup_output["system"])
     solv_sampler = sol_run_unit[0].run(
@@ -883,7 +883,7 @@ def test_dry_run_ligand_system_pressure(
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
-    )["debug"]["sampler"]  # fmt: skip
+    )["sampler"]  # fmt: skip
 
     # at this point, the units will be in openmm units
     assert solv_sampler._thermodynamic_states[1].pressure == pressure * openmm.unit.bar
@@ -953,7 +953,7 @@ def test_dry_run_ligand_system_cutoff(
 
     serialized_system = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]["system"]
+    )["system"]
     system = deserialize(serialized_system)
     nbfs = [
         f
@@ -992,7 +992,7 @@ def test_dry_run_benzene_toluene_tip4p(
 
     prot_units = list(dag.protocol_units)
 
-    assert len(prot_units) == 4
+    assert len(prot_units) == 6
 
     solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in prot_units if isinstance(u, SepTopSolventRunUnit)]
@@ -1002,7 +1002,7 @@ def test_dry_run_benzene_toluene_tip4p(
 
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]
+    )
     pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
     alchem_system = deserialize(solv_setup_output["system"])
     solv_run = sol_run_unit[0].run(
@@ -1011,7 +1011,7 @@ def test_dry_run_benzene_toluene_tip4p(
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
-    )["debug"]["sampler"]  # fmt: skip
+    )["sampler"]  # fmt: skip
 
     assert solv_run.is_periodic
 
@@ -1037,7 +1037,7 @@ def test_dry_run_benzene_toluene_noncubic(
 
     prot_units = list(dag.protocol_units)
 
-    assert len(prot_units) == 4
+    assert len(prot_units) == 6
 
     solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
 
@@ -1045,7 +1045,7 @@ def test_dry_run_benzene_toluene_noncubic(
 
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]
+    )
     serialized_system = solv_setup_output["system"]
     system = deserialize(serialized_system)
     vectors = system.getDefaultPeriodicBoxVectors()
@@ -1135,7 +1135,7 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     # check sol_unit charges
     serialized_system = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]["system"]
+    )["system"]
     system = deserialize(serialized_system)
     nonbond = [f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)]
     assert len(nonbond) == 1
@@ -1155,7 +1155,7 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     # check complex_unit charges
     serialized_system = complex_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
-    )["debug"]["system"]
+    )["system"]
     system = deserialize(serialized_system)
     nonbond = [f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)]
     assert len(nonbond) == 1
@@ -1221,7 +1221,7 @@ def T4L_xml(
 
     tmp = tmp_path_factory.mktemp("xml_reg")
 
-    dryrun = solv_setup_unit[0].run(dry=True, shared_basepath=tmp)["debug"]
+    dryrun = solv_setup_unit[0].run(dry=True, shared_basepath=tmp)
 
     system = dryrun["system"]
     return deserialize(system)
@@ -1756,10 +1756,10 @@ class TestA2AMembraneDryRun:
                 adaptive_settings.complex_integrator_settings.barostat
                 == "MonteCarloMembraneBarostat"
             )
-            complex_setup_output = complex_setup_units[0].run(dry=True)["debug"]
+            complex_setup_output = complex_setup_units[0].run(dry=True)
             pdb_file = openmm.app.pdbfile.PDBFile(str(complex_setup_output["topology"]))
             system = deserialize(complex_setup_output["system"])
-            data = complex_run_units[0].run(system, pdb_file, dry=True)["debug"]  # fmt: skip
+            data = complex_run_units[0].run(system, pdb_file, dry=True)  # fmt: skip
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=True, settings=adaptive_settings)
 
@@ -1789,10 +1789,10 @@ class TestA2AMembraneDryRun:
 
     def test_solvent_dry_run(self, solvent_setup_units, solvent_run_units, settings, tmpdir):
         with tmpdir.as_cwd():
-            solv_setup_output = solvent_setup_units[0].run(dry=True)["debug"]
+            solv_setup_output = solvent_setup_units[0].run(dry=True)
             pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
             system = deserialize(solv_setup_output["system"])
-            data = solvent_run_units[0].run(system, pdb_file, dry=True)["debug"]  # fmt: skip
+            data = solvent_run_units[0].run(system, pdb_file, dry=True)  # fmt: skip
 
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=False, settings=settings)

@@ -1338,7 +1338,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         else:
             return {
                 "sampler": sampler,
-                "integrator"; integrator,
+                "integrator": integrator,
                 "equil_positions": equil_positions,
             }
 

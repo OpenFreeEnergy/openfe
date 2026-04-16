@@ -537,7 +537,7 @@ class SepTopProtocol(gufe.Protocol):
             },
             "complex": {
                 "setup": SepTopComplexSetupUnit,
-                "simulation": SeptopComplexRunUnit,
+                "simulation": SepTopComplexRunUnit,
                 "analysis": SepTopComplexAnalysisUnit,
             }
         }
@@ -566,7 +566,7 @@ class SepTopProtocol(gufe.Protocol):
                     stateA=stateA,
                     stateB=stateB,
                     alchemical_components=alchem_comps,
-                    setup=setup[i],
+                    setup=setup,
                     generation=0,
                     repeat_id=repeat_id,
                     name=(
