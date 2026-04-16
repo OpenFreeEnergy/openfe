@@ -1460,7 +1460,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 "standard_state_correction_A": setup.outputs["standard_state_correction_A"],
                 "standard_state_correction_B": setup.outputs["standard_state_correction_B"],
                 "restraint_geometry_A": setup.outputs["restraint_geometry_A"],
-                "restraint_geometry_B": setup.outputs["restraint_goemetry_B"],
+                "restraint_geometry_B": setup.outputs["restraint_geometry_B"],
             }
         else:
             previous_outputs = {

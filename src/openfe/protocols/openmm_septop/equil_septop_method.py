@@ -577,8 +577,8 @@ class SepTopProtocol(gufe.Protocol):
 
                 analysis = unit_classes[phase]["analysis"](
                     protocol=self,
-                    setup_results=setup,
-                    simulation_results=simulation,
+                    setup=setup,
+                    simulation=simulation,
                     generation=0,
                     repeat_id=repeat_id,
                     name=(
