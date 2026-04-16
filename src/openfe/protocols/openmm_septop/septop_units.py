@@ -860,6 +860,19 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # Update box vectors
         omm_topology_AB.setPeriodicBoxVectors(box_AB)
 
+        # Subselect system based on user inputs & write initial subsampled PDB
+        sub_pdb_structure = self.shared_basepath / settings["output_settings"].output_structure
+        selection_indices = self._subsample_topology(
+            topology=omm_topology_AB,
+            positions=positions_AB,
+            output_selection=settings["output_settings"].output_indices,
+            output_file=self.shared_basepath / settings["output_settings"].output_structure,
+        )
+        # The subsampled PDB may not have been written if selection_indices == 0
+        # Issue #1942 - maybe move this to the method?
+        if len(selection_indices) == 0:
+            sub_pdb_structure = None
+
         # Serialize the system and PDB topology
         system_outfile = self.shared_basepath / "system.xml.bz2"
         serialize(system, system_outfile)
@@ -879,21 +892,23 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
                 "restraint_geometry_A": restraint_geom_A.model_dump(),
                 "restraint_geometry_B": restraint_geom_B.model_dump(),
+                "selection_indices": selection_indices,
+                "subsampled_pdb_structure": sub_pdb_structure,
             }
         else:
             return {
                 # Add in various objects we can use to test the system
-                "debug": {
-                    "system": system_outfile,
-                    "topology": topology_file,
-                    "system_A": omm_system_A,
-                    "system_B": omm_system_B,
-                    "system_AB": omm_system_AB,
-                    "restrained_system": system,
-                    "alchem_system": alchemical_system,
-                    "alchem_factory": alchemical_factory,
-                    "positions": equil_positions_AB,
-                }
+                "system": system_outfile,
+                "topology": topology_file,
+                "system_A": omm_system_A,
+                "system_B": omm_system_B,
+                "system_AB": omm_system_AB,
+                "restrained_system": system,
+                "alchem_system": alchemical_system,
+                "alchem_factory": alchemical_factory,
+                "positions": equil_positions_AB,
+                "selection_indices": selection_indices,
+                "subsampled_pdb_structure": sub_pdb_structure,
             }
 
 
@@ -1127,10 +1142,24 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
             positions_AB,
         )
 
+        # Write the full system PDB
         topology_file = self.shared_basepath / "topology.pdb"
         openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_AB, positions_AB, open(topology_file, "w")
         )
+
+        # Subselect system based on user inputs & write initial subsampled PDB
+        sub_pdb_structure = self.shared_basepath / settings["output_settings"].output_structure
+        selection_indices = self._subsample_topology(
+            topology=omm_topology_AB,
+            positions=positions_AB,
+            output_selection=settings["output_settings"].output_indices,
+            output_file=self.shared_basepath / settings["output_settings"].output_structure,
+        )
+        # The subsampled PDB may not have been written if selection_indices == 0
+        # Issue #1942 - maybe move this to the method?
+        if len(selection_indices) == 0:
+            sub_pdb_structure = None
 
         # Serialize the system
         system_outfile = self.shared_basepath / "system.xml.bz2"
@@ -1141,19 +1170,21 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "system": system_outfile,
                 "topology": topology_file,
                 "standard_state_correction": corr.to("kilocalorie_per_mole"),
+                "selection_indices": selection_indices,
+                "subsampled_pdb_structure": sub_pdb_structure,
             }
         else:
             return {
                 # Add in various objects we can used to test the system
-                "debug": {
-                    "system": system_outfile,
-                    "topology": topology_file,
-                    "system_AB": omm_system_AB,
-                    "restrained_system": system,
-                    "alchem_system": alchemical_system,
-                    "alchem_factory": alchemical_factory,
-                    "positions": positions_AB,
-                }
+                "system": system_outfile,
+                "topology": topology_file,
+                "system_AB": omm_system_AB,
+                "restrained_system": system,
+                "alchem_system": alchemical_system,
+                "alchem_factory": alchemical_factory,
+                "positions": positions_AB,
+                "selection_indices": selection_indices,
+                "subsampled_pdb_structure": sub_pdb_structure,
             }
 
 

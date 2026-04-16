@@ -701,8 +701,46 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         )
 
         return omm_system, omm_topology, positions, system_modeller, comp_resids
-    
-# TODO: Add PDB writing somewhere here
+
+    @staticmethod
+    def _subsample_topology(
+        topology: openmm.app.Topology,
+        positions: openmm.unit.Quantity,
+        output_selection: str,
+        output_file: pathlib.Path,
+    ) -> npt.NDArray:
+        """
+        Subsample the system based on user-selected output selection
+        and write the subsampled topology to a PDB file.
+
+        Parameters
+        ----------
+        topology : openmm.app.Topology
+          The system topology to subsample.
+        positions : openmm.unit.Quantity
+          The system positions.
+        output_selection : str
+          An MDTraj selection string to subsample the topology with.
+        output_file : pathlib.Path
+          Path to the file to write the PDB to.
+
+        Returns
+        -------
+        selection_indices : npt.NDArray
+          The indices of the subselected system.
+        """
+        mdt_top = mdt.Topology.from_openmm(topology)
+        selection_indices = mdt_top.select(output_selection)
+
+        # Write out the subselected structure to PDB if not empty
+        if len(selection_indices) > 0:
+            traj = mdt.Trajectory(
+                positions[selection_indices, :],
+                mdt_top.subset(selection_indices),
+            )
+            traj.save_pdb(output_file)
+
+        return selection_indices
 
     def _execute(
         self,
@@ -1301,9 +1339,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             return {
                 "sampler": sampler,
                 "integrator"; integrator,
-                "alchem_system": system,
-                "selection_indices": self.selection_indices,
-                "positions": equil_positions,
+                "equil_positions": equil_positions,
             }
 
     def _execute(
@@ -1452,12 +1488,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        # TODO update these for SepTop
-        # Get the relevant inputs for running the unit
-        pdb_file = setup_results.outputs["subsampled_pdb_structure"]
-        selection_indices = setup_results.outputs["selection_indices"]
-        restraint_geometry = setup_results.outputs["restraint_geometry"]
-        standard_state_corr = setup_results.outputs["standard_state_correction"]\
         trajectory = simulation_results.outputs["trajectory"]
         checkpoint = simulation_results.outputs["checkpoint"]
 
@@ -1468,17 +1498,27 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             shared_basepath=ctx.shared,
         )
 
+        # We re-include things here to make life easier when gathering results
+        if simtype == "complex":
+            previous_outputs = {
+                "standard_state_correction_A": setup_results.outputs["standard_state_correction_A"],
+                "standard_state_correction_B": setup_results.outputs["standard_state_correction_B"],
+                "restraint_geometry_A": setup_results.outputs["restraint_geometry_A"],
+                "restraint_geometry_B": setup_results.outputs["restraint_goemetry_B"],
+            }
+        else:
+            previous_outputs = {
+                "standard_state_correction": setup_results.outputs["standard_state_correction"]
+            }
+
+        previous_outputs["subsampled_pdb_structure"] = setup_results.outputs["subsampled_pdb_structure"]
+        previous_outputs["selection_indices"] = setup_results.outputs["selection_indices"]
+
+
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
             "simtype": self.simtype,
-            # We re-include things here also to make
-            # life easier when gathering results.
-            "pdb_structure": pdb_file,
-            "trajectory": trajectory,
-            "checkpoint": checkpoint,
-            "selection_indices": selection_indices,
-            "restraint_geometry": restraint_geometry,
-            "standard_state_correction": standard_state_corr,
             **outputs,
+            **previous_outputs,
         }
