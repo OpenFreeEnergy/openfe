@@ -470,10 +470,12 @@ def test_multiple_basesolvents_error(a2a_protein_membrane_component):
     p = PlainMDProtocol(
         settings=PlainMDProtocol.default_settings(),
     )
-    system = ChemicalSystem({
-        "protein-membrane": a2a_protein_membrane_component,
-        "solvent": openfe.SolventComponent(),
-    })
+    system = ChemicalSystem(
+        {
+            "protein-membrane": a2a_protein_membrane_component,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
     errmsg = "Multiple BaseSolventComponents found, only one is supported."
     with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
