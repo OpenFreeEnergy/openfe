@@ -32,7 +32,6 @@ from typing import Any, Iterable
 
 import gufe
 from gufe import (
-    BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
     ProteinMembraneComponent,
