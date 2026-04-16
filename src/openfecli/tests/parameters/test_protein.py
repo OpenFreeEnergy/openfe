@@ -30,7 +30,7 @@ def test_load_protein_membrane_error():
     with resources.as_file(resources.files("gufe.tests.data")) as d:
         filename = str(d / "181l.cif")
 
-        with pytest.raises(ValueError, match="as ProteinMembraneComponent"):
+        with pytest.raises(ValueError, match="as a ProteinMembraneComponent"):
             _ = _load_protein_membrane_file(filename, None)
 
 
