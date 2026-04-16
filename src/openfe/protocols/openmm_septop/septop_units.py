@@ -23,6 +23,7 @@ import openmm.unit
 import openmm.unit as omm_units
 from gufe import (
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
 )
 from gufe.settings import SettingsBaseModel
@@ -130,6 +131,11 @@ class SepTopComplexMixin:
         small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         small_mols = small_mols | small_mols_B
 
+        # If there is a SolvatedPDBComponent, we set the solv_comp in the
+        # complex to that, as the SolventComponent is only used in the solvent leg
+        if isinstance(prot_comp, SolvatedPDBComponent):
+            solv_comp = prot_comp
+
         return alchem_comps, solv_comp, prot_comp, small_mols
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
@@ -164,7 +170,7 @@ class SepTopComplexMixin:
             "alchemical_settings": prot_settings.alchemical_settings,
             "lambda_settings": prot_settings.complex_lambda_settings,
             "engine_settings": prot_settings.engine_settings,
-            "integrator_settings": prot_settings.integrator_settings,
+            "integrator_settings": prot_settings.complex_integrator_settings,
             "equil_simulation_settings": prot_settings.complex_equil_simulation_settings,
             "equil_output_settings": prot_settings.complex_equil_output_settings,
             "simulation_settings": prot_settings.complex_simulation_settings,
@@ -250,7 +256,7 @@ class SepTopSolventMixin:
             "alchemical_settings": prot_settings.alchemical_settings,
             "lambda_settings": prot_settings.solvent_lambda_settings,
             "engine_settings": prot_settings.engine_settings,
-            "integrator_settings": prot_settings.integrator_settings,
+            "integrator_settings": prot_settings.solvent_integrator_settings,
             "equil_simulation_settings": prot_settings.solvent_equil_simulation_settings,
             "equil_output_settings": prot_settings.solvent_equil_output_settings,
             "simulation_settings": prot_settings.solvent_simulation_settings,
@@ -851,6 +857,13 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             logger=self.logger,
         )
 
+        # Update box vectors
+        omm_topology_AB.setPeriodicBoxVectors(box_AB)
+
+        # Serialize the system and PDB topology
+        system_outfile = self.shared_basepath / "system.xml.bz2"
+        serialize(system, system_outfile)
+
         topology_file = self.shared_basepath / "topology.pdb"
         openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_AB,
@@ -858,18 +871,30 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             open(topology_file, "w"),
         )
 
-        # Serialize the system
-        system_outfile = self.shared_basepath / "system.xml.bz2"
-        serialize(system, system_outfile)
-
-        return {
-            "system": system_outfile,
-            "topology": topology_file,
-            "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
-            "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
-            "restraint_geometry_A": restraint_geom_A.model_dump(),
-            "restraint_geometry_B": restraint_geom_B.model_dump(),
-        }
+        if not dry:
+            return {
+                "system": system_outfile,
+                "topology": topology_file,
+                "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
+                "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
+                "restraint_geometry_A": restraint_geom_A.model_dump(),
+                "restraint_geometry_B": restraint_geom_B.model_dump(),
+            }
+        else:
+            return {
+                # Add in various objects we can use to test the system
+                "debug": {
+                    "system": system_outfile,
+                    "topology": topology_file,
+                    "system_A": omm_system_A,
+                    "system_B": omm_system_B,
+                    "system_AB": omm_system_AB,
+                    "restrained_system": system,
+                    "alchem_system": alchemical_system,
+                    "alchem_factory": alchemical_factory,
+                    "positions": equil_positions_AB,
+                }
+            }
 
 
 class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
@@ -1111,16 +1136,30 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         system_outfile = self.shared_basepath / "system.xml.bz2"
         serialize(system, system_outfile)
 
-        return {
-            "system": system_outfile,
-            "topology": topology_file,
-            "standard_state_correction": corr.to("kilocalorie_per_mole"),
-        }
+        if not dry:
+            return {
+                "system": system_outfile,
+                "topology": topology_file,
+                "standard_state_correction": corr.to("kilocalorie_per_mole"),
+            }
+        else:
+            return {
+                # Add in various objects we can used to test the system
+                "debug": {
+                    "system": system_outfile,
+                    "topology": topology_file,
+                    "system_AB": omm_system_AB,
+                    "restrained_system": system,
+                    "alchem_system": alchemical_system,
+                    "alchem_factory": alchemical_factory,
+                    "positions": positions_AB,
+                }
+            }
 
 
 class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
     """
-    Protocol Unit for the solvent phase of an relative SepTop free energy
+    Protocol Unit for the solvent phase of a relative SepTop free energy
     """
 
     simtype = "solvent"
@@ -1155,7 +1194,7 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
 
 class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
     """
-    Protocol Unit for the complex phase of an relative SepTop free energy
+    Protocol Unit for the complex phase of a relative SepTop free energy
     """
 
     simtype = "complex"

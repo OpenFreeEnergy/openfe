@@ -127,6 +127,35 @@ def test_vaccuum_PME_error(
         )
 
 
+def test_multiple_basesolvents_error(a2a_protein_membrane_component, a2a_ligands, solv_settings):
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+
+    errmsg = "Multiple BaseSolventComponents found, only one is supported."
+    stateA = openfe.ChemicalSystem(
+        {
+            "protein-membrane": a2a_protein_membrane_component,
+            "ligA": a2a_ligands[0],
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+    stateB = openfe.ChemicalSystem(
+        {
+            "protein-membrane": a2a_protein_membrane_component,
+            "ligA": a2a_ligands[1],
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+
+    mapping = next(mapper.suggest_mappings(a2a_ligands[0], a2a_ligands[1]))
+    with pytest.raises(ValueError, match=errmsg):
+        p.validate(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=mapping,
+        )
+
+
 @pytest.mark.parametrize("charge", [None, "gasteiger"])
 def test_smcs_same_charge_passes(charge, benzene_modifications):
     benzene = benzene_modifications["benzene"]
