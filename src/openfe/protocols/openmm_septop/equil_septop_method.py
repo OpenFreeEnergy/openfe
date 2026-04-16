@@ -529,7 +529,7 @@ class SepTopProtocol(gufe.Protocol):
         alchname_A = alchem_comps["stateA"][0].name
         alchname_B = alchem_comps["stateB"][0].name
 
-        unit_classes = {
+        unit_classes: dict[str, dict[str, type[gufe.ProtocolUnit]]] = {
             "solvent": {
                 "setup": SepTopSolventSetupUnit,
                 "simulation": SepTopSolventRunUnit,

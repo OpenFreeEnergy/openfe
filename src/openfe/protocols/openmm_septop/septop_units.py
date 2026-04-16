@@ -1259,7 +1259,7 @@ class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
         return lambdas
 
 
-class SepTopSolventAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
+class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
     """
     Protocol Unit for the analysis of the solvent phase of a relative SepTop free energy
     """

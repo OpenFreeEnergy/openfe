@@ -294,51 +294,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     """
     Base class for the setup of ligand SepTop RBFE free energy transformations.
     """
-
-    def __init__(
-        self,
-        *,
-        protocol: gufe.Protocol,
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-        alchemical_components: dict[str, list[Component]],
-        generation: int = 0,
-        repeat_id: int = 0,
-        name: Optional[str] = None,
-    ):
-        """
-        Parameters
-        ----------
-        protocol : gufe.Protocol
-          protocol used to create this Unit. Contains key information such
-          as the settings.
-        stateA : ChemicalSystem
-          ChemicalSystem containing the components defining the state at
-          lambda 0.
-        stateB : ChemicalSystem
-          ChemicalSystem containing the components defining the state at
-          lambda 1.
-        alchemical_components : dict[str, Component]
-          the alchemical components for each state in this Unit
-        name : str, optional
-          Human-readable identifier for this Unit
-        repeat_id : int, optional
-          Identifier for which repeat (aka replica/clone) this Unit is,
-          default 0
-        generation : int, optional
-          Generation counter which keeps track of how many times this repeat
-          has been extended, default 0.
-        """
-        super().__init__(
-            name=name,
-            protocol=protocol,
-            stateA=stateA,
-            stateB=stateB,
-            alchemical_components=alchemical_components,
-            repeat_id=repeat_id,
-            generation=generation,
-        )
-
     def _get_alchemical_system(
         self,
         system: openmm.System,
