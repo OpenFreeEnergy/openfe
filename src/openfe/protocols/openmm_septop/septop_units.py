@@ -50,9 +50,9 @@ from ..restraint_utils.settings import (
     DistanceRestraintSettings,
 )
 from .base_units import (
+    BaseSepTopAnalysisUnit,
     BaseSepTopRunUnit,
     BaseSepTopSetupUnit,
-    BaseSepTopAnalysisUnit,
     _pre_equilibrate,
 )
 
@@ -786,7 +786,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             dry=dry,
             shared_basepath=self.shared_basepath,
             platform=platform,
-            verbose= self.verbose,
+            verbose=self.verbose,
             logger=self.logger,
         )
 

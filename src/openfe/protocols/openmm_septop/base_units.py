@@ -1329,7 +1329,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         if not dry:
             nc = self.shared_basepath / settings["output_settings"].output_filename
-            chk = self.shared_basepath /settings["output_settings"].checkpoint_storage_filename
+            chk = self.shared_basepath / settings["output_settings"].checkpoint_storage_filename
             return {
                 "trajectory": nc,
                 "checkpoint": chk,
@@ -1511,9 +1511,10 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 "standard_state_correction": setup_results.outputs["standard_state_correction"]
             }
 
-        previous_outputs["subsampled_pdb_structure"] = setup_results.outputs["subsampled_pdb_structure"]
+        previous_outputs["subsampled_pdb_structure"] = setup_results.outputs[
+            "subsampled_pdb_structure"
+        ]
         previous_outputs["selection_indices"] = setup_results.outputs["selection_indices"]
-
 
         return {
             "repeat_id": self._inputs["repeat_id"],

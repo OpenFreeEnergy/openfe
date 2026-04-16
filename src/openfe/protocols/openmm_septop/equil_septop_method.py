@@ -73,12 +73,12 @@ from ..restraint_utils.settings import (
 )
 from .septop_protocol_results import SepTopProtocolResult
 from .septop_units import (
+    SepTopComplexAnalysisUnit,
     SepTopComplexRunUnit,
     SepTopComplexSetupUnit,
-    SepTopComplexAnalysisUnit,
+    SepTopSolventAnalysisUnit,
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
-    SepTopSolventAnalysisUnit,
 )
 
 due.cite(
@@ -539,7 +539,7 @@ class SepTopProtocol(gufe.Protocol):
                 "setup": SepTopComplexSetupUnit,
                 "simulation": SepTopComplexRunUnit,
                 "analysis": SepTopComplexAnalysisUnit,
-            }
+            },
         }
 
         protocol_units: dict[str, list[gufe.ProtocolUnit]] = {"solvent": [], "complex": []}
