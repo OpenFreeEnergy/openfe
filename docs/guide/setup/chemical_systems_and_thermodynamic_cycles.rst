@@ -83,8 +83,7 @@ These can be provided in several ways:
    Inferring box vectors from atomic positions can be inaccurate,
    if the PDB originates from a previous simulation where atoms may be distributed across periodic images.
 
-In protein-membrane systems, no further solvation of the complex system is performed by the protocol.
-This means:
+In protein-membrane systems, no further solvation of the complex system is performed by the protocol. This means:
 
 * In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not
   required. The :class:`.ChemicalSystem` for the complex end states consists of the :class:`.ProteinMembraneComponent`
