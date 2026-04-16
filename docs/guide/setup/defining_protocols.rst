@@ -52,6 +52,10 @@ For example, to customise the production run length of the RFE Protocol::
 Adaptive Settings
 ~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+  The ``_adaptive_settings()`` method is experimental and subject to change.
+
 In addition to the ``.default_settings()`` method, some protocols
 provide an ``_adaptive_settings`` method. This method generates recommended settings
 based on properties of the input :class:`.ChemicalSystem`\s and, where required, the :class:`.AtomMapping`.
@@ -79,10 +83,6 @@ of using the default settings.
 
 In systems containing membrane-protein complexes (i.e. using a
 :class:`.ProteinMembraneComponent`), adaptive settings select a membrane-appropriate barostat, the ``MonteCarloMembraneBarostat``.
-
-.. warning::
-
-  The ``_adaptive_settings()`` method is experimental and subject to change.
 
 Creating Transformations from Protocols
 -----------------------------------------

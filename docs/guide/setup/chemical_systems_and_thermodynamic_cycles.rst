@@ -23,24 +23,35 @@ A :class:`.ChemicalSystem` does **NOT** include the following:
 * forcefield applied to any component, including details on water model or virtual particles
 * thermodynamic conditions (e.g. temperature or pressure)
 
-For some protocols, such as :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`, a single
-:class:`.ChemicalSystem` is used to represent both legs of the thermodynamic cycle (complex and solvent).
-This is in contrast to the :class:`.RelativeHybridTopologyProtocol`, where each leg is defined by
-separate :class:`.ChemicalSystem`\s.
+.. note::
+
+   For some protocols, such as :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`, a single
+   :class:`.ChemicalSystem` is used to represent both legs of the thermodynamic cycle (complex and solvent).
+
+   This differs from the :class:`.RelativeHybridTopologyProtocol`, where each leg is defined by
+   separate :class:`.ChemicalSystem`\s. This behaviour is expected to change in future versions.
 
 .. _userguide_components:
 
 Components
 ----------
 
-A :class:`.ChemicalSystem` is composed of many 'component' objects, which together define the overall system.
+A :class:`.ChemicalSystem` is defined by a set of component objects that together
+describe the full simulated system.
 
-Examples of components include:
+Components are composable building blocks that are combined additively, defining
+the chemical composition of the system.
+
+For a conventional protein–ligand system in water, a :class:`.ChemicalSystem` is typically composed of:
 
 * :class:`.ProteinComponent`: an entire biological assembly, typically the contents of a PDB file.
-* :class:`.SmallMoleculeComponent`: typically ligands and cofactors
-* :class:`.SolventComponent`: solvent conditions
-* :class:`.ProteinMembraneComponent`: an explicitly solvated protein-membrane system, including box vectors.
+
+  It may include crystallographic waters or ions, and can define
+  disulfide bonds via CONECT records.
+
+* one or more :class:`.SmallMoleculeComponent`\s: Ligands and cofactors
+
+* a :class:`.SolventComponent`: Solvent conditions
 
 Splitting the total system into components serves three purposes:
 
@@ -48,11 +59,12 @@ Splitting the total system into components serves three purposes:
 2. components can be reused to compose different systems.
 3. :class:`.Protocol`\s can have component-specific behavior. E.g. different force fields for each component.
 
-When dealing with membrane-protein systems, the protein is represented using an explicitly solvated
+For protein-membrane systems, the protein is represented using a solvated
 :class:`.ProteinMembraneComponent` instead of a :class:`.ProteinComponent`.
+The :class:`.ProteinMembraneComponent` is an explicitly solvated protein-membrane system, including box vectors.
 
 The :class:`.ProteinMembraneComponent` requires periodic box vectors to define the simulation box.
-There are several ways to provide these vectors:
+These can be provided in several ways:
 
 1. CRYST record in the PDB file
 
@@ -66,9 +78,13 @@ There are several ways to provide these vectors:
 
    Box vectors can be estimated from the atomic coordinates in the PDB file.
 
-   Caveat: This approach can be inaccurate if the PDB comes from a previous simulation and some atoms are positioned in periodic images.
+.. warning::
 
-In membrane-protein systems, no further solvation of the complex system is performed by the protocol. This means:
+   Inferring box vectors from atomic positions can be inaccurate,
+   if the PDB originates from a previous simulation where atoms may be distributed across periodic images.
+
+In protein-membrane systems, no further solvation of the complex system is performed by the protocol.
+This means:
 
 * In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not
   required. The :class:`.ChemicalSystem` for the complex end states consists of the :class:`.ProteinMembraneComponent`
@@ -114,8 +130,10 @@ a protein, and a solvent:
   # ligand_B + solvent
   ligand_B_solvent = openfe.ChemicalSystem(components={'ligand': ligand_B, 'solvent': solvent})
 
-For a protein-membrane complex, the `ligand_A_complex` would instead use a
-:class:`.ProteinMembraneComponent`, and a :class:`.SolventComponent` would not be required:
+If the system components are defined explicitly (e.g. with a solvated protein-membrane system),
+the `ligand_A_complex` would instead use an :class:`.ExplicitSolventComponent` or :class:`.ProteinMembraneComponent`.
+IN this case, a separate :class:`.SolventComponent` is not required.
+Here is an example using a :class:`.ProteinMembraneComponent`:
 
 ::
 
