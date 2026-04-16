@@ -169,7 +169,8 @@ def _pre_equilibrate(
 
     # Don't do anything if we're doing a dry run
     if dry:
-        return positions, system.getDefaultPeriodicBoxVectors()
+        box = system.getDefaultPeriodicBoxVectors()
+        return positions, to_openmm(from_openmm(box))
 
     # TODO: Refactor this part to live outside the method call
     # We have to modify the output settings to have different output
@@ -230,7 +231,7 @@ def _pre_equilibrate(
     # cautiously delete out contexts & integrator
     del simulation.context, integrator
 
-    return equilibrated_positions, box
+    return equilibrated_positions, to_openmm(from_openmm(box))
 
 
 class BaseSepTopSetupUnit(gufe.ProtocolUnit):
@@ -1387,7 +1388,14 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 **unit_result_dict,
             }
         else:
-            return {"debug": {"sampler": sampler}}
+            return {
+                "debug": {
+                    "sampler": sampler,
+                    "alchem_system": system,
+                    "selection_indices": self.selection_indices,
+                    "positions": equil_positions,
+                }
+            }
 
     def _execute(
         self,

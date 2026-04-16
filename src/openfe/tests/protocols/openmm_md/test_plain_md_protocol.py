@@ -467,6 +467,25 @@ def test_vaccuum_PME_error(benzene_vacuum_system):
         )
 
 
+def test_multiple_basesolvents_error(a2a_protein_membrane_component):
+    p = PlainMDProtocol(
+        settings=PlainMDProtocol.default_settings(),
+    )
+    system = ChemicalSystem(
+        {
+            "protein-membrane": a2a_protein_membrane_component,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+    errmsg = "Multiple BaseSolventComponents found, only one is supported."
+    with pytest.raises(ValueError, match=errmsg):
+        _ = p.create(
+            stateA=system,
+            stateB=system,
+            mapping=None,
+        )
+
+
 @pytest.fixture
 def solvent_protocol_dag(benzene_system):
     settings = PlainMDProtocol.default_settings()

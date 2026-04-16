@@ -27,14 +27,6 @@ from openfe.data._registry import (
 
 
 @pytest.fixture
-def available_platforms() -> set[str]:
-    return {
-        Platform.getPlatform(i).getName()
-        for i in range(Platform.getNumPlatforms())
-    }  # fmt: skip
-
-
-@pytest.fixture
 def benzene_vacuum_system(benzene_modifications):
     return openfe.ChemicalSystem(
         {"ligand": benzene_modifications["benzene"]},
@@ -396,7 +388,15 @@ def ahfe_solv_checkpoint_path():
     return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
+def available_platforms() -> set[str]:
+    return {
+        Platform.getPlatform(i).getName()
+        for i in range(Platform.getNumPlatforms())
+    }  # fmt: skip
+
+
+@pytest.fixture(scope="session")
 def get_available_openmm_platforms() -> set[str]:
     """
     OpenMM Platforms that are available and functional on system
