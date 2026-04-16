@@ -205,6 +205,8 @@ class TestT4LysozymeDryRun:
 
         # set the new platform
         # Try cuda if available, then CPU
+        if "CUDA" in available_platforms:
+            test_platform = openmm.Platform.getPlatformByName("CUDA")
             test_platform.setPropertyDefaultValue("Precision", "mixed")
             test_alchemy.GLOBAL_ALCHEMY_PLATFORM = test_platform
         else:
