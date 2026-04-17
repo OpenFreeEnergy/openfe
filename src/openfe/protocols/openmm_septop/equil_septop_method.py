@@ -35,6 +35,7 @@ import logging
 import uuid
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
+import warnings
 
 import gufe
 from gufe import (
@@ -307,14 +308,14 @@ class SepTopProtocol(gufe.Protocol):
         return protocol_settings
 
     @staticmethod
-    def _validate_complex_endstates(
+    def _validate_endstates(
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
     ) -> None:
         """
-        A complex transformation is defined (in terms of gufe components)
+        A complex relative transformation is defined (in terms of gufe components)
         as starting from one or more ligands and a protein in solvent and
-        ending up in a state with one less ligand.
+        ending up in a state with one ligand that is different.
 
         Parameters
         ----------
@@ -328,76 +329,55 @@ class SepTopProtocol(gufe.Protocol):
         ValueError
           If there is no SolventComponent and no ProteinComponent
           in either stateA or stateB.
+          If there are no or more than one alchemical components in state A.
+          If there are no or more than one alchemical components in state B.
+          If there are any alchemical components that are not SmallMoleculeComponents.
+          If a change in net charge between the alchemical components is detected.
         """
         # check that there is a protein component
-        if not any(isinstance(comp, ProteinComponent) for comp in stateA.values()):
+        if not stateA.contains(ProteinComponent):
             errmsg = "No ProteinComponent found in stateA"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, ProteinComponent) for comp in stateB.values()):
+        if not stateB.contains(ProteinComponent):
             errmsg = "No ProteinComponent found in stateB"
             raise ValueError(errmsg)
 
+        # check that there is only one protein component
+        system_validation.validate_protein(stateA)
+        system_validation.validate_protein(stateB)
+
         # check that there is a SolventComponent
-        if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
+        if not stateA.contains(SolventComponent):
             errmsg = "No SolventComponent found in stateA"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, SolventComponent) for comp in stateB.values()):
+        if not stateB.contains(SolventComponent):
             errmsg = "No SolventComponent found in stateB"
             raise ValueError(errmsg)
 
-    @staticmethod
-    def _validate_alchemical_components(alchemical_components: dict[str, list[Component]]) -> None:
-        """
-        Checks that the ChemicalSystem alchemical components are correct.
+        # Check the difference between the endstates
+        diff = stateA.component_diff(stateB)
 
-        Parameters
-        ----------
-        alchemical_components : Dict[str, list[Component]]
-          Dictionary containing the alchemical components for
-          stateA and stateB.
-
-        Raises
-        ------
-        ValueError
-          * If there are no or more than one alchemical components in state A.
-          * If there are no or more than one alchemical components in state B.
-          * If there are any alchemical components that are not
-            SmallMoleculeComponents
-        * If a change in net charge between the alchemical components is detected.
-
-        Notes
-        -----
-        * Currently doesn't support alchemical components which are not
-          SmallMoleculeComponents.
-        * Currently doesn't support more than one alchemical component
-          being desolvated.
-        """
-
-        # Crash out if there are less or more than one alchemical components
-        # in state A and B
-        for state in ["stateA", "stateB"]:
-            n = len(alchemical_components[state])
-            if n != 1:
-                raise ValueError(
-                    "Exactly one alchemical component must be present in "
-                    f"{state}. Found {n} alchemical components."
+        for i, state in enumerate(["stateA", "stateB"]):
+            # Error if there isn't exactly one alchemical component
+            if len(diff[i]) != 1:
+                errmsg = (
+                    "Only one alchemical species is supported. "
+                    f"Number of unique components found in {state}: {len(diff[i])}."
                 )
+                raise ValueError(errmsg)
 
-        # Crash out if any of the alchemical components are not
-        # SmallMoleculeComponent
-        for state in ["stateA", "stateB"]:
-            for comp in alchemical_components[state]:
-                if not isinstance(comp, SmallMoleculeComponent):
-                    raise ValueError(
-                        "Only SmallMoleculeComponent alchemical species are supported."
-                    )
+            # Error if the component isn't an SMC
+            if not isinstance(diff[i][0], SmallMoleculeComponent):
+                errmsg = (
+                    "Only transforming SmallMoleculeComponents are supported "
+                    f"by this Protocol. Found a {type(diff[i][0]}."
+                )
+                raise ValueError(errmsg)
 
-        # Raise an error if there is a change in netcharge
-        _check_alchemical_charge_difference(
-            alchemical_components["stateA"][0], alchemical_components["stateB"][0]
-        )
+        # Raise an error if there is a change in net charge
+        _check_alchemical_charge_difference(diff[0][0], diff[1][0])
 
     @staticmethod
     def _validate_lambda_schedule(
@@ -419,8 +399,10 @@ class SepTopProtocol(gufe.Protocol):
         ValueError
           If the number of lambda windows differs for electrostatics and sterics.
           If the number of replicas does not match the number of lambda windows.
-        Warnings
-          If there are non-zero values for restraints (lambda_restraints).
+
+        TODO
+        ----
+        Add a warning if all the lambda restraints are zero? Issue #1945.
         """
 
         lambda_elec_A = lambda_settings.lambda_elec_A
@@ -474,32 +456,36 @@ class SepTopProtocol(gufe.Protocol):
                         f"State {state}: lambda {idx}: elec {e} vdW {v}"
                     )
 
-    def _create(
+    def _validate(
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
-        extends: Optional[gufe.ProtocolDAGResult] = None,
-    ) -> list[gufe.ProtocolUnit]:
-        # TODO: extensions
-        if extends:  # pragma: no-cover
-            raise NotImplementedError("Can't extend simulations yet")
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMappping] | None,
+        extends: gufe.ProtocolDAGResult | None = None,
+    ) -> None:
+        # Check we're not trying to extend
+        if extends:
+            # This technically should be NotImplementedError
+            # but gufe.Protocol.validate calls `_validate` wrapped
+            # around a try/except for that error type
+            raise ValueError("Can't extend simulations yet")
 
-        # Validate components and get alchemical components
+        # Check the mappping
+        if mapping is not None:
+            msg = "A mapping was passed but is not used by this Protocol"
+            warnings.warn(wmsg)
+
+        # Validate end states
         system_validation.validate_chemical_system(stateA)
         system_validation.validate_chemical_system(stateB)
-        self._validate_complex_endstates(stateA, stateB)
-        alchem_comps = system_validation.get_alchemical_components(
-            stateA,
-            stateB,
-        )
-        self._validate_alchemical_components(alchem_comps)
+        self._validate_endstates(stateA, stateB)
 
         # Validate the lambda schedule
         self._validate_lambda_schedule(
             self.settings.solvent_lambda_settings,
             self.settings.solvent_simulation_settings,
         )
+
         self._validate_lambda_schedule(
             self.settings.complex_lambda_settings,
             self.settings.complex_simulation_settings,
@@ -514,13 +500,28 @@ class SepTopProtocol(gufe.Protocol):
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvent_solvation_settings
         )
-
-        # Validate protein component
-        system_validation.validate_protein(stateA)
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.complex_solvation_settings
+        )
 
         # Validate the barostat used in combination with the protein component
         system_validation.validate_barostat(
             stateA, self.settings.complex_integrator_settings.barostat
+        )
+
+    def _create(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMapping] | None = None,
+        extends: gufe.ProtocolDAGResult | None = None,
+    ) -> list[gufe.ProtocolUnit]:
+        self.validate(stateA=stateA, stateB=stateB, mapping=mapping, extends=extends)
+
+        # Get the alchemical components
+        alchem_comps = system_validation.get_alchemical_components(
+            stateA,
+            stateB,
         )
 
         # Create list units for complex and solvent transforms
