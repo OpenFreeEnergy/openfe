@@ -30,7 +30,7 @@ def _load_protein_from_pdbx(user_input, context):
         return NOT_PARSED
 
 
-get_molecule = MultiStrategyGetter(
+get_protein = MultiStrategyGetter(
     strategies=[
         _load_protein_from_pdb,
         _load_protein_from_pdbx,
@@ -42,5 +42,31 @@ PROTEIN = Option(
     "-p",
     "--protein",
     help=("ProteinComponent. Can be provided as an PDB or as a PDBx/mmCIF file.  string."),
-    getter=get_molecule,
+    getter=get_protein,
+)
+
+
+def _load_protein_membrane_file(user_input, context):
+    # TODO: is there an advantage to using MultiStrategyGetter here?
+    if not any(
+        [ext in str(user_input) for ext in [".pdb", ".cif", ".pdbx"]]
+    ):  # this silences some stderr spam
+        return NOT_PARSED
+
+    from gufe import ProteinMembraneComponent
+
+    # TODO: upstream gufe work may make this change for the better
+    try:
+        return ProteinMembraneComponent.from_pdb_file(user_input)
+    except ValueError:
+        try:
+            return ProteinMembraneComponent.from_pdbx_file(user_input)
+        except ValueError:
+            raise ValueError(f"Unable to parse {user_input} as a ProteinMembraneComponent.")
+
+
+PROTEIN_MEMBRANE = Option(
+    "--protein-membrane",
+    help=("ProteinMembraneComponent. Can be provided as an PDB or as a PDBx/mmCIF file."),
+    getter=_load_protein_membrane_file,
 )

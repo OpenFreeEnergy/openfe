@@ -279,11 +279,14 @@ def benzene_transforms():
 
 
 @pytest.fixture(scope="session")
-def T4_protein_component():
+def T4_protein_component_pdb() -> str:
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        fn = str(d / "181l_only.pdb")
+        return str(d / "181l_only.pdb")
 
-    return gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
+
+@pytest.fixture(scope="session")
+def T4_protein_component(T4_protein_component_pdb) -> gufe.ProteinComponent:
+    return gufe.ProteinComponent.from_pdb_file(T4_protein_component_pdb, name="T4_protein")
 
 
 @pytest.fixture(scope="session")
@@ -293,7 +296,7 @@ def a2a_protein_membrane_pdb():
 
 
 @pytest.fixture(scope="session")
-def a2a_protein_membrane_component(a2a_protein_membrane_pdb):
+def a2a_protein_membrane_component(a2a_protein_membrane_pdb) -> openfe.ProteinMembraneComponent:
     with gzip.open(a2a_protein_membrane_pdb, "rb") as f:
         yield openfe.ProteinMembraneComponent.from_pdb_file(f, name="a2a")
 
@@ -332,32 +335,32 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 
 
 @pytest.fixture(scope="session")
-def a2a_ligands_sdf():
+def a2a_ligands_sdf() -> str:
     with resources.as_file(resources.files("openfe.tests.data.a2a")) as d:
         yield str(d / "ligands.sdf.gz")
 
 
 @pytest.fixture(scope="session")
-def a2a_ligands(a2a_ligands_sdf):
+def a2a_ligands(a2a_ligands_sdf) -> str:
     with gzip.open(a2a_ligands_sdf, "rb") as gzf:
         suppl = Chem.ForwardSDMolSupplier(gzf, removeHs=False)
         yield [SmallMoleculeComponent(m) for m in suppl]
 
 
 @pytest.fixture()
-def orion_network():
+def orion_network() -> str:
     with resources.as_file(resources.files("openfe.tests.data.external_formats")) as d:
         yield str(d / "somebenzenes_nes.dat")
 
 
 @pytest.fixture()
-def fepplus_network():
+def fepplus_network() -> str:
     with resources.as_file(resources.files("openfe.tests.data.external_formats")) as d:
         yield str(d / "somebenzenes_edges.edge")
 
 
 @pytest.fixture()
-def CN_molecule():
+def CN_molecule() -> list[SmallMoleculeComponent]:
     """
     A basic CH3NH2 molecule for quick testing.
     """

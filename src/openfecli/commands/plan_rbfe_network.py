@@ -12,6 +12,7 @@ from openfecli.parameters import (
     OUTPUT_DIR,
     OVERWRITE,
     PROTEIN,
+    PROTEIN_MEMBRANE,
     YAML_OPTIONS,
 )
 from openfecli.utils import print_duration, write
@@ -44,8 +45,9 @@ def plan_rbfe_network_main(
         ligands of the system
     solvent : SolventComponent
         Solvent component used for solvation
-    protein : ProteinComponent
-        protein component for complex simulations, to which the ligands are bound
+    protein : ProteinComponent | ProteinMembraneComponent
+        protein component for complex simulations, to which the ligands are bound.
+        If a ProteinMembraneComponent is used, the
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongside the protein, can be empty list
     n_protocol_repeats: int
@@ -123,7 +125,10 @@ def plan_rbfe_network_main(
     ),
 )
 @MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
-@PROTEIN.parameter(multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"])
+@PROTEIN.parameter(multiple=False, required=False, default=None, help=PROTEIN.kwargs["help"])
+@PROTEIN_MEMBRANE.parameter(
+    multiple=False, required=False, default=None, help=PROTEIN_MEMBRANE.kwargs["help"]
+)
 @COFACTORS.parameter(multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"])
 @YAML_OPTIONS.parameter(multiple=False, required=False, default=None, help=YAML_OPTIONS.kwargs["help"])  # fmt: skip
 @OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.", default="alchemicalNetwork")  # fmt: skip
@@ -133,7 +138,8 @@ def plan_rbfe_network_main(
 @print_duration
 def plan_rbfe_network(
     molecules: list[str],
-    protein: str,
+    protein: str | None,
+    protein_membrane: str | None,
     cofactors: tuple[str],
     yaml_settings: str,
     output_dir: str,
@@ -187,9 +193,16 @@ def plan_rbfe_network(
 
     small_molecules = MOL_DIR.get(molecules)
     write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
-
-    protein = PROTEIN.get(protein)
-    write("\t\tProtein: " + str(protein))
+    if protein and protein_membrane:
+        raise ValueError()
+    elif protein:
+        protein = PROTEIN.get(protein)
+        write("\t\tProtein: " + str(protein))
+    elif protein_membrane:
+        protein = PROTEIN_MEMBRANE.get(protein_membrane)
+        write("\t\tProteinMembraneComponent: " + str(protein))
+    else:
+        raise ValueError()
 
     if cofactors is not None:
         cofactors = sum((COFACTORS.get(c) for c in cofactors), start=[])
@@ -222,6 +235,7 @@ def plan_rbfe_network(
     write("")
     write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  # fmt: skip
 
+    # protein.validate()
     # DO
     write("Planning RBFE-Campaign:")
     alchemical_network, ligand_network = plan_rbfe_network_main(
