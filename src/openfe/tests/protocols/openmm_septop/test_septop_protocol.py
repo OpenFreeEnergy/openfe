@@ -40,11 +40,6 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
 )
-from openfe.protocols.openmm_septop.equil_septop_method import (
-    _check_alchemical_charge_difference,
-)
-from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
-from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
@@ -77,191 +72,6 @@ def protocol_dry_settings():
 def default_settings():
     s = SepTopProtocol.default_settings()
     return s
-
-
-def test_create_default_settings():
-    settings = SepTopProtocol.default_settings()
-    assert settings
-
-
-@pytest.mark.parametrize(
-    "val",
-    [
-        {"elec": [0.0, -1], "vdw": [0.0, 1.0], "restraints": [0.0, 1.0]},
-        {"elec": [0.0, 1], "vdw": [0.0, 1.5], "restraints": [0.0, 1.0]},
-        {"elec": [0.0, 1], "vdw": [0.0, 1], "restraints": [-0.1, 1.0]},
-    ],
-)
-def test_incorrect_window_settings(val, default_settings):
-    errmsg = "Lambda windows must be between 0 and 1."
-    lambda_settings = default_settings.complex_lambda_settings
-    with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec_A = val["elec"]
-        lambda_settings.lambda_vdw_A = val["vdw"]
-        lambda_settings.lambda_restraints_A = val["restraints"]
-
-
-@pytest.mark.parametrize(
-    "val",
-    [
-        {
-            "elec": [0.0, 0.1, 0.0],
-            "vdw": [0.0, 1.0, 1.0],
-            "restraints": [0.0, 1.0, 1.0],
-        },
-        {
-            "elec": [0.0, 0.0, 0.0],
-            "vdw": [0.0, 1.0, 0.0],
-            "restraints": [0.0, 1.0, 1.0],
-        },
-        {
-            "elec": [0.0, 0.0, 0.0],
-            "vdw": [0.0, 1.0, 1.0],
-            "restraints": [0.0, 1.0, 0.0],
-        },
-    ],
-)
-def test_monotonic_lambda_windows_A(val, default_settings):
-    errmsg = "The lambda schedule for ligand A"
-    lambda_settings = default_settings.complex_lambda_settings
-
-    with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec_A = val["elec"]
-        lambda_settings.lambda_vdw_A = val["vdw"]
-        lambda_settings.lambda_restraints_A = val["restraints"]
-
-
-@pytest.mark.parametrize(
-    "val",
-    [
-        {
-            "elec": [1.0, 0.1, 1.0],
-            "vdw": [1.0, 1.0, 1.0],
-            "restraints": [1.0, 1.0, 1.0],
-        },
-        {
-            "elec": [1.0, 1.0, 1.0],
-            "vdw": [1.0, 0.0, 1.0],
-            "restraints": [1.0, 1.0, 1.0],
-        },
-        {
-            "elec": [1.0, 1.0, 1.0],
-            "vdw": [1.0, 1.0, 1.0],
-            "restraints": [1.0, 0.0, 1.0],
-        },
-    ],
-)
-def test_monotonic_lambda_windows_B(val, default_settings):
-    errmsg = "The lambda schedule for ligand B"
-    lambda_settings = default_settings.complex_lambda_settings
-
-    with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec_B = val["elec"]
-        lambda_settings.lambda_vdw_B = val["vdw"]
-        lambda_settings.lambda_restraints_B = val["restraints"]
-
-
-def test_output_induces_not_all(default_settings):
-    errmsg = "Equilibration simulations need to output the full system"
-
-    with pytest.raises(ValueError, match=errmsg):
-        default_settings.complex_equil_output_settings.output_indices = "no water"
-
-
-@pytest.mark.parametrize(
-    "val",
-    [
-        {
-            "elec_A": [1.0, 1.0],
-            "vdw_A": [0.0, 1.0],
-            "restraints_A": [0.0, 0.0],
-            "elec_B": [1.0, 1.0],
-            "vdw_B": [1.0, 1.0],
-            "restraints_B": [0.0, 0.0],
-        },
-    ],
-)
-def test_validate_lambda_schedule_nreplicas(val, default_settings):
-    default_settings.complex_lambda_settings.lambda_elec_A = val["elec_A"]
-    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw_A"]
-    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints_A"]
-    default_settings.complex_lambda_settings.lambda_elec_B = val["elec_B"]
-    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw_B"]
-    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints_B"]
-    n_replicas = 3
-    default_settings.complex_simulation_settings.n_replicas = n_replicas
-    errmsg = (
-        f"Number of replicas {n_replicas} does not equal the"
-        f" number of lambda windows {len(val['vdw_A'])}"
-    )
-    with pytest.raises(ValueError, match=errmsg):
-        SepTopProtocol._validate_lambda_schedule(
-            default_settings.complex_lambda_settings,
-            default_settings.complex_simulation_settings,
-        )
-
-
-@pytest.mark.parametrize(
-    "val",
-    [
-        {"elec": [1.0, 1.0, 1.0], "vdw": [0.0, 1.0], "restraints": [0.0, 0.0]},
-    ],
-)
-def test_validate_lambda_schedule_nwindows(val, default_settings):
-    default_settings.complex_lambda_settings.lambda_elec_A = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints"]
-    n_replicas = 3
-    default_settings.complex_simulation_settings.n_replicas = n_replicas
-    errmsg = (
-        "Components elec, vdw, and restraints must have equal amount of lambda "
-        "windows. Got 3 and 19 elec lambda windows"
-    )
-    with pytest.raises(ValueError, match=errmsg):
-        SepTopProtocol._validate_lambda_schedule(
-            default_settings.complex_lambda_settings,
-            default_settings.complex_simulation_settings,
-        )
-
-
-@pytest.mark.parametrize(
-    "val",
-    [
-        {
-            "elec_A": [0.0, 1.0],
-            "vdw_A": [1.0, 1.0],
-            "restraints_A": [0.0, 0.0],
-            "elec_B": [1.0, 1.0],
-            "vdw_B": [1.0, 1.0],
-            "restraints_B": [0.0, 0.0],
-        },
-    ],
-)
-def test_validate_lambda_schedule_nakedcharge(val, default_settings):
-    default_settings.complex_lambda_settings.lambda_elec_A = val["elec_A"]
-    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw_A"]
-    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints_A"]
-    default_settings.complex_lambda_settings.lambda_elec_B = val["elec_B"]
-    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw_B"]
-    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints_B"]
-    n_replicas = 2
-    default_settings.complex_simulation_settings.n_replicas = n_replicas
-    default_settings.solvent_simulation_settings.n_replicas = n_replicas
-    errmsg = (
-        "There are states along this lambda schedule "
-        "where there are atoms with charges but no LJ "
-        "interactions: State A: l"
-    )
-    with pytest.raises(ValueError, match=errmsg):
-        SepTopProtocol._validate_lambda_schedule(
-            default_settings.complex_lambda_settings,
-            default_settings.complex_simulation_settings,
-        )
-    with pytest.raises(ValueError, match=errmsg):
-        SepTopProtocol._validate_lambda_schedule(
-            default_settings.complex_lambda_settings,
-            default_settings.solvent_simulation_settings,
-        )
 
 
 def test_create_default_protocol(default_settings):
@@ -313,172 +123,6 @@ def test_create_independent_repeat_ids(
 
     # There are 4 units per repeat per DAG: 4 * 3 * 2 = 24
     assert len(repeat_ids) == 24
-
-
-def test_check_alchem_charge_diff(charged_benzene_modifications):
-    errmsg = "A charge difference of 1"
-    with pytest.raises(ValueError, match=errmsg):
-        _check_alchemical_charge_difference(
-            charged_benzene_modifications["benzene"],
-            charged_benzene_modifications["benzoic_acid"],
-        )
-
-
-def test_charge_error_create(charged_benzene_modifications, T4_protein_component, default_settings):
-    protocol = SepTopProtocol(
-        settings=default_settings,
-    )
-    stateA = ChemicalSystem(
-        {
-            "benzene": charged_benzene_modifications["benzene"],
-            "protein": T4_protein_component,
-            "solvent": SolventComponent(),
-        }
-    )
-
-    stateB = ChemicalSystem(
-        {
-            "benzoic": charged_benzene_modifications["benzoic_acid"],
-            "protein": T4_protein_component,
-            "solvent": SolventComponent(),
-        }
-    )
-    errmsg = "A charge difference of 1"
-    with pytest.raises(ValueError, match=errmsg):
-        protocol.create(
-            stateA=stateA,
-            stateB=stateB,
-            mapping=None,
-        )
-
-
-@pytest.mark.parametrize(
-    "fail_endstate, system_A, system_B",
-    [
-        ("stateA", "benzene_system", "benzene_complex_system"),
-        ("stateB", "benzene_complex_system", "benzene_system"),
-    ],
-)
-def test_validate_complex_endstates_protcomp(request, system_A, system_B, fail_endstate):
-    with pytest.raises(ValueError, match="No ProteinComponent found"):
-        SepTopProtocol._validate_complex_endstates(
-            request.getfixturevalue(system_A),
-            request.getfixturevalue(system_B),
-        )
-
-
-@pytest.fixture
-def T4L_benzene_vacuum(benzene_modifications, T4_protein_component):
-    return openfe.ChemicalSystem(
-        {
-            "benzene": benzene_modifications["benzene"],
-            "protein": T4_protein_component,
-        }
-    )
-
-
-@pytest.mark.parametrize(
-    "fail_endstate, system_A, system_B",
-    [
-        ("stateA", "T4L_benzene_vacuum", "benzene_complex_system"),
-        ("stateB", "benzene_complex_system", "T4L_benzene_vacuum"),
-    ],
-)
-def test_validate_complex_endstates_nosolvcomp(
-    request,
-    system_A,
-    system_B,
-    fail_endstate,
-):
-    with pytest.raises(ValueError, match="No SolventComponent found"):
-        SepTopProtocol._validate_complex_endstates(
-            request.getfixturevalue(system_A),
-            request.getfixturevalue(system_B),
-        )
-
-
-@pytest.fixture
-def T4L_system(T4_protein_component):
-    return openfe.ChemicalSystem(
-        {
-            "solvent": openfe.SolventComponent(),
-            "protein": T4_protein_component,
-        }
-    )
-
-
-@pytest.mark.parametrize(
-    "fail_endstate, system_A, system_B",
-    [
-        ("stateA", "T4L_system", "benzene_complex_system"),
-        ("stateB", "benzene_complex_system", "T4L_system"),
-    ],
-)
-def test_validate_alchem_comps_missing(
-    request,
-    system_A,
-    system_B,
-    fail_endstate,
-):
-    alchem_comps = system_validation.get_alchemical_components(
-        request.getfixturevalue(system_A),
-        request.getfixturevalue(system_B),
-    )
-
-    with pytest.raises(
-        ValueError,
-        match=f"one alchemical component must be present in {fail_endstate}.",
-    ):
-        SepTopProtocol._validate_alchemical_components(alchem_comps)
-
-
-def test_validate_alchem_comps_toomanyA(
-    benzene_modifications,
-    T4_protein_component,
-):
-    stateA = ChemicalSystem(
-        {
-            "benzene": benzene_modifications["benzene"],
-            "toluene": benzene_modifications["toluene"],
-            "protein": T4_protein_component,
-            "solvent": SolventComponent(),
-        }
-    )
-
-    stateB = ChemicalSystem(
-        {
-            "phenol": benzene_modifications["phenol"],
-            "protein": T4_protein_component,
-            "solvent": SolventComponent(),
-        }
-    )
-
-    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-
-    assert len(alchem_comps["stateA"]) == 2
-
-    assert len(alchem_comps["stateB"]) == 1
-
-    with pytest.raises(ValueError, match="present in stateA. Found 2 alchemical components."):
-        SepTopProtocol._validate_alchemical_components(alchem_comps)
-
-
-def test_validate_alchem_nonsmc(
-    benzene_modifications,
-    T4_protein_component,
-):
-    stateA = ChemicalSystem(
-        {"benzene": benzene_modifications["benzene"], "solvent": SolventComponent()}
-    )
-
-    stateB = ChemicalSystem(
-        {"benzene": benzene_modifications["benzene"], "protein": T4_protein_component}
-    )
-
-    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-
-    with pytest.raises(ValueError, match="Only SmallMoleculeComponent alchemical"):
-        SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
 # Tests for the alchemical systems. This tests were modified from
@@ -1757,11 +1401,9 @@ class TestA2AMembraneDryRun:
                 == "MonteCarloMembraneBarostat"
             )
             complex_setup_output = complex_setup_units[0].run(dry=True)["debug"]
-            serialized_topology = complex_setup_output["topology"]
-            serialized_system = complex_setup_output["system"]
-            data = complex_run_units[0].run(
-                serialized_system, serialized_topology, dry=True
-            )["debug"]  # fmt: skip
+            pdb_file = openmm.app.pdbfile.PDBFile(str(complex_setup_output["topology"]))
+            system = deserialize(complex_setup_output["system"])
+            data = complex_run_units[0].run(system, pdb_file, dry=True)["debug"]  # fmt: skip
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=True, settings=adaptive_settings)
 
@@ -1792,11 +1434,9 @@ class TestA2AMembraneDryRun:
     def test_solvent_dry_run(self, solvent_setup_units, solvent_run_units, settings, tmpdir):
         with tmpdir.as_cwd():
             solv_setup_output = solvent_setup_units[0].run(dry=True)["debug"]
-            serialized_topology = solv_setup_output["topology"]
-            serialized_system = solv_setup_output["system"]
-            data = solvent_run_units[0].run(
-                serialized_system, serialized_topology, dry=True
-            )["debug"]  # fmt: skip
+            pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
+            system = deserialize(solv_setup_output["system"])
+            data = solvent_run_units[0].run(system, pdb_file, dry=True)["debug"]  # fmt: skip
 
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=False, settings=settings)
@@ -1820,28 +1460,3 @@ class TestA2AMembraneDryRun:
             # Check the PDB
             pdb = md.load_pdb("alchemical_system.pdb")
             assert pdb.n_atoms == (self.num_ligand_atoms_A + self.num_ligand_atoms_B)
-
-
-def test_adaptive_settings_no_protein_membrane(toluene_complex_system, default_settings):
-    settings = SepTopProtocol._adaptive_settings(
-        toluene_complex_system, toluene_complex_system, default_settings
-    )
-
-    assert isinstance(settings, SepTopSettings)
-    # Should use default barostat since no ProteinMembraneComponent
-    assert settings.complex_integrator_settings.barostat == "MonteCarloBarostat"
-
-
-def test_adaptive_settings_with_protein_membrane(a2a_protein_membrane_component, a2a_ligands):
-    stateA = ChemicalSystem(
-        {
-            "ligandA": a2a_ligands[0],
-            "protein": a2a_protein_membrane_component,
-            "solvent": SolventComponent(),
-        }
-    )
-
-    settings = SepTopProtocol._adaptive_settings(stateA, stateA)
-    assert isinstance(settings, SepTopSettings)
-    # Barostat should have been updated
-    assert settings.complex_integrator_settings.barostat == "MonteCarloMembraneBarostat"

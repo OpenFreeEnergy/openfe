@@ -115,8 +115,6 @@ def get_system_generator(
 
     # Add barostat if necessary
     # For membrane systems, add a MonteCarloMembraneBarostat.
-    # ToDo: We could also only check for the barostat setting here. But for
-    #       that we first need adaptive settings for the rfe protocol
     if has_solvent:
         if integrator_settings.barostat == "MonteCarloMembraneBarostat":
             barostat = MonteCarloMembraneBarostat(

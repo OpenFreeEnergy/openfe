@@ -32,7 +32,6 @@ from typing import Any, Iterable
 
 import gufe
 from gufe import (
-    BaseSolventComponent,
     ChemicalSystem,
     ProteinComponent,
     ProteinMembraneComponent,
@@ -219,11 +218,11 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         initial_settings: None | AbsoluteBindingSettings = None,
     ) -> AbsoluteBindingSettings:
         """
-        Get the recommended OpenFE settings for this protocol based on the input states involved in the
+        Get the recommended OpenFE settings for this Protocol based on the input states involved in the
         transformation.
 
-        These are intended as a suitable starting point for creating an instance of this protocol, which can be further
-        customized before performing a Protocol.
+        These are intended as a suitable starting point, which can be further
+        customized before creating a Protocol.
 
         Parameters
         ----------
@@ -232,7 +231,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         stateB : ChemicalSystem
             The final state of the transformation.
         initial_settings : None | AbsoluteBindingSettings, optional
-            Initial settings to base the adaptive settings on. If None, default settings are used.
+            Initial settings to adapt. If None, default settings are used.
 
         Returns
         -------

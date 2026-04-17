@@ -1131,6 +1131,7 @@ def test_dry_run_membrane_complex(
     a2a_ligands,
     tmpdir,
 ):
+    # TODO check if we can remove the slow mark once the HTF speed up is merged
     ligA = next(c for c in a2a_ligands if c.name == "4g")
     ligB = next(c for c in a2a_ligands if c.name == "4h")
 

@@ -188,7 +188,7 @@ class TestT4LysozymeDryRun:
     }
 
     @pytest.fixture(scope="class", autouse=True)
-    def set_platform(self, available_platforms):
+    def set_platform(self, get_available_openmm_platforms):
         """
         Set the platform used by this test, overriding the openmmtools default.
 
@@ -205,9 +205,10 @@ class TestT4LysozymeDryRun:
 
         # set the new platform
         # Try cuda if available, then CPU
-        if "CUDA" in available_platforms:
+        if "CUDA" in get_available_openmm_platforms:
             test_platform = openmm.Platform.getPlatformByName("CUDA")
             test_platform.setPropertyDefaultValue("Precision", "mixed")
+            test_alchemy.GLOBAL_ALCHEMY_PLATFORM = test_platform
         else:
             test_alchemy.GLOBAL_ALCHEMY_PLATFORM = openmm.Platform.getPlatformByName("Reference")
         yield

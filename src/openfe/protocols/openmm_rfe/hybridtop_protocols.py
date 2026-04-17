@@ -20,6 +20,7 @@ from typing import Any, Iterable, Optional, Union
 import gufe
 import numpy as np
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     Component,
     ComponentMapping,
@@ -539,6 +540,12 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
+
+        # Validate the BaseSolventComponents
+        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
+        if len(base_solvent) > 1:
+            errmsg = "Multiple BaseSolventComponents found, only one is supported."
+            raise ValueError(errmsg)
 
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
