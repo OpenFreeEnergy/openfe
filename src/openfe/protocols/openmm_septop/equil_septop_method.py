@@ -33,9 +33,9 @@ from __future__ import annotations
 
 import logging
 import uuid
+import warnings
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
-import warnings
 
 import gufe
 from gufe import (

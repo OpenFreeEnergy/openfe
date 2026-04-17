@@ -303,7 +303,9 @@ def test_validate_alchem_comps_toomanyA(
 
     assert len(alchem_comps["stateB"]) == 1
 
-    errmsg = "Only one alchemical species is supported. Number of unique components found in stateA: 2."
+    errmsg = (
+        "Only one alchemical species is supported. Number of unique components found in stateA: 2."
+    )
 
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_endstates(stateA, stateB)
@@ -317,7 +319,7 @@ def test_validate_alchem_nonsmc(
         {
             "benzene": benzene_modifications["benzene"],
             "protein": T4_protein_component,
-            "solvent": SolventComponent(neutralize=False)
+            "solvent": SolventComponent(neutralize=False),
         }
     )
 
