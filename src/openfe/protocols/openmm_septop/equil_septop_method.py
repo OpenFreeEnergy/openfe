@@ -472,7 +472,7 @@ class SepTopProtocol(gufe.Protocol):
 
         # Check the mappping
         if mapping is not None:
-            msg = "A mapping was passed but is not used by this Protocol"
+            wmsg = "A mapping was passed but is not used by this Protocol"
             warnings.warn(wmsg)
 
         # Validate end states
