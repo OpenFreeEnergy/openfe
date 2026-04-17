@@ -1,6 +1,6 @@
 .. _userguide_chemicalsystems_and_components:
 
-Chemical Systems, Components and Thermodynamic Cycles
+Components, Chemical Systems and Thermodynamic Cycles
 =====================================================
 
 This page describes the core building blocks used to define simulation states in openfe:
@@ -99,21 +99,18 @@ A :class:`.ChemicalSystem` is composed of components that together describe the 
 simulated system. It represents the **end state** of an alchemical transformation
 and is the primary input a :class:`.Protocol` consumes to define a simulation state.
 
-What a ChemicalSystem defines
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**What a ChemicalSystem defines**
 
 * Exact atomic information (including protonation state) of protein, ligands,
   cofactors, and any crystallographic waters.
 * Atomic positions of all explicitly defined components such as ligands or proteins.
 * The abstract or explicit definition of the solvent environment (SolventComponent).
 
-What a ChemicalSystem does NOT define
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**What a ChemicalSystem does NOT define**
 
 * Forcefield applied to any component, including water model or virtual particles.
 * Thermodynamic conditions (e.g. temperature or pressure).
-
-These are handled by the :class:`.Protocol`.
+* These are handled by the :class:`.Protocol`.
 
 .. _userguide_system_composition:
 
@@ -141,21 +138,21 @@ the nature of the system. The table below summarises the composition for each co
      - RBFE (:class:`.RelativeHybridTopologyProtocol`)
      - SepTop / ABFE (:class:`.SepTopProtocol`, :class:`.AbsoluteBindingProtocol`)
    * - **Standard protein–ligand**
-     - | *Complex leg:*
+     - | **Complex leg:**
        | :class:`.ProteinComponent` + :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
        |
-       | *Solvent leg:*
+       | **Solvent leg:**
        | :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
-     - | *Single ChemicalSystem (both legs):*
+     - | **Single ChemicalSystem (both legs):**
        | :class:`.ProteinComponent` + :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
    * - **Membrane system**
-     - | *Complex leg:*
+     - | **Complex leg:**
        | :class:`.ProteinMembraneComponent` + :class:`.SmallMoleculeComponent`\s
        | *(no* :class:`.SolventComponent` *— already explicitly solvated)*
        |
-       | *Solvent leg:*
+       | **Solvent leg:**
        | :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
-     - | *Single ChemicalSystem (both legs):*
+     - | **Single ChemicalSystem (both legs):**
        | :class:`.ProteinMembraneComponent` + :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
        | *(protocol applies* :class:`.SolventComponent` *only in the solvent leg)*
 
