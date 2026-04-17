@@ -24,7 +24,6 @@ dependencies:
   - packaging
   - pandas
   - parmed >=4.3.1  # fix to support numpy >=2.3: https://github.com/ParmEd/ParmEd/pull/1387
-  - perses>=0.10.3
   - plugcli
   - pint>=0.24.0
   - pip
