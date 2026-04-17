@@ -1,57 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import itertools
-import json
-import math
-import pathlib
-from unittest import mock
-
-import gufe
-import mdtraj as md
-import numpy as np
-import openmm
-import openmm.app
-import openmm.unit
 import pytest
-from numpy.testing import assert_allclose
-from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
-from openmm import (
-    CustomBondForce,
-    CustomCompoundBondForce,
-    CustomNonbondedForce,
-    HarmonicAngleForce,
-    HarmonicBondForce,
-    MonteCarloBarostat,
-    MonteCarloMembraneBarostat,
-    NonbondedForce,
-    PeriodicTorsionForce,
-)
-from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
-from openmmtools.multistate.multistatesampler import MultiStateSampler
-
-import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
-    SepTopComplexRunUnit,
-    SepTopComplexSetupUnit,
     SepTopProtocol,
-    SepTopProtocolResult,
-    SepTopSolventRunUnit,
-    SepTopSolventSetupUnit,
 )
 from openfe.protocols.openmm_septop.equil_septop_method import (
     _check_alchemical_charge_difference,
 )
-from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
 from openfe.protocols.openmm_utils import system_validation
-from openfe.protocols.openmm_utils.serialization import deserialize
-from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
-from openfe.tests.protocols.conftest import compute_energy
-from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
-    _assert_num_forces,
-    _verify_alchemical_sterics_force_parameters,
-)
 
 
 @pytest.fixture()

@@ -40,11 +40,6 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
 )
-from openfe.protocols.openmm_septop.equil_septop_method import (
-    _check_alchemical_charge_difference,
-)
-from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
-from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
