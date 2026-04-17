@@ -372,7 +372,7 @@ class SepTopProtocol(gufe.Protocol):
             if not isinstance(diff[i][0], SmallMoleculeComponent):
                 errmsg = (
                     "Only transforming SmallMoleculeComponents are supported "
-                    f"by this Protocol. Found a {type(diff[i][0]}."
+                    f"by this Protocol. Found a {type(diff[i][0])}."
                 )
                 raise ValueError(errmsg)
 
