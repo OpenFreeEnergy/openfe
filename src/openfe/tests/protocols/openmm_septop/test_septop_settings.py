@@ -3,7 +3,6 @@
 
 import pytest
 
-
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopProtocol,
