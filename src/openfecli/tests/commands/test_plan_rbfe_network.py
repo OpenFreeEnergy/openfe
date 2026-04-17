@@ -1,4 +1,3 @@
-import json
 import shutil
 from importlib import resources
 from unittest import mock
@@ -6,18 +5,23 @@ from unittest import mock
 import numpy as np
 import pytest
 from click.testing import CliRunner
-from gufe import AlchemicalNetwork, SmallMoleculeComponent
+from gufe import (
+    AlchemicalNetwork,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+)
 from openff.units import unit
-from openff.utilities import skip_if_missing
 
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL,
-    HAS_OPENEYE,
+from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEYE
+from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
+from openfe.setup import (
+    LomapAtomMapper,
+    ligand_network_planning,
+    lomap_scorers,
 )
-from openfecli.commands.plan_rbfe_network import (
-    plan_rbfe_network,
-    plan_rbfe_network_main,
-)
+from openfe.tests.conftest import T4_protein_component_pdb
+from openfecli.commands.plan_rbfe_network import plan_rbfe_network, plan_rbfe_network_main
 
 from ..utils import assert_click_success
 
@@ -45,9 +49,14 @@ def dummy_charge_dir_args(tmp_path_factory):
 
 
 @pytest.fixture
-def protein_args():
+def protein_args(T4_protein_component_pdb):
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        return ["--protein", str(d / "181l_only.pdb")]
+        return ["--protein", T4_protein_component_pdb]
+
+
+@pytest.fixture
+def protein_membrane_args(a2a_protein_membrane_pdb):
+    return ["--protein-membrane", a2a_protein_membrane_pdb]
 
 
 def print_test_with_file(
@@ -73,33 +82,17 @@ def validate_charges(smc):
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_plan_rbfe_network_main():
-    from gufe import (
-        ProteinComponent,
-        SmallMoleculeComponent,
-        SolventComponent,
-    )
-
-    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
-    from openfe.setup import (
-        LomapAtomMapper,
-        ligand_network_planning,
-        lomap_scorers,
-    )
+def test_plan_rbfe_network_main(T4_protein_component):
 
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         smallM_components = [
             SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]
         ]
-    with resources.as_file(resources.files("openfe.tests.data")) as d:
-        protein_component = ProteinComponent.from_pdb_file(str(d / "181l_only.pdb"))
+    protein_component = T4_protein_component
 
     solvent_component = SolventComponent()
     alchemical_network, ligand_network = plan_rbfe_network_main(
