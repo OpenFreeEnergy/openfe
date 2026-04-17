@@ -38,7 +38,7 @@ authors:
   family-names: Travitz
   orcid: 'https://orcid.org/0000-0001-5953-8807'
 title: "The Open Free Energy library"
-version: 1.7.0
+version: 1.10.0
 date-released: 2025-04-25
 url: "https://openfree.energy/"
 repository-code: "https://github.com/openfreeEnergy/openfe"
