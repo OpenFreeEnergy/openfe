@@ -3,136 +3,179 @@
 Chemical Systems, Components and Thermodynamic Cycles
 =====================================================
 
+This page describes the core building blocks used to define simulation states in openfe:
+:class:`.Component`\s, which describe what is physically present in a system;
+:class:`.ChemicalSystem`\s, which combine components into a complete end state;
+and thermodynamic cycles, which connect end states via alchemical transformations.
+
 .. _userguide_chemical_systems:
-
-Chemical Systems
-----------------
-
-A :class:`.ChemicalSystem` represents the end state of an alchemical transformation,
-which can then be input to a :class:`.Protocol`. 
-
-A :class:`.ChemicalSystem` **does** contain the following information (when present):
-
-* exact atomic information (including protonation state) of protein, ligands, co-factors, and any crystallographic
-  waters
-* atomic positions of all explicitly defined components such as ligands or proteins
-* the abstract definition of the solvation environment, if present
-
-A :class:`.ChemicalSystem` does **NOT** include the following:
-
-* forcefield applied to any component, including details on water model or virtual particles
-* thermodynamic conditions (e.g. temperature or pressure)
-
-.. note::
-
-   For some protocols, such as :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`, a single
-   :class:`.ChemicalSystem` is used to represent both legs of the thermodynamic cycle (complex and solvent).
-
-   This differs from the :class:`.RelativeHybridTopologyProtocol`, where each leg is defined by
-   separate :class:`.ChemicalSystem`\s. This behaviour is expected to change in future versions.
-
-.. _userguide_components:
 
 Components
 ----------
 
-A :class:`.ChemicalSystem` is defined by a set of component objects that together
-describe the full simulated system.
+Components are the additive, composable building blocks that define the chemical
+composition of a simulated system. Splitting a system into components serves three purposes:
 
-Components are composable building blocks that are combined additively, defining
-the chemical composition of the system.
+1. Alchemical transformations can be easily understood by comparing the differences in components.
+2. Components can be reused to compose different systems.
+3. :class:`.Protocol`\s can apply component-specific behaviour, e.g. different force fields per component.
 
-System composition overview
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For a conventional protein–ligand system in water, a :class:`.ChemicalSystem` is typically composed of:
+Component types — overview
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* :class:`.ProteinComponent`
-* one or more :class:`.SmallMoleculeComponent`\s
-* a :class:`.SolventComponent`
+.. list-table::
+   :header-rows: 1
+   :widths: 25 30 45
 
-For a protein-membrane RBFE system:
+   * - Component
+     - Role
+     - Key notes
+   * - :class:`.ProteinComponent`
+     - Biological assembly
+     - Typically the contents of a PDB file. May include crystallographic waters, ions,
+       and disulfide bonds via CONECT records.
+   * - :class:`.SmallMoleculeComponent`
+     - Ligands and cofactors
+     -
+   * - :class:`.SolventComponent`
+     - Abstract solvent definition
+     - Defines solvent conditions and ion concentration. Does **not** include coordinates or box vectors. Solvent is added by the protocol at runtime.
+   * - :class:`.SolvatedPDBComponent`
+     - Explicitly solvated system
+     - Includes atomic coordinates and box vectors. Solvent is already present,
+       the protocol does not add any further solvation.
+   * - :class:`.ProteinMembraneComponent`
+     - Protein-membrane complex
+     - Subclass of :class:`.SolvatedPDBComponent`. Includes protein, membrane, solvent,
+       and box vectors. Replaces :class:`.ProteinComponent` in membrane systems.
 
-* :class:`.ProteinMembraneComponent`
-* one or more :class:`.SmallMoleculeComponent`\s
+.. _userguide_solvation_models:
 
-Component types
-~~~~~~~~~~~~~~~
+Abstract vs explicit solvation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* :class:`.ProteinComponent`
+These two approaches are **mutually exclusive**:
 
-  A biological assembly, typically the contents of a PDB file.
+* **Abstract solvation** — use a :class:`.SolventComponent`. The protocol adds solvent
+  during system preparation.
+* **Explicit solvation** — use a :class:`.SolvatedPDBComponent` or
+  :class:`.ProteinMembraneComponent`. Solvent is already present in the system.
 
-  It may include crystallographic waters or ions, and can define disulfide bonds via CONECT records.
+Either define the solvent abstractly, or provide a fully solvated system — do not mix
+both for the same leg of a transformation.
 
-* :class:`.SmallMoleculeComponent`
+.. note::
 
-  Ligands and cofactors
+   Some protocols, such as :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`,
+   use a single :class:`.ChemicalSystem` to represent both the complex and solvent legs.
+   In this case, a :class:`.ChemicalSystem` may contain both a :class:`.SolventComponent`
+   and a :class:`.ProteinMembraneComponent`. However, these apply to *different* legs: the
+   :class:`.SolventComponent` is used only for the solvent leg, and the
+   :class:`.ProteinMembraneComponent` (which is already explicitly solvated) is used only
+   for the complex leg. The mutual exclusivity rule still holds per leg.
 
-* :class:`.SolventComponent`
+Box vectors for explicitly solvated systems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Solvent conditions, including the ion concentration
+The components :class:`.SolvatedPDBComponent` and :class:`.ProteinMembraneComponent`
+requires periodic box vectors. These can be provided in three ways:
 
-* :class:`.ProteinMembraneComponent`
-
-  A protein-membrane system with explicit solvation and
-  periodic box vectors. This replaces :class:`.ProteinComponent` in membrane systems.
-
-Advantages of hte composable design
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Splitting the total system into components serves three purposes:
-
-1. alchemical transformations can be easily understood by comparing the differences in components.
-2. components can be reused to compose different systems.
-3. :class:`.Protocol`\s can have component-specific behavior. E.g. different force fields for each component.
-
-Box vectors for membrane systems
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For protein-membrane systems, the protein is represented using a solvated
-:class:`.ProteinMembraneComponent` instead of a :class:`.ProteinComponent`.
-The :class:`.ProteinMembraneComponent` is an explicitly solvated protein-membrane system and requires periodic box vectors to define the simulation box.
-These box vectors can be provided in several ways:
-
-1. CRYST record in the PDB file
-
-   If the PDB file includes a CRYST record, OpenMM can automatically read the box vectors from it.
-
-2. Manually specifying box vectors
-
-   Box vectors can be provided explicitly in OpenMM format.
-
-3. Inferring from atomic positions
-
-   Box vectors can be estimated from the atomic coordinates in the PDB file.
+1. **CRYST record in the PDB file** — OpenMM reads box vectors automatically.
+2. **Manual specification** — box vectors can be provided explicitly in OpenMM format.
+3. **Inference from atomic coordinates** — box vectors are estimated from atomic positions.
 
 .. warning::
 
-   Inferring box vectors from atomic positions can be inaccurate,
-   if the PDB originates from a previous simulation where atoms may be distributed across periodic images.
+   Inferring box vectors from atomic positions can be inaccurate if the PDB originates
+   from a previous simulation where atoms may be distributed across periodic images.
 
-Membrane systems and solvation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _userguide_chemical_systems:
 
-In protein-membrane systems, no further solvation of the complex system is performed by the protocol. This means:
+ChemicalSystem
+--------------
 
-* In the :class:`.RelativeHybridTopologyProtocol`, a separate :class:`.SolventComponent` for the complex leg is not
-  required. The :class:`.ChemicalSystem` for the complex end states consists of the :class:`.ProteinMembraneComponent`
-  and the ligand (and optionally cofactors) as :class:`.SmallMoleculeComponent`\s.
-* In contrast, in the :class:`.SepTopProtocol` or :class:`.AbsoluteBindingProtocol`, a :class:`.SolventComponent` is still
-  needed because the :class:`.ChemicalSystem` represents both complex and solvent legs. The :class:`.SolventComponent`
-  is then only used to solvate the solvent leg of the transformation.
+A :class:`.ChemicalSystem` is composed of components that together describe the full
+simulated system. It represents the **end state** of an alchemical transformation
+and is the primary input a :class:`.Protocol` consumes to define a simulation state.
+
+What a ChemicalSystem defines
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Exact atomic information (including protonation state) of protein, ligands,
+  cofactors, and any crystallographic waters.
+* Atomic positions of all explicitly defined components such as ligands or proteins.
+* The abstract or explicit definition of the solvent environment (SolventComponent).
+
+What a ChemicalSystem does NOT define
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Forcefield applied to any component, including water model or virtual particles.
+* Thermodynamic conditions (e.g. temperature or pressure).
+
+These are handled by the :class:`.Protocol`.
+
+.. _userguide_system_composition:
+
+System composition examples
+---------------------------
+
+The components that make up each :class:`.ChemicalSystem` depend on the protocol and
+the nature of the system. The table below summarises the composition for each combination.
+
+
+.. note::
+
+   Protocol-specific behaviour:
+   For :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`, a single
+   :class:`.ChemicalSystem` represents both legs of the thermodynamic cycle. The protocol
+   determines internally what is the complex leg and what is the solvent leg.
+   This differs from the :class:`.RelativeHybridTopologyProtocol`, where each leg is defined by
+   separate :class:`.ChemicalSystem`\s. This behaviour is expected to change in future versions.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * - System
+     - RBFE (:class:`.RelativeHybridTopologyProtocol`)
+     - SepTop / ABFE (:class:`.SepTopProtocol`, :class:`.AbsoluteBindingProtocol`)
+   * - **Standard protein–ligand**
+     - | *Complex leg:*
+       | :class:`.ProteinComponent` + :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
+       |
+       | *Solvent leg:*
+       | :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
+     - | *Single ChemicalSystem (both legs):*
+       | :class:`.ProteinComponent` + :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
+   * - **Membrane system**
+     - | *Complex leg:*
+       | :class:`.ProteinMembraneComponent` + :class:`.SmallMoleculeComponent`\s
+       | *(no* :class:`.SolventComponent` *— already explicitly solvated)*
+       |
+       | *Solvent leg:*
+       | :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
+     - | *Single ChemicalSystem (both legs):*
+       | :class:`.ProteinMembraneComponent` + :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
+       | *(protocol applies* :class:`.SolventComponent` *only in the solvent leg)*
 
 
 Thermodynamic Cycles
 --------------------
 
-We can now describe a thermodynamic cycle as a set of :class:`.ChemicalSystem`\s. 
-The exact end states to construct are detailed in the :ref:`pages for each specific Protocol <userguide_protocols>`.
+A thermodynamic cycle can be described as a set of :class:`.ChemicalSystem`\s (nodes) connected by
+alchemical transformations (edges). The :class:`.Protocol` defines how the
+:class:`.ChemicalSystem`\s map onto the cycle and how they are used in practice.
 
-As an example, we can construct the classic relative binding free energy cycle by defining four components: two ligands,
-a protein, and a solvent: 
+The same :class:`.ChemicalSystem` can be reused across multiple thermodynamic states
+depending on the protocol. For details of which end states to construct, consult the
+:ref:`pages for each specific Protocol <userguide_protocols>`.
+
+RBFE example
+~~~~~~~~~~~~
+
+As an example, the relative binding free energy cycle requires four
+:class:`.ChemicalSystem`\s — one for each node in the cycle:
 
 .. figure:: ../protocols/img/rbfe_thermocycle.png
    :scale: 40%
@@ -161,16 +204,19 @@ a protein, and a solvent:
   # ligand_B + solvent
   ligand_B_solvent = openfe.ChemicalSystem(components={'ligand': ligand_B, 'solvent': solvent})
 
-If the system components are defined explicitly (e.g. with a solvated protein-membrane system),
-the `ligand_A_complex` would instead use an :class:`.ExplicitSolventComponent` or :class:`.ProteinMembraneComponent`.
-IN this case, a separate :class:`.SolventComponent` is not required.
-Here is an example using a :class:`.ProteinMembraneComponent`:
+Explicitly solvated variant
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using a :class:`.SolvatedPDBComponent` or :class:`.ProteinMembraneComponent`, replace :class:`.ProteinComponent`
+and :class:`.SolventComponent` for the complex leg. No separate :class:`.SolventComponent`
+is required:
 
 ::
 
-  # explicitly solvated protein-membrane complex, including box vectors (here read from CRYST1 records in the PDB)
+  # explicitly solvated protein-membrane complex (box vectors read from CRYST1 record)
   protein_membrane = openfe.ProteinMembraneComponent.from_pdb_file('./protein_membrane.pdb')
-  # ligand_A + explicitly solvated protein-membrane
+
+  # ligand_A + explicitly solvated protein-membrane — no SolventComponent needed
   ligand_A_complex = openfe.ChemicalSystem(components={'ligand': ligand_A, 'protein_membrane': protein_membrane})
 
 
@@ -178,4 +224,4 @@ See Also
 --------
 
 * To see how to construct a :class:`.ChemicalSystem` from your files, see :ref:`the cookbook entry on loading molecules <Loading Molecules>`
-* For details of what thermodynamic cycles to construct, consult the :ref:`pages for each specific Protocol <userguide_protocols>`
+* For details of which thermodynamic cycles to construct, consult the :ref:`pages for each specific Protocol <userguide_protocols>`
