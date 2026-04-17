@@ -8,7 +8,7 @@ This page describes the core building blocks used to define simulation states in
 :class:`.ChemicalSystem`\s, which combine components into a complete end state;
 and thermodynamic cycles, which connect end states via alchemical transformations.
 
-.. _userguide_chemical_systems:
+.. _userguide_components:
 
 Components
 ----------
