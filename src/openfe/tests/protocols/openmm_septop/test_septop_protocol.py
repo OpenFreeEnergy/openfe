@@ -40,6 +40,11 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
 )
+from openfe.protocols.openmm_septop.base_units import (
+    BaseSepTopSetupUnit,
+    BaseSepTopRunUnit,
+    BaseSepTopAnalysisUnit,
+)
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
@@ -91,6 +96,60 @@ def test_serialize_protocol(default_settings):
     ser = protocol.to_dict()
     ret = SepTopProtocol.from_dict(ser)
     assert protocol == ret
+
+
+def test_repeat_units(
+    benzene_complex_system, toluene_complex_system, default_settings
+):
+    default_settings.protocol_repeats = 3
+    protocol = SepTopProtocol(
+        settings=default_settings,
+    )
+
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+
+    # 6 protocol unit, 3 per repeat
+    pus = list(dag.protocol_units)
+    assert len(pus) == 18
+
+    def _get_units(protocol_units, unit_type, simtype):
+        """
+        Helper method to extract setup units.
+        """
+        return [
+            pu for pu in protocol_units
+            if isinstance(pu, unit_type) and (pu.simtype == simtype)
+        ]
+
+    # Check info for each repeat
+    for phase in ["solvent", "complex"]:
+        setup = _get_units(pus, BaseSepTopSetupUnit, phase)
+        sim = _get_units(pus, BaseSepTopRunUnit, phase)
+        analysis = _get_units(pus, BaseSepTopAnalysisUnit, phase)
+
+        # Should be 3 of each set
+        assert len(setup) == 3
+        assert len(sim) == 3
+        assert len(analysis) == 3
+
+        # check that the dag chain is correct
+        for analysis_pu in analysis:
+            repeat_id = analysis_pu.inputs["repeat_id"]
+            setup_pu = [
+                s for s in setup
+                if (s.inputs["repeat_id"] == repeat_id) and (s.simtype == phase)
+            ][0]
+            sim_pu = [
+                s for s in sim
+                if (s.inputs["repeat_id"] == repeat_id) and (s.simtype == phase)
+            ][0]
+            assert analysis_pu.inputs["setup"] == setup_pu
+            assert analysis_pu.inputs["simulation"] == sim_pu
+            assert sim_pu.inputs["setup"] == setup_pu
 
 
 def test_create_independent_repeat_ids(
