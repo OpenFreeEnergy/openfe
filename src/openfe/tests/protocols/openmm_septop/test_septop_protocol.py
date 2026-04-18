@@ -104,25 +104,26 @@ def test_create_independent_repeat_ids(
         settings=default_settings,
     )
 
-    dag1 = protocol.create(
-        stateA=benzene_complex_system,
-        stateB=toluene_complex_system,
-        mapping=None,
-    )
-    dag2 = protocol.create(
-        stateA=benzene_complex_system,
-        stateB=toluene_complex_system,
-        mapping=None,
-    )
-    # print([u for u in dag1.protocol_units])
-    repeat_ids = set()
-    for u in dag1.protocol_units:
-        repeat_ids.add(u.inputs["repeat_id"])
-    for u in dag2.protocol_units:
-        repeat_ids.add(u.inputs["repeat_id"])
+    dags = []
+    for i in range(2):
+        dags.append(
+            protocol.create(
+                stateA=benzene_complex_system,
+                stateB=toluene_complex_system,
+                mapping=None,
+            )
+        )
 
-    # There are 4 units per repeat per DAG: 4 * 3 * 2 = 24
-    assert len(repeat_ids) == 24
+    repeat_ids = set()
+
+    for dag in dags:
+        # 3 repeats of 6 units
+        assert len(list(dag.protocol_units)) == 18
+        for u in dag.protocol_units:
+            repeat_ids.add(u.inputs["repeat_id"])
+
+    # one uuid per repeat, so should equal 6
+    assert len(repeat_ids) == 6
 
 
 # Tests for the alchemical systems. This tests were modified from

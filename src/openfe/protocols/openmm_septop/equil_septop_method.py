@@ -545,9 +545,9 @@ class SepTopProtocol(gufe.Protocol):
 
         protocol_units: dict[str, list[gufe.ProtocolUnit]] = {"solvent": [], "complex": []}
 
-        for phase in ["solvent", "complex"]:
-            for i in range(self.settings.protocol_repeats):
-                repeat_id = int(uuid.uuid4())
+        for i in range(self.settings.protocol_repeats):
+            repeat_id = int(uuid.uuid4())
+            for phase in ["solvent", "complex"]:
 
                 setup = unit_classes[phase]["setup"](
                     protocol=self,
