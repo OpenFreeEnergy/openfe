@@ -40,11 +40,6 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
 )
-from openfe.protocols.openmm_septop.base_units import (
-    BaseSepTopSetupUnit,
-    BaseSepTopRunUnit,
-    BaseSepTopAnalysisUnit,
-)
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
@@ -52,6 +47,8 @@ from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
     _assert_num_forces,
     _verify_alchemical_sterics_force_parameters,
 )
+from .utils import UNIT_TYPES, _get_units
+
 
 E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
 EPSILON0 = (
@@ -62,15 +59,6 @@ EPSILON0 = (
     / openmm.unit.meter
 )
 ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.unit * 10.0  # nm -> angstrom
-
-
-@pytest.fixture()
-def protocol_dry_settings():
-    # a set of settings for dry run tests
-    s = SepTopProtocol.default_settings()
-    s.engine_settings.compute_platform = None
-    s.protocol_repeats = 1
-    return s
 
 
 @pytest.fixture()
@@ -116,20 +104,11 @@ def test_repeat_units(
     pus = list(dag.protocol_units)
     assert len(pus) == 18
 
-    def _get_units(protocol_units, unit_type, simtype):
-        """
-        Helper method to extract setup units.
-        """
-        return [
-            pu for pu in protocol_units
-            if isinstance(pu, unit_type) and (pu.simtype == simtype)
-        ]
-
     # Check info for each repeat
     for phase in ["solvent", "complex"]:
-        setup = _get_units(pus, BaseSepTopSetupUnit, phase)
-        sim = _get_units(pus, BaseSepTopRunUnit, phase)
-        analysis = _get_units(pus, BaseSepTopAnalysisUnit, phase)
+        setup = _get_units(pus, UNIT_TYPES[phase]["setup"])
+        sim = _get_units(pus, UNIT_TYPES[phase]["sim"])
+        analysis = _get_units(pus, UNIT_TYPES[phase]["analysis"])
 
         # Should be 3 of each set
         assert len(setup) == 3
@@ -385,21 +364,6 @@ class TestNonbondedInteractions:
         assert_allclose(energy, from_openmm(expected_energy), rtol=1e-05)
 
 
-@pytest.fixture
-def benzene_toluene_dag(
-    benzene_complex_system,
-    toluene_complex_system,
-    protocol_dry_settings,
-):
-    protocol = SepTopProtocol(settings=protocol_dry_settings)
-
-    return protocol.create(
-        stateA=benzene_complex_system,
-        stateB=toluene_complex_system,
-        mapping=None,
-    )
-
-
 def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     prot_units = list(benzene_toluene_dag.protocol_units)
 
@@ -625,9 +589,25 @@ def test_virtual_sites_no_reassign(
     dag_units = list(dag.protocol_units)
     # Only check the Solvent Unit
     solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
-    errmsg = "Simulations with virtual sites without velocity"
-    with pytest.raises(ValueError, match=errmsg):
-        _ = solv_setup_unit[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    solv_run_unit = [u for u in dag_units if isinstance(u, SepTopSolventRunUnit)]
+
+    setup_results = solv_setup_unit[0].run(
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
+
+    pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
+
+    with pytest.raises(ValueError, match="are unstable"):
+        _ = solv_run_unit[0].run(
+            setup_results["alchem_system"],
+            pdb_file,
+            setup_results["selection_indices"],
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )  # fmt: skip
 
 
 @pytest.mark.parametrize(
@@ -971,270 +951,6 @@ class TestT4LXmlRegression:
             assert a[1] == b[1]
             # Constraint Quantity
             assert a[2] == b[2]
-
-
-def test_unit_tagging(benzene_toluene_dag, tmp_path):
-    # test that executing the units includes correct gen and repeat info
-    dag_units = benzene_toluene_dag.protocol_units
-    with (
-        mock.patch(
-            "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopComplexSetupUnit.run",  # fmt: skip
-            return_value={
-                "system": pathlib.Path("system.xml.bz2"),
-                "topology": "topology.pdb",
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopComplexRunUnit._execute",  # fmt: skip
-            return_value={
-                "repeat_id": 0,
-                "generation": 0,
-                "simtype": "complex",
-                "nc": "file.nc",
-                "last_checkpoint": "chck.nc",
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopSolventSetupUnit.run",  # fmt: skip
-            return_value={
-                "system": pathlib.Path("system.xml.bz2"),
-                "topology": "topology.pdb",
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopSolventRunUnit._execute",  # fmt: skip
-            return_value={
-                "repeat_id": 0,
-                "generation": 0,
-                "simtype": "solvent",
-                "nc": "file.nc",
-                "last_checkpoint": "chck.nc",
-            },
-        ),
-    ):
-        results = []
-        for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmp_path, tmp_path))
-            results.append(ret)
-    solv_repeats = set()
-    complex_repeats = set()
-    for ret in results:
-        assert isinstance(ret, gufe.ProtocolUnitResult)
-        assert ret.outputs["generation"] == 0
-        if ret.outputs["simtype"] == "complex":
-            complex_repeats.add(ret.outputs["repeat_id"])
-        else:
-            solv_repeats.add(ret.outputs["repeat_id"])
-    # Repeat ids are random ints so just check their lengths
-    assert len(complex_repeats) == len(solv_repeats) == 2
-
-
-def test_gather(benzene_toluene_dag, tmp_path):
-    # check that .gather behaves as expected
-    with (
-        mock.patch(
-            "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopComplexSetupUnit.run",  # fmt: skip
-            return_value={
-                "system": pathlib.Path("system.xml.bz2"),
-                "topology": "topology.pdb",
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopComplexRunUnit._execute",  # fmt: skip
-            return_value={
-                "repeat_id": 0,
-                "generation": 0,
-                "simtype": "complex",
-                "nc": "file.nc",
-                "last_checkpoint": "chck.nc",
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopSolventSetupUnit.run",  # fmt: skip
-            return_value={
-                "system": pathlib.Path("system.xml.bz2"),
-                "topology": "topology.pdb",
-            },
-        ),
-        mock.patch(
-            "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopSolventRunUnit._execute",  # fmt: skip
-            return_value={
-                "repeat_id": 0,
-                "generation": 0,
-                "simtype": "solvent",
-                "nc": "file.nc",
-                "last_checkpoint": "chck.nc",
-            },
-        ),
-    ):
-        dagres = gufe.protocols.execute_DAG(
-            benzene_toluene_dag,
-            shared_basedir=tmp_path,
-            scratch_basedir=tmp_path,
-            keep_shared=True,
-        )
-
-    protocol = SepTopProtocol(
-        settings=SepTopProtocol.default_settings(),
-    )
-
-    res = protocol.gather([dagres])
-
-    assert isinstance(res, openfe.protocols.openmm_septop.SepTopProtocolResult)
-
-
-class TestProtocolResult:
-    @pytest.fixture()
-    def protocolresult(self, septop_json):
-        d = json.loads(septop_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
-
-        pr = openfe.ProtocolResult.from_dict(d["protocol_result"])
-
-        return pr
-
-    def test_reload_protocol_result(self, septop_json):
-        d = json.loads(septop_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
-
-        pr = SepTopProtocolResult.from_dict(d["protocol_result"])
-
-        assert pr
-
-    def test_get_estimate(self, protocolresult):
-        est = protocolresult.get_estimate()
-
-        assert est
-        assert est.m == pytest.approx(3.82, abs=0.1)
-        assert isinstance(est, offunit.Quantity)
-        assert est.is_compatible_with(offunit.kilojoule_per_mole)
-
-    def test_get_uncertainty(self, protocolresult):
-        est = protocolresult.get_uncertainty()
-
-        assert est.m == pytest.approx(0.0, abs=0.1)
-        assert isinstance(est, offunit.Quantity)
-        assert est.is_compatible_with(offunit.kilojoule_per_mole)
-
-    def test_get_individual(self, protocolresult):
-        inds = protocolresult.get_individual_estimates()
-
-        assert isinstance(inds, dict)
-        assert isinstance(inds["solvent"], list)
-        assert isinstance(inds["complex"], list)
-        assert len(inds["solvent"]) == len(inds["complex"]) == 1
-        for e, u in itertools.chain(inds["solvent"], inds["complex"]):
-            assert e.is_compatible_with(offunit.kilojoule_per_mole)
-            assert u.is_compatible_with(offunit.kilojoule_per_mole)
-
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
-    def test_get_forwards_etc(self, key, protocolresult):
-        """
-        Due to the short simulation times, we expect the frwd/reverse
-        analysis to be None.
-        """
-        wmsg = f"were found in the forward and reverse dictionaries of the repeats of the {key}"
-        with pytest.warns(UserWarning, match=wmsg):
-            far = protocolresult.get_forward_and_reverse_energy_analysis()
-
-        assert isinstance(far, dict)
-        assert isinstance(far[key], list)
-        for entry in far[key]:
-            assert entry is None
-
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
-    def test_get_overlap_matrices(self, key, protocolresult):
-        ovp = protocolresult.get_overlap_matrices()
-
-        assert isinstance(ovp, dict)
-        assert isinstance(ovp[key], list)
-        assert len(ovp[key]) == 1
-
-        ovp1 = ovp[key][0]
-        assert isinstance(ovp1["matrix"], np.ndarray)
-        if key == "solvent":
-            lambda_nr = 27
-        else:
-            lambda_nr = 19
-        assert ovp1["matrix"].shape == (lambda_nr, lambda_nr)
-
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
-    def test_get_replica_transition_statistics(self, key, protocolresult):
-        rpx = protocolresult.get_replica_transition_statistics()
-        if key == "solvent":
-            lambda_nr = 27
-        else:
-            lambda_nr = 19
-        assert isinstance(rpx, dict)
-        assert isinstance(rpx[key], list)
-        assert len(rpx[key]) == 1
-        rpx1 = rpx[key][0]
-        assert "eigenvalues" in rpx1
-        assert "matrix" in rpx1
-
-        assert rpx1["eigenvalues"].shape == (lambda_nr,)
-        assert rpx1["matrix"].shape == (lambda_nr, lambda_nr)
-
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
-    def test_equilibration_iterations(self, key, protocolresult):
-        eq = protocolresult.equilibration_iterations()
-
-        assert isinstance(eq, dict)
-        assert isinstance(eq[key], list)
-        assert len(eq[key]) == 1
-        assert all(isinstance(v, float) for v in eq[key])
-
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
-    def test_production_iterations(self, key, protocolresult):
-        prod = protocolresult.production_iterations()
-
-        assert isinstance(prod, dict)
-        assert isinstance(prod[key], list)
-        assert len(prod[key]) == 1
-        assert all(isinstance(v, float) for v in prod[key])
-
-    @pytest.mark.parametrize(
-        "key, expected_size",
-        [
-            ["solvent", 87],
-            ["complex", 1868],
-        ],
-    )
-    def test_selection_indices(self, key, protocolresult, expected_size):
-        indices = protocolresult.selection_indices()
-
-        assert isinstance(indices, dict)
-        assert isinstance(indices[key], list)
-        for inds in indices[key]:
-            assert isinstance(inds, np.ndarray)
-            assert len(inds) == expected_size
-
-    def test_filenotfound_replica_states(self, protocolresult):
-        errmsg = "File could not be found"
-
-        with pytest.raises(ValueError, match=errmsg):
-            protocolresult.get_replica_states()
-
-    def test_restraint_geometry(self, protocolresult):
-        geom = protocolresult.restraint_geometries()
-        assert isinstance(geom, tuple)
-        assert len(geom) == 2
-        assert isinstance(geom[0], list)
-        assert isinstance(geom[0][0], BoreschRestraintGeometry)
-        assert geom[0][0].guest_atoms == [1779, 1778, 1777]
-        assert geom[0][0].host_atoms == [802, 801, 800]
-        assert pytest.approx(geom[0][0].r_aA0) == 0.798936 * offunit.nanometer
-        assert pytest.approx(geom[0][0].theta_A0) == 2.049091 * offunit.radian
-        assert pytest.approx(geom[0][0].theta_B0) == 1.221973 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_A0) == 0.956774 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_B0) == -1.217188 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_C0) == -1.068226 * offunit.radian
 
 
 @pytest.mark.slow

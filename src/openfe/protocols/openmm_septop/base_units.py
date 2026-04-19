@@ -1133,8 +1133,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             for fn in fns:
                 fn.unlink()
 
-            return None
-
     def run(
         self,
         system: openmm.System,
@@ -1249,7 +1247,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             )
 
             # 8. Run simulation
-            unit_result_dict = self._run_simulation(
+            self._run_simulation(
                 sampler,
                 reporter,
                 settings,
@@ -1289,7 +1287,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             return {
                 "trajectory": nc,
                 "checkpoint": chk,
-                **unit_result_dict,
             }
         else:
             return {
