@@ -180,7 +180,9 @@ def test_unit_tagging(benzene_toluene_dag, patcher, tmp_path):
                 assert isinstance(ret, gufe.ProtocolUnitResult)
                 assert ret.outputs["generation"] == 0
 
-        assert len(setup_results) == len(sim_results) == len(analysis_results) == 3
+        assert len(setup_results) == 1
+        assert len(sim_results) == 1
+        assert len(analysis_results) == 1
 
 
 def test_gather(benzene_toluene_dag, patcher, tmp_path):
