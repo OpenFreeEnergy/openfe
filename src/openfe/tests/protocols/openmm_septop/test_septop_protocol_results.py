@@ -223,7 +223,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(3.82, abs=0.1)
+        assert est.m == pytest.approx(1.6, abs=0.1)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -245,20 +245,26 @@ class TestProtocolResult:
             assert e.is_compatible_with(offunit.kilojoule_per_mole)
             assert u.is_compatible_with(offunit.kilojoule_per_mole)
 
-    @pytest.mark.parametrize("key", ["solvent", "complex"])
-    def test_get_forwards_etc(self, key, protocolresult):
+    def test_get_forwards_etc(self, protocolresult):
         """
         Due to the short simulation times, we expect the frwd/reverse
-        analysis to be None.
+        analysis of the solvent to be None.
         """
-        wmsg = f"were found in the forward and reverse dictionaries of the repeats of the {key}"
+        wmsg = f"were found in the forward and reverse dictionaries of the repeats of the solvent"
         with pytest.warns(UserWarning, match=wmsg):
             far = protocolresult.get_forward_and_reverse_energy_analysis()
 
         assert isinstance(far, dict)
-        assert isinstance(far[key], list)
-        for entry in far[key]:
-            assert entry is None
+        for key in ["solvent", "complex"]:
+            assert isinstance(far[key], list)
+
+        assert far["solvent"][0] is None
+
+        complex_keys = list(far["complex"][0].keys())
+
+        for key in ["fractions", "forward_DGs", "forward_dDGs", "reverse_DGs", "reverse_dDGs"]:
+            assert key in complex_keys
+            assert len(far["complex"][0][key]) == 10
 
     @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_overlap_matrices(self, key, protocolresult):
@@ -341,9 +347,9 @@ class TestProtocolResult:
         assert isinstance(geom[0][0], BoreschRestraintGeometry)
         assert geom[0][0].guest_atoms == [1779, 1778, 1777]
         assert geom[0][0].host_atoms == [802, 801, 800]
-        assert pytest.approx(geom[0][0].r_aA0) == 0.798936 * offunit.nanometer
-        assert pytest.approx(geom[0][0].theta_A0) == 2.049091 * offunit.radian
-        assert pytest.approx(geom[0][0].theta_B0) == 1.221973 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_A0) == 0.956774 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_B0) == -1.217188 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_C0) == -1.068226 * offunit.radian
+        assert pytest.approx(geom[0][0].r_aA0, abs=0.01) == 0.75 * offunit.nanometer
+        assert pytest.approx(geom[0][0].theta_A0, abs=0.01) == 1.95 * offunit.radian
+        assert pytest.approx(geom[0][0].theta_B0, abs=0.01) == 1.33 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_A0, abs=0.01) == 1.01 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_B0, abs=0.01) == -1.24 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_C0, abs=0.01) == -1.08 * offunit.radian

@@ -1466,6 +1466,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         previous_outputs["subsampled_pdb_structure"] = setup.outputs["subsampled_pdb_structure"]
         previous_outputs["selection_indices"] = setup.outputs["selection_indices"]
+        previous_outputs["trajectory"] = trajectory
+        previous_outputs["checkpoint"] = checkpoint
 
         return {
             "repeat_id": self._inputs["repeat_id"],

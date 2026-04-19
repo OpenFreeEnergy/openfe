@@ -417,8 +417,8 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         for key in ["complex", "solvent"]:
             for pus in self.data[key].values():
                 states = get_replica_state(
-                    pus[0].outputs["nc"],
-                    pus[0].outputs["last_checkpoint"],
+                    pus[0].outputs["trajectory"],
+                    pus[0].outputs["checkpoint"],
                 )
                 replica_states[key].append(states)
 
