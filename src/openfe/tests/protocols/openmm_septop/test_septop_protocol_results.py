@@ -41,9 +41,9 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
 )
 from openfe.protocols.openmm_septop.base_units import (
-    BaseSepTopSetupUnit,
-    BaseSepTopRunUnit,
     BaseSepTopAnalysisUnit,
+    BaseSepTopRunUnit,
+    BaseSepTopSetupUnit,
 )
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -52,8 +52,8 @@ from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
     _assert_num_forces,
     _verify_alchemical_sterics_force_parameters,
 )
-from .utils import UNIT_TYPES, _get_units
 
+from .utils import UNIT_TYPES, _get_units
 
 E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
 EPSILON0 = (
@@ -95,7 +95,11 @@ def patcher():
                 "standard_state_correction_B": 0 * offunit.kilocalorie_per_mole,
                 "restraint_geometry_A": None,
                 "restraint_geometry_B": None,
-                "selection_indices": np.array([0,]),
+                "selection_indices": np.array(
+                    [
+                        0,
+                    ]
+                ),
                 "subsampled_pdb_structure": "subsampled.pdb",
             },
         ),
@@ -105,7 +109,11 @@ def patcher():
                 "system": pathlib.Path("system.xml.bz2"),
                 "topology": "topology.pdb",
                 "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
-                "selection_indices": np.array([0,]),
+                "selection_indices": np.array(
+                    [
+                        0,
+                    ]
+                ),
                 "subsampled_pdb_structure": "subsampled.pdb",
             },
         ),
@@ -250,7 +258,7 @@ class TestProtocolResult:
         Due to the short simulation times, we expect the frwd/reverse
         analysis of the solvent to be None.
         """
-        wmsg = f"were found in the forward and reverse dictionaries of the repeats of the solvent"
+        wmsg = "were found in the forward and reverse dictionaries of the repeats of the solvent"
         with pytest.warns(UserWarning, match=wmsg):
             far = protocolresult.get_forward_and_reverse_energy_analysis()
 

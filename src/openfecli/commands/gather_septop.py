@@ -102,19 +102,15 @@ def _get_legs_from_result_jsons(
         # the Analysis Unit. To ensure backwards compatibility,
         # we check if there are any analysis units. If so,
         # we set a flag and later exclude Setup and Run.
-        has_analysis_units = any([
-            "Analysis" in result["unit_results"][p]["source_key"]
-            for p in proto_key
-        ])
+        has_analysis_units = any(
+            ["Analysis" in result["unit_results"][p]["source_key"] for p in proto_key]
+        )
 
         for p in proto_key:
             # Skip non-analysis units if we have any
-            if (
-                has_analysis_units and
-                (
-                    "Setup" in result["unit_results"][p]["source_key"]
-                    or "Run" in result["unit_results"][p]["source_key"]
-                )
+            if has_analysis_units and (
+                "Setup" in result["unit_results"][p]["source_key"]
+                or "Run" in result["unit_results"][p]["source_key"]
             ):
                 continue
 

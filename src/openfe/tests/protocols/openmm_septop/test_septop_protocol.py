@@ -47,8 +47,8 @@ from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
     _assert_num_forces,
     _verify_alchemical_sterics_force_parameters,
 )
-from .utils import UNIT_TYPES, _get_units
 
+from .utils import UNIT_TYPES, _get_units
 
 E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
 EPSILON0 = (
@@ -86,9 +86,7 @@ def test_serialize_protocol(default_settings):
     assert protocol == ret
 
 
-def test_repeat_units(
-    benzene_complex_system, toluene_complex_system, default_settings
-):
+def test_repeat_units(benzene_complex_system, toluene_complex_system, default_settings):
     default_settings.protocol_repeats = 3
     protocol = SepTopProtocol(
         settings=default_settings,
@@ -119,12 +117,10 @@ def test_repeat_units(
         for analysis_pu in analysis:
             repeat_id = analysis_pu.inputs["repeat_id"]
             setup_pu = [
-                s for s in setup
-                if (s.inputs["repeat_id"] == repeat_id) and (s.simtype == phase)
+                s for s in setup if (s.inputs["repeat_id"] == repeat_id) and (s.simtype == phase)
             ][0]
             sim_pu = [
-                s for s in sim
-                if (s.inputs["repeat_id"] == repeat_id) and (s.simtype == phase)
+                s for s in sim if (s.inputs["repeat_id"] == repeat_id) and (s.simtype == phase)
             ][0]
             assert analysis_pu.inputs["setup"] == setup_pu
             assert analysis_pu.inputs["simulation"] == sim_pu
