@@ -13,7 +13,7 @@ and thermodynamic cycles, which connect end states via alchemical transformation
 Components
 ----------
 
-Components are the additive, composable building blocks that define the chemical
+Components are the composable building blocks that define the chemical
 composition of a simulated system. Splitting a system into components serves three purposes:
 
 1. Alchemical transformations can be easily understood by comparing the differences in components.
@@ -33,8 +33,8 @@ Component types — overview
      - Key notes
    * - :class:`.ProteinComponent`
      - Biological assembly
-     - Typically the contents of a PDB file. May include crystallographic waters, ions,
-       and disulfide bonds via CONECT records.
+     - Typically the contents of a PDB file. May include crystallographic waters and ions (defined as HETATM entries),
+       and disulfide bonds (defined via CONECT records).
    * - :class:`.SmallMoleculeComponent`
      - Ligands and cofactors
      -
@@ -85,7 +85,7 @@ requires periodic box vectors. These can be provided in three ways:
 
      membrane_protein = openfe.ProteinMembraneComponent.from_pdb_file('./protein_membrane.pdb')
 
-2. **Manual specification** — box vectors can be provided explicitly in OpenMM format  via the ``box_vectors`` argument::
+2. **Manual specification** — box vectors can be provided explicitly as a numpy array with OpenFF units in OpenMM format  via the ``box_vectors`` argument::
 
      import numpy as np
      import openff.units as offunit
@@ -192,8 +192,8 @@ The same :class:`.ChemicalSystem` can be reused across multiple thermodynamic st
 depending on the protocol. For details of which end states to construct, consult the
 :ref:`pages for each specific Protocol <userguide_protocols>`.
 
-RBFE example
-~~~~~~~~~~~~
+Hybrid topology RBFE example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As an example, the relative binding free energy cycle requires four
 :class:`.ChemicalSystem`\s — one for each node in the cycle:
