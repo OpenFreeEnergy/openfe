@@ -159,7 +159,7 @@ the nature of the system. The table below summarises the composition for each co
 
    * - System
      - :ref:`RBFE <userguide_relative_hybrid_topology_protocol>` (:class:`.RelativeHybridTopologyProtocol`)
-     - ref:`SepTop <userguide_septop_protocol>` / ref:`ABFE <userguide_abfe_protocol>` (:class:`.SepTopProtocol`, :class:`.AbsoluteBindingProtocol`)
+     - :ref:`SepTop <userguide_septop_protocol>` / :ref:`ABFE <userguide_abfe_protocol>` (:class:`.SepTopProtocol`, :class:`.AbsoluteBindingProtocol`)
    * - **Standard protein–ligand**
      - | **Complex leg:**
        | :class:`.ProteinComponent` + :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
