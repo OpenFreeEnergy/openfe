@@ -19,7 +19,12 @@ from openfe.setup import (
     ligand_network_planning,
     lomap_scorers,
 )
-from openfe.tests.conftest import T4_protein_component, T4_protein_component_pdb
+from openfe.tests.conftest import (
+    T4_protein_component,
+    T4_protein_component_pdb,
+    a2a_protein_membrane_component,
+    a2a_protein_membrane_pdb,
+)
 from openfecli.commands.plan_rbfe_network import plan_rbfe_network, plan_rbfe_network_main
 
 from ..utils import assert_click_success
@@ -85,15 +90,18 @@ def validate_charges(smc):
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_plan_rbfe_network_main(T4_protein_component):
+@pytest.mark.parametrize(
+    "protein_fixture", ["T4_protein_component", "a2a_protein_membrane_component"]
+)
+def test_plan_rbfe_network_main(request, protein_fixture):
 
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         smallM_components = [
             SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]
         ]
-    protein_component = T4_protein_component
-
+    protein_component = request.getfixturevalue(protein_fixture)
     solvent_component = SolventComponent()
+
     alchemical_network, ligand_network = plan_rbfe_network_main(
         mapper=[LomapAtomMapper()],
         mapping_scorer=lomap_scorers.default_lomap_score,
@@ -137,14 +145,12 @@ partial_charge:
 """
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_plan_rbfe_network(mol_dir_args, protein_args, tmp_path, yaml_nagl_settings):
+@pytest.mark.parametrize("protein_fixture", ["protein_args"])
+def test_plan_rbfe_network(mol_dir_args, request, protein_fixture, tmp_path, yaml_nagl_settings):
     """
     smoke test
     """
@@ -153,7 +159,7 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, tmp_path, yaml_nagl_setti
     with open(settings_path, "w") as f:
         f.write(yaml_nagl_settings)
 
-    args = mol_dir_args + protein_args
+    args = mol_dir_args + request.getfixturevalue(protein_fixture)
     expected_output_always = [
         "RBFE-NETWORK PLANNER",
         "Protein: ProteinComponent(name=)",
@@ -223,10 +229,7 @@ def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat,
         pytest.param(False, id="No overwrite"),
     ],
 )
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
@@ -383,10 +386,7 @@ partial_charge:
 """
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
