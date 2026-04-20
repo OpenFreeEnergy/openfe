@@ -277,10 +277,10 @@ def test_openmm_run_engine(
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
         if "SepTopComplexRunUnit" in pur.source_key.split("-") or "SepTopSolventRunUnit" in pur.source_key.split("-"):  # fmt: skip
-            checkpoint = pur.outputs["last_checkpoint"]
-            assert checkpoint == f"{pur.outputs['simtype']}_checkpoint.nc"
+            checkpoint = pur.outputs["checkpoint"]
+            assert checkpoint == unit_shared / f"{pur.outputs['simtype']}_checkpoint.nc"
             assert (unit_shared / checkpoint).exists()
-            nc = pur.outputs["nc"]
+            nc = pur.outputs["trajectory"]
             assert nc == unit_shared / f"{pur.outputs['simtype']}.nc"
             assert nc.exists()
 
