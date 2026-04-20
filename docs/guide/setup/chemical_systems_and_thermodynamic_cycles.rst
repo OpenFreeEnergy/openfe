@@ -60,7 +60,7 @@ These two approaches are **mutually exclusive**:
 * **Abstract solvation** — use a :class:`.SolventComponent`. The protocol adds solvent
   during system preparation.
 * **Explicit solvation** — use a :class:`.SolvatedPDBComponent` or
-  :class:`.ProteinMembraneComponent`. Solvent is already present in the system.
+  :class:`.ProteinMembraneComponent`. Solvent molecule coordinates (waters and ions) are explicitly defined in the inputs.
 
 Either define the solvent abstractly, or provide a fully solvated system — do not mix
 both for the same leg of a transformation.
@@ -81,14 +81,37 @@ Box vectors for explicitly solvated systems
 The components :class:`.SolvatedPDBComponent` and :class:`.ProteinMembraneComponent`
 requires periodic box vectors. These can be provided in three ways:
 
-1. **CRYST record in the PDB file** — OpenMM reads box vectors automatically.
-2. **Manual specification** — box vectors can be provided explicitly in OpenMM format.
-3. **Inference from atomic coordinates** — box vectors are estimated from atomic positions.
+1. **CRYST record in the PDB file** — OpenMM reads box vectors automatically. No additional arguments are needed::
 
-.. warning::
+     membrane_protein = openfe.ProteinMembraneComponent.from_pdb_file('./protein_membrane.pdb')
 
-   Inferring box vectors from atomic positions can be inaccurate if the PDB originates
-   from a previous simulation where atoms may be distributed across periodic images.
+2. **Manual specification** — box vectors can be provided explicitly in OpenMM format  via the ``box_vectors`` argument::
+
+     import numpy as np
+     import openff.units as offunit
+
+     box_vectors = np.array([
+         [6.9587, 0.0, 0.0],
+         [0.0, 5.9164, 0.0],
+         [0.0, 0.0, 9.2692]
+     ]) * offunit.nanometer
+
+     membrane_protein = openfe.ProteinMembraneComponent.from_pdb_file(
+         './protein_membrane.pdb', box_vectors=box_vectors
+     )
+
+3. **Inference from atomic coordinates** — box vectors can be estimated from the atomic
+   positions by passing ``infer_box_vectors=True``::
+
+     membrane_protein = openfe.ProteinMembraneComponent.from_pdb_file(
+         './protein_membrane.pdb', infer_box_vectors=True
+     )
+
+   .. warning::
+
+      Inferring box vectors from atomic positions can be inaccurate if the PDB originates
+      from a previous simulation where atoms may be distributed across periodic images.
+
 
 .. _userguide_chemical_systems:
 
@@ -127,7 +150,7 @@ the nature of the system. The table below summarises the composition for each co
    For :class:`.SepTopProtocol` and :class:`.AbsoluteBindingProtocol`, a single
    :class:`.ChemicalSystem` represents both legs of the thermodynamic cycle. The protocol
    determines internally what is the complex leg and what is the solvent leg.
-   This differs from the :class:`.RelativeHybridTopologyProtocol`, where each leg is defined by
+   This differs from the :class:`.RelativeHybridTopologyProtocol`, where each leg (e.g. complex and solvent) is defined by
    separate :class:`.ChemicalSystem`\s. This behaviour is expected to change in future versions.
 
 .. list-table::
@@ -135,8 +158,8 @@ the nature of the system. The table below summarises the composition for each co
    :widths: 20 40 40
 
    * - System
-     - RBFE (:class:`.RelativeHybridTopologyProtocol`)
-     - SepTop / ABFE (:class:`.SepTopProtocol`, :class:`.AbsoluteBindingProtocol`)
+     - :ref:`RBFE <userguide_relative_hybrid_topology_protocol>` (:class:`.RelativeHybridTopologyProtocol`)
+     - ref:`SepTop <userguide_septop_protocol>` / ref:`ABFE <userguide_abfe_protocol>` (:class:`.SepTopProtocol`, :class:`.AbsoluteBindingProtocol`)
    * - **Standard protein–ligand**
      - | **Complex leg:**
        | :class:`.ProteinComponent` + :class:`.SmallMoleculeComponent`\s + :class:`.SolventComponent`
@@ -163,6 +186,7 @@ Thermodynamic Cycles
 A thermodynamic cycle can be described as a set of :class:`.ChemicalSystem`\s (nodes) connected by
 alchemical transformations (edges). The :class:`.Protocol` defines how the
 :class:`.ChemicalSystem`\s map onto the cycle and how they are used in practice.
+See :ref:`the user guide for alchemical networks <alchemical_network_model>` for more information.
 
 The same :class:`.ChemicalSystem` can be reused across multiple thermodynamic states
 depending on the protocol. For details of which end states to construct, consult the

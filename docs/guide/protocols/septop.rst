@@ -1,3 +1,5 @@
+.. _userguide_septop_protocol:
+
 Separated Topologies Protocol
 =============================
 
