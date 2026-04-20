@@ -25,8 +25,10 @@ import numpy as np
 import openmm
 import openmm.unit as omm_unit
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     settings,
 )
 from gufe.protocols.errors import ProtocolUnitExecutionError
@@ -35,6 +37,7 @@ from mdtraj.reporters import XTCReporter
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity, unit
 from openff.units.openmm import from_openmm, to_openmm
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat
 
 import openfe
 from openfe.protocols.openmm_md.plain_md_settings import (
@@ -174,14 +177,37 @@ class PlainMDProtocol(gufe.Protocol):
         mapping: Optional[dict[str, gufe.ComponentMapping]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
-        # validate the inputs
-        self.validate(stateA=stateA, stateB=stateB, mapping=mapping, extends=extends)
+        # TODO: Extensions?
+        if extends:
+            raise NotImplementedError("Can't extend simulations yet")
+
+        # Validate the ChcemicalSystem
+        system_validation.validate_chemical_system(stateA)
+
+        # Validate solvent component
+        nonbond = self.settings.forcefield_settings.nonbonded_method
+        system_validation.validate_solvent(stateA, nonbond)
+
+        # Validate the BaseSolventComponents
+        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
+        if len(base_solvent) > 1:
+            errmsg = "Multiple BaseSolventComponents found, only one is supported."
+            raise ValueError(errmsg)
+
+        # Validate protein component
+        system_validation.validate_protein(stateA)
+
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_barostat(stateA, self.settings.integrator_settings.barostat)
+
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
 
         # actually create and return Units
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
-        system_name = "Solvent MD" if solvent_comp is not None else "Vacuum MD"
+        system_name = "Solvent MD" if stateA.contains(BaseSolventComponent) else "Vacuum MD"
 
         for comp in [protein_comp] + small_mols:
             if comp is not None:
@@ -303,7 +329,7 @@ class PlainMDUnitMixin:
 
 class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
     """
-    Protocol setup unit for plan MD simulations which handles charging, system building and solvation.
+    Protocol setup unit for plain MD simulations which handles charging, system building and solvation.
     """
 
     def __init__(

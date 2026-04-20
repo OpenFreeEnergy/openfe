@@ -20,11 +20,13 @@ from typing import Any, Iterable, Optional, Union
 import gufe
 import numpy as np
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     Component,
     ComponentMapping,
     LigandAtomMapping,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     settings,
@@ -196,8 +198,12 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             protocol_settings.lambda_settings.lambda_windows = 22
 
         # adapt the solvation padding based on the system components
-        if stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent):
+        if stateA.contains(ProteinComponent):
             protocol_settings.solvation_settings.solvent_padding = 1 * offunit.nanometer
+
+        # adapt the barostat based on the system components
+        if stateA.contains(ProteinMembraneComponent):
+            protocol_settings.integrator_settings.barostat = "MonteCarloMembraneBarostat"
 
         return protocol_settings
 
@@ -520,6 +526,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             raise ValueError("Can't extend simulations yet")
 
         # Validate the end states
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
         # Validate the mapping
@@ -533,11 +541,20 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
+        # Validate the BaseSolventComponents
+        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
+        if len(base_solvent) > 1:
+            errmsg = "Multiple BaseSolventComponents found, only one is supported."
+            raise ValueError(errmsg)
+
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
 
         # Validate protein component
         system_validation.validate_protein(stateA)
+
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_barostat(stateA, self.settings.integrator_settings.barostat)
 
         # Validate charge difference
         # Note: validation depends on the mapping & solvent component checks

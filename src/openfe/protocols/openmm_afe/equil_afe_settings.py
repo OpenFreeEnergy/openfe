@@ -387,10 +387,15 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
 
     # Sampling State defining things
-    integrator_settings: IntegratorSettings
+    solvent_integrator_settings: IntegratorSettings
     """
     Settings for controlling the integrator, such as the timestep and
-    barostat settings.
+    barostat settings in the solvent.
+    """
+    complex_integrator_settings: IntegratorSettings
+    """
+    Settings for controlling the integrator, such as the timestep and
+    barostat settings in the complex.
     """
 
     # Simulation run settings
