@@ -85,7 +85,7 @@ requires periodic box vectors. These can be provided in three ways:
 
      membrane_protein = openfe.ProteinMembraneComponent.from_pdb_file('./protein_membrane.pdb')
 
-2. **Manual specification** — box vectors can be provided explicitly as a numpy array with OpenFF units in OpenMM format  via the ``box_vectors`` argument::
+2. **Manual specification** — box vectors can be provided explicitly as numpy arrays with OpenFF units in OpenMM format via the ``box_vectors`` argument::
 
      import numpy as np
      import openff.units as offunit
