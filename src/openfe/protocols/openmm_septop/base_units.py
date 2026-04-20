@@ -1310,18 +1310,19 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         )
 
         # Check that the restraints are correctly applied by running a short equilibration
-        equil_positions, box_AB = _pre_equilibrate(
-            system=system,
-            topology=pdb_file.topology,
-            positions=positions,
-            settings=settings,
-            endstate="AB",
-            dry=dry,
-            shared_basepath=self.shared_basepath,
-            platform=platform,
-            verbose=self.verbose,
-            logger=self.logger,
-        )
+        if not self.restart:
+            equil_positions, box_AB = _pre_equilibrate(
+                system=system,
+                topology=pdb_file.topology,
+                positions=positions,
+                settings=settings,
+                endstate="AB",
+                dry=dry,
+                shared_basepath=self.shared_basepath,
+                platform=platform,
+                verbose=self.verbose,
+                logger=self.logger,
+            )
 
         # Get the lambda schedule
         lambdas = self._get_lambda_schedule(settings)
