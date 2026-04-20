@@ -7,7 +7,6 @@ import pytest
 from click.testing import CliRunner
 from gufe import (
     AlchemicalNetwork,
-    ProteinComponent,
     SmallMoleculeComponent,
     SolventComponent,
 )
@@ -20,7 +19,7 @@ from openfe.setup import (
     ligand_network_planning,
     lomap_scorers,
 )
-from openfe.tests.conftest import T4_protein_component_pdb
+from openfe.tests.conftest import T4_protein_component, T4_protein_component_pdb
 from openfecli.commands.plan_rbfe_network import plan_rbfe_network, plan_rbfe_network_main
 
 from ..utils import assert_click_success
@@ -430,10 +429,7 @@ partial_charge:
 """
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )

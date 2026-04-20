@@ -297,8 +297,7 @@ def a2a_protein_membrane_pdb():
 
 @pytest.fixture(scope="session")
 def a2a_protein_membrane_component(a2a_protein_membrane_pdb) -> openfe.ProteinMembraneComponent:
-    with gzip.open(a2a_protein_membrane_pdb, "rb") as f:
-        yield openfe.ProteinMembraneComponent.from_pdb_file(f, name="a2a")
+    yield openfe.ProteinMembraneComponent.from_pdb_file(a2a_protein_membrane_pdb, name="a2a")
 
 
 @pytest.fixture(scope="session")

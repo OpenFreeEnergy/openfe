@@ -55,7 +55,6 @@ def _load_protein_membrane_file(user_input, context):
 
     from gufe import ProteinMembraneComponent
 
-    # TODO: upstream gufe work may make this change for the better
     try:
         return ProteinMembraneComponent.from_pdb_file(user_input)
     except ValueError:
