@@ -8,7 +8,7 @@
 # You can also reference a tag or branch, but the action may change without warning.
 
 # Workflow to automate docker image building during the openfe release process.
-name: Create and publish a Docker image
+name: "release: create and publish a docker image"
 
 on:
   workflow_dispatch:

@@ -1,6 +1,5 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-
 requires = [
   "setuptools>=77.0.3",
   "setuptools-scm>=8",
@@ -14,7 +13,6 @@ license = "MIT"
 license-files = [ "LICENSE" ]
 authors = [ { name = "The OpenFE developers", email = "openfreeenergy@omsf.io" } ]
 requires-python = ">=3.11"
-
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
@@ -28,27 +26,22 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Chemistry",
 ]
 dynamic = [ "version" ]
-
 urls = { Homepage = "https://github.com/OpenFreeEnergy/openfe" }
 scripts.openfe = "openfecli.cli:main"
 
 [tool.setuptools]
 zip-safe = false
 include-package-data = true
-
-[tool.setuptools.packages.find]
-where = [ "src" ]
-namespaces = false
-
-[tool.setuptools.package-data]
-openfe = [ '"./src/openfe/tests/data/lomap_basic/toluene.mol2"' ]
+package-data.openfe = [ '"./src/openfe/tests/data/lomap_basic/toluene.mol2"' ]
+packages.find.where = [ "src" ]
+packages.find.namespaces = false
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0"
 
 [tool.ruff]
 line-length = 100
-
+format.docstring-code-format = true
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 lint.select = [
   "E", # pycodestyle errors
@@ -68,23 +61,21 @@ lint.ignore = [
 ]
 lint.isort.known-first-party = [ "openfe" ]
 
-[tool.coverage.run]
-omit = [
-  "src/openfe/due.py",
+[tool.mypy]
+files = "src/openfe"  # TODO: add src/openfecli
+ignore_missing_imports = true
+warn_unused_ignores = true
+
+[tool.coverage]
+run.omit = [
   "src/*/tests/dev/*py",
   "src/*/tests/protocols/test_openmm_rfe_slow.py",
+  "src/openfe/due.py",
 ]
-
-[tool.coverage.report]
-exclude_lines = [
+report.exclude_lines = [
+  "-no-cov",
   'if __name__ == "__main__"',
   "pragma: no cover",
   "pragma: no-cover",
-  "-no-cov",
   "raise NotImplementedError",
 ]
-
-[tool.mypy]
-files = "src/openfe"          # TODO: add src/openfecli
-ignore_missing_imports = true
-warn_unused_ignores = true

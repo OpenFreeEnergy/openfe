@@ -717,10 +717,14 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     central_atoms = np.array([[2, 19]], dtype=np.int32)
     distance = md.compute_distances(pdb, central_atoms)[0][0]
     assert np.isclose(distance, 0.8661)
-    serialized_topology = solv_setup_output["topology"]
-    serialized_system = solv_setup_output["system"]
+    pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
+    alchem_system = deserialize(solv_setup_output["system"])
     solv_sampler = sol_run_unit[0].run(
-        serialized_system, serialized_topology, dry=True,scratch_basepath=tmp_path, shared_basepath=tmp_path
+        alchem_system,
+        pdb_file,
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
     )["debug"]["sampler"]  # fmt: skip
 
     assert solv_sampler.is_periodic
@@ -732,7 +736,6 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     assert pdb.n_atoms == 31
 
     # Test the solvent system
-    alchem_system = deserialize(serialized_system)
     assert len(alchem_system.getForces()) == 14
     _assert_num_forces(alchem_system, NonbondedForce, 1)
     _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
@@ -750,10 +753,14 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     complex_setup_output = complex_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
     )
-    serialized_topology = complex_setup_output["topology"]
-    serialized_system = complex_setup_output["system"]
+    pdb_file = openmm.app.pdbfile.PDBFile(str(complex_setup_output["topology"]))
+    alchem_system = deserialize(complex_setup_output["system"])
     complex_sampler = complex_run_unit[0].run(
-        serialized_system, serialized_topology, dry=True,scratch_basepath=tmp_path, shared_basepath=tmp_path
+        alchem_system,
+        pdb_file,
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
     )["debug"]["sampler"]  # fmt: skip
 
     assert complex_sampler.is_periodic
@@ -765,7 +772,6 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     assert pdb.n_atoms == 2687
 
     # Test the complex system
-    alchem_system = deserialize(serialized_system)
     assert len(alchem_system.getForces()) == 15
     _assert_num_forces(alchem_system, NonbondedForce, 1)
     _assert_num_forces(alchem_system, CustomNonbondedForce, 4)
@@ -811,10 +817,14 @@ def test_dry_run_methods(
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
     )
-    serialized_topology = solv_setup_output["topology"]
-    serialized_system = solv_setup_output["system"]
+    pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
+    alchem_system = deserialize(solv_setup_output["system"])
     solv_sampler = sol_run_unit[0].run(
-        serialized_system, serialized_topology, dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        alchem_system,
+        pdb_file,
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
     )["debug"]["sampler"]  # fmt: skip
 
     assert isinstance(solv_sampler, MultiStateSampler)
@@ -863,10 +873,14 @@ def test_dry_run_ligand_system_pressure(
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
     )
-    serialized_topology = solv_setup_output["topology"]
-    serialized_system = solv_setup_output["system"]
+    pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
+    alchem_system = deserialize(solv_setup_output["system"])
     solv_sampler = sol_run_unit[0].run(
-        serialized_system, serialized_topology, dry=True,scratch_basepath=tmp_path, shared_basepath=tmp_path
+        alchem_system,
+        pdb_file,
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
     )["debug"]["sampler"]  # fmt: skip
 
     # at this point, the units will be in openmm units
@@ -987,10 +1001,15 @@ def test_dry_run_benzene_toluene_tip4p(
     solv_setup_output = solv_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
     )
-    serialized_topology = solv_setup_output["topology"]
-    serialized_system = solv_setup_output["system"]
+
+    pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
+    alchem_system = deserialize(solv_setup_output["system"])
     solv_run = sol_run_unit[0].run(
-        serialized_system, serialized_topology, dry=True,scratch_basepath=tmp_path, shared_basepath=tmp_path
+        alchem_system,
+        pdb_file,
+        dry=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
     )["debug"]["sampler"]  # fmt: skip
 
     assert solv_run.is_periodic

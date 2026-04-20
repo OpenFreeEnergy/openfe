@@ -178,6 +178,7 @@ class TestCheckpointResuming:
     def _copy_simfiles(cwd: pathlib.Path, filepath):
         shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
 
+    @pytest.mark.integration
     def test_resume(
         self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmp_path
     ):

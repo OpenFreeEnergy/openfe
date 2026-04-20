@@ -114,7 +114,7 @@ def _silence_message(msg: str | list[str], logger_names: str | list[str]) -> Non
     --------
     >>> _silence_message(
     ...     msg="****** PyMBAR will use 64-bit JAX! *******",
-    ...     logger_names=["pymbar.timeseries", "pymbar.mbar_solvers"]
+    ...     logger_names=["pymbar.timeseries", "pymbar.mbar_solvers"],
     ... )
     """
     if isinstance(logger_names, str):
@@ -158,10 +158,7 @@ def _append_logger(suffix: str | list[str], logger_names: str | list[str]) -> No
 
     Examples
     --------
-    >>> _append_logger(
-    ...     suffix=" [DEPRECATED]",
-    ...     logger_names="myapp"
-    ... )
+    >>> _append_logger(suffix=" [DEPRECATED]", logger_names="myapp")
     """
     if isinstance(logger_names, str):
         logger_names = [logger_names]

@@ -1,4 +1,4 @@
-name: Create OpenFE Conda-Lock File
+name: "release: create openfe conda-lock file"
 
 on:
   workflow_dispatch:

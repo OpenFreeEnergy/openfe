@@ -59,7 +59,7 @@ from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
-from openfe.utils import without_oechem_backend
+from openfe.utils import log_system_probe, without_oechem_backend
 
 from ..openmm_utils import (
     charge_generation,
@@ -738,6 +738,22 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         return omm_system, omm_topology, positions, system_modeller, comp_resids
 
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": self.simtype,
+            **outputs,
+        }
+
 
 class BaseSepTopRunUnit(gufe.ProtocolUnit):
     """
@@ -1231,22 +1247,22 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
     def run(
         self,
-        serialized_system,
-        serialized_topology,
-        dry=False,
-        verbose=True,
-        scratch_basepath=None,
-        shared_basepath=None,
+        system: openmm.System,
+        pdb_file: openmm.app.pdbfile.PDBFile,
+        dry: bool = False,
+        verbose: bool = True,
+        scratch_basepath: pathlib.Path | None = None,
+        shared_basepath: pathlib.Path | None = None,
     ) -> dict[str, Any]:
         """
         Run the simulation part of the SepTop protocol.
 
         Parameters
         ----------
-        serialized_system: pathlib.Path
-          Path to the serialized OpenMM system
-        serialized_topology: pathlib.Path
-          Path to the serialized topology of the system
+        system: openmm.System
+          System used for the SepTop calculation.
+        pdb_file: openmm.app.pdbfile.PDBFile
+          OpenMM PDBFile object representing the SepTop System.
         dry: bool
           Do a dry run of the calculation, creating all necessary alchemical
           system components (topology, system, sampler, etc...) but without
@@ -1254,9 +1270,9 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         verbose: bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging, default True
-        scratch_basepath : pathlib.Path
+        scratch_basepath : pathlib.Path | None
           Path to the scratch (temporary) directory space.
-        shared_basepath : pathlib.Path
+        shared_basepath : pathlib.Path | None
           Path to the shared (persistent) directory space.
 
         Returns
@@ -1274,15 +1290,12 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         settings = self._handle_settings()
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-
-        system = deserialize(serialized_system)
-        pdb = openmm.app.pdbfile.PDBFile(str(serialized_topology))
-        positions = pdb.getPositions(asNumpy=True)
+        positions = pdb_file.getPositions(asNumpy=True)
 
         # 2. Check that the restraints are correctly applied by running a short equilibration
         equil_positions, box_AB = _pre_equilibrate(
             system,
-            pdb.topology,
+            pdb_file.topology,
             positions,
             settings,
             "AB",
@@ -1305,7 +1318,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         # 4. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
-            pdb.topology,
+            pdb_file.topology,
             equil_positions,
             settings["simulation_settings"],
             settings["output_settings"],
@@ -1375,3 +1388,29 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             }
         else:
             return {"debug": {"sampler": sampler}}
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        *,
+        setup,
+        **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        system = deserialize(setup.outputs["system"])
+        pdb_file = openmm.app.pdbfile.PDBFile(str(setup.outputs["topology"]))
+
+        outputs = self.run(
+            system,
+            pdb_file,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared,
+        )
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": self.simtype,
+            **outputs,
+        }
