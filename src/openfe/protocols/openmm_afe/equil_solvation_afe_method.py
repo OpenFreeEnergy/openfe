@@ -451,7 +451,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Get the name of the alchemical species
         alchname = alchem_comps["stateA"][0].name
 
-        unit_classes = {
+        unit_classes: dict[str, dict[str, type[gufe.ProtocolUnit]]] = {
             "solvent": {
                 "setup": AHFESolventSetupUnit,
                 "simulation": AHFESolventSimUnit,

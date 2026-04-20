@@ -18,8 +18,10 @@ Protocol API specification
    SepTopProtocol
    SepTopComplexSetupUnit
    SepTopComplexRunUnit
+   SepTopComplexAnalysisUnit
    SepTopSolventSetupUnit
    SepTopSolventRunUnit
+   SepTopSolventAnalysisUnit
    SepTopProtocolResult
 
 Protocol Settings

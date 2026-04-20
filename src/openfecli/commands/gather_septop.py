@@ -97,7 +97,23 @@ def _get_legs_from_result_jsons(
             for k in result["unit_results"].keys()
             if k.startswith("ProtocolUnitResult")
         ]  # fmt: skip
+
+        # In openfe v1.11+, we only want to pick up results from
+        # the Analysis Unit. To ensure backwards compatibility,
+        # we check if there are any analysis units. If so,
+        # we set a flag and later exclude Setup and Run.
+        has_analysis_units = any(
+            ["Analysis" in result["unit_results"][p]["source_key"] for p in proto_key]
+        )
+
         for p in proto_key:
+            # Skip non-analysis units if we have any
+            if has_analysis_units and (
+                "Setup" in result["unit_results"][p]["source_key"]
+                or "Run" in result["unit_results"][p]["source_key"]
+            ):
+                continue
+
             if "unit_estimate" in result["unit_results"][p]["outputs"]:
                 simtype = result["unit_results"][p]["outputs"]["simtype"]
                 dg = result["unit_results"][p]["outputs"]["unit_estimate"]
@@ -135,8 +151,13 @@ def _get_names(result: dict) -> tuple[str, str]:
 
     solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
 
-    name_A = solvent_data["inputs"]["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
-    name_B = solvent_data["inputs"]["alchemical_components"]["stateB"][0]["molprops"]["ofe-name"]
+    try:
+        setup_data = solvent_data["inputs"]["setup"]["inputs"]
+    except KeyError:
+        setup_data = solvent_data["inputs"]
+
+    name_A = setup_data["alchemical_components"]["stateA"][0]["molprops"]["ofe-name"]
+    name_B = setup_data["alchemical_components"]["stateB"][0]["molprops"]["ofe-name"]
 
     return str(name_A), str(name_B)
 

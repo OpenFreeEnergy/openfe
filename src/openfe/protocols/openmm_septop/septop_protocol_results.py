@@ -66,7 +66,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
                 (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
             )
 
-        for pus in self.data["complex_setup"].values():
+        for pus in self.data["complex"].values():
             complex_correction_dGs_A.append(
                 (
                     pus[0].outputs["standard_state_correction_A"],
@@ -85,7 +85,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
                 (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
             )
 
-        for pus in self.data["solvent_setup"].values():
+        for pus in self.data["solvent"].values():
             solv_correction_dGs.append(
                 (
                     pus[0].outputs["standard_state_correction"],
@@ -417,8 +417,8 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         for key in ["complex", "solvent"]:
             for pus in self.data[key].values():
                 states = get_replica_state(
-                    pus[0].outputs["nc"],
-                    pus[0].outputs["last_checkpoint"],
+                    pus[0].outputs["trajectory"],
+                    pus[0].outputs["checkpoint"],
                 )
                 replica_states[key].append(states)
 
@@ -487,11 +487,11 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         """
         geometry_A = [
             BoreschRestraintGeometry.model_validate(pus[0].outputs["restraint_geometry_A"])
-            for pus in self.data["complex_setup"].values()
+            for pus in self.data["complex"].values()
         ]
         geometry_B = [
             BoreschRestraintGeometry.model_validate(pus[0].outputs["restraint_geometry_B"])
-            for pus in self.data["complex_setup"].values()
+            for pus in self.data["complex"].values()
         ]
 
         return geometry_A, geometry_B
