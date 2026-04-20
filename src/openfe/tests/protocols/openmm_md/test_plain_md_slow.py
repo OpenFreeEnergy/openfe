@@ -66,7 +66,7 @@ def test_vacuum_sim(
 
     # NVT PDB should not exist
     assert not (unit_shared / "equil_nvt.pdb").exists()
-    assert not (unit_shared / "checkpoint.chk").exists()
+    assert not (unit_shared / "checkpoint.xml").exists()
 
     # check that the output file paths are correct
     assert pur.outputs["system_pdb"] == unit_shared / "system.pdb"
@@ -122,7 +122,7 @@ def test_complex_solvent_sim_gpu(
 
     # check the files
     files = [
-        "checkpoint.chk",
+        "checkpoint.xml",
         "equil_nvt.pdb",
         "equil_npt.pdb",
         "minimized.pdb",
@@ -137,6 +137,6 @@ def test_complex_solvent_sim_gpu(
     assert pur.outputs["system_pdb"] == unit_shared / "system.pdb"
     assert pur.outputs["minimized_pdb"] == unit_shared / "minimized.pdb"
     assert pur.outputs["nc"] == unit_shared / "simulation.xtc"
-    assert pur.outputs["last_checkpoint"] == unit_shared / "checkpoint.chk"
+    assert pur.outputs["last_checkpoint"] == unit_shared / "checkpoint.xml"
     assert pur.outputs["nvt_equil_pdb"] == unit_shared / "equil_nvt.pdb"
     assert pur.outputs["npt_equil_pdb"] == unit_shared / "equil_npt.pdb"
