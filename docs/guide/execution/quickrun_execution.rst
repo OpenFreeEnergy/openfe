@@ -9,12 +9,72 @@ Doing this requires storing and sending the details of the simulation from the l
 These serialized JSON files are the currency of executing a campaign of simulations and contain all the information required to execute a single simulation.
 
 To read the ``Transformation`` information and execute the simulation, the command line interface provides the ``openfe quickrun`` command, the full details of which are given in :ref:`the CLI reference section<cli_quickrun>`.
-Briefly, this command takes in the ``Transformation`` information represented as JSON, then executes a simulation according to those specifications.
+
+
+Basic quickrun usage
+--------------------
+
+The ``quickrun`` command takes in the ``Transformation`` information represented as JSON, then executes a simulation according to those specifications.
 For example, the following command executes a simulation defined by ``transformation.json`` and produces a results file named ``results.json``.
 
 ::
 
-  openfe quickrun transformation.json -o results.json
+  > openfe quickrun transformation.json -d workdir/ -o workdir/results.json
+
+The ``-d`` / ``--work-dir`` flag controls where working files (checkpoints, trajectory data, etc...) are written.
+If it is omitted, the current directory will be used.
+
+The ``-o`` flag controls where the results file will be written.
+If it is omitted, results are written to a file named ``<transformation_key>_results.json`` in the working directory, where ``<transformation_key>`` is a unique identifier.
+
+
+Resuming a halted job
+---------------------
+
+When ``openfe quickrun`` starts, it saves a plan of the simulation to a cache file before execution begins:
+
+.. code:: bash
+
+    <work-dir>/quickrun_cache/dag-cache-<key>.json
+
+Where ``<key>`` is a unique identifier based on the ``-o`` file path and Transformation.
+This cache is automatically removed once the job completes.
+
+If a job is interrupted (e.g. due to a wall-time limit, node failure, or manual cancellation), you can resume the interrupted job by passing the ``--resume`` flag:
+
+.. code:: bash
+
+    > openfe quickrun transformation.json -d workdir/ -o workdir/results.json --resume
+
+The planned simulation cache will be used to identify where in the simulation process it left off and, if supported by the Transformation Protocol, how to resume.
+
+.. note::
+
+    The same ``-d`` / ``--work-dir`` and ``-o`` flag arguments used in the
+    original run must be specified so that ``quickrun`` can locate the cache file.
+
+If you pass ``--resume`` but no cache file is found (e.g. the job never started), the following warning is printed and a fresh execution begins.
+
+.. code:: bash
+
+    openfe quickrun was run with --resume, but no cached results found at
+    <path-to-cache-file>. Starting new execution.
+
+If the cache file is corrupted (e.g. due to an incomplete write at the moment of interruption), ``quickrun --resume`` will raise an error with instructions to rerun the simulation:
+
+.. code:: bash
+
+    Recovery failed, please remove <work-dir>/quickrun_cache/dag-cache-<key>.json
+    before executing a new transformation simulation.
+
+If you do not pass the ``--resume`` flag, the code will detect the partially complete transformation and prevent you from accidentally starting a duplicate run.
+The following error will be raised:
+
+.. code:: bash
+
+    Transformation has been started but is incomplete. Please remove
+    <work-dir>/quickrun_cache/dag-cache-<key>.json and rerun, or resume
+    execution using the ``--resume`` flag.
 
 
 Executing within a job submission script
@@ -23,7 +83,7 @@ Executing within a job submission script
 You may need to submit computational jobs to a queueing engine, such as Slurm.
 The ``openfe quickrun`` command can be used within a submission script as follows:
 
-::
+.. code-block:: bash
 
   #!/bin/bash
 
@@ -33,7 +93,7 @@ The ``openfe quickrun`` command can be used within a submission script as follow
   # activate an appropriate conda environment, or any "module load" commands required to
   conda activate openfe_env
 
-  openfe quickrun transformation.json -o results.json
+  openfe quickrun transformation.json -d workdir/ -o workdir/results.json
 
 
 Parallel execution of repeats with Quickrun
@@ -43,8 +103,8 @@ Serial execution of multiple repeats of a transformation can be inefficient when
 Higher throughput can be achieved with parallel execution by running one repeat per HPC job.
 Most protocols are set up to run three repeats in serial by default, but this can be changed by either:
 
- 1. Defining the protocol setting ``protocol_repeats`` - see the :ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details.
- 2. Using the ``openfe plan-rhfe-network`` (or ``plan-rbfe-network``) command line flag ``--n-protocol-repeats``.
+1. Defining the protocol setting ``protocol_repeats`` - see the :ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details.
+2. Using the ``openfe plan-rhfe-network`` (or ``plan-rbfe-network``) command line flag ``--n-protocol-repeats``.
 
 Each transformation can then be executed multiple times via the ``openfe quickrun`` command to produce a set of repeats.
 However, **you must use unique results files for each repeat to ensure they don't overwrite each other**.
@@ -73,32 +133,71 @@ This should result in the following file structure after execution:
 
 ::
 
-    results_parallel/
+    results_parallel
     ├── results_0
-    │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
-    │   │   └── shared_RelativeHybridTopologyProtocolUnit-79c279f04ec84218b7935bc0447539a9_attempt_0
-    │   │       ├── checkpoint.nc
-    │   │       ├── simulation.nc
     │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+    │   ├── shared_HybridTopologyMultiStateAnalysisUnit-5e0825de1dd045818cdc3428205c1cf7_attempt_0
+    │   │   ├── forward_reverse_convergence.png
+    │   │   ├── ligand_RMSD.png
+    │   │   ├── mbar_overlap_matrix.png
+    │   │   ├── replica_exchange_matrix.png
+    │   │   ├── replica_state_timeseries.png
+    │   │   └── structural_analysis.npz
+    │   ├── shared_HybridTopologyMultiStateSimulationUnit-144be594cf024cb19152cfe5e0b3fb7d_attempt_0
+    │   │   ├── checkpoint.chk
+    │   │   ├── simulation.nc
+    │   │   └── simulation_real_time_analysis.yaml
+    │   └── shared_HybridTopologySetupUnit-01b5afe1972c4e2f9d0943da43b4b19c_attempt_0
+    │       ├── A_db.json
+    │       ├── B_db.json
+    │       ├── hybrid_positions.npy
+    │       ├── hybrid_system.pdb
+    │       └── hybrid_system.xml.bz2
     ├── results_1
-    │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
-    │   │   └── shared_RelativeHybridTopologyProtocolUnit-a3cef34132aa4e9cbb824fcbcd043b0e_attempt_0
-    │   │       ├── checkpoint.nc
-    │   │       ├── simulation.nc
     │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+    │   ├── shared_HybridTopologyMultiStateAnalysisUnit-7986bec616a74929aee85e900535f4a2_attempt_0
+    │   │   ├── forward_reverse_convergence.png
+    │   │   ├── ligand_RMSD.png
+    │   │   ├── mbar_overlap_matrix.png
+    │   │   ├── replica_exchange_matrix.png
+    │   │   ├── replica_state_timeseries.png
+    │   │   └── structural_analysis.npz
+    │   ├── shared_HybridTopologyMultiStateSimulationUnit-18eb295b7123444f9ac66ff3caffcab8_attempt_0
+    │   │   ├── checkpoint.chk
+    │   │   ├── simulation.nc
+    │   │   └── simulation_real_time_analysis.yaml
+    │   └── shared_HybridTopologySetupUnit-3d8ccb1ef5124bd4ba20e0047aad0b5f_attempt_0
+    │       ├── A_db.json
+    │       ├── B_db.json
+    │       ├── hybrid_positions.npy
+    │       ├── hybrid_system.pdb
+    │       └── hybrid_system.xml.bz2
     └── results_2
-        ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
-        │   └── shared_RelativeHybridTopologyProtocolUnit-abb2b104151c45fc8b0993fa0a7ee0af_attempt_0
-        │       ├── checkpoint.nc
-        │       ├── simulation.nc
-        └── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+        ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+        ├── shared_HybridTopologyMultiStateAnalysisUnit-ac5fad8ad1fb49598f80018713dce070_attempt_0
+        │   ├── forward_reverse_convergence.png
+        │   ├── ligand_RMSD.png
+        │   ├── mbar_overlap_matrix.png
+        │   ├── replica_exchange_matrix.png
+        │   ├── replica_state_timeseries.png
+        │   └── structural_analysis.npz
+        ├── shared_HybridTopologyMultiStateSimulationUnit-73abea21b423444881bd8f21415c937f_attempt_0
+        │   ├── checkpoint.chk
+        │   ├── simulation.nc
+        │   └── simulation_real_time_analysis.yaml
+        └── shared_HybridTopologySetupUnit-79bc9b63321945338a3b69d9f94ee15b_attempt_0
+            ├── A_db.json
+            ├── B_db.json
+            ├── hybrid_positions.npy
+            ├── hybrid_system.pdb
+            └── hybrid_system.xml.bz2
 
 The results of which can be gathered from the CLI using the ``openfe gather`` command, in this case you should direct
 it to the root directory which includes the repeat results and it will automatically collate the information
 
 ::
 
- openfe gather results_parallel
+  > openfe gather results_parallel
 
 Optimizing GPU performance with NVIDIA MPS
 ==========================================
@@ -109,4 +208,6 @@ See NVIDIA's documentation on `MPS for OpenFE free energy calculations <https://
 See Also
 --------
 
-For details on inspecting these results, refer to :ref:`userguide_results`.
+- :ref:`userguide_results` - details on inspecting these results.
+- :ref:`cli-reference` - full CLI reference for ``openfe quickrun``
+- :ref:`rbfe_cli_tutorial` - a tutorial on how to use the CLI to run hybrid topology relative binding free energy calculations.

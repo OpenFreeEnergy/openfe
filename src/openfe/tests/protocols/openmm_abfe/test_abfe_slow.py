@@ -24,7 +24,7 @@ def test_openmm_run_engine(
     eg5_protein,
     eg5_ligands,
     eg5_cofactor,
-    tmpdir,
+    tmp_path,
 ):
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
@@ -92,7 +92,7 @@ def test_openmm_run_engine(
         mapping=None,
     )
 
-    cwd = pathlib.Path(str(tmpdir))
+    cwd = pathlib.Path(tmp_path)
     r = openfe.execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
 
     assert r.ok()
@@ -104,7 +104,7 @@ def test_openmm_run_engine(
         # get the path to the simulation unit shared dict
         for pur in purs:
             if "Simulation" in pur.name:
-                sim_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+                sim_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
                 assert sim_shared.exists()
                 assert pathlib.Path(sim_shared).is_dir()
 
@@ -113,7 +113,7 @@ def test_openmm_run_engine(
             if "Analysis" not in pur.name:
                 continue
 
-            unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+            unit_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
             assert unit_shared.exists()
             assert pathlib.Path(unit_shared).is_dir()
 

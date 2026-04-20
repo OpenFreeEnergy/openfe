@@ -1,4 +1,4 @@
-name: Create OpenFE Conda-Lock File
+name: "release: create openfe conda-lock file"
 
 on:
   workflow_dispatch:
@@ -22,14 +22,10 @@ jobs:
     # This saves me some time since we only need the latest tag
     - name: Get latest tag
       id: latest-version
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        REPO: ${{ github.repository }}
       run: |
-        LATEST_TAG=$(curl -s -H "Authorization: token $GH_TOKEN" \
-          https://api.github.com/repos/$REPO/tags \
-          | jq -r '.[0].name')
-        VERSION=${LATEST_TAG:1}
+        REPO="${{ github.repository }}"
+        VERSION=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name | ltrimstr("v")')
         echo $VERSION
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 

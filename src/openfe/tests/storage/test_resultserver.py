@@ -11,8 +11,8 @@ from openfe.storage.resultserver import ResultServer
 
 
 @pytest.fixture
-def result_server(tmpdir):
-    external = FileStorage(tmpdir)
+def result_server(tmp_path):
+    external = FileStorage(tmp_path)
     metadata = JSONMetadataStore(external)
     result_server = ResultServer(external, metadata)
     result_server.store_bytes("path/to/foo.txt", "foo".encode("utf-8"))
@@ -88,9 +88,9 @@ class TestResultServer:
 
         assert contents.decode("utf-8") == "foo"
 
-    def test_delete(self, result_server, tmpdir):
+    def test_delete(self, result_server, tmp_path):
         location = "path/to/foo.txt"
-        path = tmpdir / pathlib.Path(location)
+        path = tmp_path / pathlib.Path(location)
         assert path.exists()
         assert location in result_server.metadata_store
         result_server.delete(location)

@@ -14,7 +14,7 @@ alchemical sampling methods:
 Current limitations
 -------------------
 * Alchemical species with a net charge are not currently supported.
-* Disapearing molecules are only allowed in state A.
+* Disappearing molecules are only allowed in state A.
 * Only small molecules are allowed to act as alchemical molecules.
 
 Acknowledgements
@@ -34,6 +34,7 @@ import gufe
 from gufe import (
     ChemicalSystem,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     settings,
@@ -171,7 +172,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
             solvent_solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
+            solvent_integrator_settings=IntegratorSettings(),
+            complex_integrator_settings=IntegratorSettings(),
             restraint_settings=BoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
@@ -207,6 +209,46 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
         )
         # fmt: on
+
+    @classmethod
+    def _adaptive_settings(
+        cls,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        initial_settings: None | AbsoluteBindingSettings = None,
+    ) -> AbsoluteBindingSettings:
+        """
+        Get the recommended OpenFE settings for this Protocol based on the input states involved in the
+        transformation.
+
+        These are intended as a suitable starting point, which can be further
+        customized before creating a Protocol.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+            The initial state of the transformation.
+        stateB : ChemicalSystem
+            The final state of the transformation.
+        initial_settings : None | AbsoluteBindingSettings, optional
+            Initial settings to adapt. If None, default settings are used.
+
+        Returns
+        -------
+        AbsoluteBindingSettings
+            The recommended settings for this protocol based on the input states.
+        """
+        # use initial settings or default settings
+        if initial_settings is not None:
+            protocol_settings = initial_settings.model_copy(deep=True)
+        else:
+            protocol_settings = cls.default_settings()
+
+        # adapt the barostat based on the ProteinComponent
+        if stateA.contains(ProteinMembraneComponent):
+            protocol_settings.complex_integrator_settings.barostat = "MonteCarloMembraneBarostat"
+
+        return protocol_settings
 
     @staticmethod
     def _validate_endstates(
@@ -254,7 +296,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         if not isinstance(diff[0][0], SmallMoleculeComponent):
             errmsg = (
-                "Only dissapearing small molecule components "
+                "Only disappearing small molecule components "
                 "are supported by this protocol. "
                 f"Found a {type(diff[0][0])}"
             )
@@ -357,6 +399,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             warnings.warn(wmsg)
 
         # Validate the end states & alchemical components
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
         # Validate the complex lambda schedule
@@ -366,7 +410,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         )
 
         # If the complex restraints schedule is all zero, it might be bad
-        # but we don't dissallow it.
+        # but we don't disallow it.
         if all([i == 0.0 for i in self.settings.complex_lambda_settings.lambda_restraints]):
             wmsg = (
                 "No restraints are being applied in the complex phase, "
@@ -400,6 +444,11 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Use the more complete system validation solvent checks
         system_validation.validate_solvent(stateA, nonbonded_method)
 
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_barostat(
+            stateA, self.settings.complex_integrator_settings.barostat
+        )
+
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvent_solvation_settings
@@ -409,9 +458,15 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         )
 
         # Validate integrator things
+        # We validate the timstep for both the complex & solvent settings
         settings_validation.validate_timestep(
             self.settings.forcefield_settings.hydrogen_mass,
-            self.settings.integrator_settings.timestep,
+            self.settings.complex_integrator_settings.timestep,
+        )
+
+        settings_validation.validate_timestep(
+            self.settings.forcefield_settings.hydrogen_mass,
+            self.settings.solvent_integrator_settings.timestep,
         )
 
     def _create(

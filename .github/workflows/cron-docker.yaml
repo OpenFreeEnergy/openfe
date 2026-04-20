@@ -1,4 +1,4 @@
-name: Test Docker Image Building
+name: "cron: docker image daily tests"
 
 on:
   push:

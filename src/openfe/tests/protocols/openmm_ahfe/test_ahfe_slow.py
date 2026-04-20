@@ -21,7 +21,7 @@ def test_openmm_run_engine(
     platform,
     get_available_openmm_platforms,
     benzene_modifications,
-    tmpdir,
+    tmp_path,
 ):
     if platform not in get_available_openmm_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
@@ -78,8 +78,7 @@ def test_openmm_run_engine(
         mapping=None,
     )
 
-    cwd = pathlib.Path(str(tmpdir))
-    r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd, keep_shared=True)
+    r = execute_DAG(dag, shared_basedir=tmp_path, scratch_basedir=tmp_path, keep_shared=True)
 
     assert r.ok()
 
@@ -90,7 +89,7 @@ def test_openmm_run_engine(
         # get the path to the simulation unit shared dict
         for pur in purs:
             if "Simulation" in pur.name:
-                sim_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+                sim_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
                 assert sim_shared.exists()
                 assert pathlib.Path(sim_shared).is_dir()
 
@@ -99,7 +98,7 @@ def test_openmm_run_engine(
             if "Analysis" not in pur.name:
                 continue
 
-            unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
+            unit_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
             assert unit_shared.exists()
             assert pathlib.Path(unit_shared).is_dir()
 

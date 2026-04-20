@@ -167,7 +167,7 @@ class MultistateEquilFEAnalysis:
         Parameters
         ----------
         forward_reverse_samples : int
-          Number of samples to take in the foward and reverse analysis of
+          Number of samples to take in the forward and reverse analysis of
           the free energies.
         """
         # Do things that get badly cached later

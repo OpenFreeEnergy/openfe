@@ -4,13 +4,38 @@ Changelog
 
 .. current developments
 
+v1.10.0
+====================
+
+This release introduces the ability to resume execution of an incomplete transformation using ``openfe quickrun`` with the ``--resume`` flag.
+See the `quickrun documentation <https://docs.openfree.energy/en/v1.10.0/guide/execution/quickrun_execution.html>`_ details.
+
+**Added:**
+
+* Added ``--resume`` flag to ``openfe quickrun``.
+  Quickrun now temporarily caches ``protocolDAG`` information and, when used with the ``--resume`` flag, quickrun will attempt to resume execution of an incomplete transformation (`PR #1848 <https://github.com/OpenFreeEnergy/openfe/pull/1848>`_).
+* Added API support to resume ``RelativeHybridTopologyProtocol`` simulations (`PR #1774 <https://github.com/OpenFreeEnergy/openfe/pull/1774>`_).
+* Added API support to resume ``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol`` simulations (`PR #1808 <https://github.com/OpenFreeEnergy/openfe/pull/1808>`_).
+
+**Deprecated:**
+
+* Perses atom mapper and scorer functionality is deprecated, slated to be removed in ``openfe v2.0``. 
+  This includes ``PersesAtomMapper`` and ``default_perses_scorer`` (`PR #1857 <https://github.com/OpenFreeEnergy/openfe/pull/1857>`_).
+
+**Fixed:**
+
+* Fixed bug introduced in v1.9.0 to ``openfe gather-abfe --report=raw`` where additional unit results for Setup and Simulation units would be shown.
+  This fix restores the behavior prior to v1.9.0 (`PR #1876 <https://github.com/OpenFreeEnergy/openfe/pull/1876>`_).
+
+
+
 v1.9.1
 ====================
 
 **Fixed:**
 
 * Fixed a bug in Protocol termination for the HybridTop and AFE Protocols which would unnecessarily declare an ``UnboundLocalError``.
-* Updated ``openfe_analysis`` dependency  to fix issue with RMSD analysis (`Issue 1834 <https://github.com/OpenFreeEnergy/openfe/issues/1834>`).
+* Updated ``openfe_analysis`` dependency  to fix issue with RMSD analysis (`Issue #1834 <https://github.com/OpenFreeEnergy/openfe/issues/1834>`_).
 
 
 
@@ -20,26 +45,26 @@ v1.9.0
 **Added:**
 
 * The ``validate`` method for the RelativeHybridTopologyProtocol has been implemented.
-  This means that settings and system validation can mostly be done prior to Protocol execution by calling ``RelativeHybridTopologyProtocol.validate(stateA, stateB, mapping)`` (`PR 1740 <https://github.com/OpenFreeEnergy/openfe/pull/1740>`_).
+  This means that settings and system validation can mostly be done prior to Protocol execution by calling ``RelativeHybridTopologyProtocol.validate(stateA, stateB, mapping)`` (`PR #1740 <https://github.com/OpenFreeEnergy/openfe/pull/1740>`_).
 
-* Added ``openfe test --download-only`` flag, which downloads all test data stored remotely to the local cache (`PR 1814 <https://github.com/OpenFreeEnergy/openfe/pull/1814>`_).
+* Added ``openfe test --download-only`` flag, which downloads all test data stored remotely to the local cache (`PR #1814 <https://github.com/OpenFreeEnergy/openfe/pull/1814>`_).
 
 **Changed:**
 
 * The absolute free energy protocols (AbsoluteBindingProtocol and AbsoluteSolvationProtocol) have been broken into multiple
   protocol units, allowing for setup, run, and analysis to happen
   separately in the future when relevant changes to protocol execution are
-  made (`PR 1776 <https://github.com/OpenFreeEnergy/openfe/pull/1776>`_).
+  made (`PR #1776 <https://github.com/OpenFreeEnergy/openfe/pull/1776>`_).
 * The relative free energy protocol (RelativeHybridTopologyProtocol) has been
   broken into multiple protocol units, allowing for the setup, run, analysis to happen
-  separately (`PR 1773 <https://github.com/OpenFreeEnergy/openfe/pull/1773>`_).
+  separately (`PR #1773 <https://github.com/OpenFreeEnergy/openfe/pull/1773>`_).
 
 **Fixed:**
 
-* Fixed bug in ligand network visualization (such as with ``openfe view-ligand-network``) so that ligand names are no longer cut off by the plot border (`PR 1822 <https://github.com/OpenFreeEnergy/openfe/pull/1822>`_).
+* Fixed bug in ligand network visualization (such as with ``openfe view-ligand-network``) so that ligand names are no longer cut off by the plot border (`PR #1822 <https://github.com/OpenFreeEnergy/openfe/pull/1822>`_).
 * Endstates in the RelativeHybridTopologyProtocol are now being created
   in a manner that allows for isomorphic molecules that differ between
-  endstates to have different parameters (`PR 1772 <https://github.com/OpenFreeEnergy/openfe/pull/1772>`_).
+  endstates to have different parameters (`PR #1772 <https://github.com/OpenFreeEnergy/openfe/pull/1772>`_).
 
 
 
@@ -103,7 +128,7 @@ The openfe lock file and docker and apptainer images use Python 3.12, and so cha
 
 **Changed:**
 
-* The default atom mapper used in the CLI has been changed from ``LomapAtomMapper`` to ``KartografAtomMapper`` in line with the recommended defaults from the industry benchmarking paper. Users who whish to continue to use ``LomapAtomMapper`` can do so via the YAML configuration file. See the `documentation <https://docs.openfree.energy/en/latest/tutorials/rbfe_cli_tutorial.html#customize-your-campaign-setup>`_ for details (`PR #1530 <https://github.com/OpenFreeEnergy/openfe/pull/1530>`_).
+* The default atom mapper used in the CLI has been changed from ``LomapAtomMapper`` to ``KartografAtomMapper`` in line with the recommended defaults from the industry benchmarking paper. Users who wish to continue to use ``LomapAtomMapper`` can do so via the YAML configuration file. See the `documentation <https://docs.openfree.energy/en/latest/tutorials/rbfe_cli_tutorial.html#customize-your-campaign-setup>`_ for details (`PR #1530 <https://github.com/OpenFreeEnergy/openfe/pull/1530>`_).
 * An improved error message is now shown when a mapping involving a changing constraint length cannot be fixed (`PR #1529 <https://github.com/OpenFreeEnergy/openfe/pull/1529>`_).
 * The default platform for OpenMM-based Protocols is now CUDA and will fail by default on a non-Nvidia GPU enabled system (`PR #1576 <https://github.com/OpenFreeEnergy/openfe/pull/1576>`_).
 * Remove unnecessary limit on residues ids (``resids``) when getting mappings from topology in ``topology_helpers.py`` utility module (`PR #1539 <https://github.com/OpenFreeEnergy/openfe/pull/1539>`_).

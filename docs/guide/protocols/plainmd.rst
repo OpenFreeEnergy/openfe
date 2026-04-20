@@ -43,7 +43,7 @@ If there is a ``SolventComponent`` in the :class:`.ChemicalSystem`, the each :cl
 A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 Relevant settings under solvent conditions include the solvation settings that control the ``solvent_model`` and ``solvent_padding``.
 
-If the :class:`.ChemicalSystem` does not contain a ``SolventComponent``, the protocol runs an MD simulation in vacuum. After a minimization, the protocol performs an equilibration, followed by a production run with no periodic boundary conditions and infinite cutoffs. Settings that control the barostat or the solvation are ignored for vaccum MD simulations.
+If the :class:`.ChemicalSystem` does not contain a ``SolventComponent``, the protocol runs an MD simulation in vacuum. After a minimization, the protocol performs an equilibration, followed by a production run with no periodic boundary conditions and infinite cutoffs. Settings that control the barostat or the solvation are ignored for vacuum MD simulations.
 
 Performance consideration for gas phase MD simulations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

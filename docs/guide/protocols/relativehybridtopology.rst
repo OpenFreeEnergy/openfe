@@ -152,7 +152,7 @@ difference produced.
       this analysis calculates the free energy difference, both in forward and backward directions.
       In this analysis, forward and backward estimates that agree within error using only a fraction of the total data
       suggest convergence [5]_. Note: the error bars reported in this plot are
-      MBAR analytical errors instead of boostrap errors.
+      MBAR analytical errors instead of bootstrap errors.
     - .. image:: img/forward_reverse_convergence.png
   * - **Timeseries of replica states.**
 

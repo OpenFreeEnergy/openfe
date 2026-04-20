@@ -524,7 +524,7 @@ class TestStableSelection:
 
     def test_small_chain(self, t4_lysozyme_trajectory_universe):
         """
-        Artifically set min_structure_size so large that no chains are recognised.
+        Artificially set min_structure_size so large that no chains are recognised.
         """
         stable_protein = stable_secondary_structure_selection(
             atomgroup=t4_lysozyme_trajectory_universe.atoms,

@@ -1,4 +1,4 @@
-name: CPU Long Tests (manual dispatch)
+name: "manual AWS: CPU long tests"
 on:
   workflow_dispatch:
 

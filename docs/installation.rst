@@ -363,8 +363,8 @@ See our guide on :ref:`containers <installation:containers>` for how to get star
 
 .. _installation:mamba_hpc:
 
-``mamba`` in HPC Environments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``micromamba`` in HPC Environments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _virtual packages: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-virtual.html#managing-virtual-packages
 
@@ -373,110 +373,40 @@ Nonetheless, **openfe** can be installed via Conda Forge on these environments a
 Conda Forge distributes its own CUDA binaries for interfacing with the GPU, rather than use the host drivers.
 ``conda``, ``mamba`` and ``micromamba`` all use `virtual packages`_ to detect and specify which version of CUDA should be installed.
 This is a common point of difference in hardware between the login and job nodes in an HPC environment.
-For example, on a login node where there likely is not a GPU or a CUDA environment, ``mamba info`` may produce output that looks like this ::
 
-  $ mamba info
-
-              mamba version : 1.5.1
-         active environment : base
-        active env location : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0
-                shell level : 1
-           user config file : /home/henrym3/.condarc
-     populated config files : /lila/home/henrym3/.condarc
-              conda version : 23.7.4
-        conda-build version : not installed
-             python version : 3.11.5.final.0
-           virtual packages : __archspec=1=x86_64
-                              __glibc=2.17=0
-                              __linux=3.10.0=0
-                              __unix=0=0
-           base environment : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0  (writable)
-          conda av data dir : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/etc/conda
-      conda av metadata url : None
-               channel URLs : https://conda.anaconda.org/conda-forge/linux-64
-                              https://conda.anaconda.org/conda-forge/noarch
-              package cache : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/pkgs
-                              /home/henrym3/.conda/pkgs
-           envs directories : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/envs
-                              /home/henrym3/.conda/envs
-                   platform : linux-64
-                 user-agent : conda/23.7.4 requests/2.31.0 CPython/3.11.5 Linux/3.10.0-957.12.2.el7.x86_64 centos/7.6.1810 glibc/2.17
-                    UID:GID : 1987:3008
-                 netrc file : None
-               offline mode : False
-
-Now if we run the same command on a HPC node that has a GPU ::
-
-  $ mamba info
-
-                mamba version : 1.5.1
-         active environment : base
-        active env location : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0
-                shell level : 1
-           user config file : /home/henrym3/.condarc
-     populated config files : /lila/home/henrym3/.condarc
-              conda version : 23.7.4
-        conda-build version : not installed
-             python version : 3.11.5.final.0
-           virtual packages : __archspec=1=x86_64
-                              __cuda=11.7=0
-                              __glibc=2.17=0
-                              __linux=3.10.0=0
-                              __unix=0=0
-           base environment : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0  (writable)
-          conda av data dir : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/etc/conda
-      conda av metadata url : None
-               channel URLs : https://conda.anaconda.org/conda-forge/linux-64
-                              https://conda.anaconda.org/conda-forge/noarch
-              package cache : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/pkgs
-                              /home/henrym3/.conda/pkgs
-           envs directories : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/envs
-                              /home/henrym3/.conda/envs
-                   platform : linux-64
-                 user-agent : conda/23.7.4 requests/2.31.0 CPython/3.11.5 Linux/3.10.0-1160.45.1.el7.x86_64 centos/7.9.2009 glibc/2.17
-                    UID:GID : 1987:3008
-                 netrc file : None
-               offline mode : False
-
-
-We can see that there is a virtual package ``__cuda=11.7=0``.
-This means that if we run a ``mamba install`` command on a node with a GPU, the solver will install the correct version of the ``cudatoolkit``.
-However, if we ran the same command on the login node, the solver may install the wrong version of the ``cudatoolkit``, or depending on how the Conda packages are setup, a CPU only version of the package.
-We can control the virtual package with the environmental variable ``CONDA_OVERRIDE_CUDA``.
-
-In order to determine the correct ``cudatoolkit`` version, we recommend connecting to the node where the simulation will be executed and run ``nvidia-smi``.
+In order to determine the correct ``cuda-version`` version, we recommend connecting to the node where the simulation will be executed and run ``nvidia-smi``.
 For example ::
 
   $ nvidia-smi
-  Tue Jun 13 17:47:11 2023
-  +-----------------------------------------------------------------------------+
-  | NVIDIA-SMI 515.43.04    Driver Version: 515.43.04    CUDA Version: 11.7     |
-  |-------------------------------+----------------------+----------------------+
-  | GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
-  | Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
-  |                               |                      |               MIG M. |
-  |===============================+======================+======================|
-  |   0  NVIDIA A40          On   | 00000000:65:00.0 Off |                    0 |
-  |  0%   30C    P8    32W / 300W |      0MiB / 46068MiB |      0%      Default |
-  |                               |                      |                  N/A |
-  +-------------------------------+----------------------+----------------------+
+  Tue Mar 31 19:46:32 2026
+  +-----------------------------------------------------------------------------------------+
+  | NVIDIA-SMI 590.48.01              Driver Version: 590.48.01      CUDA Version: 13.1     |
+  +-----------------------------------------+------------------------+----------------------+
+  | GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+  | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+  |                                         |                        |               MIG M. |
+  |=========================================+========================+======================|
+  |   0  NVIDIA A100 80GB PCIe          On  |   00000000:65:00.0 Off |                    0 |
+  | N/A   32C    P0             44W /  300W |       0MiB /  81920MiB |      0%      Default |
+  |                                         |                        |             Disabled |
+  +-----------------------------------------+------------------------+----------------------+
+  
+  +-----------------------------------------------------------------------------------------+
+  | Processes:                                                                              |
+  |  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+  |        ID   ID                                                               Usage      |
+  |=========================================================================================|
+  |  No running processes found                                                             |
+  +-----------------------------------------------------------------------------------------+
 
-  +-----------------------------------------------------------------------------+
-  | Processes:                                                                  |
-  |  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
-  |        ID   ID                                                   Usage      |
-  |=============================================================================|
-  |  No running processes found                                                 |
-  +-----------------------------------------------------------------------------+
-
-in this output of ``nvidia-smi`` we can see in the upper right of the output ``CUDA Version: 11.7`` which means the installed driver will support a ``cudatoolkit`` version up to ``11.7``
-
-So on the login node, we can run ``CONDA_OVERRIDE_CUDA=11.7 mamba info`` and see that the "correct" virtual CUDA is listed.
-For example, to install a version of **openfe** which is compatible with ``cudatoolkit 11.7``, run:
+in this output of ``nvidia-smi`` we can see in the upper right of the output ``CUDA Version: 13.1`` which means the installed driver will support a CUDA version up to ``13.1``.
+To install a version of **openfe** which is compatible with CUDA ``13.1``, run:
 
 .. parsed-literal::
 
-  $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe openfe=\ |version|
+  $ micromamba create -n openfe cuda-version=13.1 openfe=\ |version|
+
+
 
 Developer install
 -----------------

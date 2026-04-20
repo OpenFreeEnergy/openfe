@@ -30,6 +30,7 @@ from gufe import (
     LigandAtomMapping,
     ProteinComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
 )
 from gufe.protocols.errors import ProtocolUnitExecutionError
@@ -101,9 +102,6 @@ class HybridTopologyUnitMixin:
           Optional shared base path to write shared files to.
         """
         self.verbose = verbose
-
-        if self.verbose:
-            self.logger.info("Setting up the hybrid topology simulation")  # type: ignore[attr-defined]
 
         # set basepaths
         def _set_optional_path(basepath):
@@ -199,6 +197,10 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         _, _, smcs_B = system_validation.get_components(stateB)
 
         small_mols = {m: m.to_openff() for m in set(smcs_A).union(set(smcs_B))}
+
+        # If there is a SolvatedPDBComponent, we set the solvent_comp
+        if isinstance(protein_comp, SolvatedPDBComponent):
+            solvent_comp = protein_comp
 
         return solvent_comp, protein_comp, small_mols
 
@@ -348,7 +350,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
           Dictionary of OpenFF Molecules keyed by SmallMoleculeComponent
           to be present in system B.
         mapping : LigandAtomMapping
-          LigandAtomMapping defining the correspondance betwee state A
+          LigandAtomMapping defining the correspondence between state A
           and B's alchemical ligand.
         stateA_topology : openmm.app.Topology
           The OpenMM topology for state A.
@@ -479,7 +481,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         stateB_positions : openmm.unit.Quantity
           Positions of partials for state B System.
         system_mapping : dict[str, dict[int, int]]
-          Dictionary of mappings defining the correspondance between
+          Dictionary of mappings defining the correspondence between
           the two state Systems.
         """
         if self.verbose:
@@ -736,6 +738,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
+        if self.verbose:
+            self.logger.info("Starting system setup unit")
+
         # Get settings
         settings = self._get_settings(self._inputs["protocol"].settings)
 
@@ -803,9 +808,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             "positions": positions_outfile,
             "pdb_structure": self.shared_basepath / settings["output_settings"].output_structure,
             "selection_indices": selection_indices,
-            "openmm_version": openmm.__version__,
-            "openfe_version": openfe.__version__,
-            "gufe_version": gufe.__version__,
         }
 
         if dry:
@@ -830,6 +832,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            "openmm_version": openmm.__version__,
+            "openfe_version": openfe.__version__,
+            "gufe_version": gufe.__version__,
             **outputs,
         }
 
@@ -866,17 +871,22 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         trajectory = shared_path / output_settings.output_filename
         checkpoint = shared_path / output_settings.checkpoint_storage_filename
 
-        if trajectory.is_file() ^ checkpoint.is_file():
-            errmsg = (
-                "One of either the trajectory or checkpoint files are missing but "
-                "the other is not. This should not happen under normal circumstances."
-            )
-            raise IOError(errmsg)
-
         if trajectory.is_file() and checkpoint.is_file():
             return True
+        elif trajectory.is_file() ^ checkpoint.is_file():
+            if trajectory.is_file():
+                errmsg = "the trajectory file is present but not the checkpoint file. "
+            else:
+                errmsg = "the checkpoint file is present but not the trajectory file. "
 
-        return False
+            errmsg = (
+                "Attempting to restart but "
+                + errmsg
+                + "This should not happen under normal circumstances."
+            )
+            raise IOError(errmsg)
+        else:
+            return False
 
     @staticmethod
     def _get_integrator(
@@ -1053,7 +1063,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         }
 
         # note we if/else around sampler method because in the future
-        # we will try to re-use this method and just have _SAMPLERs be
+        # we will try to reuse this method and just have _SAMPLERs be
         # defined elsewhere
         sampler_method = simulation_settings.sampler_method.lower()
         try:
@@ -1108,7 +1118,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
 
         # Restarting doesn't need any setup, we just rebuild from storage.
         if restart:
-            sampler = _SAMPLERS[sampler_method].from_storage(reporter)  # type: ignore[attr-defined]
+            sampler = sampler_class.from_storage(reporter)  # type: ignore[attr-defined]
 
             # We do some checks to make sure we are running the same system
             system_validation.assert_multistate_system_equality(
@@ -1139,7 +1149,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
                 raise ValueError(errmsg)
 
         else:
-            sampler = _SAMPLERS[sampler_method](**sampler_kwargs)
+            sampler = sampler_class(**sampler_kwargs)
 
             sampler.setup(
                 n_replicas=simulation_settings.n_replicas,
@@ -1297,6 +1307,9 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         """
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        if self.verbose:
+            self.logger.info("Starting simulation unit")
 
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
@@ -1598,6 +1611,9 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         """
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        if self.verbose:
+            self.logger.info("Starting simulation analysis unit")
 
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
