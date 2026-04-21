@@ -1,4 +1,4 @@
-name: "Daily package install tests."
+name: "cron: package install daily tests"
 on:
   workflow_dispatch:
   schedule:

@@ -74,7 +74,7 @@ def test_bad_mapping(atom_mapping_basic_test_files, lomap_old_mapper):
         next(mapping_gen)
 
 
-# TODO: Remvoe these test when element changes are allowed - START
+# TODO: Remove these test when element changes are allowed - START
 def test_simple_no_element_changes(atom_mapping_basic_test_files, lomap_old_mapper):
     # basic sanity check on the LigandAtomMapper
     mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
@@ -101,4 +101,4 @@ def test_bas_mapping_no_element_changes(atom_mapping_basic_test_files, lomap_old
         next(mapping_gen)
 
 
-# TODO: Remvoe these test when element changes are allowed - END
+# TODO: Remove these test when element changes are allowed - END

@@ -6,6 +6,8 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 """
 
+import warnings
+
 from gufe.settings.typing import AngstromQuantity
 from openff.units import Quantity, unit
 from openff.units.openmm import to_openmm
@@ -75,6 +77,10 @@ class PersesAtomMapper(LigandAtomMapper):
             can be mapped, default: 0.25*unit.angstrom
 
         """
+        warnings.warn(
+            "PersesAtomMapper is deprecated and is planned to be removed in openfe v2.0. If you have questions related to this, please open an issue at https://github.com/OpenFreeEnergy/openfe/issues.",
+            DeprecationWarning,
+        )
         self.allow_ring_breaking = allow_ring_breaking
         self.preserve_chirality = preserve_chirality
         self.use_positions = use_positions

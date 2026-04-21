@@ -20,7 +20,7 @@ GUFEKEY_JSON_REGEX = re.compile('":gufe-key:": "(?P<token>[A-Za-z0-9_]+-[0-9a-f]
 
 class _ResultContainer(abc.ABC):
     """
-    Abstract class, represents all data under some level of the heirarchy.
+    Abstract class, represents all data under some level of the hierarchy.
     """
 
     def __init__(self, parent, path_component):
@@ -143,7 +143,7 @@ class ResultClient(_ResultContainer):
     def store_transformation(self, transformation):
         """Store a :class:`.Transformation`.
 
-        Parmeters
+        Parameters
         ---------
         transformation: :class:`.Transformation`
             the transformation to store
@@ -153,7 +153,7 @@ class ResultClient(_ResultContainer):
     def store_network(self, network):
         """Store a :class:`.AlchemicalNetwork`.
 
-        Parmeters
+        Parameters
         ---------
         network: :class:`.AlchemicalNetwork`
             the network to store
@@ -165,7 +165,7 @@ class ResultClient(_ResultContainer):
         registry = {}
 
         def recursive_build_object_cache(gufe_key):
-            """DFS to rebuild object heirarchy"""
+            """DFS to rebuild object hierarchy"""
             # This implementation is a bit fragile, because ensuring that we
             # don't duplicate objects in memory depends on the fact that
             # `key_decode_dependencies` gets keyencoded objects from a cache
@@ -237,7 +237,7 @@ class ResultClient(_ResultContainer):
     def _load_next_level(self, transformation):
         return TransformationResult(self, transformation)
 
-    # override these two inherited properies since this is always the end of
+    # override these two inherited properties since this is always the end of
     # the recursive chain
     @property
     def path(self):

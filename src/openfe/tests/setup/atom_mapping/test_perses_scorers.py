@@ -18,7 +18,8 @@ USING_OLD_OFF = False
 @pytest.mark.xfail(not USING_OLD_OFF, reason="perses #1108")
 def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):
     # now run the openfe equivalent with the same ligand atom _mappings
-    scorer = perses_scorers.default_perses_scorer
+    with pytest.warns(DeprecationWarning, match="default_perses_scorer"):
+        scorer = perses_scorers.default_perses_scorer
     molecule_row = np.max(list(gufe_atom_mapping_matrix.keys())) + 1
     norm_scores = np.zeros([molecule_row, molecule_row])
 
@@ -41,7 +42,8 @@ def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):
 @skip_if_missing("perses")
 @pytest.mark.xfail(not USING_OLD_OFF, reason="perses #1108")
 def test_perses_not_implemented_position_using(gufe_atom_mapping_matrix):
-    scorer = perses_scorers.default_perses_scorer
+    with pytest.warns(DeprecationWarning, match="default_perses_scorer"):
+        scorer = perses_scorers.default_perses_scorer
 
     first_key = list(gufe_atom_mapping_matrix.keys())[0]
     match_re = "normalizing using positions is not currently implemented"
@@ -76,7 +78,8 @@ def test_perses_regression(gufe_atom_mapping_matrix):
     assert matrix.shape == (8, 8)
 
     # now run the openfe equivalent with the same ligand atom _mappings
-    scorer = perses_scorers.default_perses_scorer
+    with pytest.warns(DeprecationWarning, match="default_perses_scorer"):
+        scorer = perses_scorers.default_perses_scorer
     scores = np.zeros_like(matrix)
     for (i, j), ligand_atom_mapping in gufe_atom_mapping_matrix.items():
         score = scorer(

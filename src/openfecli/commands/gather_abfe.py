@@ -118,6 +118,14 @@ def _get_legs_from_result_jsons(
         dgs[name]["overall"].append([result["estimate"], result["uncertainty"]])
         proto_key = [k for k in result["unit_results"].keys() if k.startswith("ProtocolUnitResult")]
         for p in proto_key:
+            # In openfe v1.9+, we only want to pick up results from
+            # the Analysis Unit. To ensure backwards compatibility with
+            # prior releases of openfe v1.x, we exclude Setup and Simulation
+            if (
+                "Setup" in result["unit_results"][p]["source_key"]
+                or "Simulation" in result["unit_results"][p]["source_key"]
+            ):
+                continue
             if "unit_estimate" in result["unit_results"][p]["outputs"]:
                 simtype = result["unit_results"][p]["outputs"]["simtype"]
                 dg = result["unit_results"][p]["outputs"]["unit_estimate"]
@@ -126,7 +134,14 @@ def _get_legs_from_result_jsons(
                 dgs[name][simtype].append([dg, dg_error])
             if "standard_state_correction" in result["unit_results"][p]["outputs"]:
                 corr = result["unit_results"][p]["outputs"]["standard_state_correction"]
-                dgs[name]["standard_state_correction"].append([corr, 0 * unit.kilocalorie_per_mole])
+                # In openfe v1.9+, standard state corrections are set to 0 kcal/mol
+                # when no correction is being applied (e.g. no restraints).
+                # To make raw outputs similar to pre-v1.9, we exclude corrections
+                # if they are close to 0.
+                if not np.isclose(corr.m, 0):
+                    dgs[name]["standard_state_correction"].append(
+                        [corr, 0 * unit.kilocalorie_per_mole]
+                    )
             else:
                 continue
     return dgs

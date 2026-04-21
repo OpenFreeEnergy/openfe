@@ -13,8 +13,8 @@ def test_simple(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
     mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
     mol2 = atom_mapping_basic_test_files["toluene"]
-
-    mapper = PersesAtomMapper()
+    with pytest.warns(DeprecationWarning, match="PersesAtomMapper"):
+        mapper = PersesAtomMapper()
 
     mapping_gen = mapper.suggest_mappings(mol1, mol2)
 
@@ -31,8 +31,8 @@ def test_generator_length(atom_mapping_basic_test_files):
     # generator stops correctly
     mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
     mol2 = atom_mapping_basic_test_files["toluene"]
-
-    mapper = PersesAtomMapper()
+    with pytest.warns(DeprecationWarning, match="PersesAtomMapper"):
+        mapper = PersesAtomMapper()
 
     mapping_gen = mapper.suggest_mappings(mol1, mol2)
 
@@ -45,7 +45,8 @@ def test_generator_length(atom_mapping_basic_test_files):
 @skip_if_missing("perses")
 def test_empty_atommappings(mol_pair_to_shock_perses_mapper):
     mol1, mol2 = mol_pair_to_shock_perses_mapper
-    mapper = PersesAtomMapper()
+    with pytest.warns(DeprecationWarning, match="PersesAtomMapper"):
+        mapper = PersesAtomMapper()
 
     mapping_gen = mapper.suggest_mappings(mol1, mol2)
 
@@ -59,11 +60,12 @@ def test_empty_atommappings(mol_pair_to_shock_perses_mapper):
 @skip_if_missing("openeye")
 @skip_if_missing("perses")
 def test_dict_round_trip():
-    # use some none defaults
-    mapper1 = PersesAtomMapper(
-        allow_ring_breaking=False,
-        preserve_chirality=False,
-        coordinate_tolerance=0.01 * unit.nanometer,
-    )
-    mapper2 = PersesAtomMapper.from_dict(mapper1.to_dict())
+    with pytest.warns(DeprecationWarning, match="PersesAtomMapper"):
+        # use some none defaults
+        mapper1 = PersesAtomMapper(
+            allow_ring_breaking=False,
+            preserve_chirality=False,
+            coordinate_tolerance=0.01 * unit.nanometer,
+        )
+        mapper2 = PersesAtomMapper.from_dict(mapper1.to_dict())
     assert mapper2.to_dict() == mapper1.to_dict()

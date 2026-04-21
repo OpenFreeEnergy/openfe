@@ -5,16 +5,26 @@ Reusable utility methods to validate input systems to OpenMM-based alchemical
 Protocols.
 """
 
+import logging
+import warnings
 from typing import Optional, Tuple
 
+import numpy as np
+import openmm
 from gufe import (
+    BaseSolventComponent,
     ChemicalSystem,
     Component,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
 )
+from gufe.components.errors import ComponentValidationError
 from openff.toolkit import Molecule as OFFMol
+
+logger = logging.getLogger(__name__)
 
 
 def get_alchemical_components(
@@ -80,6 +90,11 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     Checks that the ChemicalSystem component has the right solvent
     composition for an input nonbonded_methtod.
 
+    Supported configurations are:
+      * Vacuum (no BaseSolventComponent)
+      * One BaseSolventComponent
+      * One SolventComponent paired with one SolvatedPDBComponent
+
     Parameters
     ----------
     state : ChemicalSystem
@@ -90,29 +105,39 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     Raises
     ------
     ValueError
-      * If there are multiple SolventComponents in the ChemicalSystem.
-      * If there is a SolventComponent and the `nonbonded_method` is
-        `nocutoff`.
+      * If there are more than two BaseSolventComponents in the ChemicalSystem.
+      * If there are multiple SolventComponents or SolvatedPDBComponents in the ChemicalSystem.
+      * If `nocutoff` is requested with any BaseSolventComponent present.
+      * If there is no BaseSolventComponent and the `nonbonded_method` is `pme`.
       * If the SolventComponent solvent is not water.
     """
-    solv_comps = state.get_components_of_type(SolventComponent)
+    nb_method = nonbonded_method.lower()
+    base_solv_comps = state.get_components_of_type(BaseSolventComponent)
+    solvation_comps = state.get_components_of_type(SolventComponent)
+    solvated_comps = state.get_components_of_type(SolvatedPDBComponent)
 
-    if len(solv_comps) > 0:
-        if nonbonded_method.lower() == "nocutoff":
-            errmsg = "nocutoff cannot be used for solvent transformations"
-            raise ValueError(errmsg)
+    if len(solvated_comps) > 1:
+        raise ValueError("Multiple SolvatedPDBComponent found, only one is supported")
 
-        if len(solv_comps) > 1:
-            errmsg = "Multiple SolventComponent found, only one is supported"
-            raise ValueError(errmsg)
+    if len(solvation_comps) > 1:
+        raise ValueError("Multiple SolventComponent found, only one is supported")
 
-        if solv_comps[0].smiles != "O":
-            errmsg = "Non water solvent is not currently supported"
-            raise ValueError(errmsg)
-    else:
-        if nonbonded_method.lower() == "pme":
-            errmsg = "PME cannot be used for vacuum transform"
-            raise ValueError(errmsg)
+    # Any BaseSolventComponent present → nocutoff is invalid
+    if base_solv_comps and nb_method == "nocutoff":
+        raise ValueError("nocutoff cannot be used for solvent transformations")
+
+    # Vacuum transform
+    if not base_solv_comps:
+        if nb_method == "pme":
+            raise ValueError("PME cannot be used for vacuum transform")
+        return
+
+    # Solvent-specific checks
+    if solvation_comps:
+        solvent = solvation_comps[0]
+
+        if solvent.smiles != "O":
+            raise ValueError("Non water solvent is not currently supported")
 
 
 def validate_protein(state: ChemicalSystem):
@@ -135,6 +160,49 @@ def validate_protein(state: ChemicalSystem):
     if len(prot_comps) > 1:
         errmsg = "Multiple ProteinComponent found, only one is supported"
         raise ValueError(errmsg)
+
+
+def validate_barostat(state: ChemicalSystem, barostat: str):
+    """
+    Warn if there is a mismatch between the protein component type and barostat.
+
+    A ProteinMembraneComponent should generally be simulated with a
+    MonteCarloMembraneBarostat, while non-membrane protein systems should
+    use a MonteCarloBarostat.
+
+    Parameters
+    ----------
+    state : ChemicalSystem
+      The chemical system to inspect.
+    barostat: str
+      The barostat to be applied to the simulation
+    """
+    prot_comps = state.get_components_of_type(ProteinComponent)
+    protein_membrane = state.get_components_of_type(ProteinMembraneComponent)
+
+    if not prot_comps:
+        return
+
+    if protein_membrane:
+        if barostat != "MonteCarloMembraneBarostat":
+            wmsg = (
+                "A ProteinMembraneComponent is present, but a membrane-specific "
+                "barostat (MonteCarloMembraneBarostat) is not specified. If you "
+                "are simulating a system with a membrane, consider using "
+                "integrator_settings.barostat='MonteCarloMembraneBarostat'."
+            )
+            warnings.warn(wmsg)
+            logger.warning(wmsg)
+
+    elif barostat == "MonteCarloMembraneBarostat":
+        wmsg = (
+            "A MonteCarloMembraneBarostat is specified, but no "
+            "ProteinMembraneComponent is present. If you are not simulating a "
+            "membrane system, consider using "
+            "integrator_settings.barostat='MonteCarloBarostat'."
+        )
+        warnings.warn(wmsg)
+        logger.warning(wmsg)
 
 
 ParseCompRet = Tuple[
@@ -177,3 +245,125 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
     small_mols = state.get_components_of_type(SmallMoleculeComponent)
 
     return solvent_comp, protein_comp, small_mols
+
+
+def assert_multistate_system_equality(
+    ref_system: openmm.System,
+    stored_system: openmm.System,
+):
+    """
+    Verify the equality of a MultiStateReporter
+    stored system, with that of a pre-exisiting
+    standard system.
+
+
+    Raises
+    ------
+    ValueError
+      * If the particles in the two System don't match.
+      * If the constraints in the two System don't match.
+      * If the forces in the two systems don't match.
+    """
+
+    # Assert particle equality
+    def _get_masses(system):
+        return np.array(
+            [
+                system.getParticleMass(i).value_in_unit(openmm.unit.dalton)
+                for i in range(system.getNumParticles())
+            ]
+        )
+
+    ref_masses = _get_masses(ref_system)
+    stored_masses = _get_masses(stored_system)
+
+    if not ((ref_masses.shape == stored_masses.shape) and (np.allclose(ref_masses, stored_masses))):
+        errmsg = "Stored checkpoint System particles do not match those of the simulated System"
+        raise ValueError(errmsg)
+
+    # Assert constraint equality
+    def _get_constraints(system):
+        constraints = []
+        for index in range(system.getNumConstraints()):
+            i, j, d = system.getConstraintParameters(index)
+            constraints.append([i, j, d.value_in_unit(openmm.unit.nanometer)])
+
+        return np.array(constraints)
+
+    ref_constraints = _get_constraints(ref_system)
+    stored_constraints = _get_constraints(stored_system)
+
+    if not (
+        (ref_constraints.shape == stored_constraints.shape)
+        and (np.allclose(ref_constraints, stored_constraints))
+    ):
+        errmsg = "Stored checkpoint System constraints do not match those of the simulation System"
+        raise ValueError(errmsg)
+
+    # Assert force equality
+    # Notes:
+    # * Store forces are in different order
+    # * The barostat doesn't exactly match because seeds have changed
+
+    # Create dictionaries of forces keyed by their hash
+    # Note: we can't rely on names because they may clash
+    ref_force_dict = {hash(openmm.XmlSerializer.serialize(f)): f for f in ref_system.getForces()}
+    stored_force_dict = {
+        hash(openmm.XmlSerializer.serialize(f)): f for f in stored_system.getForces()
+    }
+
+    # Assert the number of forces is equal
+    if len(ref_force_dict) != len(stored_force_dict):
+        errmsg = "Number of forces stored in checkpoint System does not match simulation System"
+        raise ValueError(errmsg)
+
+    # Loop through forces and check for equality
+    for sfhash, sforce in stored_force_dict.items():
+        errmsg = (
+            f"Force {sforce.getName()} in the stored checkpoint System "
+            "does not match the same force in the simulated System"
+        )
+
+        # Barostat case - seed changed so we need to check manually
+        if isinstance(sforce, (openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat)):
+            # Find the equivalent force in the reference
+            rforce = [
+                f
+                for f in ref_force_dict.values()
+                if isinstance(f, (openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat))
+            ][0]
+
+            if (
+                (sforce.getFrequency() != rforce.getFrequency())
+                or (sforce.getForceGroup() != rforce.getForceGroup())
+                or (sforce.getDefaultPressure() != rforce.getDefaultPressure())
+                or (sforce.getDefaultTemperature() != rforce.getDefaultTemperature())
+            ):
+                raise ValueError(errmsg)
+
+        else:
+            if sfhash not in ref_force_dict:
+                raise ValueError(errmsg)
+
+
+def validate_chemical_system(system: ChemicalSystem):
+    """
+    Validate that the input ChemicalSystem is suitable for use in an OpenMM-based
+    alchemical protocol.
+
+    Parameters
+    ----------
+    state : ChemicalSystem
+      The chemical system to validate.
+
+    Raises
+    ------
+    ComponentValidationError
+      If any component in the ChemicalSystem fails validation.
+    """
+    for entry in system.components:
+        try:
+            system.components[entry].validate()
+        except ComponentValidationError as e:
+            errmsg = f"Component {entry} from ChemicalSystem {system.name} failed validation: {e}"
+            raise ComponentValidationError(errmsg)

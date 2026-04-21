@@ -117,7 +117,7 @@ class TestT4EnergiesRegression:
         return system
 
     @pytest.fixture()
-    def t4_validation_data(self, benzene_modifications, T4_protein_component, tmpdir):
+    def t4_validation_data(self, benzene_modifications, T4_protein_component, tmp_path):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
         s.protocol_repeats = 1
         s.engine_settings.compute_platform = "cpu"
@@ -149,9 +149,10 @@ class TestT4EnergiesRegression:
 
         complex_units = [u for u in dag.protocol_units if isinstance(u, ABFEComplexSetupUnit)]
 
-        with tmpdir.as_cwd():
-            results = complex_units[0].run(dry=True)
-            return results
+        results = complex_units[0].run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
+        return results
 
     @staticmethod
     def get_energy_components(

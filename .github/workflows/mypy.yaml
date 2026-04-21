@@ -1,4 +1,4 @@
-name: "mypy static type checking"
+name: "PR: mypy static type checking"
 on:
   pull_request:
     branches:

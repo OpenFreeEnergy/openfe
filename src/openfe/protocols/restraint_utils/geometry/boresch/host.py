@@ -208,7 +208,7 @@ class EvaluateBoreschAtoms(AnalysisBase):
       in that order.
     angle_force_constant : openff.units.Quantity
       The force constant for the angle.
-    temperature : openff.units.Quanity
+    temperature : openff.units.Quantity
       The system temperature in units compatible with Kelvin.
     """
 
@@ -567,7 +567,7 @@ def _get_lowest_variance_restraint_hostanchor(
       restraint atoms, in that order.
     angle_force_constant : openff.units.Quantity
       The force constant for the angle.
-    temperature : openff.units.Quanity
+    temperature : openff.units.Quantity
       The system temperature in units compatible with Kelvin.
 
     Returns

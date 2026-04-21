@@ -29,7 +29,7 @@ Scientific Details
 Orientational restraints
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Orientational, or Boresch-style, restraints are automaticallly (unless manually specified) applied between three
+Orientational, or Boresch-style, restraints are automatically (unless manually specified) applied between three
 protein and three ligand atoms using one bond, two angle, and three dihedral restraints.
 Reference atoms are picked based on different criteria, such as the root mean squared
 fluctuation of the atoms in a short MD simulation, the secondary structure of the protein,
