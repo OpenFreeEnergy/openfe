@@ -33,14 +33,14 @@ from openmmtools.multistate.multistatesampler import MultiStateSampler
 import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
+    SepTopComplexAnalysisUnit,
     SepTopComplexRunUnit,
     SepTopComplexSetupUnit,
-    SepTopComplexAnalysisUnit,
     SepTopProtocol,
     SepTopProtocolResult,
+    SepTopSolventAnalysisUnit,
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
-    SepTopSolventAnalysisUnit,
 )
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -1199,7 +1199,7 @@ class TestA2AMembraneDryRun:
             self._assert_expected_alchemical_forces(
                 complex_setup_output["alchem_restrained_system"],
                 complexed=True,
-                settings=adaptive_settings
+                settings=adaptive_settings,
             )
             self._test_orthogonal_vectors(complex_setup_output["alchem_restrained_system"])
 
@@ -1210,7 +1210,9 @@ class TestA2AMembraneDryRun:
             self._test_orthogonal_vectors(complex_setup_output["system_AB"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
-                from_openmm(complex_setup_output["alchem_restrained_system"].getDefaultPeriodicBoxVectors()),
+                from_openmm(
+                    complex_setup_output["alchem_restrained_system"].getDefaultPeriodicBoxVectors()
+                ),
                 from_openmm(complex_setup_output["system_AB"].getDefaultPeriodicBoxVectors()),
             )
 

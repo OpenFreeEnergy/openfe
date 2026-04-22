@@ -1,10 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import mdtraj as mdt
 import numpy as np
 import openmm
 from openmm import unit as omm_unit
-import mdtraj as mdt
 
 
 def mdtraj_from_openmm(
