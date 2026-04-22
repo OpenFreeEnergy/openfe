@@ -3,17 +3,17 @@
 import json
 import logging
 import pathlib
-import numpy as np
 import sys
 from unittest import mock
 
 import gufe
+import numpy as np
+import openmm
 import pytest
 from gufe import ChemicalSystem, SmallMoleculeComponent
 from numpy.testing import assert_allclose
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
-import openmm
 from openmm import MonteCarloBarostat, NonbondedForce
 from openmm import unit as omm_unit
 from openmmtools.states import ThermodynamicState
@@ -27,12 +27,12 @@ from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDSetupUnit,
     PlainMDSimulationUnit,
 )
+from openfe.protocols.openmm_utils import serialization
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
     HAS_OPENEYE,
 )
-from openfe.protocols.openmm_utils import serialization
 from openfe.tests.conftest import HAS_ESPALOMA
 
 
@@ -151,7 +151,9 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
     setup_unit = list(dag.protocol_units)[0]
 
     caplog.set_level(logging.INFO)
-    setup_results = setup_unit.run(dry=False, verbose=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    setup_results = setup_unit.run(
+        dry=False, verbose=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
 
     messages = [r.message for r in caplog.records]
     assert "Creating system" in messages
@@ -173,7 +175,7 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
         dry=False,
         verbose=True,
         scratch_basepath=tmp_path,
-        shared_basepath=tmp_path
+        shared_basepath=tmp_path,
     )
     messages = [r.message for r in caplog.records]
     assert "minimizing systems" in messages

@@ -18,5 +18,5 @@ __all__ = [
     "PlainMDProtocolSettings",
     "PlainMDProtocolResult",
     "PlainMDSetupUnit",
-    "PlainMDSimulationUnit"
+    "PlainMDSimulationUnit",
 ]

@@ -15,9 +15,9 @@ import logging
 import pathlib
 import time
 import uuid
+import warnings
 from collections import defaultdict
 from typing import Any, Iterable, Optional
-import warnings
 
 import gufe
 import mdtraj
@@ -658,7 +658,6 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         )
         traj.save_pdb(file_name)
 
-
     @staticmethod
     def _run_dynamics(
         simulation: openmm.app.Simulation,
@@ -694,7 +693,6 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 output_settings,
                 output_path,
             )
-
 
     @staticmethod
     def _run_MD(
@@ -772,7 +770,11 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             # edit the number of steps in place to use a single code path for restarts and new runs
             current_step_count = simulation.context.getStepCount()
             # workout the steps in reverse order
-            if (equil_steps_nvt + equil_steps_npt) < current_step_count < (equil_steps_nvt + equil_steps_npt + prod_steps):
+            if (
+                (equil_steps_nvt + equil_steps_npt)
+                < current_step_count
+                < (equil_steps_nvt + equil_steps_npt + prod_steps)
+            ):
                 # in the production phase, workout the number of steps left
                 prod_steps = prod_steps - (current_step_count - equil_steps_nvt - equil_steps_npt)
                 # make sure we don't run previous phases
@@ -827,7 +829,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 simulation=simulation,
                 steps=equil_steps_nvt,
                 temperature=temperature,
-                barostat_frequency=0 * unit.timestep, # turn of the barostat for this stage
+                barostat_frequency=0 * unit.timestep,  # turn of the barostat for this stage
                 output_settings=output_settings,
                 verbose=verbose,
                 output_path=output_path,
@@ -903,7 +905,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             barostat_frequency=barostat_frequency,
             output_settings=output_settings,
             verbose=verbose,
-            output_path=None, # the trajectory is saved for the production run so don't save again
+            output_path=None,  # the trajectory is saved for the production run so don't save again
         )
 
         return None
@@ -1059,7 +1061,9 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
         # Get the relevant inputs for running the unit
         system = serialization.deserialize(setup_results.outputs["system"])
-        positions = np.load(setup_results.outputs["positions"]) * omm_unit.nanometers # convert to openmm units
+        positions = (
+            np.load(setup_results.outputs["positions"]) * omm_unit.nanometers
+        )  # convert to openmm units
         topology = openmm.app.PDBFile(str(setup_results.outputs["system_pdb"])).getTopology()
         equil_steps_nvt = setup_results.outputs["equil_steps_nvt"]
         equil_steps_npt = setup_results.outputs["equil_steps_npt"]
