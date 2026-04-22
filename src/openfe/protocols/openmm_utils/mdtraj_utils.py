@@ -3,6 +3,7 @@
 
 import numpy as np
 import openmm
+from openmm import unit as omm_unit
 import mdtraj as mdt
 
 
@@ -25,7 +26,7 @@ def mdtraj_from_openmm(
     mdtraj_trajectory : md.Trajectory
     """
     mdtraj_topology = mdt.Topology.from_openmm(omm_topology)
-    positions_in_mdtraj_format = omm_positions.value_in_unit(omm_units.nanometers)
+    positions_in_mdtraj_format = omm_positions.value_in_unit(omm_unit.nanometers)
 
     box = omm_topology.getPeriodicBoxVectors()
     x, y, z = [np.array(b._value) for b in box]
