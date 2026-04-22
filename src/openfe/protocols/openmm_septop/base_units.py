@@ -1039,6 +1039,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           A list of sampler states.
         platform : openmm.Platform
           The compute platform to use.
+        restart : bool
+          If we are restarting the simulation.
 
         Returns
         -------
