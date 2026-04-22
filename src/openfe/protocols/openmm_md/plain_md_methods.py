@@ -177,31 +177,8 @@ class PlainMDProtocol(gufe.Protocol):
         mapping: Optional[dict[str, gufe.ComponentMapping]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
-        # TODO: Extensions?
-        if extends:
-            raise NotImplementedError("Can't extend simulations yet")
-
-        # Validate the ChcemicalSystem
-        system_validation.validate_chemical_system(stateA)
-
-        # Validate solvent component
-        nonbond = self.settings.forcefield_settings.nonbonded_method
-        system_validation.validate_solvent(stateA, nonbond)
-
-        # Validate the BaseSolventComponents
-        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
-        if len(base_solvent) > 1:
-            errmsg = "Multiple BaseSolventComponents found, only one is supported."
-            raise ValueError(errmsg)
-
-        # Validate protein component
-        system_validation.validate_protein(stateA)
-
-        # Validate the barostat used in combination with the protein component
-        system_validation.validate_barostat(stateA, self.settings.integrator_settings.barostat)
-
-        # Validate solvation settings
-        settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
+        # validate the inputs
+        self.validate(stateA=stateA, stateB=stateB, mapping=mapping, extends=extends)
 
         # actually create and return Units
         # TODO: Deal with multiple ProteinComponents
@@ -285,15 +262,28 @@ class PlainMDProtocol(gufe.Protocol):
             wmsg = "A mapping was passed but is not used by this Protocol."
             warnings.warn(wmsg)
 
+        # Validate the ChcemicalSystem
+        system_validation.validate_chemical_system(stateA)
+
         # Validate solvent component if present
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
+        # Validate the BaseSolventComponents
+        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
+        if len(base_solvent) > 1:
+            errmsg = "Multiple BaseSolventComponents found, only one is supported."
+            raise ValueError(errmsg)
+
         # Validate protein component if present
         system_validation.validate_protein(stateA)
 
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_barostat(stateA, self.settings.integrator_settings.barostat)
+
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
+
 
 class PlainMDUnitMixin:
     def _prepare(
@@ -670,81 +660,39 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
 
     @staticmethod
-    def _run_nvt_equilibration(
-        simulation: openmm.app.Simulation,
-        steps: int,
-        temperature: KelvinQuantity,
-        output_settings: MDOutputSettings,
-        verbose: bool = True,
-        shared_basepath: pathlib.Path = None,
-    ):
-        if verbose:
-            logger.info(f"Running NVT equilibration for {steps} steps")
-
-        # Set barostat frequency to zero for NVT
-        barostat_freq = None
-        for x in simulation.context.getSystem().getForces():
-            if isinstance(x, openmm.MonteCarloBarostat):
-                if verbose:
-                    logger.info("Removing barostat for NVT equilibration")
-                barostat_freq = x.getFrequency()
-                x.setFrequency(0)
-
-        simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
-
-        t0 = time.time()
-        simulation.step(steps)
-        t1 = time.time()
-        if verbose:
-            logger.info(f"Completed NVT equilibration in {t1 - t0} seconds")
-
-        # restore the barostat
-        for x in simulation.context.getSystem().getForces():
-            if isinstance(x, openmm.MonteCarloBarostat):
-                if verbose:
-                    logger.info("Restoring barostat after NVT equilibration")
-                x.setFrequency(barostat_freq)
-
-        # save the final frame if a file path is passed
-        if output_settings.equil_nvt_structure is not None:
-            PlainMDSimulationUnit._save_pdb_subset(
-                simulation,
-                output_settings,
-                shared_basepath / output_settings.equil_nvt_structure,
-            )
-
-    @staticmethod
-    def _run_npt_equilibration(
+    def _run_dynamics(
         simulation: openmm.app.Simulation,
         steps: int,
         temperature: KelvinQuantity,
         barostat_frequency: Quantity,
         output_settings: MDOutputSettings,
         verbose: bool = True,
-        shared_basepath: pathlib.Path = None,
+        output_path: None | pathlib.Path = None,
     ):
-        # NPT equilibration
-        if verbose:
-            logger.info(f"Running NPT equilibration for {steps} steps")
+        """
+        Worker method to set the temperature, barostat and run dynamics and save final structure output.
+        """
+        # set the velocities to temperature
         simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
 
-        # Enable the barostat for NPT
+        # Setup the barostat
         for x in simulation.context.getSystem().getForces():
-            if isinstance(x, openmm.MonteCarloBarostat):
+            if isinstance(x, (MonteCarloBarostat, MonteCarloMembraneBarostat)):
                 x.setFrequency(barostat_frequency.m)
 
+        # run the simulation
         t0 = time.time()
         simulation.step(steps)
         t1 = time.time()
         if verbose:
-            logger.info(f"Completed NPT equilibration in {t1 - t0} seconds")
+            logger.info(f"Completed dynamics in {t1 - t0} seconds")
 
         # save the final frame if a file path is passed
-        if output_settings.equil_npt_structure is not None:
+        if output_path is not None:
             PlainMDSimulationUnit._save_pdb_subset(
                 simulation,
                 output_settings,
-                shared_basepath / output_settings.equil_npt_structure,
+                output_path,
             )
 
 
@@ -868,25 +816,40 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         # equilibrate
         # NVT equilibration
         if equil_steps_nvt > 0:
-            PlainMDSimulationUnit._run_nvt_equilibration(
+            if verbose:
+                logger.info(f"Running NVT equilibration for {equil_steps_nvt} steps")
+            # setup the output path if we have one for the nvt equilibration
+            if output_settings.equil_nvt_structure is not None:
+                output_path = shared_basepath / output_settings.equil_nvt_structure
+            else:
+                output_path = None
+            PlainMDSimulationUnit._run_dynamics(
                 simulation=simulation,
                 steps=equil_steps_nvt,
                 temperature=temperature,
+                barostat_frequency=0 * unit.timestep, # turn of the barostat for this stage
                 output_settings=output_settings,
                 verbose=verbose,
-                shared_basepath=shared_basepath,
+                output_path=output_path,
             )
 
         # NPT equilibration
         if equil_steps_npt > 0:
-            PlainMDSimulationUnit._run_npt_equilibration(
+            if verbose:
+                logger.info(f"Running NPT equilibration for {equil_steps_npt} steps")
+            # setup the output path if we have one for the npt equilibration
+            if output_settings.equil_npt_structure is not None:
+                output_path = shared_basepath / output_settings.equil_npt_structure
+            else:
+                output_path = None
+            PlainMDSimulationUnit._run_dynamics(
                 simulation=simulation,
                 steps=equil_steps_npt,
                 temperature=temperature,
                 barostat_frequency=barostat_frequency,
                 output_settings=output_settings,
                 verbose=verbose,
-                shared_basepath=shared_basepath,
+                output_path=output_path,
             )
 
         # production
@@ -932,12 +895,16 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                     append=restart,
                 )
             )
-        t0 = time.time()
-        simulation.step(prod_steps)
-        t1 = time.time()
 
-        if verbose:
-            logger.info(f"Completed simulation in {t1 - t0} seconds")
+        PlainMDSimulationUnit._run_dynamics(
+            simulation=simulation,
+            steps=prod_steps,
+            temperature=temperature,
+            barostat_frequency=barostat_frequency,
+            output_settings=output_settings,
+            verbose=verbose,
+            output_path=None, # the trajectory is saved for the production run so don't save again
+        )
 
         return None
 
