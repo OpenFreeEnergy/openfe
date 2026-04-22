@@ -150,7 +150,7 @@ class SepTopProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_septop.SepTopProtocolResult`
     :class:`openfe.protocols.openmm_septop.SepTopComplexSetupUnit`
     :class:`openfe.protocols.openmm_septop.SepTopComplexRunUnit`
-    :class:`openfe.protocols.openmm_septop.SepTopSolventSetupUnit
+    :class:`openfe.protocols.openmm_septop.SepTopSolventSetupUnit`
     :class:`openfe.protocols.openmm_septop.SepTopSolventRunUnit`
     """
 
@@ -462,7 +462,7 @@ class SepTopProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: gufe.ComponentMapping | list[gufe.ComponentMappping] | None,
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMapping] | None,
         extends: gufe.ProtocolDAGResult | None = None,
     ) -> None:
         # Check we're not trying to extend

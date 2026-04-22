@@ -44,7 +44,11 @@ from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     add_force_in_separate_group,
 )
 
-from ..openmm_utils import settings_validation, system_validation
+from ..openmm_utils import (
+    settings_validation,
+    system_validation,
+)
+from ..openmm_utils.mdtraj_utils import mdtraj_from_openmm
 from ..restraint_utils.settings import (
     BoreschRestraintSettings,
     DistanceRestraintSettings,
@@ -57,49 +61,6 @@ from .base_units import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _get_mdtraj_from_openmm(
-    omm_topology: openmm.app.Topology,
-    omm_positions: openmm.unit.Quantity,
-):
-    """
-    Get an mdtraj object from an OpenMM topology and positions.
-
-    Parameters
-    ----------
-    omm_topology: openmm.app.Topology
-      The OpenMM topology
-    omm_positions: openmm.unit.Quantity
-      The OpenMM positions
-
-    Returns
-    -------
-    mdtraj_system: md.Trajectory
-    """
-    mdtraj_topology = md.Topology.from_openmm(omm_topology)
-    positions_in_mdtraj_format = omm_positions.value_in_unit(omm_units.nanometers)
-
-    box = omm_topology.getPeriodicBoxVectors()
-    x, y, z = [np.array(b._value) for b in box]
-    lx = np.linalg.norm(x)
-    ly = np.linalg.norm(y)
-    lz = np.linalg.norm(z)
-    # angle between y and z
-    alpha = np.arccos(np.dot(y, z) / (ly * lz))
-    # angle between x and z
-    beta = np.arccos(np.dot(x, z) / (lx * lz))
-    # angle between x and y
-    gamma = np.arccos(np.dot(x, y) / (lx * ly))
-
-    mdtraj_system = md.Trajectory(
-        positions_in_mdtraj_format,
-        mdtraj_topology,
-        unitcell_lengths=np.array([lx, ly, lz]),
-        unitcell_angles=np.array([np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)]),
-    )
-
-    return mdtraj_system
 
 
 class SepTopComplexMixin:
@@ -226,7 +187,7 @@ class SepTopSolventMixin:
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
-        Extract the relevant settings for a complex transformation.
+        Extract the relevant settings for a solvent transformation.
 
         Returns
         -------
@@ -397,8 +358,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         updated_positions_B: openmm.unit.Quantity
           Updated positions of the complex B
         """
-        mdtraj_complex_A = _get_mdtraj_from_openmm(omm_topology_A, positions_A)
-        mdtraj_complex_B = _get_mdtraj_from_openmm(omm_topology_B, positions_B)
+        mdtraj_complex_A = mdtraj_from_openmm(omm_topology_A, positions_A)
+        mdtraj_complex_B = mdtraj_from_openmm(omm_topology_B, positions_B)
         alignment_indices = SepTopComplexSetupUnit._get_selection_atom_indices(mdtraj_complex_A)
         imaged_complex_B = mdtraj_complex_B.image_molecules()
         imaged_complex_B.superpose(
@@ -903,7 +864,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "system_A": omm_system_A,
                 "system_B": omm_system_B,
                 "system_AB": omm_system_AB,
-                "restrained_system": system,
+                "alchem_restrained_system": system,
                 "alchem_system": alchemical_system,
                 "alchem_factory": alchemical_factory,
                 "positions": equil_positions_AB,
@@ -1179,7 +1140,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "system": system_outfile,
                 "topology": topology_file,
                 "system_AB": omm_system_AB,
-                "restrained_system": system,
+                "alchem_restrained_system": system,
                 "alchem_system": alchemical_system,
                 "alchem_factory": alchemical_factory,
                 "positions": positions_AB,

@@ -20,7 +20,6 @@ import pathlib
 from typing import Any, Literal, Optional
 
 import gufe
-import mdtraj as mdt
 import numpy.typing as npt
 import openmm
 import openmmtools
@@ -70,6 +69,7 @@ from ..openmm_utils import (
     system_creation,
     system_validation,
 )
+from ..openmm_utils.mdtraj_utils import mdtraj_from_openmm
 from .utils import SepTopParameterState
 
 logger = logging.getLogger(__name__)
@@ -708,16 +708,14 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         selection_indices : npt.NDArray
           The indices of the subselected system.
         """
-        mdt_top = mdt.Topology.from_openmm(topology)
-        selection_indices = mdt_top.select(output_selection)
+        traj = mdtraj_from_openmm(topology, positions)
+
+        selection_indices = traj.topology.select(output_selection)
 
         # Write out the subselected structure to PDB if not empty
         if len(selection_indices) > 0:
-            traj = mdt.Trajectory(
-                positions[selection_indices, :],
-                mdt_top.subset(selection_indices),
-            )
-            traj.save_pdb(output_file)
+            sub_traj = traj.atom_slice(selection_indices)
+            sub_traj.save_pdb(output_file)
 
         return selection_indices
 
@@ -951,16 +949,15 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         Parameters
         ----------
-        topology : openmm.app.Topology
-          A Topology of the system being created.
-        positions : openmm.unit.Quantity
-          Positions of the pre-alchemical simulation system.
+        storage_path : pathlib.Path
+          Path to the directory where files should be written.
+        selection_indices : npt.NDArray
+          Array of system particle indices to subsample the system by.
         simulation_settings : MultiStateSimulationSettings
           Multistate simulation control settings, specifically containing
           the amount of time per state sampling iteration.
         output_settings: MultiStateOutputSettings
           Output settings for the simulations
-        shared_basepath: pathlib.Path
 
         Returns
         -------
@@ -1042,8 +1039,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           A list of sampler states.
         platform : openmm.Platform
           The compute platform to use.
-        restart : bool
-          ``True`` if we are doing a simulation restart.
 
         Returns
         -------
