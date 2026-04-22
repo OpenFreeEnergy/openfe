@@ -44,6 +44,24 @@ def vac_settings():
     return settings
 
 
+@pytest.mark.parametrize("inputs, expected", [
+    # inputs are current step count, nvt steps, npt steps and prod steps
+    # outputs are steps to run for nvt, npt, prod and if the production phase has started
+    pytest.param([50, 100, 100, 100], [50, 100, 100, False], id="nvt resuming"),
+    pytest.param([101, 100, 100, 100], [0, 99, 100, False], id="npt resuming"),
+    pytest.param([220, 100, 100, 100], [0, 0, 80, True], id="prod resuming"),
+    pytest.param([200, 100, 100, 100], [0, 0, 100, False], id="prod resuming not started")
+])
+def test_get_remaining_steps(inputs, expected):
+    nvt, npt, prod, is_prod = PlainMDSimulationUnit._get_remaining_steps(
+        *inputs
+    )
+    assert nvt == expected[0]
+    assert npt == expected[1]
+    assert prod == expected[2]
+    assert is_prod == expected[3]
+
+
 def test_create_default_settings():
     settings = PlainMDProtocol.default_settings()
 

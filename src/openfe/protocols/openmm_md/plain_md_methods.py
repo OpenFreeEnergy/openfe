@@ -540,7 +540,7 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         }
         if dry:
             # add non serialised stuff for testing
-            debug_info = {"system": stateA_system, "positions": stateA_positions}
+            debug_info = {"system": stateA_system, "positions": stateA_positions, "topology": stateA_topology}
             unit_results_dict["debug"] = debug_info
 
         return unit_results_dict
@@ -584,34 +584,16 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
         Notes
         -----
-        For now this just checks if the trajectory xtc file and checkpoint state file are present in the
+        For now this just checks if the  checkpoint state file is present in the
         shared directory but in the future this may expand depending on
         how warehouse works.
-
-        Raises
-        ------
-        IOError
-          If either the checkpoint or trajectory files don't exist.
         """
-        trajectory = shared_path / output_settings.production_trajectory_filename
         checkpoint = shared_path / output_settings.checkpoint_storage_filename
 
-        if trajectory.is_file() and checkpoint.is_file():
+        if checkpoint.is_file():
             return True
-        elif trajectory.is_file() ^ checkpoint.is_file():
-            if trajectory.is_file():
-                errmsg = "the trajectory file is present but not the checkpoint file. "
-            else:
-                errmsg = "the checkpoint file is present but not the trajectory file. "
 
-            errmsg = (
-                "Attempting to restart but "
-                + errmsg
-                + "This should not happen under normal circumstances."
-            )
-            raise IOError(errmsg)
-        else:
-            return False
+        return False
 
     @staticmethod
     def _verify_execution_environment(
@@ -695,6 +677,44 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             )
 
     @staticmethod
+    def _get_remaining_steps(
+        current_step_count: int,
+        equil_steps_nvt: int,
+        equil_steps_npt: int,
+        prod_steps: int,
+    ) -> tuple[int, int, int, bool]:
+        """
+        Work out the remaining steps for each phase of the simulation based on the current step count,
+        and determine if production has already started.
+
+        Returns
+        -------
+        equil_steps_nvt : int
+            The number of nvt steps left to run
+        equil_steps_npt : int
+            The number of npt steps left to run
+        prod_steps : int
+            The number of production steps left to run
+        production_started : bool
+            Whether the production phase has already started or not
+        """
+        nvt_end = equil_steps_nvt
+        npt_end = equil_steps_nvt + equil_steps_npt
+        prod_end = equil_steps_nvt + equil_steps_npt + prod_steps
+
+        if npt_end < current_step_count <= prod_end:
+            # In the production phase
+            return 0, 0, prod_end - current_step_count, True
+
+        elif nvt_end < current_step_count <= npt_end:
+            # In the NPT equilibration phase
+            return 0, npt_end - current_step_count, prod_steps, False
+
+        else:
+            # In the NVT equilibration phase
+            return nvt_end - current_step_count, equil_steps_npt, prod_steps, False
+
+    @staticmethod
     def _run_MD(
         simulation: openmm.app.Simulation,
         positions: omm_unit.Quantity,
@@ -760,41 +780,29 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         # as nvt steps can be None set to 0 in this case
         equil_steps_nvt = equil_steps_nvt or 0
 
+        # track if production has already been started
+        production_started = False
         # if restarting skip setup and minimization as they should be completed by the time the checkpoint reporter is used
         if restart:
             if verbose:
-                logger.info("restarting simulation from previous state")
+                logger.info("Restarting simulation from checkpoint state")
             simulation.loadState(str(shared_basepath / output_settings.checkpoint_storage_filename))
 
             # workout the number of steps to run in each phase based on the current simulation step count
-            # edit the number of steps in place to use a single code path for restarts and new runs
             current_step_count = simulation.context.getStepCount()
-            # workout the steps in reverse order
-            if (
-                (equil_steps_nvt + equil_steps_npt)
-                < current_step_count
-                < (equil_steps_nvt + equil_steps_npt + prod_steps)
-            ):
-                # in the production phase, workout the number of steps left
-                prod_steps = prod_steps - (current_step_count - equil_steps_nvt - equil_steps_npt)
-                # make sure we don't run previous phases
-                equil_steps_nvt = 0
-                equil_steps_npt = 0
-            elif equil_steps_nvt < current_step_count < (equil_steps_nvt + equil_steps_npt):
-                # in the npt phase, workout the number of steps left
-                equil_steps_npt = equil_steps_npt - (current_step_count - equil_steps_nvt)
-                # make sure we don't run previous phases
-                equil_steps_nvt = 0
-            else:
-                # must be in the nvt phase, workout the number of steps left
-                equil_steps_nvt = current_step_count - equil_steps_nvt
+            equil_steps_nvt, equil_steps_npt, prod_steps, production_started = PlainMDSimulationUnit._get_remaining_steps(
+                current_step_count=current_step_count,
+                equil_steps_nvt=equil_steps_nvt,
+                equil_steps_npt=equil_steps_npt,
+                prod_steps=prod_steps,
+            )
 
         else:
             # this is the non restart case and requires minimization before moving on
             simulation.context.setPositions(positions)
             # minimize
             if verbose:
-                logger.info("minimizing systems")
+                logger.info("Minimizing systems")
 
             simulation.minimizeEnergy(maxIterations=simulation_settings.minimization_steps)
 
@@ -844,6 +852,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 output_path = shared_basepath / output_settings.equil_npt_structure
             else:
                 output_path = None
+
             PlainMDSimulationUnit._run_dynamics(
                 simulation=simulation,
                 steps=equil_steps_npt,
@@ -856,7 +865,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
         # production
         if verbose:
-            logger.info(f"running production phase for {prod_steps} steps")
+            logger.info(f"Running production phase for {prod_steps} steps")
 
         # Setup the reporters
         write_interval = settings_validation.divmod_time_and_check(
@@ -875,8 +884,8 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 file=str(shared_basepath / output_settings.production_trajectory_filename),
                 reportInterval=write_interval,
                 atomSubset=selection_indices,
-                # append to the trajectory if restarting
-                append=restart,
+                # append to the trajectory if restarting and we have run the production stage before
+                append=production_started,
             )
             simulation.reporters.append(xtc_reporter)
 
@@ -894,7 +903,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                     volume=True,
                     density=True,
                     speed=True,
-                    append=restart,
+                    append=production_started,
                 )
             )
 
