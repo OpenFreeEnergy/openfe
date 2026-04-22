@@ -462,7 +462,7 @@ class SepTopProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: gufe.ComponentMapping | list[gufe.ComponentMappping] | None,
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMapping] | None,
         extends: gufe.ProtocolDAGResult | None = None,
     ) -> None:
         # Check we're not trying to extend
