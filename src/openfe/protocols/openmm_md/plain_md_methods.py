@@ -439,8 +439,8 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         sim_settings: MDSimulationSettings = protocol_settings.simulation_settings
         output_settings: MDOutputSettings = protocol_settings.output_settings
-        timestep = protocol_settings.integrator_settings.timestep
-        integrator_settings = protocol_settings.integrator_settings
+        integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
+        timestep = integrator_settings.timestep
 
         # is the timestep good for the mass?
         settings_validation.validate_timestep(forcefield_settings.hydrogen_mass, timestep)
@@ -479,7 +479,7 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
         # b. get a system generator
         if output_settings.forcefield_cache is not None:
-            ffcache = shared_basepath / output_settings.forcefield_cache
+            ffcache = self.shared_basepath / output_settings.forcefield_cache
         else:
             ffcache = None
 
@@ -520,20 +520,20 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             )
 
         # f. Save pdb of entire system topology to file, this is always needed for restarts
-        with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
+        with open(self.shared_basepath / output_settings.preminimized_structure, "w") as f:
             openmm.app.PDBFile.writeFile(stateA_topology, stateA_positions, file=f, keepIds=True)
 
         # g. Save the system and positions to file
-        system_outfile = shared_basepath / "system.xml.bz2"
+        system_outfile = self.shared_basepath / "system.xml.bz2"
         serialization.serialize(stateA_system, system_outfile)
-        positions_outfile = shared_basepath / "input_positions.npy"
+        positions_outfile = self.shared_basepath / "input_positions.npy"
         np.save(positions_outfile, stateA_positions.value_in_unit(omm_unit.nanometers))
 
         unit_results_dict = {
             "system": system_outfile,
             # save the positions to higher precision
             "positions": positions_outfile,
-            "system_pdb": shared_basepath / output_settings.preminimized_structure,
+            "system_pdb": self.shared_basepath / output_settings.preminimized_structure,
             "equil_steps_nvt": equil_steps_nvt,
             "equil_steps_npt": equil_steps_npt,
             "prod_steps": prod_steps,
@@ -963,6 +963,9 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         error
           Exception if anything failed
         """
+        # Prepare paths and set verbosity
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
         # Extract relevant settings
         protocol_settings: PlainMDProtocolSettings = self._inputs["protocol"].settings
 
@@ -1000,7 +1003,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         try:
             if not dry:  # pragma: no-cover
                 # check for a restart
-                restart = self._check_restart(output_settings, shared_basepath)
+                restart = self._check_restart(output_settings, self.shared_basepath)
                 # start the simulation
                 self._run_MD(
                     simulation,
@@ -1013,7 +1016,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                     equil_steps_nvt,
                     equil_steps_npt,
                     prod_steps,
-                    shared_basepath=shared_basepath,
+                    shared_basepath=self.shared_basepath,
                     restart=restart,
                 )
 
@@ -1023,10 +1026,10 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
         if not dry:  # pragma: no-cover
             output = {
-                "system_pdb": shared_basepath / output_settings.preminimized_structure,
-                "minimized_pdb": shared_basepath / output_settings.minimized_structure,
-                "nc": shared_basepath / output_settings.production_trajectory_filename,
-                "last_checkpoint": shared_basepath / output_settings.checkpoint_storage_filename,
+                "system_pdb": self.shared_basepath / output_settings.preminimized_structure,
+                "minimized_pdb": self.shared_basepath / output_settings.minimized_structure,
+                "nc": self.shared_basepath / output_settings.production_trajectory_filename,
+                "last_checkpoint": self.shared_basepath / output_settings.checkpoint_storage_filename,
             }
             # The checkpoint file can not exist if frequency > sim length
             if not output["last_checkpoint"].exists():
@@ -1038,12 +1041,12 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 output_settings.equil_nvt_structure
                 and sim_settings.equilibration_length_nvt is not None
             ):
-                output["nvt_equil_pdb"] = shared_basepath / output_settings.equil_nvt_structure
+                output["nvt_equil_pdb"] = self.shared_basepath / output_settings.equil_nvt_structure
             else:
                 output["nvt_equil_pdb"] = None
 
             if output_settings.equil_npt_structure:
-                output["npt_equil_pdb"] = shared_basepath / output_settings.equil_npt_structure
+                output["npt_equil_pdb"] = self.shared_basepath / output_settings.equil_npt_structure
 
             return output
         else:
