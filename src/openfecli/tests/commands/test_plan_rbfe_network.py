@@ -5,13 +5,14 @@ from unittest import mock
 import numpy as np
 import pytest
 from click.testing import CliRunner
-from gufe import (
+from openff.units import unit
+
+from openfe import (
     AlchemicalNetwork,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
 )
-from openff.units import unit
-
 from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEYE
 from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
 from openfe.setup import (
@@ -102,7 +103,7 @@ def test_plan_rbfe_network_main(request, protein_fixture):
     protein_component = request.getfixturevalue(protein_fixture)
     solvent_component = SolventComponent()
 
-    alchemical_network, ligand_network = plan_rbfe_network_main(
+    alchemical_network, _ = plan_rbfe_network_main(
         mapper=[LomapAtomMapper()],
         mapping_scorer=lomap_scorers.default_lomap_score,
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
@@ -122,17 +123,21 @@ def test_plan_rbfe_network_main(request, protein_fixture):
     for node in alchemical_network.nodes:
         validate_charges(node.components["ligand"])
 
-    # check that the adaptive settings have been correctly applied
     for edge in alchemical_network.edges:
         settings = edge.protocol.settings
+        expected_barostat = "MonteCarloBarostat"
         if "complex" in edge.name:
             padding = 1.0  # nm
+            if isinstance(protein_component, ProteinMembraneComponent):
+                expected_barostat = "MonteCarloMembraneBarostat"
         else:
             padding = 1.5  # nm
         assert settings.solvation_settings.solvent_padding == padding * unit.nanometer
         assert settings.forcefield_settings.nonbonded_cutoff == 0.9 * unit.nanometer
         assert settings.solvation_settings.box_shape == "dodecahedron"
         assert settings.simulation_settings.time_per_iteration == 2.5 * unit.picosecond
+        # check that the adaptive settings have been correctly applied
+        assert settings.integrator_settings.barostat == expected_barostat
 
 
 @pytest.fixture
