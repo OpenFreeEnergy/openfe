@@ -30,6 +30,7 @@ from gufe import (
     LigandAtomMapping,
     ProteinComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
 )
 from gufe.protocols.errors import ProtocolUnitExecutionError
@@ -101,9 +102,6 @@ class HybridTopologyUnitMixin:
           Optional shared base path to write shared files to.
         """
         self.verbose = verbose
-
-        if self.verbose:
-            self.logger.info("Setting up the hybrid topology simulation")  # type: ignore[attr-defined]
 
         # set basepaths
         def _set_optional_path(basepath):
@@ -199,6 +197,10 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         _, _, smcs_B = system_validation.get_components(stateB)
 
         small_mols = {m: m.to_openff() for m in set(smcs_A).union(set(smcs_B))}
+
+        # If there is a SolvatedPDBComponent, we set the solvent_comp
+        if isinstance(protein_comp, SolvatedPDBComponent):
+            solvent_comp = protein_comp
 
         return solvent_comp, protein_comp, small_mols
 
@@ -735,6 +737,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         """
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        if self.verbose:
+            self.logger.info("Starting system setup unit")
 
         # Get settings
         settings = self._get_settings(self._inputs["protocol"].settings)
@@ -1303,6 +1308,9 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
+        if self.verbose:
+            self.logger.info("Starting simulation unit")
+
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)
 
@@ -1603,6 +1611,9 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         """
         # Prepare paths & verbosity
         self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        if self.verbose:
+            self.logger.info("Starting simulation analysis unit")
 
         # Get the settings
         settings = self._get_settings(self._inputs["protocol"].settings)

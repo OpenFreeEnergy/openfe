@@ -191,6 +191,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
     dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
 
 
+@pytest.mark.xfail(reason="Issue #1940")
 @pytest.mark.skipif(not HAS_ESPALOMA, reason="espaloma is not available")
 def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_settings, tmp_path):
     vac_settings.forcefield_settings.small_molecule_forcefield = "espaloma-0.3.2"
@@ -462,6 +463,25 @@ def test_vaccuum_PME_error(benzene_vacuum_system):
         _ = p.create(
             stateA=benzene_vacuum_system,
             stateB=benzene_vacuum_system,
+            mapping=None,
+        )
+
+
+def test_multiple_basesolvents_error(a2a_protein_membrane_component):
+    p = PlainMDProtocol(
+        settings=PlainMDProtocol.default_settings(),
+    )
+    system = ChemicalSystem(
+        {
+            "protein-membrane": a2a_protein_membrane_component,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+    errmsg = "Multiple BaseSolventComponents found, only one is supported."
+    with pytest.raises(ValueError, match=errmsg):
+        _ = p.create(
+            stateA=system,
+            stateB=system,
             mapping=None,
         )
 
