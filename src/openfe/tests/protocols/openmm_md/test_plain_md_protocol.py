@@ -197,10 +197,10 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
         shared_basepath=tmp_path,
     )
     messages = [r.message for r in caplog.records]
-    assert "minimizing systems" in messages
+    assert "Minimizing systems" in messages
     assert "Running NVT equilibration for 250 steps" in messages
     assert "Running NPT equilibration for 250 steps" in messages
-    assert "running production phase for 250 steps" in messages
+    assert "Running production phase for 250 steps" in messages
 
 
 def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmp_path):

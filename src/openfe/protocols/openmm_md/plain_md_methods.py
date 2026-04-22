@@ -448,7 +448,7 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         # do step validation early and pass through the units
         if sim_settings.equilibration_length_nvt is not None:
             equil_steps_nvt = settings_validation.get_simsteps(
-                sim_length=protocol_settings.simulation_settings.equilibration_length_nvt,
+                sim_length=sim_settings.equilibration_length_nvt,
                 timestep=timestep,
                 mc_steps=1,
             )
