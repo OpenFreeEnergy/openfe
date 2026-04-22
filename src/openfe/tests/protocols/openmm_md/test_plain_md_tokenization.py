@@ -23,17 +23,20 @@ def protocol_units(protocol, benzene_system):
     )
     return list(pus.protocol_units)
 
+
 @pytest.fixture
 def protocol_setup_unit(protocol, protocol_units):
     for pu in protocol_units:
         if isinstance(pu, openmm_md.PlainMDSetupUnit):
             return pu
 
+
 @pytest.fixture
 def protocol_simulation_unit(protocol, protocol_units):
     for pu in protocol_units:
         if isinstance(pu, openmm_md.PlainMDSimulationUnit):
             return pu
+
 
 @pytest.fixture
 def protocol_result(md_json):
@@ -74,6 +77,7 @@ class TestPlainMDSetupUnit(GufeTokenizableTestsMixin):
         """
         assert isinstance(repr(instance), str)
         assert self.repr in repr(instance)
+
 
 class TestPlainMDSimulationUnit(GufeTokenizableTestsMixin):
     cls = openmm_md.PlainMDSimulationUnit

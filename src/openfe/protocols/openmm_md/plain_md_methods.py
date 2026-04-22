@@ -1029,7 +1029,8 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 "system_pdb": self.shared_basepath / output_settings.preminimized_structure,
                 "minimized_pdb": self.shared_basepath / output_settings.minimized_structure,
                 "nc": self.shared_basepath / output_settings.production_trajectory_filename,
-                "last_checkpoint": self.shared_basepath / output_settings.checkpoint_storage_filename,
+                "last_checkpoint": self.shared_basepath
+                / output_settings.checkpoint_storage_filename,
             }
             # The checkpoint file can not exist if frequency > sim length
             if not output["last_checkpoint"].exists():
