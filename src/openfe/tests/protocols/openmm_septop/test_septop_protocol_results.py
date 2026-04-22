@@ -55,25 +55,6 @@ from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
 
 from .utils import UNIT_TYPES, _get_units
 
-E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
-EPSILON0 = (
-    1e-6
-    * 8.8541878128e-12
-    / (openmm.unit.AVOGADRO_CONSTANT_NA * E_CHARGE**2)
-    * openmm.unit.farad
-    / openmm.unit.meter
-)
-ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.unit * 10.0  # nm -> angstrom
-
-
-@pytest.fixture()
-def protocol_dry_settings():
-    # a set of settings for dry run tests
-    s = SepTopProtocol.default_settings()
-    s.engine_settings.compute_platform = None
-    s.protocol_repeats = 1
-    return s
-
 
 @pytest.fixture()
 def default_settings():

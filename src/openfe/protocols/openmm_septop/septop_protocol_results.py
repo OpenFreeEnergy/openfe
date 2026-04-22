@@ -65,8 +65,6 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             complex_dGs.append(
                 (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
             )
-
-        for pus in self.data["complex"].values():
             complex_correction_dGs_A.append(
                 (
                     pus[0].outputs["standard_state_correction_A"],
@@ -84,8 +82,6 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             solv_dGs.append(
                 (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
             )
-
-        for pus in self.data["solvent"].values():
             solv_correction_dGs.append(
                 (
                     pus[0].outputs["standard_state_correction"],
