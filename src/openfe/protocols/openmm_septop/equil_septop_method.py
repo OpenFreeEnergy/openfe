@@ -150,7 +150,7 @@ class SepTopProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_septop.SepTopProtocolResult`
     :class:`openfe.protocols.openmm_septop.SepTopComplexSetupUnit`
     :class:`openfe.protocols.openmm_septop.SepTopComplexRunUnit`
-    :class:`openfe.protocols.openmm_septop.SepTopSolventSetupUnit
+    :class:`openfe.protocols.openmm_septop.SepTopSolventSetupUnit`
     :class:`openfe.protocols.openmm_septop.SepTopSolventRunUnit`
     """
 

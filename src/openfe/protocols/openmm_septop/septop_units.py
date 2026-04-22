@@ -187,7 +187,7 @@ class SepTopSolventMixin:
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
-        Extract the relevant settings for a complex transformation.
+        Extract the relevant settings for a solvent transformation.
 
         Returns
         -------
