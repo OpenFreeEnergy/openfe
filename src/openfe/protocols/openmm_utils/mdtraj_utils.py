@@ -29,22 +29,29 @@ def mdtraj_from_openmm(
     positions_in_mdtraj_format = omm_positions.value_in_unit(omm_unit.nanometers)
 
     box = omm_topology.getPeriodicBoxVectors()
-    x, y, z = [np.array(b._value) for b in box]
-    lx = np.linalg.norm(x)
-    ly = np.linalg.norm(y)
-    lz = np.linalg.norm(z)
-    # angle between y and z
-    alpha = np.arccos(np.dot(y, z) / (ly * lz))
-    # angle between x and z
-    beta = np.arccos(np.dot(x, z) / (lx * lz))
-    # angle between x and y
-    gamma = np.arccos(np.dot(x, y) / (lx * ly))
+    if box is not None:
+        x, y, z = [np.array(b._value) for b in box]
+        lx = np.linalg.norm(x)
+        ly = np.linalg.norm(y)
+        lz = np.linalg.norm(z)
+        # angle between y and z
+        alpha = np.arccos(np.dot(y, z) / (ly * lz))
+        # angle between x and z
+        beta = np.arccos(np.dot(x, z) / (lx * lz))
+        # angle between x and y
+        gamma = np.arccos(np.dot(x, y) / (lx * ly))
+
+        unitcell_lengths = np.array([lx, ly, lz])
+        unitcell_angles = np.array([np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)])
+    else:
+        unitcell_lengths = None
+        unitcell_angles = None
 
     mdtraj_trajectory = mdt.Trajectory(
         positions_in_mdtraj_format,
         mdtraj_topology,
-        unitcell_lengths=np.array([lx, ly, lz]),
-        unitcell_angles=np.array([np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)]),
+        unitcell_lengths=unitcell_lengths,
+        unitcell_angles=unitcell_angles,
     )
 
     return mdtraj_trajectory

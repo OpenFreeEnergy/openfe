@@ -35,10 +35,12 @@ from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopComplexRunUnit,
     SepTopComplexSetupUnit,
+    SepTopComplexAnalysisUnit,
     SepTopProtocol,
     SepTopProtocolResult,
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
+    SepTopSolventAnalysisUnit,
 )
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -1009,6 +1011,10 @@ class TestA2AMembraneDryRun:
         return [u for u in dag.protocol_units if isinstance(u, SepTopComplexRunUnit)]
 
     @pytest.fixture(scope="function")
+    def complex_analysis_unit(self, dag):
+        return [u for u in dag.protocol_units if isinstance(u, SepTopComplexAnalysisUnit)]
+
+    @pytest.fixture(scope="function")
     def solvent_setup_units(self, dag):
         return [u for u in dag.protocol_units if isinstance(u, SepTopSolventSetupUnit)]
 
@@ -1016,10 +1022,14 @@ class TestA2AMembraneDryRun:
     def solvent_run_units(self, dag):
         return [u for u in dag.protocol_units if isinstance(u, SepTopSolventRunUnit)]
 
+    @pytest.fixture(scope="function")
+    def solvent_analysis_unit(self, dag):
+        return [u for u in dag.protocol_units if isinstance(u, SepTopSolventAnalysisUnit)]
+
     def test_number_of_units(
         self, dag, complex_setup_units, complex_run_units, solvent_setup_units, solvent_run_units
     ):
-        assert len(list(dag.protocol_units)) == 4
+        assert len(list(dag.protocol_units)) == 6
         assert len(complex_setup_units) == 1
         assert len(complex_run_units) == 1
         assert len(solvent_setup_units) == 1
@@ -1187,9 +1197,11 @@ class TestA2AMembraneDryRun:
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
-                data["alchem_system"], complexed=True, settings=adaptive_settings
+                complex_setup_output["alchem_restrained_system"],
+                complexed=True,
+                settings=adaptive_settings
             )
-            self._test_orthogonal_vectors(data["alchem_system"])
+            self._test_orthogonal_vectors(complex_setup_output["alchem_restrained_system"])
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(
@@ -1198,7 +1210,7 @@ class TestA2AMembraneDryRun:
             self._test_orthogonal_vectors(complex_setup_output["system_AB"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(
-                from_openmm(data["alchem_system"].getDefaultPeriodicBoxVectors()),
+                from_openmm(complex_setup_output["alchem_restrained_system"].getDefaultPeriodicBoxVectors()),
                 from_openmm(complex_setup_output["system_AB"].getDefaultPeriodicBoxVectors()),
             )
 
@@ -1222,13 +1234,13 @@ class TestA2AMembraneDryRun:
 
             # Check the alchemical system
             self._assert_expected_alchemical_forces(
-                data["alchem_system"], complexed=False, settings=settings
+                solv_setup_output["alchem_restrained_system"], complexed=False, settings=settings
             )
-            self._test_cubic_vectors(data["alchem_system"])
+            self._test_cubic_vectors(solv_setup_output["alchem_restrained_system"])
 
             # Check the alchemical indices
             expected_indices = [i for i in range(self.num_ligand_atoms_A + self.num_ligand_atoms_B)]
-            assert expected_indices == data["selection_indices"].tolist()
+            assert expected_indices == solv_setup_output["selection_indices"].tolist()
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(
