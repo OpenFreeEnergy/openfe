@@ -347,7 +347,7 @@ def assert_multistate_system_equality(
                     "does not exactly match one of the forces in the simulated System "
                     "this may be due to machine precision issues."
                 )
-                logger.debug(msg)
+                logger.info(msg)
 
 
 def validate_chemical_system(system: ChemicalSystem):
