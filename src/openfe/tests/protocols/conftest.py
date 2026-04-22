@@ -20,10 +20,10 @@ import openfe
 from openfe.data._registry import (
     POOCH_CACHE,
     zenodo_industry_benchmark_systems,
+    zenodo_md_resume_data,
     zenodo_resume_data,
     zenodo_rfe_simulation_nc,
     zenodo_t4_lysozyme_traj,
-    zenodo_md_resume_data
 )
 
 
@@ -394,6 +394,7 @@ pooch_md_resume_data = pooch.create(
     base_url=zenodo_md_resume_data["base_url"],
     registry={zenodo_md_resume_data["fname"]: zenodo_md_resume_data["known_hash"]},
 )
+
 
 @pytest.fixture(scope="module")
 def plain_md_checkpoint_path():

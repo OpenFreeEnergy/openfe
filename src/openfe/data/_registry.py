@@ -25,7 +25,7 @@ zenodo_resume_data = dict(
 zenodo_md_resume_data = dict(
     base_url="doi:10.5281/zenodo.19694944",
     fname="checkpoint.xml",
-    known_hash="md5:0f3957c263b5def8de727c5c419b31b5"
+    known_hash="md5:0f3957c263b5def8de727c5c419b31b5",
 )
 
 zenodo_data_registry = [
@@ -33,5 +33,5 @@ zenodo_data_registry = [
     zenodo_t4_lysozyme_traj,
     zenodo_industry_benchmark_systems,
     zenodo_resume_data,
-    zenodo_md_resume_data
+    zenodo_md_resume_data,
 ]

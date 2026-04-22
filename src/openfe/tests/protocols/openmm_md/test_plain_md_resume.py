@@ -13,7 +13,11 @@ from openff.units import unit
 
 import openfe
 from openfe.data._registry import POOCH_CACHE
-from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocol, PlainMDSimulationUnit, PlainMDSetupUnit
+from openfe.protocols.openmm_md.plain_md_methods import (
+    PlainMDProtocol,
+    PlainMDSetupUnit,
+    PlainMDSimulationUnit,
+)
 
 from ...conftest import HAS_INTERNET
 
@@ -100,7 +104,9 @@ class TestPlainMDResume:
             stateA=benzene_vacuum_system, stateB=benzene_vacuum_system, mapping=None
         )
 
-    def test_resume(self, protocol_dag, tmp_path, caplog, vacuum_protocol_settings, plain_md_checkpoint_path):
+    def test_resume(
+        self, protocol_dag, tmp_path, caplog, vacuum_protocol_settings, plain_md_checkpoint_path
+    ):
         # test that we can resume a simulation from a checkpoint
         protocol_units = list(protocol_dag.protocol_units)
         setup_unit: PlainMDSetupUnit = protocol_units[0]

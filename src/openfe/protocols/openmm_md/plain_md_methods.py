@@ -540,7 +540,11 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         }
         if dry:
             # add non serialised stuff for testing
-            debug_info = {"system": stateA_system, "positions": stateA_positions, "topology": stateA_topology}
+            debug_info = {
+                "system": stateA_system,
+                "positions": stateA_positions,
+                "topology": stateA_topology,
+            }
             unit_results_dict["debug"] = debug_info
 
         return unit_results_dict
@@ -790,11 +794,13 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
             # workout the number of steps to run in each phase based on the current simulation step count
             current_step_count = simulation.context.getStepCount()
-            equil_steps_nvt, equil_steps_npt, prod_steps, production_started = PlainMDSimulationUnit._get_remaining_steps(
-                current_step_count=current_step_count,
-                equil_steps_nvt=equil_steps_nvt,
-                equil_steps_npt=equil_steps_npt,
-                prod_steps=prod_steps,
+            equil_steps_nvt, equil_steps_npt, prod_steps, production_started = (
+                PlainMDSimulationUnit._get_remaining_steps(
+                    current_step_count=current_step_count,
+                    equil_steps_nvt=equil_steps_nvt,
+                    equil_steps_npt=equil_steps_npt,
+                    prod_steps=prod_steps,
+                )
             )
 
         else:
