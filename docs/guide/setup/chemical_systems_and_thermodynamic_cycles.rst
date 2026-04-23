@@ -79,7 +79,7 @@ Box vectors for explicitly solvated systems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The components :class:`.SolvatedPDBComponent` and :class:`.ProteinMembraneComponent`
-requires periodic box vectors. These can be provided in three ways:
+require periodic box vectors. These can be provided in three ways:
 
 1. **CRYST record in the PDB file** — OpenMM reads box vectors automatically. No additional arguments are needed::
 
@@ -129,7 +129,7 @@ and is the primary input a :class:`.Protocol` consumes to define a simulation st
 * Atomic positions of all explicitly defined components such as ligands or proteins.
 * The abstract or explicit definition of the solvent environment (SolventComponent).
 
-**What a ChemicalSystem does NOT define**
+**What a ChemicalSystem does NOT define**, and are instead handled by the Protocol:
 
 * Forcefield applied to any component, including water model or virtual particles.
 * Thermodynamic conditions (e.g. temperature or pressure).
