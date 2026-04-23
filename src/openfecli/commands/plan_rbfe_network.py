@@ -147,14 +147,12 @@ def plan_rbfe_network(
     overwrite_charges: bool,
 ):
     """
-    Plan a relative binding free energy network, saved as JSON files for use by
-    the quickrun command.
+    Plan a relative binding free energy AlchemicalNetwork, saved as JSON files for use by the quickrun command.
 
     This tool is an easy way to set up a RBFE calculation campaign.
-    The JSON files this outputs can be used to run each leg of the campaign.
-    openfe.
-    The generated Network will be stored in a folder containing for each
-    transformation a JSON file, that can be run with quickrun.
+
+    The generated AlchemicalNetwork will be stored in --output-directory along with JSON files for each alchemical transformation
+    that can be used to execute the campaign using ``openfe quickrun``.
 
     .. note::
 
@@ -174,9 +172,7 @@ def plan_rbfe_network(
     * Protocol is the OpenMM-based relative hybrid topology protocol, with
       default settings.
 
-    These choices can be customized by creating a settings yaml file,
-    which is passed in via the ``-s settings.yaml`` option,
-    which is detailed in the Options section.
+    These choices can be customized by creating a settings yaml file, which is passed in via the ``-s settings.yaml`` option.
     For more advanced setups, please consider using the Python layer of openfe.
     """
     write("RBFE-NETWORK PLANNER")

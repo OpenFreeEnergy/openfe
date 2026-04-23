@@ -45,12 +45,16 @@ def _get_protein_membrane(user_input, context):
 PROTEIN = Option(
     "-p",
     "--protein",
-    help=("ProteinComponent. Can be provided as an PDB or as a PDBx/mmCIF file."),
+    help=(
+        "Path to a PDB or PDBx/mmCIF file containing a protein. Mutually exclusive with --protein-membrane."
+    ),
     getter=_get_protein,
 )
 
 PROTEIN_MEMBRANE = Option(
     "--protein-membrane",
-    help=("ProteinMembraneComponent. Can be provided as an PDB or as a PDBx/mmCIF file."),
+    help=(
+        'Path to a PDB or PDBx/mmCIF file containing a fully solvated protein-membrane system. Mutually exclusive with --protein. See "Combining System Components into a Single PDB File"'
+    ),
     getter=_get_protein_membrane,
 )
