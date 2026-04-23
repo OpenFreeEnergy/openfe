@@ -118,7 +118,7 @@ require periodic box vectors. These can be provided in three ways:
 ChemicalSystem
 --------------
 
-A :class:`.ChemicalSystem` is composed of components that together describe the full
+A :class:`.ChemicalSystem` is composed of components that together describe a model of the system to be simulated.
 simulated system. It represents the **end state** of an alchemical transformation
 and is the primary input a :class:`.Protocol` consumes to define a simulation state.
 
