@@ -236,7 +236,7 @@ def plan_rbfe_network(
     write("")
     write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  # fmt: skip
 
-    # protein_component.validate()
+    protein_component.validate()
     # DO
     write("Planning RBFE-Campaign:")
     alchemical_network, ligand_network = plan_rbfe_network_main(

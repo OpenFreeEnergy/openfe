@@ -463,3 +463,15 @@ def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmp_p
         result = runner.invoke(plan_rbfe_network, args)
 
         assert result.exit_code == 0
+
+
+def test_plan_rbfe_network_invalid_membrane(eg5_files):
+    """eg5_protein has box vectors but no membrane. ProteinMembraneComponent validation should catch this."""
+
+    runner = CliRunner()
+    args = ["--protein-membrane", eg5_files[0], "-M", eg5_files[1]]
+
+    with runner.isolated_filesystem():
+        result = runner.invoke(plan_rbfe_network, args)
+
+        assert result.exit_code == 1
