@@ -79,7 +79,7 @@ Box vectors for explicitly solvated systems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The components :class:`.SolvatedPDBComponent` and :class:`.ProteinMembraneComponent`
-requires periodic box vectors. These can be provided in three ways:
+require periodic box vectors. These can be provided in three ways:
 
 1. **CRYST record in the PDB file** — OpenMM reads box vectors automatically. No additional arguments are needed::
 
