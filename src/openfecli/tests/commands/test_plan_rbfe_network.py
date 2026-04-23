@@ -154,7 +154,7 @@ partial_charge:
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-@pytest.mark.parametrize("protein_fixture", ["protein_args"])
+@pytest.mark.parametrize("protein_fixture", ["protein_args", "protein_membrane_args"])
 def test_plan_rbfe_network(mol_dir_args, request, protein_fixture, tmp_path, yaml_nagl_settings):
     """
     smoke test
@@ -165,9 +165,15 @@ def test_plan_rbfe_network(mol_dir_args, request, protein_fixture, tmp_path, yam
         f.write(yaml_nagl_settings)
 
     args = mol_dir_args + request.getfixturevalue(protein_fixture)
+
+    # TODO: this depends on the fixture name, which I do not like
+    expected_protein_type = (
+        "ProteinMembraneComponent" if "membrane" in protein_fixture else "ProteinComponent"
+    )
+
     expected_output_always = [
         "RBFE-NETWORK PLANNER",
-        "Protein: ProteinComponent(name=)",
+        f"{expected_protein_type}: {expected_protein_type}(name=)",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
         # make sure the partial charge settings are picked up
