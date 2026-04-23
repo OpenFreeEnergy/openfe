@@ -186,8 +186,6 @@ Thermodynamic Cycles
 A thermodynamic cycle can be described as a set of :class:`.ChemicalSystem`\s (nodes) connected by
 alchemical transformations (edges). The :class:`.Protocol` defines how the
 :class:`.ChemicalSystem`\s map onto the cycle and how they are used in practice.
-See :ref:`the user guide for alchemical networks <alchemical_network_model>` for more information.
-
 The same :class:`.ChemicalSystem` can be reused across multiple thermodynamic states
 depending on the protocol. For details of which end states to construct, consult the
 :ref:`pages for each specific Protocol <userguide_protocols>`.
