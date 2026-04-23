@@ -37,7 +37,7 @@ Component types — overview
        and disulfide bonds (defined via CONECT records).
    * - :class:`.SmallMoleculeComponent`
      - Ligands and cofactors
-     -
+     - Can optionally contain atomic partial charges. If present, those will be used in the simulation.
    * - :class:`.SolventComponent`
      - Abstract solvent definition
      - Defines solvent conditions and ion concentration. Does **not** include coordinates or box vectors. Solvent is added by the protocol at runtime.
