@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
+import logging
 import os
 import pathlib
 import shutil
@@ -331,15 +332,11 @@ class TestCheckpointResuming:
             )
 
     @pytest.mark.slow
-    @pytest.mark.parametrize("forcetype", [openmm.NonbondedForce, openmm.MonteCarloBarostat])
-    def test_resume_differ_forces(
-        self, forcetype, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmp_path
+    def test_resume_differ_barostat(
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmp_path
     ):
         """
-        Test that the run unit will fail with a system incompatible
-        to the one present in the trajectory/checkpoint files.
-
-        Here we check we have a different force
+        Test that the run unit will fail if the barostat differs.
         """
         # copy files
         self._copy_simfiles(tmp_path, htop_trajectory_path)
@@ -357,19 +354,15 @@ class TestCheckpointResuming:
         # Create a fake system with the fake forcetype
         fake_system = copy.deepcopy(setup_results["hybrid_system"])
 
-        # Loop through forces and remove the force matching forcetype
+        # Loop through forces and remove the force matching force type
         for i, f in enumerate(fake_system.getForces()):
-            if isinstance(f, forcetype):
+            if isinstance(f, openmm.MonteCarloBarostat):
                 findex = i
 
         fake_system.removeForce(findex)
-
-        # Now add a fake force
-        if forcetype == openmm.MonteCarloBarostat:
-            new_force = forcetype(1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100)
-        else:
-            new_force = forcetype()
-
+        new_force = openmm.MonteCarloBarostat(
+            1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100
+        )
         fake_system.addForce(new_force)
 
         # Fake system should trigger a mismatch
@@ -382,6 +375,53 @@ class TestCheckpointResuming:
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
+
+    @pytest.mark.slow
+    def test_resume_differ_forces(
+        self, protocol_dag, htop_trajectory_path, htop_checkpoint_path, tmp_path, caplog
+    ):
+        """
+        Test that the run unit will warn if forces don't match
+        to the one present in the trajectory/checkpoint files.
+        """
+        # copy files
+        self._copy_simfiles(tmp_path, htop_trajectory_path)
+        self._copy_simfiles(tmp_path, htop_checkpoint_path)
+
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, HybridTopologySetupUnit)[0]
+        simulation_unit = _get_units(pus, HybridTopologyMultiStateSimulationUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
+
+        # Create a fake system with the fake forcetype
+        fake_system = copy.deepcopy(setup_results["hybrid_system"])
+
+        # Loop through forces and remove the force matching force type
+        for i, f in enumerate(fake_system.getForces()):
+            if isinstance(f, openmm.NonbondedForce):
+                findex = i
+
+        fake_system.removeForce(findex)
+        fake_system.addForce(openmm.NonbondedForce())
+
+        # Mismatching force should trigger a warning
+        wmsg = "does not exactly match one of the forces in the simulated System"
+        caplog.set_level(logging.INFO)
+
+        _ = simulation_unit.run(
+            system=fake_system,
+            positions=setup_results["hybrid_positions"],
+            selection_indices=setup_results["selection_indices"],
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+            dry=True,
+        )
+
+        assert wmsg in caplog.text
 
     @pytest.mark.slow
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])

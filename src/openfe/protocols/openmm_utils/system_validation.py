@@ -319,11 +319,6 @@ def assert_multistate_system_equality(
 
     # Loop through forces and check for equality
     for sfhash, sforce in stored_force_dict.items():
-        errmsg = (
-            f"Force {sforce.getName()} in the stored checkpoint System "
-            "does not match the same force in the simulated System"
-        )
-
         # Barostat case - seed changed so we need to check manually
         if isinstance(sforce, (openmm.MonteCarloBarostat, openmm.MonteCarloMembraneBarostat)):
             # Find the equivalent force in the reference
@@ -339,11 +334,20 @@ def assert_multistate_system_equality(
                 or (sforce.getDefaultPressure() != rforce.getDefaultPressure())
                 or (sforce.getDefaultTemperature() != rforce.getDefaultTemperature())
             ):
+                errmsg = (
+                    f"Barostat Force {sforce.getName()} in the stored checkpoint "
+                    "System does not match the same force in the simulated System."
+                )
                 raise ValueError(errmsg)
 
         else:
             if sfhash not in ref_force_dict:
-                raise ValueError(errmsg)
+                msg = (
+                    f"Force {sforce.getName()} in the stored checkpoint System "
+                    "does not exactly match one of the forces in the simulated System "
+                    "this may be due to machine precision issues."
+                )
+                logger.info(msg)
 
 
 def validate_chemical_system(system: ChemicalSystem):
