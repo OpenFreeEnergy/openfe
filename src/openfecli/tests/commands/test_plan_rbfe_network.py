@@ -87,6 +87,14 @@ def validate_charges(smc):
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
 
+@pytest.fixture
+def ligs_23_55() -> list[SmallMoleculeComponent]:
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
+        return [
+            SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]
+        ]
+
+
 @pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
@@ -94,12 +102,8 @@ def validate_charges(smc):
 @pytest.mark.parametrize(
     "protein_fixture", ["T4_protein_component", "a2a_protein_membrane_component"]
 )
-def test_plan_rbfe_network_main(request, protein_fixture):
-
-    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
-        smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]
-        ]
+def test_plan_rbfe_network_main(request, protein_fixture, ligs_23_55):
+    smallM_components = ligs_23_55
     protein_component = request.getfixturevalue(protein_fixture)
     solvent_component = SolventComponent()
 
@@ -136,7 +140,6 @@ def test_plan_rbfe_network_main(request, protein_fixture):
         assert settings.forcefield_settings.nonbonded_cutoff == 0.9 * unit.nanometer
         assert settings.solvation_settings.box_shape == "dodecahedron"
         assert settings.simulation_settings.time_per_iteration == 2.5 * unit.picosecond
-        # check that the adaptive settings have been correctly applied
         assert settings.integrator_settings.barostat == expected_barostat
 
 
