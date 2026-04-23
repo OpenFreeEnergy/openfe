@@ -195,11 +195,11 @@ def plan_rbfe_network(
     if protein and protein_membrane:
         raise ValueError("Only --protein (-p) or --protein-membrane may be provided, not both.")
     elif protein:
-        protein = PROTEIN.get(protein)
-        write("\t\tProteinComponent: " + str(protein))
+        protein_component = PROTEIN.get(protein)
+        write("\t\tProteinComponent: " + str(protein_component))
     elif protein_membrane:
-        protein = PROTEIN_MEMBRANE.get(protein_membrane)
-        write("\t\tProteinMembraneComponent: " + str(protein))
+        protein_component = PROTEIN_MEMBRANE.get(protein_membrane)
+        write("\t\tProteinMembraneComponent: " + str(protein_component))
     else:
         raise ValueError(
             "Either --protein or --protein-membrane must be provided. Run ``openfe plan-rbfe-network -h`` for more information."
@@ -236,7 +236,7 @@ def plan_rbfe_network(
     write("")
     write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  # fmt: skip
 
-    # protein.validate()
+    # protein_component.validate()
     # DO
     write("Planning RBFE-Campaign:")
     alchemical_network, ligand_network = plan_rbfe_network_main(
@@ -245,7 +245,7 @@ def plan_rbfe_network(
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
-        protein=protein,
+        protein=protein_component,
         cofactors=cofactors,
         n_protocol_repeats=n_protocol_repeats,
         partial_charge_settings=partial_charge,
