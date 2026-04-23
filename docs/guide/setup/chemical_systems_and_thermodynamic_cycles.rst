@@ -131,6 +131,7 @@ and is the primary input a :class:`.Protocol` consumes to define a simulation st
 
 **What a ChemicalSystem does NOT define**, and are instead handled by the Protocol:
 
+Any simulation parameters including:
 * Forcefield applied to any component, including water model or virtual particles.
 * Thermodynamic conditions (e.g. temperature or pressure).
 * These are handled by the :class:`.Protocol`.
