@@ -17,6 +17,7 @@ We describe a chemical system as being made up of one or more "components," e.g.
     ProteinComponent
     ProteinMembraneComponent
     SolventComponent
+    SolvatedPDBComponent
 
 
 Chemical System Generators
