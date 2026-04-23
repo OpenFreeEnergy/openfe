@@ -594,6 +594,31 @@ class TestGenerateNetworkFromNames:
         actual_edges = {(e.componentA.name, e.componentB.name) for e in network.edges}
         assert set(requested_names) == actual_edges
 
+    def test_roundtrip(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        from rdkit.Chem import AllChem
+
+        AllChem.SetDefaultPickleProperties(AllChem.PropertyPickleOptions.AllProps)
+        assert AllChem.GetDefaultPickleProperties() == 65535
+
+        ligands = list(atom_mapping_basic_test_files.values())
+
+        requested_names = [
+            ("toluene", "2-naftanol"),
+            ("2-methylnaphthalene", "2-naftanol"),
+        ]
+
+        network = openfe.setup.ligand_network_planning.generate_network_from_names(
+            ligands=ligands,
+            names=requested_names,
+            mapper=lomap_old_mapper,
+        )
+
+        new_network = openfe.LigandNetwork.from_dict(network.to_dict())
+
+        assert new_network.nodes == network.nodes
+        assert new_network.edges == network.edges
+        assert new_network == network
+
     def test_generate_network_from_names_bad_name_error(
         self, atom_mapping_basic_test_files, lomap_old_mapper
     ):
