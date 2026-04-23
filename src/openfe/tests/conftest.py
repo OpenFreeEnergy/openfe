@@ -334,26 +334,26 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 
 
 @pytest.fixture(scope="session")
-def a2a_ligands_sdf() -> str:
+def a2a_ligands_sdf():
     with resources.as_file(resources.files("openfe.tests.data.a2a")) as d:
         yield str(d / "ligands.sdf.gz")
 
 
 @pytest.fixture(scope="session")
-def a2a_ligands(a2a_ligands_sdf) -> str:
+def a2a_ligands(a2a_ligands_sdf):
     with gzip.open(a2a_ligands_sdf, "rb") as gzf:
         suppl = Chem.ForwardSDMolSupplier(gzf, removeHs=False)
         yield [SmallMoleculeComponent(m) for m in suppl]
 
 
 @pytest.fixture()
-def orion_network() -> str:
+def orion_network():
     with resources.as_file(resources.files("openfe.tests.data.external_formats")) as d:
         yield str(d / "somebenzenes_nes.dat")
 
 
 @pytest.fixture()
-def fepplus_network() -> str:
+def fepplus_network():
     with resources.as_file(resources.files("openfe.tests.data.external_formats")) as d:
         yield str(d / "somebenzenes_edges.edge")
 
