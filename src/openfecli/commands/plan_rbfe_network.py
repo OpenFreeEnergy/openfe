@@ -46,8 +46,7 @@ def plan_rbfe_network_main(
     solvent : SolventComponent
         Solvent component used for solvation
     protein : ProteinComponent | ProteinMembraneComponent
-        protein component for complex simulations, to which the ligands are bound.
-        If a ProteinMembraneComponent is used, the
+        ProteinComponent or ProteinMembraneComponent for complex simulations, to which the ligands are bound.
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongside the protein, can be empty list
     n_protocol_repeats: int
@@ -194,15 +193,17 @@ def plan_rbfe_network(
     small_molecules = MOL_DIR.get(molecules)
     write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
     if protein and protein_membrane:
-        raise ValueError()
+        raise ValueError("Only --protein (-p) or --protein-membrane may be provided, not both.")
     elif protein:
         protein = PROTEIN.get(protein)
-        write("\t\tProtein: " + str(protein))
+        write("\t\tProteinComponent: " + str(protein))
     elif protein_membrane:
         protein = PROTEIN_MEMBRANE.get(protein_membrane)
         write("\t\tProteinMembraneComponent: " + str(protein))
     else:
-        raise ValueError()
+        raise ValueError(
+            "Either --protein or --protein-membrane must be provided. Run ``openfe plan-rbfe-network -h`` for more information."
+        )
 
     if cofactors is not None:
         cofactors = sum((COFACTORS.get(c) for c in cofactors), start=[])
