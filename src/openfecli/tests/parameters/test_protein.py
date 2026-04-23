@@ -1,42 +1,66 @@
 from importlib import resources
 
 import pytest
-from gufe import ProteinComponent, ProteinMembraneComponent
 from rdkit import Chem
 
+from openfe import ProteinComponent, ProteinMembraneComponent
 from openfe.tests.conftest import a2a_protein_membrane_pdb
-from openfecli.parameters.protein import _load_protein_membrane_file, get_protein
+from openfecli.parameters.protein import _get_protein, _get_protein_membrane
+from openfecli.tests.commands.test_plan_rbfe_network import protein_membrane_args
 
 
-def test_get_protein_pdb():
+def test_load_protein_pdb():
     with resources.as_file(resources.files("gufe.tests.data")) as d:
         filename = str(d / "181l.pdb")
-        protein_comp = get_protein(filename)
+    protein_comp = _get_protein(filename, None)
 
-        assert isinstance(protein_comp, ProteinComponent)
-        assert isinstance(protein_comp.to_rdkit(), Chem.Mol)
+    assert isinstance(protein_comp, ProteinComponent)
+    assert isinstance(protein_comp.to_rdkit(), Chem.Mol)
 
 
-def test_get_protein_pdbx():
+def test_load_protein_pdbx():
     with resources.as_file(resources.files("gufe.tests.data")) as d:
         filename = str(d / "181l.cif")
-        protein_comp = get_protein(filename)
+    protein_comp = _get_protein(filename, None)
 
-        assert isinstance(protein_comp, ProteinComponent)
-        assert isinstance(protein_comp.to_rdkit(), Chem.Mol)
-
-
-def test_load_protein_membrane_error():
-    with resources.as_file(resources.files("gufe.tests.data")) as d:
-        filename = str(d / "181l.cif")
-
-        with pytest.raises(ValueError, match="as a ProteinMembraneComponent"):
-            _ = _load_protein_membrane_file(filename, None)
+    assert isinstance(protein_comp, ProteinComponent)
+    assert isinstance(protein_comp.to_rdkit(), Chem.Mol)
 
 
-def test_load_protein_membrane_a2a(a2a_protein_membrane_pdb):
-    with resources.as_file(resources.files("gufe.tests.data")) as d:
-        filename = str(d / "a2a.pdb.gz")
-    # TODO: refactor context out of this?
-    protein_membrane_comp = _load_protein_membrane_file(filename, None)
+def test_load_protein_invalid_file_error():
+    with pytest.raises(ValueError, match="must contain one of:"):
+        _get_protein("not_a_file.txt", None)
+
+
+def test_load_protein_with_membrane(a2a_protein_membrane_pdb):
+    """A protein-membrane component passed to --protein won't fail here, but will be caught in validation downstream."""
+    # TODO: do we want to catch this discrepancy here?
+    protein_comp = _get_protein(a2a_protein_membrane_pdb, None)
+    assert isinstance(protein_comp, ProteinComponent)
+    assert isinstance(protein_comp.to_rdkit(), Chem.Mol)
+
+
+def test_load_membrane_pdb(a2a_protein_membrane_pdb):
+    protein_membrane_comp = _get_protein_membrane(a2a_protein_membrane_pdb, None)
     assert isinstance(protein_membrane_comp, ProteinMembraneComponent)
+    assert isinstance(protein_membrane_comp.to_rdkit(), Chem.Mol)
+
+
+def test_load_membrane_pdbx():
+    with resources.as_file(resources.files("gufe.tests.data")) as d:
+        filename = str(d / "a2a.cif.gz")
+    protein_membrane_comp = _get_protein_membrane(filename, None)
+    assert isinstance(protein_membrane_comp, ProteinMembraneComponent)
+    assert isinstance(protein_membrane_comp.to_rdkit(), Chem.Mol)
+
+
+def test_load_membrane_with_protein_only(capsys):
+    with resources.as_file(resources.files("gufe.tests.data")) as d:
+        filename = str(d / "181l.pdb")
+
+    with pytest.raises(SystemExit) as e:
+        _ = _get_protein_membrane(filename, None)
+
+    captured = capsys.readouterr()
+    assert "Unable to load a ProteinMembraneComponent" in captured.err
+    assert e.value.code == 1
