@@ -10,6 +10,8 @@ there are multiple available ``Protocol``\s to choose from.
 
 For example, included in the ``openfe`` package are the following:
    * :class:`.RelativeHybridTopologyProtocol`
+   * :class:`.AbsoluteBindingProtocol`
+   * :class:`.SepTopProtocol`
    * :class:`.AbsoluteSolvationProtocol`
    * :class:`.PlainMDProtocol`
 
@@ -47,6 +49,40 @@ For example, to customise the production run length of the RFE Protocol::
 
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
+Adaptive Settings
+~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+  The ``_adaptive_settings()`` method is experimental and subject to change.
+
+In addition to the ``.default_settings()`` method, some protocols
+provide an ``_adaptive_settings`` method. This method generates recommended settings
+based on properties of the input :class:`.ChemicalSystem`\s and, where required, the :class:`.AtomMapping`.
+
+For example::
+
+   from openfe.protocols import openmm_rfe
+
+   settings = openmm_rfe.RelativeHybridTopologyProtocol._adaptive_settings(
+       stateA=stateA,
+       stateB=stateB,
+       mapping=mapping,
+   )
+
+   protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
+
+The adaptive settings may modify parameters based on properties of the input systems.
+For example (:class:`.RelativeHybridTopologyProtocol`):
+
+* Transformations involving a change in net charge use a larger number of lambda windows and longer production simulations.
+* If both states contain a :class:`.ProteinComponent`, the solvation padding is set to 1 nm.
+
+Optionally, you can pass a preexisting settings object to the ``_adaptive_settings`` method via the ``initial_settings`` argument. If provided, an adapted copy of these settings will be returned instead
+of using the default settings.
+
+In systems containing membrane-protein complexes (i.e. using a
+:class:`.ProteinMembraneComponent`), adaptive settings select a membrane-appropriate barostat, the ``MonteCarloMembraneBarostat``.
 
 Creating Transformations from Protocols
 -----------------------------------------
