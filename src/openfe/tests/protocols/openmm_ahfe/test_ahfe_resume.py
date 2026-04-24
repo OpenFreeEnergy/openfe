@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import copy
+import logging
 import os
 import pathlib
 import shutil
@@ -389,14 +390,69 @@ class TestCheckpointResuming:
             )
 
     @pytest.mark.slow
-    @pytest.mark.parametrize("forcetype", [openmm.NonbondedForce, openmm.MonteCarloBarostat])
-    def test_resume_differ_forces(
+    def test_resume_differ_barostat(
         self,
-        forcetype,
         protocol_dag,
         ahfe_solv_trajectory_path,
         ahfe_solv_checkpoint_path,
         tmp_path,
+    ):
+        """
+        Test that the run unit will fail with a system incompatible
+        to the one present in the trajectory/checkpoint files.
+
+        Here we check what happens if you have a different barostat
+        """
+        # copy files
+        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
+
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
+        sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
+
+        # Dry run the setup since it'll be easier to use the objects directly
+        setup_results = setup_unit.run(
+            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        )
+
+        # Create a fake system with the fake force type
+        fake_system = copy.deepcopy(setup_results["alchem_system"])
+
+        # Loop through forces and remove the force matching force type
+        for i, f in enumerate(fake_system.getForces()):
+            if isinstance(f, openmm.MonteCarloBarostat):
+                findex = i
+
+        fake_system.removeForce(findex)
+
+        # Now add the new barostat
+        new_force = openmm.MonteCarloBarostat(
+            1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100
+        )
+        fake_system.addForce(new_force)
+
+        # Fake system should trigger a mismatch
+        errmsg = "stored checkpoint System does not match the same force"
+        with pytest.raises(ValueError, match=errmsg):
+            _ = sim_unit.run(
+                system=fake_system,
+                positions=setup_results["debug_positions"],
+                selection_indices=setup_results["selection_indices"],
+                box_vectors=setup_results["box_vectors"],
+                alchemical_restraints=False,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
+            )
+
+    @pytest.mark.slow
+    def test_resume_differ_forces(
+        self,
+        protocol_dag,
+        ahfe_solv_trajectory_path,
+        ahfe_solv_checkpoint_path,
+        tmp_path,
+        caplog,
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -417,38 +473,39 @@ class TestCheckpointResuming:
             dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
         )
 
-        # Create a fake system with the fake forcetype
+        # Create a fake system with the fake force type
         fake_system = copy.deepcopy(setup_results["alchem_system"])
 
-        # Loop through forces and remove the force matching forcetype
+        # Loop through forces and remove the force matching force type
         for i, f in enumerate(fake_system.getForces()):
-            if isinstance(f, forcetype):
+            if isinstance(f, openmm.NonbondedForce):
                 findex = i
 
         fake_system.removeForce(findex)
 
         # Now add a fake force
-        if forcetype == openmm.MonteCarloBarostat:
-            new_force = forcetype(1 * openmm.unit.atmosphere, 300 * openmm.unit.kelvin, 100)
-        elif forcetype == openmm.NonbondedForce:
-            new_force = forcetype()
-            new_force.setNonbondedMethod(openmm.NonbondedForce.PME)
-            new_force.addGlobalParameter("lambda_electrostatics", 1.0)
+        new_force = openmm.NonbondedForce()
+        new_force.setNonbondedMethod(openmm.NonbondedForce.PME)
+        new_force.addGlobalParameter("lambda_electrostatics", 1.0)
 
         fake_system.addForce(new_force)
 
-        # Fake system should trigger a mismatch
-        errmsg = "stored checkpoint System does not match the same force"
-        with pytest.raises(ValueError, match=errmsg):
-            _ = sim_unit.run(
-                system=fake_system,
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
-                scratch_basepath=tmp_path,
-                shared_basepath=tmp_path,
-            )
+        # Mismatching force should trigger a warning
+        wmsg = "does not exactly match one of the forces in the simulated System"
+        caplog.set_level(logging.INFO)
+
+        _ = sim_unit.run(
+            system=fake_system,
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+            dry=True,
+        )
+
+        assert wmsg in caplog.text
 
     @pytest.mark.slow
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
