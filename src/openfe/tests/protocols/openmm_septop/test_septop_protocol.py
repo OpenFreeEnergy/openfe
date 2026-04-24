@@ -897,6 +897,7 @@ def test_bad_sampler():
             compound_states=None,
             sampler_states=None,
             platform=None,
+            restart=False,
         )
 
 
