@@ -1,3 +1,5 @@
+.. _userguide_abfe_protocol:
+
 Absolute Binding Protocol
 =========================
 

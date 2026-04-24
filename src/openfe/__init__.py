@@ -56,6 +56,7 @@ from gufe import (
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     Transformation,
 )
