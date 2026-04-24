@@ -28,9 +28,11 @@ def _load_protein_from_file(input_file, protein_class: ProteinComponent | Protei
             return protein_class.from_pdb_file(input_file)
         elif _contains_any_substring(input_file, _PDBX_EXT):
             return protein_class.from_pdbx_file(input_file)
-    except ValueError:
-        click.secho(f"Unable to load a {protein_class.__name__} from {input_file}.", err=True)
-        sys.exit(1)
+    except ValueError as e:
+        raise click.BadParameter(
+            f"unable to parse {protein_class.__name__} from {click.format_filename(path)}: {e}",
+            param_hint=param_name,
+        ) from e
 
 
 # TODO: these functions are shims to work with plugcli. We should consider migrating to just click.
