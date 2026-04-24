@@ -767,7 +767,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         shared_basepath : Pathlike, optional
           Where to run the calculation, defaults to current working directory
         restart: bool, optional, default=False
-            Where we are restarting from a previous simulation or not, the trajectory and checkpoint files should be
+            Whether we are restarting from a previous simulation or not, the trajectory and checkpoint files should be
             present in the shared directories.
 
         """
