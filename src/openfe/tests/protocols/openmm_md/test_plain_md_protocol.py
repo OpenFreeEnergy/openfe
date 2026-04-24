@@ -10,7 +10,7 @@ import gufe
 import numpy as np
 import openmm
 import pytest
-from gufe import ChemicalSystem, SmallMoleculeComponent
+from gufe import ChemicalSystem, SmallMoleculeComponent, LigandAtomMapping
 from numpy.testing import assert_allclose
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
@@ -530,6 +530,31 @@ def test_multiple_basesolvents_error(a2a_protein_membrane_component):
             stateA=system,
             stateB=system,
             mapping=None,
+        )
+
+
+def test_states_not_matching_error(benzene_vacuum_system, toluene_vacuum_system):
+    p = PlainMDProtocol(settings=PlainMDProtocol.default_settings())
+    errmsg = "The two end states do not match."
+    with pytest.raises(ValueError, match=errmsg):
+        _ = p.create(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=None,
+        )
+
+
+def test_mapping_warning(benzene_vacuum_system, tmp_path):
+    settings = PlainMDProtocol.default_settings()
+    settings.forcefield_settings.nonbonded_method = "nocutoff"
+    p = PlainMDProtocol(settings=settings)
+    warnmsg = "A mapping was passed but is not used by this Protocol."
+    benzene = benzene_vacuum_system.components["ligand"]
+    with pytest.warns(match=warnmsg):
+        _ = p.create(
+            stateA=benzene_vacuum_system,
+            stateB=benzene_vacuum_system,
+            mapping=LigandAtomMapping(componentA=benzene, componentB=benzene, componentA_to_componentB=dict((i, i) for i in range(12)))
         )
 
 

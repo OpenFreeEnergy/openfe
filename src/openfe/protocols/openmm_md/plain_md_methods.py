@@ -170,6 +170,57 @@ class PlainMDProtocol(gufe.Protocol):
             protocol_repeats=1,
         )
 
+
+    def _validate(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: Optional[dict[str, gufe.ComponentMapping]] = None,
+        extends: Optional[gufe.ProtocolDAGResult] = None,
+    ):
+        # Check we're not extending
+        if extends is not None:
+            # This technically should be NotImplementedError
+            # but gufe.Protocol.validate calls `_validate` wrapped around an
+            # except for NotImplementedError, so we can't raise it here
+            raise ValueError("Can't extend simulations yet")
+
+        # Check we're not using a mapping, since we're not doing anything with it
+        if mapping is not None:
+            wmsg = "A mapping was passed but is not used by this Protocol."
+            warnings.warn(wmsg)
+
+        # check that stateA and stateB are the same
+        if stateA is not stateB:
+            errmsg = "The two end states do not match."
+            raise ValueError(errmsg)
+
+        # Validate the ChemicalSystem
+        system_validation.validate_chemical_system(stateA)
+
+        # Validate solvent component if present
+        nonbond = self.settings.forcefield_settings.nonbonded_method
+        system_validation.validate_solvent(stateA, nonbond)
+
+        # Validate the BaseSolventComponents
+        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
+        if len(base_solvent) > 1:
+            errmsg = "Multiple BaseSolventComponents found, only one is supported."
+            raise ValueError(errmsg)
+
+        # Validate protein component if present
+        system_validation.validate_protein(stateA)
+
+        # Validate the barostat used in combination with the protein component
+        system_validation.validate_barostat(stateA, self.settings.integrator_settings.barostat)
+
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
+
+        # is the timestep good for the mass?
+        settings_validation.validate_timestep(self.settings.forcefield_settings.hydrogen_mass, self.settings.integrator_settings.timestep)
+
+
     def _create(
         self,
         stateA: ChemicalSystem,
@@ -243,47 +294,6 @@ class PlainMDProtocol(gufe.Protocol):
         # returns a dict of repeat_id: sorted list of ProtocolUnitResult
         return repeats
 
-    def _validate(
-        self,
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-        mapping: Optional[dict[str, gufe.ComponentMapping]] = None,
-        extends: Optional[gufe.ProtocolDAGResult] = None,
-    ):
-        # Check we're not extending
-        if extends is not None:
-            # This technically should be NotImplementedError
-            # but gufe.Protocol.validate calls `_validate` wrapped around an
-            # except for NotImplementedError, so we can't raise it here
-            raise NotImplementedError("Can't extend simulations yet")
-
-        # Check we're not using a mapping, since we're not doing anything with it
-        if mapping is not None:
-            wmsg = "A mapping was passed but is not used by this Protocol."
-            warnings.warn(wmsg)
-
-        # Validate the ChemicalSystem
-        system_validation.validate_chemical_system(stateA)
-
-        # Validate solvent component if present
-        nonbond = self.settings.forcefield_settings.nonbonded_method
-        system_validation.validate_solvent(stateA, nonbond)
-
-        # Validate the BaseSolventComponents
-        base_solvent = stateA.get_components_of_type(BaseSolventComponent)
-        if len(base_solvent) > 1:
-            errmsg = "Multiple BaseSolventComponents found, only one is supported."
-            raise ValueError(errmsg)
-
-        # Validate protein component if present
-        system_validation.validate_protein(stateA)
-
-        # Validate the barostat used in combination with the protein component
-        system_validation.validate_barostat(stateA, self.settings.integrator_settings.barostat)
-
-        # Validate solvation settings
-        settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
-
 
 class PlainMDUnitMixin:
     def _prepare(
@@ -322,42 +332,6 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
     Protocol setup unit for plain MD simulations which handles charging, system building and solvation.
     """
 
-    def __init__(
-        self,
-        *,
-        protocol: PlainMDProtocol,
-        stateA: ChemicalSystem,
-        generation: int,
-        repeat_id: int,
-        name: Optional[str] = None,
-    ):
-        """
-        Parameters
-        ----------
-        protocol : PlainMDProtocol
-          protocol used to create this Unit. Contains key information such
-          as the settings.
-        stateA : ChemicalSystem
-          the chemical system for the MD simulation
-        repeat_id : int
-          identifier for which repeat (aka replica/clone) this Unit is
-        generation : int
-          counter for how many times this repeat has been extended
-        name : str, optional
-          human-readable identifier for this Unit
-
-        Notes
-        -----
-        The mapping used must not involve any elemental changes.  A check for
-        this is done on class creation.
-        """
-        super().__init__(
-            name=name,
-            protocol=protocol,
-            stateA=stateA,
-            repeat_id=repeat_id,
-            generation=generation,
-        )
 
     @staticmethod
     def _assign_partial_charges(
@@ -467,12 +441,14 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
+        if isinstance(protein_comp, SolvatedPDBComponent):
+            solvent_comp = protein_comp
 
         # 1. Create stateA system
         # Create a dictionary of OFFMol for each SMC for bookkeeping
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule]
-
-        smc_components = {i: i.to_openff() for i in small_mols}
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule] = {
+            i: i.to_openff() for i in small_mols
+        }
 
         # a. assign partial charges to smcs
         self._assign_partial_charges(charge_settings, smc_components)
@@ -588,7 +564,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
         Notes
         -----
-        For now this just checks if the  checkpoint state file is present in the
+        For now this just checks if the checkpoint state file is present in the
         shared directory but in the future this may expand depending on
         how warehouse works.
         """
@@ -650,12 +626,15 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         output_settings: MDOutputSettings,
         verbose: bool = True,
         output_path: None | pathlib.Path = None,
+        reinitialize_velocities: bool = True,
     ):
         """
         Worker method to set the temperature, barostat and run dynamics and save final structure output.
         """
-        # set the velocities to temperature
-        simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
+        # only set the velocities to temperature if we are not restarting this section
+        if reinitialize_velocities:
+            # set the velocities to temperature
+            simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
 
         # Setup the barostat
         for x in simulation.context.getSystem().getForces():
@@ -724,11 +703,11 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         temperature: KelvinQuantity,
         barostat_frequency: Quantity,
         timestep: FemtosecondQuantity,
-        equil_steps_nvt: Optional[int],
+        equil_steps_nvt: int | None,
         equil_steps_npt: int,
         prod_steps: int,
-        verbose=True,
-        shared_basepath=None,
+        verbose: bool = True,
+        shared_basepath: pathlib.Path | None = None,
         restart: bool = False,
     ) -> None:
         """
@@ -764,8 +743,8 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         shared_basepath : Pathlike, optional
           Where to run the calculation, defaults to current working directory
         restart: bool, optional, default=False
-            Whether we are restarting from a previous simulation or not, the trajectory and checkpoint files should be
-            present in the shared directories.
+          Whether we are restarting from a previous simulation or not, the checkpoint file should be
+          present in the shared directories.
 
         """
         if shared_basepath is None:
@@ -783,6 +762,10 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
         # track if production has already been started
         production_started = False
+        # track if we need to reinitialize velocities for a phase
+        # on a fresh run, reinitialize velocities for the first phase.
+        # on a restart, preserve the checkpoint velocities for the phase being restarted.
+        reinitialize_velocities = not restart
         # if restarting skip setup and minimization as they should be completed by the time the checkpoint reporter is used
         if restart:
             if verbose:
@@ -840,11 +823,14 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 simulation=simulation,
                 steps=equil_steps_nvt,
                 temperature=temperature,
-                barostat_frequency=0 * unit.timestep,  # turn of the barostat for this stage
+                barostat_frequency=0 * unit.timestep,  # turn off the barostat for this stage
                 output_settings=output_settings,
                 verbose=verbose,
                 output_path=output_path,
+                reinitialize_velocities=reinitialize_velocities,
             )
+            # if we have run this stage we then need to reinitialize velocities in the next stages
+            reinitialize_velocities = True
 
         # NPT equilibration
         if equil_steps_npt > 0:
@@ -864,7 +850,10 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 output_settings=output_settings,
                 verbose=verbose,
                 output_path=output_path,
+                reinitialize_velocities=reinitialize_velocities,
             )
+            # the production stage can use these same velocities
+            reinitialize_velocities = False
 
         # production
         if verbose:
@@ -918,9 +907,9 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             output_settings=output_settings,
             verbose=verbose,
             output_path=None,  # the trajectory is saved for the production run so don't save again
+            reinitialize_velocities=reinitialize_velocities,
         )
 
-        return None
 
     def run(
         self,
@@ -1030,6 +1019,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                     prod_steps,
                     shared_basepath=self.shared_basepath,
                     restart=restart,
+                    verbose=self.verbose,
                 )
 
         finally:
@@ -1060,6 +1050,8 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
             if output_settings.equil_npt_structure:
                 output["npt_equil_pdb"] = self.shared_basepath / output_settings.equil_npt_structure
+            else:
+                output["npt_equil_pdb"] = None
 
             return output
         else:
