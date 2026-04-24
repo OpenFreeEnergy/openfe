@@ -216,19 +216,10 @@ def plan_rbfe_network(
 
     write("\t\tSolvent: " + str(solvent))
     write("")
-
     write("Using Options:")
     write("\tMapper: " + str(mapper_obj))
-
-    # TODO:  write nice parameter
     write("\tMapping Scorer: " + str(mapping_scorer))
-
-    # TODO:  write nice parameter
     write("\tNetwork Generation: " + str(ligand_network_planner))
-
-    write(f"Validating {type(protein_component).__name__}...")
-    protein_component.validate()
-
     write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
     if overwrite_charges:
         write("\tOverwriting partial charges")
