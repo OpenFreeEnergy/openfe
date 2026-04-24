@@ -170,7 +170,6 @@ class PlainMDProtocol(gufe.Protocol):
             protocol_repeats=1,
         )
 
-
     def _validate(
         self,
         stateA: ChemicalSystem,
@@ -218,8 +217,10 @@ class PlainMDProtocol(gufe.Protocol):
         settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
 
         # is the timestep good for the mass?
-        settings_validation.validate_timestep(self.settings.forcefield_settings.hydrogen_mass, self.settings.integrator_settings.timestep)
-
+        settings_validation.validate_timestep(
+            self.settings.forcefield_settings.hydrogen_mass,
+            self.settings.integrator_settings.timestep,
+        )
 
     def _create(
         self,
@@ -331,7 +332,6 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
     """
     Protocol setup unit for plain MD simulations which handles charging, system building and solvation.
     """
-
 
     @staticmethod
     def _assign_partial_charges(
@@ -608,9 +608,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         )
         # get the subset from the output settings
         mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
-        selection_indices = mdtraj_top.select(
-            output_settings.output_indices
-        )
+        selection_indices = mdtraj_top.select(output_settings.output_indices)
         traj = mdtraj.Trajectory(
             positions[selection_indices, :],
             mdtraj_top.subset(selection_indices),
@@ -909,7 +907,6 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             output_path=None,  # the trajectory is saved for the production run so don't save again
             reinitialize_velocities=reinitialize_velocities,
         )
-
 
     def run(
         self,
