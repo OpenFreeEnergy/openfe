@@ -186,7 +186,14 @@ class TestCheckpointResuming:
 
     @pytest.mark.integration
     def test_resume(
-        self, protocol_dag, protocol_units, setup_results, pdb_file, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
+        self,
+        protocol_dag,
+        protocol_units,
+        setup_results,
+        pdb_file,
+        septop_solv_trajectory_path,
+        septop_solv_checkpoint_path,
+        tmp_path,
     ):
         """
         Attempt to resume a simulation unit with pre-existing checkpoint &
@@ -262,7 +269,14 @@ class TestCheckpointResuming:
 
     @pytest.mark.slow
     def test_resume_fail_particles(
-        self, protocol_dag, protocol_units, setup_results, pdb_file, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
+        self,
+        protocol_dag,
+        protocol_units,
+        setup_results,
+        pdb_file,
+        septop_solv_trajectory_path,
+        septop_solv_checkpoint_path,
+        tmp_path,
     ):
         """
         Test that the run unit will fail with a system incompatible
