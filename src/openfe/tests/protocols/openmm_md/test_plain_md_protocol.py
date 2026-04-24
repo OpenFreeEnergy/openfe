@@ -10,7 +10,7 @@ import gufe
 import numpy as np
 import openmm
 import pytest
-from gufe import ChemicalSystem, SmallMoleculeComponent, LigandAtomMapping
+from gufe import ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent
 from numpy.testing import assert_allclose
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
@@ -554,7 +554,11 @@ def test_mapping_warning(benzene_vacuum_system, tmp_path):
         _ = p.create(
             stateA=benzene_vacuum_system,
             stateB=benzene_vacuum_system,
-            mapping=LigandAtomMapping(componentA=benzene, componentB=benzene, componentA_to_componentB=dict((i, i) for i in range(12)))
+            mapping=LigandAtomMapping(
+                componentA=benzene,
+                componentB=benzene,
+                componentA_to_componentB=dict((i, i) for i in range(12)),
+            ),
         )
 
 

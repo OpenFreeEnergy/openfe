@@ -23,7 +23,6 @@ import pathlib
 from typing import Any
 
 import gufe
-import mdtraj as mdt
 import numpy as np
 import numpy.typing as npt
 import openmm
@@ -74,6 +73,9 @@ from openfe.protocols.openmm_utils import (
     settings_validation,
     system_creation,
     system_validation,
+)
+from openfe.protocols.openmm_utils.mdtraj_utils import (
+    mdtraj_from_openmm,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
@@ -643,16 +645,14 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         selection_indices : npt.NDArray
           The indices of the subselected system.
         """
-        mdt_top = mdt.Topology.from_openmm(topology)
-        selection_indices = mdt_top.select(output_selection)
+        traj = mdtraj_from_openmm(topology, positions)
+
+        selection_indices = traj.topology.select(output_selection)
 
         # Write out the subselected structure to PDB if not empty
         if len(selection_indices) > 0:
-            traj = mdt.Trajectory(
-                positions[selection_indices, :],
-                mdt_top.subset(selection_indices),
-            )
-            traj.save_pdb(output_file)
+            sub_traj = traj.atom_slice(selection_indices)
+            sub_traj.save_pdb(output_file)
 
         return selection_indices
 
@@ -1346,7 +1346,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
                 self.shared_basepath / settings["output_settings"].checkpoint_storage_filename,
             ]
             for fn in fns:
-                os.remove(fn)
+                fn.unlink()
 
     def run(
         self,
