@@ -162,27 +162,6 @@ class TestCheckpointResuming:
     def _copy_simfiles(cwd: pathlib.Path, filepath):
         shutil.copyfile(filepath, f"{cwd}/{filepath.name}")
 
-    def test_create_files(self, protocol_dag):
-        pus = list(protocol_dag.protocol_units)
-        setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
-        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
-        analysis_unit = _get_units(pus, SepTopSolventAnalysisUnit)[0]
-
-        setup_results = setup_unit.run(
-            scratch_basepath=pathlib.Path("setup"),
-            shared_basepath=pathlib.Path("setup"),
-            dry=True,
-        )
-
-        pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
-        solv_sampler = sim_unit.run(
-            setup_results["alchem_restrained_system"],
-            pdb_file,
-            setup_results["selection_indices"],
-            scratch_basepath=pathlib.Path("simulation"),
-            shared_basepath=pathlib.Path("simulation"),
-        )
-
     @pytest.mark.integration
     def test_resume(
         self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
@@ -286,33 +265,35 @@ class TestCheckpointResuming:
 
         pus = list(protocol_dag.protocol_units)
         setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
-        sim_unit = _get_units(pus, SepTopSolventSimUnit)[0]
+        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(
-            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
+        pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
+
         # Create a fake system where we will add a particle
-        fake_system = copy.deepcopy(setup_results["alchem_system"])
+        fake_system = copy.deepcopy(setup_results["alchem_restrained_system"])
         fake_system.addParticle(42)
 
         # Fake system should trigger a mismatch
         errmsg = "Stored checkpoint System particles do not"
         with pytest.raises(ValueError, match=errmsg):
             _ = sim_unit.run(
-                system=fake_system,
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
+                fake_system,
+                pdb_file,
+                setup_results["selection_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     def test_resume_fail_constraints(
-        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmp_path
+        self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -321,20 +302,24 @@ class TestCheckpointResuming:
         Here we check that we don't have the same constraints.
         """
         # copy files
-        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
-        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
+        self._copy_simfiles(tmp_path, septop_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, septop_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
-        setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
-        sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
+        setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
+        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(
-            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
+        pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
+
         # Create a fake system without constraints
-        fake_system = copy.deepcopy(setup_results["alchem_system"])
+        fake_system = copy.deepcopy(setup_results["alchem_restrained_system"])
 
         for i in reversed(range(fake_system.getNumConstraints())):
             fake_system.removeConstraint(i)
@@ -343,18 +328,16 @@ class TestCheckpointResuming:
         errmsg = "Stored checkpoint System constraints do not"
         with pytest.raises(ValueError, match=errmsg):
             _ = sim_unit.run(
-                system=fake_system,
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
+                fake_system,
+                pdb_file,
+                setup_results["selection_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
 
     @pytest.mark.slow
     def test_resume_fail_forces(
-        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, tmp_path
+        self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -363,31 +346,33 @@ class TestCheckpointResuming:
         Here we check we don't have the same forces.
         """
         # copy files
-        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
-        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
+        self._copy_simfiles(tmp_path, septop_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, septop_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
-        setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
-        sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
+        setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
+        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(
-            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
+        pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
+
         # Create a fake system without the last force
-        fake_system = copy.deepcopy(setup_results["alchem_system"])
+        fake_system = copy.deepcopy(setup_results["alchem_restrained_system"])
         fake_system.removeForce(fake_system.getNumForces() - 1)
 
         # Fake system should trigger a mismatch
         errmsg = "Number of forces stored in checkpoint System"
         with pytest.raises(ValueError, match=errmsg):
             _ = sim_unit.run(
-                system=fake_system,
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
+                fake_system,
+                pdb_file,
+                setup_results["selection_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
@@ -396,8 +381,8 @@ class TestCheckpointResuming:
     def test_resume_differ_barostat(
         self,
         protocol_dag,
-        ahfe_solv_trajectory_path,
-        ahfe_solv_checkpoint_path,
+        septop_solv_trajectory_path,
+        septop_solv_checkpoint_path,
         tmp_path,
     ):
         """
@@ -407,20 +392,24 @@ class TestCheckpointResuming:
         Here we check what happens if you have a different barostat
         """
         # copy files
-        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
-        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
+        self._copy_simfiles(tmp_path, septop_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, septop_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
-        setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
-        sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
+        setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
+        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(
-            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
 
+        pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
+
         # Create a fake system with the fake force type
-        fake_system = copy.deepcopy(setup_results["alchem_system"])
+        fake_system = copy.deepcopy(setup_results["alchem_restrained_system"])
 
         # Loop through forces and remove the force matching force type
         for i, f in enumerate(fake_system.getForces()):
@@ -439,11 +428,9 @@ class TestCheckpointResuming:
         errmsg = "stored checkpoint System does not match the same force"
         with pytest.raises(ValueError, match=errmsg):
             _ = sim_unit.run(
-                system=fake_system,
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
+                fake_system,
+                pdb_file,
+                setup_results["selection_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
@@ -452,8 +439,8 @@ class TestCheckpointResuming:
     def test_resume_differ_forces(
         self,
         protocol_dag,
-        ahfe_solv_trajectory_path,
-        ahfe_solv_checkpoint_path,
+        septop_solv_trajectory_path,
+        septop_solv_checkpoint_path,
         tmp_path,
         caplog,
     ):
@@ -464,17 +451,21 @@ class TestCheckpointResuming:
         Here we check we have a different force
         """
         # copy files
-        self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
-        self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
+        self._copy_simfiles(tmp_path, septop_solv_trajectory_path)
+        self._copy_simfiles(tmp_path, septop_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
-        setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
-        sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
+        setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
+        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(
-            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
+
+        pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
 
         # Create a fake system with the fake force type
         fake_system = copy.deepcopy(setup_results["alchem_system"])
@@ -489,7 +480,8 @@ class TestCheckpointResuming:
         # Now add a fake force
         new_force = openmm.NonbondedForce()
         new_force.setNonbondedMethod(openmm.NonbondedForce.PME)
-        new_force.addGlobalParameter("lambda_electrostatics", 1.0)
+        new_force.addGlobalParameter("lambda_electrostatics_A", 1.0)
+        new_force.addGlobalParameter("lambda_electrostatics_B", 0.0)
 
         fake_system.addForce(new_force)
 
@@ -498,14 +490,11 @@ class TestCheckpointResuming:
         caplog.set_level(logging.INFO)
 
         _ = sim_unit.run(
-            system=fake_system,
-            positions=setup_results["debug_positions"],
-            selection_indices=setup_results["selection_indices"],
-            box_vectors=setup_results["box_vectors"],
-            alchemical_restraints=False,
+            fake_system,
+            pdb_file,
+            setup_results["selection_indices"],
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,
-            dry=True,
         )
 
         assert wmsg in caplog.text
@@ -513,7 +502,7 @@ class TestCheckpointResuming:
     @pytest.mark.slow
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
     def test_resume_bad_files(
-        self, protocol_dag, ahfe_solv_trajectory_path, ahfe_solv_checkpoint_path, bad_file, tmp_path
+        self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, bad_file, tmp_path,
     ):
         """
         Test what happens when you have a bad trajectory and/or checkpoint
@@ -525,30 +514,32 @@ class TestCheckpointResuming:
             with open(tmp_path / "solvent.nc", "w") as f:
                 f.write("foo")
         else:
-            self._copy_simfiles(tmp_path, ahfe_solv_trajectory_path)
+            self._copy_simfiles(tmp_path, septop_solv_trajectory_path)
 
         if bad_file == "checkpoint":
             with open(tmp_path / "solvent_checkpoint.nc", "w") as f:
                 f.write("bar")
         else:
-            self._copy_simfiles(tmp_path, ahfe_solv_checkpoint_path)
+            self._copy_simfiles(tmp_path, septop_solv_checkpoint_path)
 
         pus = list(protocol_dag.protocol_units)
-        setup_unit = _get_units(pus, openmm_afe.AHFESolventSetupUnit)[0]
-        sim_unit = _get_units(pus, openmm_afe.AHFESolventSimUnit)[0]
+        setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
+        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
 
         # Dry run the setup since it'll be easier to use the objects directly
         setup_results = setup_unit.run(
-            dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
         )
+
+        pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
 
         with pytest.raises(OSError, match="Unknown file format"):
             _ = sim_unit.run(
-                system=setup_results["alchem_system"],
-                positions=setup_results["debug_positions"],
-                selection_indices=setup_results["selection_indices"],
-                box_vectors=setup_results["box_vectors"],
-                alchemical_restraints=False,
+                setup_results["alchem_restrained_system"],
+                pdb_file,
+                setup_results["selection_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
