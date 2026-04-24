@@ -10,7 +10,6 @@ from gufe import (
     LigandAtomMapping,
     LigandNetwork,
     ProteinComponent,
-    ProteinMembraneComponent,
     Protocol,
     SmallMoleculeComponent,
     SolventComponent,
@@ -347,7 +346,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         self,
         ligands: Iterable[SmallMoleculeComponent],
         solvent: SolventComponent,
-        protein: ProteinComponent | ProteinMembraneComponent,
+        protein: ProteinComponent,
         cofactors: Optional[Iterable[SmallMoleculeComponent]] = None,
     ) -> AlchemicalNetwork:
         """plan the alchemical network for RBFE calculations with the given ligands, protein and solvent.
@@ -358,7 +357,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
             ligands that shall be used for the alchemical network.
         solvent : SolventComponent
             solvent for solvated and complex simulations
-        protein : ProteinComponent | ProteinMembraneComponent
+        protein : ProteinComponent
             protein for complex simulations
         cofactors : Iterable[SmallMoleculeComponent]
             any cofactors in the system, can be empty list

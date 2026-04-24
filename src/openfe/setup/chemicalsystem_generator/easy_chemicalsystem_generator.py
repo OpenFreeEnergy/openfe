@@ -46,8 +46,8 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         ----------
         solvent : SolventComponent, optional
             if a SolventComponent is given, solvated chemical systems will be generated, by default None
-        protein : ProteinComponent | ProteinMembraneComponent, optional
-            if a ProteinComponent or ProteinMembraneComponent is given, complex chemical systems will be generated, by default None
+        protein : ProteinComponent, optional
+            if a ProteinComponent is given, complex chemical systems will be generated, by default None
         cofactors : Iterable[SmallMoleculeComponent], optional
             any cofactors in the system.  will be put in any systems containing
             the protein

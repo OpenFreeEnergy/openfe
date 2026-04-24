@@ -45,8 +45,8 @@ def plan_rbfe_network_main(
         ligands of the system
     solvent : SolventComponent
         Solvent component used for solvation
-    protein : ProteinComponent | ProteinMembraneComponent
-        ProteinComponent or ProteinMembraneComponent for complex simulations, to which the ligands are bound.
+    protein : ProteinComponent
+        ProteinComponent for complex simulations, to which the ligands are bound.
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongside the protein, can be empty list
     n_protocol_repeats: int
