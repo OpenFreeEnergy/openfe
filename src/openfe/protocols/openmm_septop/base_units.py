@@ -308,9 +308,9 @@ class SepTopUnitMixin:
             ):
                 errmsg = "Python environment has changed, cannot continue Protocol execution."
                 raise ProtocolUnitExecutionError(errmsg)
-        except KeyError:
+        except KeyError as e:
             errmsg = "Missing environment information from setup outputs."
-            raise ProtocolUnitExecutionError(errmsg)
+            raise ProtocolUnitExecutionError(errmsg) from e
 
 
 class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):

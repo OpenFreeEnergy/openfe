@@ -223,7 +223,7 @@ class TestCheckpointResuming:
         # 2. get & run the units
         _, sim_unit, analysis_unit = protocol_units
 
-        # Now we run the simultion in resume mode
+        # Now we run the simulation in resume mode
         sim_results = sim_unit.run(
             setup_results["alchem_restrained_system"],
             pdb_file,
