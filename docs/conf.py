@@ -193,7 +193,7 @@ try:
     else:
         repo = git.Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch="membrane_tutorial",  # TODO: update this after merging to main
+            branch="main",  # TODO: update this after making ExampleNotebooks release
             to_path=example_notebooks_path,
         )
 except Exception as e:
