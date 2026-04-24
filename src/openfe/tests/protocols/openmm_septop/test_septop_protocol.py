@@ -883,6 +883,23 @@ def test_high_timestep(
         prot_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
 
 
+def test_bad_sampler():
+    class FakeSimSettings(gufe.settings.SettingsBaseModel):
+        sampler_method: str = "foo bar"
+
+    errmsg = "Unknown sampler foo bar"
+    with pytest.raises(AttributeError, match=errmsg):
+        SepTopSolventRunUnit._get_sampler(
+            integrator=None,
+            reporter=None,
+            simulation_settings=FakeSimSettings(),
+            thermodynamic_settings=None,
+            compound_states=None,
+            sampler_states=None,
+            platform=None,
+        )
+
+
 @pytest.fixture
 def T4L_xml(
     benzene_complex_system,
