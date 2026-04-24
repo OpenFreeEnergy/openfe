@@ -631,10 +631,10 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             )
         )
         # get the subset from the output settings
-        selection_indices = mdtraj.Topology.from_openmm(simulation.topology).select(
+        mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
+        selection_indices = mdtraj_top.select(
             output_settings.output_indices
         )
-        mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
         traj = mdtraj.Trajectory(
             positions[selection_indices, :],
             mdtraj_top.subset(selection_indices),
