@@ -138,6 +138,28 @@ class TestCheckpointResuming:
             mapping=None,
         )
 
+    @pytest.fixture()
+    def protocol_units(self, protocol_dag):
+        pus = list(protocol_dag.protocol_units)
+        setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
+        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
+        analysis_unit = _get_units(pus, SepTopSolventAnalysisUnit)[0]
+        return setup_unit, sim_unit, analysis_unit
+
+    @pytest.fixture()
+    def setup_results(self, protocol_units):
+        setup_unit, _, _ = protocol_units
+
+        return setup_unit.run(
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+
+    @pytest.fixture()
+    def pdb_file(self, setup_results):
+        return openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
+
     @staticmethod
     def _check_sampler(sampler, num_iterations: int):
         # Helper method to do some checks on the sampler
@@ -164,7 +186,7 @@ class TestCheckpointResuming:
 
     @pytest.mark.integration
     def test_resume(
-        self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
+        self, protocol_dag, protocol_units, setup_results, pdb_file, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
     ):
         """
         Attempt to resume a simulation unit with pre-existing checkpoint &
@@ -192,20 +214,9 @@ class TestCheckpointResuming:
         del sampler
 
         # 2. get & run the units
-        pus = list(protocol_dag.protocol_units)
-        setup_unit = _get_units(pus, SepTopSolventSetupUnit)[0]
-        sim_unit = _get_units(pus, SepTopSolventRunUnit)[0]
-        analysis_unit = _get_units(pus, SepTopSolventAnalysisUnit)[0]
-
-        # Dry run the setup since it'll be easier to use the objects directly
-        setup_results = setup_unit.run(
-            dry=True,
-            scratch_basepath=tmp_path,
-            shared_basepath=tmp_path,
-        )
+        _, sim_unit, analysis_unit = protocol_units
 
         # Now we run the simultion in resume mode
-        pdb_file = openmm.app.pdbfile.PDBFile(str(setup_results["topology"]))
         sim_results = sim_unit.run(
             setup_results["alchem_restrained_system"],
             pdb_file,
@@ -251,7 +262,7 @@ class TestCheckpointResuming:
 
     @pytest.mark.slow
     def test_resume_fail_particles(
-        self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
+        self, protocol_dag, protocol_units, setup_results, pdb_file, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
     ):
         """
         Test that the run unit will fail with a system incompatible
