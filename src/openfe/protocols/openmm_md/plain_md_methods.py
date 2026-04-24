@@ -594,10 +594,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         """
         checkpoint = shared_path / output_settings.checkpoint_storage_filename
 
-        if checkpoint.is_file():
-            return True
-
-        return False
+        return checkpoint.is_file()
 
     @staticmethod
     def _verify_execution_environment(
