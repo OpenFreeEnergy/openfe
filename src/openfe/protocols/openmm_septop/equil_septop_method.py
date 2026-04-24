@@ -74,8 +74,10 @@ from ..restraint_utils.settings import (
 )
 from .septop_protocol_results import SepTopProtocolResult
 from .septop_units import (
+    SepTopComplexAnalysisUnit,
     SepTopComplexRunUnit,
     SepTopComplexSetupUnit,
+    SepTopSolventAnalysisUnit,
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
 )
@@ -148,7 +150,7 @@ class SepTopProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_septop.SepTopProtocolResult`
     :class:`openfe.protocols.openmm_septop.SepTopComplexSetupUnit`
     :class:`openfe.protocols.openmm_septop.SepTopComplexRunUnit`
-    :class:`openfe.protocols.openmm_septop.SepTopSolventSetupUnit
+    :class:`openfe.protocols.openmm_septop.SepTopSolventSetupUnit`
     :class:`openfe.protocols.openmm_septop.SepTopSolventRunUnit`
     """
 
@@ -460,7 +462,7 @@ class SepTopProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: gufe.ComponentMapping | list[gufe.ComponentMappping] | None,
+        mapping: gufe.ComponentMapping | list[gufe.ComponentMapping] | None,
         extends: gufe.ProtocolDAGResult | None = None,
     ) -> None:
         # Check we're not trying to extend
@@ -525,89 +527,96 @@ class SepTopProtocol(gufe.Protocol):
         )
 
         # Create list units for complex and solvent transforms
-        def create_setup_units(unit_cls, leg):
-            return [
-                unit_cls(
-                    protocol=self,
-                    stateA=stateA,
-                    stateB=stateB,
-                    alchemical_components=alchem_comps,
-                    generation=0,
-                    repeat_id=int(uuid.uuid4()),
-                    name=(
-                        f"SepTop RBFE Setup, transformation {alchname_A} to "
-                        f"{alchname_B}, {leg} leg: repeat {i} generation 0"
-                    ),
-                )
-                for i in range(self.settings.protocol_repeats)
-            ]
-
-        def create_run_units(unit_cls, leg, setup):
-            return [
-                unit_cls(
-                    protocol=self,
-                    stateA=stateA,
-                    stateB=stateB,
-                    alchemical_components=alchem_comps,
-                    setup=setup[i],
-                    generation=0,
-                    repeat_id=int(uuid.uuid4()),
-                    name=(
-                        f"SepTop RBFE Run, transformation {alchname_A} to "
-                        f"{alchname_B}, {leg} leg: repeat {i} generation 0"
-                    ),
-                )
-                for i in range(self.settings.protocol_repeats)
-            ]
-
         alchname_A = alchem_comps["stateA"][0].name
         alchname_B = alchem_comps["stateB"][0].name
 
-        solvent_setup = create_setup_units(SepTopSolventSetupUnit, "solvent")
-        solvent_run = create_run_units(SepTopSolventRunUnit, "solvent", setup=solvent_setup)
-        complex_setup = create_setup_units(SepTopComplexSetupUnit, "complex")
-        complex_run = create_run_units(SepTopComplexRunUnit, "complex", setup=complex_setup)
+        unit_classes: dict[str, dict[str, type[gufe.ProtocolUnit]]] = {
+            "solvent": {
+                "setup": SepTopSolventSetupUnit,
+                "simulation": SepTopSolventRunUnit,
+                "analysis": SepTopSolventAnalysisUnit,
+            },
+            "complex": {
+                "setup": SepTopComplexSetupUnit,
+                "simulation": SepTopComplexRunUnit,
+                "analysis": SepTopComplexAnalysisUnit,
+            },
+        }
 
-        return solvent_setup + solvent_run + complex_setup + complex_run
+        protocol_units: dict[str, list[gufe.ProtocolUnit]] = {"solvent": [], "complex": []}
+
+        for i in range(self.settings.protocol_repeats):
+            repeat_id = int(uuid.uuid4())
+            for phase in ["solvent", "complex"]:
+                setup = unit_classes[phase]["setup"](
+                    protocol=self,
+                    stateA=stateA,
+                    stateB=stateB,
+                    alchemical_components=alchem_comps,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=(
+                        f"SepTop RBFE Setup, transformation {alchname_A} to "
+                        f"{alchname_B}, {phase} leg: repeat {i} generation 0"
+                    ),
+                )
+
+                simulation = unit_classes[phase]["simulation"](
+                    protocol=self,
+                    stateA=stateA,
+                    stateB=stateB,
+                    alchemical_components=alchem_comps,
+                    setup=setup,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=(
+                        f"SepTop RBFE Run, transformation {alchname_A} to "
+                        f"{alchname_B}, {phase} leg: repeat {i} generation 0"
+                    ),
+                )
+
+                analysis = unit_classes[phase]["analysis"](
+                    protocol=self,
+                    setup=setup,
+                    simulation=simulation,
+                    generation=0,
+                    repeat_id=repeat_id,
+                    name=(
+                        f"SepTop RBFE Analysis, transformation {alchname_A} to "
+                        f"{alchname_B}, {phase} leg: repeat {i} generation 0"
+                    ),
+                )
+
+                protocol_units[phase] += [setup, simulation, analysis]
+
+        return protocol_units["solvent"] + protocol_units["complex"]
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
     ) -> dict[str, dict[str, Any]]:
         # result units will have a repeat_id and generation
         # first group according to repeat_id
-        unsorted_solvent_repeats_setup = defaultdict(list)
-        unsorted_solvent_repeats_run = defaultdict(list)
-        unsorted_complex_repeats_setup = defaultdict(list)
-        unsorted_complex_repeats_run = defaultdict(list)
+        unsorted_solvent_repeats = defaultdict(list)
+        unsorted_complex_repeats = defaultdict(list)
+
         for d in protocol_dag_results:
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
-                if not pu.ok():
+                if ("Analysis" not in pu.name) or (not pu.ok()):
                     continue
                 if pu.outputs["simtype"] == "solvent":
-                    if "Run" in pu.name:
-                        unsorted_solvent_repeats_run[pu.outputs["repeat_id"]].append(pu)
-                    elif "Setup" in pu.name:
-                        unsorted_solvent_repeats_setup[pu.outputs["repeat_id"]].append(pu)
+                    unsorted_solvent_repeats[pu.outputs["repeat_id"]].append(pu)
                 else:
-                    if "Run" in pu.name:
-                        unsorted_complex_repeats_run[pu.outputs["repeat_id"]].append(pu)
-                    elif "Setup" in pu.name:
-                        unsorted_complex_repeats_setup[pu.outputs["repeat_id"]].append(pu)
+                    unsorted_complex_repeats[pu.outputs["repeat_id"]].append(pu)
 
         repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {
-            "solvent_setup": {},
             "solvent": {},
-            "complex_setup": {},
             "complex": {},
         }
-        for k, v in unsorted_solvent_repeats_setup.items():
-            repeats["solvent_setup"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
-        for k, v in unsorted_solvent_repeats_run.items():
+
+        for k, v in unsorted_solvent_repeats.items():
             repeats["solvent"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
 
-        for k, v in unsorted_complex_repeats_setup.items():
-            repeats["complex_setup"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
-        for k, v in unsorted_complex_repeats_run.items():
+        for k, v in unsorted_complex_repeats.items():
             repeats["complex"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
         return repeats
