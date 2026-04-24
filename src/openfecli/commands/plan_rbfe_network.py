@@ -197,9 +197,7 @@ def plan_rbfe_network(
         protein_component = PROTEIN_MEMBRANE.get(protein_membrane)
         write("\t\tProteinMembraneComponent: " + str(protein_component))
     else:
-        raise click.UsageError(
-            "Either --protein or --protein-membrane must be provided.
-        )
+        raise click.UsageError("Either --protein or --protein-membrane must be provided.")
 
     if cofactors is not None:
         cofactors = sum((COFACTORS.get(c) for c in cofactors), start=[])

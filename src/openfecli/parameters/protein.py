@@ -30,9 +30,8 @@ def _load_protein_from_file(input_file, protein_class: ProteinComponent | Protei
             return protein_class.from_pdbx_file(input_file)
     except ValueError as e:
         raise click.BadParameter(
-            f"unable to parse {protein_class.__name__} from {click.format_filename(path)}: {e}",
-            param_hint=param_name,
-        ) from e
+            f"Unable to parse {protein_class.__name__} from {click.format_filename(input_file)}: {e}"
+        )
 
 
 # TODO: these functions are shims to work with plugcli. We should consider migrating to just click.
