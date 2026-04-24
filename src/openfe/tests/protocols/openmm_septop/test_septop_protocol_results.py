@@ -56,12 +56,6 @@ from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
 from .utils import UNIT_TYPES, _get_units
 
 
-@pytest.fixture()
-def default_settings():
-    s = SepTopProtocol.default_settings()
-    return s
-
-
 @pytest.fixture
 def patcher():
     base_path = "openfe.protocols.openmm_septop.base_units"
