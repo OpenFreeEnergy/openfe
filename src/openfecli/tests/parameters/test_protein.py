@@ -1,5 +1,6 @@
 from importlib import resources
 
+import click
 import pytest
 from rdkit import Chem
 
@@ -54,13 +55,9 @@ def test_load_membrane_pdbx():
     assert isinstance(protein_membrane_comp.to_rdkit(), Chem.Mol)
 
 
-def test_load_membrane_with_protein_only(capsys):
+def test_load_membrane_with_protein_only():
     with resources.as_file(resources.files("gufe.tests.data")) as d:
         filename = str(d / "181l.pdb")
 
-    with pytest.raises(SystemExit) as e:
+    with pytest.raises(click.exceptions.BadParameter, match="Could not determine box_vectors."):
         _ = _get_protein_membrane(filename, None)
-
-    captured = capsys.readouterr()
-    assert "Unable to load a ProteinMembraneComponent" in captured.err
-    assert e.value.code == 1

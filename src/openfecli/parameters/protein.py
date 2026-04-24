@@ -1,7 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import sys
 from typing import Iterable
 
 import click
