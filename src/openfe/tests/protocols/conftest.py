@@ -388,6 +388,24 @@ def ahfe_solv_checkpoint_path():
     return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
 
 
+@pytest.fixture(scope="module")
+def septop_solv_trajectory_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "septop"
+    filename = "solvent.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def septop_solv_checkpoint_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "septop"
+    filename = "solvent_checkpoint.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
 @pytest.fixture(scope="session")
 def available_platforms() -> set[str]:
     return {

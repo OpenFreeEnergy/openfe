@@ -1320,6 +1320,15 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 verbose=self.verbose,
                 logger=self.logger,
             )
+        else:
+            # If we are doing a restart, we will be using the positions
+            # in the existing checkpoint file and equil_positions is purely
+            # used to create the sampler & compound states (only used for
+            # checking the sampler being created in restarts).
+            # For the sake of simplicity, we assign equil_positions to
+            # the PDB positions and box_AB to the system vectors
+            equil_positions = positions
+            box_AB = system.getDefaultPeriodicBoxVectors()
 
         # Get the lambda schedule
         lambdas = self._get_lambda_schedule(settings)
