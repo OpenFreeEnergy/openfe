@@ -766,7 +766,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         -----
         For now this just checks if the netcdf files are present in the
         shared directory but in the future this may expand depending on
-        how warehouse works.Expand commentComment on line R836Resolved
+        how warehouse works.
         """
         trajectory = shared_path / output_settings.output_filename
         checkpoint = shared_path / output_settings.checkpoint_storage_filename
