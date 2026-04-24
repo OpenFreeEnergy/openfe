@@ -20,11 +20,11 @@ from openmmtools.multistate import MultiStateReporter, ReplicaExchangeSampler
 import openfe
 from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.openmm_septop import (
-    SepTopProtocol,
     SepTopComplexRunUnit,
-    SepTopSolventSetupUnit,
-    SepTopSolventRunUnit,
+    SepTopProtocol,
     SepTopSolventAnalysisUnit,
+    SepTopSolventRunUnit,
+    SepTopSolventSetupUnit,
 )
 
 from ...conftest import HAS_INTERNET
@@ -304,7 +304,11 @@ class TestCheckpointResuming:
 
     @pytest.mark.slow
     def test_resume_fail_constraints(
-        self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
+        self,
+        protocol_dag,
+        septop_solv_trajectory_path,
+        septop_solv_checkpoint_path,
+        tmp_path,
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -348,7 +352,11 @@ class TestCheckpointResuming:
 
     @pytest.mark.slow
     def test_resume_fail_forces(
-        self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, tmp_path,
+        self,
+        protocol_dag,
+        septop_solv_trajectory_path,
+        septop_solv_checkpoint_path,
+        tmp_path,
     ):
         """
         Test that the run unit will fail with a system incompatible
@@ -513,7 +521,12 @@ class TestCheckpointResuming:
     @pytest.mark.slow
     @pytest.mark.parametrize("bad_file", ["trajectory", "checkpoint"])
     def test_resume_bad_files(
-        self, protocol_dag, septop_solv_trajectory_path, septop_solv_checkpoint_path, bad_file, tmp_path,
+        self,
+        protocol_dag,
+        septop_solv_trajectory_path,
+        septop_solv_checkpoint_path,
+        bad_file,
+        tmp_path,
     ):
         """
         Test what happens when you have a bad trajectory and/or checkpoint

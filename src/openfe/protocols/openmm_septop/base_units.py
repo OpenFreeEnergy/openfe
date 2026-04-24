@@ -743,6 +743,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     """
     Base class for running ligand SepTop RBFE free energy transformations.
     """
+
     @staticmethod
     def _check_restart(output_settings: SettingsBaseModel, shared_path: pathlib.Path):
         """
@@ -1139,7 +1140,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 raise ValueError(errmsg)
         else:
             sampler = sampler_class(**sampler_kwargs)
-    
+
             sampler.create(
                 thermodynamic_states=compound_states,
                 sampler_states=sampler_states,
@@ -1210,13 +1211,13 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 # minimize
                 if self.verbose:
                     self.logger.info("minimizing systems")
-    
+
                 sampler.minimize(max_iterations=settings["simulation_settings"].minimization_steps)
-    
+
                 # equilibrate
                 if self.verbose:
                     self.logger.info("equilibrating systems")
-    
+
                 sampler.equilibrate(int(equil_steps / mc_steps))
 
             # At this point we are ready for production
