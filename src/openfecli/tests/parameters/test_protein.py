@@ -29,13 +29,13 @@ def test_load_protein_pdbx():
 
 
 def test_load_protein_invalid_file_error():
-    with pytest.raises(ValueError, match="must contain one of:"):
+    with pytest.raises(click.exceptions.BadParameter, match="File extension must contain"):
         _get_protein("not_a_file.txt", None)
 
 
 def test_load_protein_with_membrane(a2a_protein_membrane_pdb):
     """A protein-membrane component passed to --protein won't fail here, but will be caught in validation downstream."""
-    # TODO: do we want to catch this discrepancy here?
+
     protein_comp = _get_protein(a2a_protein_membrane_pdb, None)
     assert isinstance(protein_comp, ProteinComponent)
     assert isinstance(protein_comp.to_rdkit(), Chem.Mol)
@@ -56,6 +56,7 @@ def test_load_membrane_pdbx():
 
 
 def test_load_membrane_with_protein_only():
+    """Should error if a protein-only system (like 181l.pdb) is loaded as a ProteinMembraneComponent."""
     with resources.as_file(resources.files("gufe.tests.data")) as d:
         filename = str(d / "181l.pdb")
 
