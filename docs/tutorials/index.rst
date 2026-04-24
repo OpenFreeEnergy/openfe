@@ -12,8 +12,9 @@ Relative Free Energies
 ----------------------
 
 - :any:`Python API Showcase <showcase_notebook>`: Start here! An introduction to OpenFE's Python API and approach to performing a relative binding free energy calculation.
-- :any:`RBFE with the Python API <rbfe_python_tutorial>`: A step-by-step tutorial for using the Python API to calculate relative binding free energies for TYK2.
-- :ref:`RBFE with the CLI <rbfe_cli_tutorial>`: A step-by-step tutorial for using the OpenFE command line interface (CLI) to calculate relative binding free energies for TYK2.
+- :any:`RBFE using the Python API <rbfe_python_tutorial>`: A step-by-step tutorial for using the Python API to calculate relative binding free energies for TYK2.
+- :ref:`RBFE using the CLI <rbfe_cli_tutorial>`: A step-by-step tutorial for using the OpenFE command line interface (CLI) to calculate relative binding free energies for TYK2.
+- :any:`RBFE with membrane systems <rbfe_membrane_protein>`: A step-by-step guide to setting up an RBFE calculation with special considerations for membrane systems.
 
 Absolute Free Energies
 ----------------------
@@ -50,6 +51,7 @@ Generating Partial Charges
     showcase_notebook
     rbfe_python_tutorial
     rbfe_cli_tutorial
+    rbfe_membrane_protein
     abfe_tutorial
     abfe_analysis_tutorial
     ahfe_tutorial
