@@ -2,6 +2,7 @@ import shutil
 from importlib import resources
 from unittest import mock
 
+import gufe
 import numpy as np
 import pytest
 from click.testing import CliRunner
@@ -465,13 +466,32 @@ def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmp_p
         assert result.exit_code == 0
 
 
-def test_plan_rbfe_network_invalid_membrane(eg5_files):
+def test_plan_rbfe_invalid_membrane(eg5_files):
     """eg5_protein has box vectors but no membrane. ProteinMembraneComponent validation should catch this."""
 
-    runner = CliRunner()
     args = ["--protein-membrane", eg5_files[0], "-M", eg5_files[1]]
+    runner = CliRunner()
+    with pytest.raises(
+        gufe.components.errors.ComponentValidationError,
+        match="This usually indicates missing solvent or incorrect box vectors",
+    ):
+        _ = runner.invoke(plan_rbfe_network, args, catch_exceptions=False)
 
-    with runner.isolated_filesystem():
-        result = runner.invoke(plan_rbfe_network, args)
 
-        assert result.exit_code == 1
+def test_plan_rbfe_missing_protein_args(eg5_files):
+    """eg5_protein has box vectors but no membrane. ProteinMembraneComponent validation should catch this."""
+    args = ["-M", eg5_files[1]]
+
+    runner = CliRunner(catch_exceptions=False)
+    result = runner.invoke(plan_rbfe_network, args)
+    assert result.exit_code == 2
+    assert "Either --protein or --protein-membrane must be provided." in result.stderr
+
+
+def test_plan_rbfe_too_many_protein_error(eg5_files):
+    """eg5_protein has box vectors but no membrane. ProteinMembraneComponent validation should catch this."""
+    args = ["-M", eg5_files[1], "--protein-membrane", eg5_files[0], "-p", eg5_files[0]]
+
+    runner = CliRunner(catch_exceptions=False)
+    result = runner.invoke(plan_rbfe_network, args)
+    assert "Only --protein (-p) or --protein-membrane may be provided, not both." in result.stderr

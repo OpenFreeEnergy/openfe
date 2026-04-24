@@ -189,7 +189,9 @@ def plan_rbfe_network(
     small_molecules = MOL_DIR.get(molecules)
     write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
     if protein and protein_membrane:
-        raise ValueError("Only --protein (-p) or --protein-membrane may be provided, not both.")
+        raise click.UsageError(
+            "Only --protein (-p) or --protein-membrane may be provided, not both."
+        )
     elif protein:
         protein_component = PROTEIN.get(protein)
         write("\t\tProteinComponent: " + str(protein_component))
