@@ -262,7 +262,7 @@ class PlainMDProtocol(gufe.Protocol):
             wmsg = "A mapping was passed but is not used by this Protocol."
             warnings.warn(wmsg)
 
-        # Validate the ChcemicalSystem
+        # Validate the ChemicalSystem
         system_validation.validate_chemical_system(stateA)
 
         # Validate solvent component if present
