@@ -16,7 +16,8 @@ Protocol API Specification
    :toctree: generated/
 
    PlainMDProtocol
-   PlainMDProtocolUnit
+   PlainMDSetupUnit
+   PlainMDSimulationUnit
    PlainMDProtocolResult
 
 

@@ -25,7 +25,7 @@ def test_vacuum_sim(
     settings.simulation_settings.equilibration_length_nvt = None
     settings.simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.simulation_settings.production_length = 20 * unit.picosecond
-    settings.output_settings.checkpoint_interval = 40 * unit.picosecond
+    settings.output_settings.checkpoint_interval = 5 * unit.picosecond
     settings.forcefield_settings.nonbonded_method = "nocutoff"
     settings.engine_settings.compute_platform = platform
 
@@ -46,9 +46,9 @@ def test_vacuum_sim(
 
     assert r.ok()
 
-    assert len(r.protocol_unit_results) == 1
+    assert len(r.protocol_unit_results) == 2
 
-    pur = r.protocol_unit_results[0]
+    pur = r.protocol_unit_results[1]
     unit_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
     assert unit_shared.exists()
     assert pathlib.Path(unit_shared).is_dir()
@@ -59,20 +59,19 @@ def test_vacuum_sim(
         "minimized.pdb",
         "simulation.xtc",
         "simulation.log",
-        "system.pdb",
+        "checkpoint.xml",
     ]
     for file in files:
         assert (unit_shared / file).exists()
 
     # NVT PDB should not exist
     assert not (unit_shared / "equil_nvt.pdb").exists()
-    assert not (unit_shared / "checkpoint.chk").exists()
 
     # check that the output file paths are correct
     assert pur.outputs["system_pdb"] == unit_shared / "system.pdb"
     assert pur.outputs["minimized_pdb"] == unit_shared / "minimized.pdb"
     assert pur.outputs["nc"] == unit_shared / "simulation.xtc"
-    assert pur.outputs["last_checkpoint"] is None
+    assert pur.outputs["last_checkpoint"] == unit_shared / "checkpoint.xml"
     assert pur.outputs["npt_equil_pdb"] == unit_shared / "equil_npt.pdb"
     assert pur.outputs["nvt_equil_pdb"] is None
 
@@ -113,22 +112,21 @@ def test_complex_solvent_sim_gpu(
 
     assert r.ok()
 
-    assert len(r.protocol_unit_results) == 1
+    assert len(r.protocol_unit_results) == 2
 
-    pur = r.protocol_unit_results[0]
+    pur = r.protocol_unit_results[1]
     unit_shared = tmp_path / f"shared_{pur.source_key}_attempt_0"
     assert unit_shared.exists()
     assert pathlib.Path(unit_shared).is_dir()
 
     # check the files
     files = [
-        "checkpoint.chk",
+        "checkpoint.xml",
         "equil_nvt.pdb",
         "equil_npt.pdb",
         "minimized.pdb",
         "simulation.xtc",
         "simulation.log",
-        "system.pdb",
     ]
     for file in files:
         assert (unit_shared / file).exists()
@@ -137,6 +135,6 @@ def test_complex_solvent_sim_gpu(
     assert pur.outputs["system_pdb"] == unit_shared / "system.pdb"
     assert pur.outputs["minimized_pdb"] == unit_shared / "minimized.pdb"
     assert pur.outputs["nc"] == unit_shared / "simulation.xtc"
-    assert pur.outputs["last_checkpoint"] == unit_shared / "checkpoint.chk"
+    assert pur.outputs["last_checkpoint"] == unit_shared / "checkpoint.xml"
     assert pur.outputs["nvt_equil_pdb"] == unit_shared / "equil_nvt.pdb"
     assert pur.outputs["npt_equil_pdb"] == unit_shared / "equil_npt.pdb"

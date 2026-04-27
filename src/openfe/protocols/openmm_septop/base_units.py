@@ -56,7 +56,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
-from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
+from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
@@ -202,9 +202,9 @@ def _pre_equilibrate(
         errmsg = f"Only 'A', 'B', and 'AB' are accepted as endstates. Got {endstate}"
         raise ValueError(errmsg)
 
-    # Use the _run_MD method from the PlainMDProtocolUnit
+    # Use the _run_MD method from the PlainMDSimulationUnit
     # Should in-place modify the simulation
-    PlainMDProtocolUnit._run_MD(
+    PlainMDSimulationUnit._run_MD(
         simulation=simulation,
         positions=positions,
         simulation_settings=settings["equil_simulation_settings"],
