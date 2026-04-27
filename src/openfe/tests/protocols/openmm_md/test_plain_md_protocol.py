@@ -488,17 +488,14 @@ def test_hightimestep(benzene_vacuum_system, tmp_path):
     settings.forcefield_settings.nonbonded_method = "nocutoff"
 
     p = PlainMDProtocol(settings=settings)
-
-    dag = p.create(
-        stateA=benzene_vacuum_system,
-        stateB=benzene_vacuum_system,
-        mapping=None,
-    )
-    dag_unit = list(dag.protocol_units)[0]
-
     errmsg = "too large for hydrogen mass"
+    # make sure this is triggered in validate
     with pytest.raises(ValueError, match=errmsg):
-        dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+        _ = p.create(
+            stateA=benzene_vacuum_system,
+            stateB=benzene_vacuum_system,
+            mapping=None,
+        )
 
 
 def test_vaccuum_PME_error(benzene_vacuum_system):
@@ -506,6 +503,7 @@ def test_vaccuum_PME_error(benzene_vacuum_system):
         settings=PlainMDProtocol.default_settings(),
     )
     errmsg = "PME cannot be used for vacuum transform"
+    # make sure this is triggered in validate
     with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_vacuum_system,

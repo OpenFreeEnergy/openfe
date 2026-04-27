@@ -6,6 +6,7 @@ import shutil
 
 import gufe
 import openmm
+import openmm.unit as openmm_unit
 import pytest
 from gufe import ChemicalSystem, SmallMoleculeComponent
 from gufe.protocols.errors import ProtocolUnitExecutionError
@@ -145,3 +146,18 @@ class TestPlainMDResume:
         assert sim_results["system_pdb"].exists()
         assert sim_results["nc"].exists()
         assert sim_results["last_checkpoint"]
+
+        # load the final checkpoint and check the simulation time is correct, this should be 3 ps
+        # also check the total step count
+        simulation = openmm.app.Simulation(
+            setup_results["debug"]["topology"],
+            setup_results["debug"]["system"],
+            openmm.LangevinMiddleIntegrator(298.15 * openmm_unit.kelvin, 1.0 / openmm_unit.picosecond, 4 * openmm_unit.femtoseconds)
+        )
+        simulation.context.setPositions(setup_results["debug"]["positions"])
+        simulation.loadState(str(sim_results["last_checkpoint"]))
+        total_sim_time = simulation.context.getTime()
+        # check the time is 3 ps
+        assert total_sim_time.value_in_unit(openmm_unit.picoseconds) == pytest.approx(3)
+        # check the step count has been extended
+        assert simulation.context.getStepCount() == 750
