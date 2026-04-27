@@ -13,16 +13,16 @@ v1.11.0
   PlainMDProtocol, RelativeHybridTopologyProtocol, SepTopProtocol, and AbsoluteBindingProtocol (`PR #1561 <https://github.com/OpenFreeEnergy/openfe/pull/1561>`_).
 * Added support for membrane systems to ``openfe plan-rbfe-network``.
   Use ``--protein-membrane`` instead of the ``--protein`` argument, and see the tutorial on preparing membrane systems (`PR #1896 <https://github.com/OpenFreeEnergy/openfe/pull/1896>`_).
-* * Added API support for resuming the PlainMDProtocol (`PR #1884 <https://github.com/OpenFreeEnergy/openfe/pull/1884>`_).
+* Added API support for resuming the PlainMDProtocol (`PR #1884 <https://github.com/OpenFreeEnergy/openfe/pull/1884>`_).
 * Added API support for resuming the SepTopProtocol. (`PR #1949 <https://github.com/OpenFreeEnergy/openfe/pull/1949>`_).
-* The `validate` method for the SepTopProtocol has been implemented.
-  This means that settings and system validation can mostly be done prior to Protocol execuation by calling `SepTopProtocol.validate(stateA, stateB, mapping=None)` (`PR #1946 <https://github.com/OpenFreeEnergy/openfe/pull/1946>`_).
+* The ``validate`` method for the SepTopProtocol has been implemented.
+  This means that settings and system validation can mostly be done prior to Protocol execuation by calling ``SepTopProtocol.validate(stateA, stateB, mapping=None)`` (`PR #1946 <https://github.com/OpenFreeEnergy/openfe/pull/1946>`_).
 
 **Changed:**
 
 * The SepTopProtocol now has a dedicated Analysis unit.
   At the top level API, this does not change behavior, but if you are directly interfacing with th ProtocolUnits, you will have to account for this change.
-  The SepTopProtocolResult now solely uses the Analysis units. (`PR #1937 <https://github.com/OpenFreeEnergy/openfe/pull/1937>`_)
+  The SepTopProtocolResult now solely uses the Analysis units (`PR #1937 <https://github.com/OpenFreeEnergy/openfe/pull/1937>`_).
 * Updated the chemical systems user guide and the defining protocols user guide to reflect recent protocol updates, including adding membrane support (`PR #1933 <https://github.com/OpenFreeEnergy/openfe/pull/1933>`_).
 
 **Deprecated:**
