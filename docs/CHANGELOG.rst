@@ -4,6 +4,50 @@ Changelog
 
 .. current developments
 
+v1.11.0
+====================
+
+**Added:**
+
+* Added support for systems with membranes to the following protocols:
+  PlainMDProtocol, RelativeHybridTopologyProtocol, SepTopProtocol, and AbsoluteBindingProtocol.
+* Added support for membrane systems to ``openfe plan-rbfe-network``.
+  Use ``--protein-membrane`` instead of the ``--protein`` argument, and see the tutorial on preparing membrane systems (`PR #1896 <https://github.com/OpenFreeEnergy/openfe/pull/1896>`_).
+* * Added API support for resuming the PlainMDProtocol.
+  PR #1884.
+* Added API support for resuming the SepTopProtocol.
+  PR #1949.
+* The `validate` method for the SepTopProtocol has been implemented.
+  This means that settings and system validation can mostly be done prior
+  to Protocol execuation by calling
+  `SepTopProtocol.validate(stateA, stateB, mapping=None)`.
+
+**Changed:**
+
+* The SepTopProtocol now has a dedicated Analysis unit.
+  At the top level API, this does not change behaviour, but
+  if you are directly interfacing with the ProtocolUnits, you
+  will have to account for this change. The SepTopProtocolResult now
+  solely uses the Analysis units. PR #1937
+* Updated the chemical systems user guide and the defining protocols user guide to reflect recent protocol updates, including adding membrane support.
+
+**Deprecated:**
+
+* Perses atom mapper and scorer functionality is deprecated, now slated to be removed in ``openfe v1.12``. 
+  This includes ``PersesAtomMapper`` and ``default_perses_scorer`` (`PR #1857 <https://github.com/OpenFreeEnergy/openfe/pull/1857>`_).
+
+**Fixed:**
+
+* Fix erroneous logging information message which would mention
+  setting up the alchemical system when running simulation or
+  analysis units with the hybrid topology, AHFE or ABFE Protocols (PR #1915).
+* System equality checks on resuming no longer expect complete equality
+  in the force parameters. This fixes a scenario where small changes
+  in precision due to running on different machines would prevent users from
+  restarting their simulations (Issue #1913, PR #1914).
+
+
+
 v1.10.0
 ====================
 
