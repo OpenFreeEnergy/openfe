@@ -501,13 +501,11 @@ See :ref:`installation:mamba_hpc` for more details.
 Optional dependencies
 ---------------------
 
-Certain functionalities are only available if you also install other,
-optional packages.
+Certain functionalities are only available if you also install optional packages.
 
-* **perses tools**: To use perses, you need to install perses and OpenEye,
-  and you need a valid OpenEye license. To install both packages, use::
+* **OpenEye tools**: To use functionality that uses the OpenEye, you must additionally install OpenEye, and you need a valid OpenEye license. To install, use::
 
-    $ mamba install -c openeye perses openeye-toolkits
+    $ mamba install -c openeye openeye-toolkits
 
 Supported Hardware
 ------------------
