@@ -152,7 +152,11 @@ class TestPlainMDResume:
         simulation = openmm.app.Simulation(
             setup_results["debug"]["topology"],
             setup_results["debug"]["system"],
-            openmm.LangevinMiddleIntegrator(298.15 * openmm_unit.kelvin, 1.0 / openmm_unit.picosecond, 4 * openmm_unit.femtoseconds)
+            openmm.LangevinMiddleIntegrator(
+                298.15 * openmm_unit.kelvin,
+                1.0 / openmm_unit.picosecond,
+                4 * openmm_unit.femtoseconds,
+            ),
         )
         simulation.context.setPositions(setup_results["debug"]["positions"])
         simulation.loadState(str(sim_results["last_checkpoint"]))
