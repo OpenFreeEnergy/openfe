@@ -479,7 +479,6 @@ def test_plan_rbfe_invalid_membrane(eg5_files):
 
 
 def test_plan_rbfe_missing_protein_args(eg5_files):
-    """eg5_protein has box vectors but no membrane. ProteinMembraneComponent validation should catch this."""
     args = ["-M", eg5_files[1]]
 
     runner = CliRunner(catch_exceptions=False)
@@ -489,7 +488,6 @@ def test_plan_rbfe_missing_protein_args(eg5_files):
 
 
 def test_plan_rbfe_too_many_protein_error(eg5_files):
-    """eg5_protein has box vectors but no membrane. ProteinMembraneComponent validation should catch this."""
     args = ["-M", eg5_files[1], "--protein-membrane", eg5_files[0], "-p", eg5_files[0]]
 
     runner = CliRunner(catch_exceptions=False)
