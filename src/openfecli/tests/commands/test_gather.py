@@ -528,6 +528,7 @@ class TestGatherSepTop:
       reproducible gathering behaviour as the ProtocolUnit behaviour
       was changed in openfe v1.11
     """
+
     @pytest.mark.parametrize("version", ["current", "pre_openfe_v1.11"])
     @pytest.mark.parametrize("report", ["raw", "ddg", "dg"])
     def test_septop_full_results(self, version, septop_result_dir, report, file_regression):
