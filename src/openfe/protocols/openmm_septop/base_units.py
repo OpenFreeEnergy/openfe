@@ -30,6 +30,7 @@ from gufe import (
     SolventComponent,
 )
 from gufe.components import Component
+from gufe.protocols.errors import ProtocolUnitExecutionError
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
@@ -43,6 +44,7 @@ from openmmtools.states import (
     create_thermodynamic_state_protocol,
 )
 
+import openfe
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AlchemicalSettings,
     BaseSolvationSettings,
@@ -65,6 +67,7 @@ from ..openmm_utils import (
     multistate_analysis,
     settings_validation,
     system_creation,
+    system_validation,
 )
 from ..openmm_utils.mdtraj_utils import mdtraj_from_openmm
 from .utils import SepTopParameterState
@@ -288,6 +291,26 @@ class SepTopUnitMixin:
         Must be implemented in the child class.
         """
         ...
+
+    @staticmethod
+    def _verify_execution_environment(
+        setup_outputs: dict[str, Any],
+    ) -> None:
+        """
+        Check that the Python environment hasn't changed based on the
+        relevant Python library versions stored in the setup outputs.
+        """
+        try:
+            if (
+                (gufe.__version__ != setup_outputs["gufe_version"])
+                or (openfe.__version__ != setup_outputs["openfe_version"])
+                or (openmm.__version__ != setup_outputs["openmm_version"])
+            ):
+                errmsg = "Python environment has changed, cannot continue Protocol execution."
+                raise ProtocolUnitExecutionError(errmsg)
+        except KeyError as e:
+            errmsg = "Missing environment information from setup outputs."
+            raise ProtocolUnitExecutionError(errmsg) from e
 
 
 class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
@@ -709,6 +732,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
             "simtype": self.simtype,
+            "openmm_version": openmm.__version__,
+            "openfe_version": openfe.__version__,
+            "gufe_version": gufe.__version__,
             **outputs,
         }
 
@@ -717,6 +743,50 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     """
     Base class for running ligand SepTop RBFE free energy transformations.
     """
+
+    @staticmethod
+    def _check_restart(output_settings: SettingsBaseModel, shared_path: pathlib.Path):
+        """
+        Check if we are doing a restart.
+
+        Parameters
+        ----------
+        output_settings : SettingsBaseModel
+          The simulation output settings
+        shared_path : pathlib.Path
+          The shared directory where we should be looking for existing files.
+
+        Raises
+        ------
+        IOError
+          If one of the trajectory or checkpoint files are present
+          without the other.
+
+        Notes
+        -----
+        For now this just checks if the netcdf files are present in the
+        shared directory but in the future this may expand depending on
+        how warehouse works.
+        """
+        trajectory = shared_path / output_settings.output_filename
+        checkpoint = shared_path / output_settings.checkpoint_storage_filename
+
+        if trajectory.is_file() and checkpoint.is_file():
+            return True
+        elif trajectory.is_file() ^ checkpoint.is_file():
+            if trajectory.is_file():
+                errmsg = "the trajectory file is present but not the checkpoint file. "
+            else:
+                errmsg = "the checkpoint file is present but not the trajectory file. "
+
+            errmsg = (
+                "Attempting to restart but "
+                + errmsg
+                + "This should not happen under normal circumstances."
+            )
+            raise IOError(errmsg)
+        else:
+            return False
 
     @abc.abstractmethod
     def _get_components(
@@ -894,6 +964,11 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         -------
         reporter : multistate.MultiStateReporter
           The reporter for the simulation.
+
+        Notes
+        -----
+        All this does is create the reporter, it works for both
+        new reporters and if we are doing a restart.
         """
         # Define the trajectory & checkpoint files
         nc = storage_path / output_settings.output_filename
@@ -944,6 +1019,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         compound_states: list[ThermodynamicState],
         sampler_states: list[SamplerState],
         platform: openmm.Platform,
+        restart: bool,
     ) -> multistate.MultiStateSampler:
         """
         Get a sampler based on the equilibrium sampling method requested.
@@ -964,6 +1040,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           A list of sampler states.
         platform : openmm.Platform
           The compute platform to use.
+        restart : bool
+          If we are restarting the simulation.
 
         Returns
         -------
@@ -1027,13 +1105,47 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 "replica_mixing_scheme": "swap-all",
             }
 
-        sampler = sampler_class(**sampler_kwargs)
+        if restart:
+            sampler = sampler_class.from_storage(reporter)
 
-        sampler.create(
-            thermodynamic_states=compound_states,
-            sampler_states=sampler_states,
-            storage=reporter,
-        )
+            # We do some checks to make sure we are running the same system
+            # including ensuring that we have the same thermodynamic parameters and
+            # that the lambda schedule is the same.
+            for index, thermostate in enumerate(sampler._thermodynamic_states):
+                system_validation.assert_multistate_system_equality(
+                    ref_system=compound_states[index].get_system(remove_thermostat=True),
+                    stored_system=thermostate.get_system(remove_thermostat=True),
+                )
+
+                # Loop over each composable state (e.g. GlobalParameterState object)
+                # get the parameters and check that the values are the same.
+                for composable_state in compound_states[index]._composable_states:
+                    for param in composable_state._parameters:
+                        expected = getattr(compound_states[index], param)
+                        stored = getattr(thermostate, param)
+                        if expected != stored:
+                            errmsg = (
+                                f"System parameter {param} in checkpoint does "
+                                "not match protocol system, cannot resume"
+                            )
+                            raise ValueError(errmsg)
+
+            if (
+                (simulation_settings.n_replicas != sampler.n_states)
+                or (simulation_settings.n_replicas != sampler.n_replicas)
+                or (sampler.mcmc_moves[0].n_steps != steps_per_iteration)
+                or (sampler.mcmc_moves[0].timestep != integrator.timestep)
+            ):
+                errmsg = "System in checkpoint does not match protocol system, cannot resume"
+                raise ValueError(errmsg)
+        else:
+            sampler = sampler_class(**sampler_kwargs)
+
+            sampler.create(
+                thermodynamic_states=compound_states,
+                sampler_states=sampler_states,
+                storage=reporter,
+            )
 
         # Get and set the context caches
         sampler.energy_context_cache = openmmtools.cache.ContextCache(
@@ -1095,23 +1207,26 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         )
 
         if not dry:  # pragma: no-cover
-            # minimize
-            if self.verbose:
-                self.logger.info("minimizing systems")
+            if sampler._iteration == 0:
+                # minimize
+                if self.verbose:
+                    self.logger.info("minimizing systems")
 
-            sampler.minimize(max_iterations=settings["simulation_settings"].minimization_steps)
+                sampler.minimize(max_iterations=settings["simulation_settings"].minimization_steps)
 
-            # equilibrate
-            if self.verbose:
-                self.logger.info("equilibrating systems")
+                # equilibrate
+                if self.verbose:
+                    self.logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps / mc_steps))
+                sampler.equilibrate(int(equil_steps / mc_steps))
 
-            # production
+            # At this point we are ready for production
             if self.verbose:
                 self.logger.info("running production phase")
 
-            sampler.extend(int(prod_steps / mc_steps))
+            # We use `run` so that we're limited by the number of iterations
+            # we passed when we built the sampler.
+            sampler.run(n_iterations=int(prod_steps / mc_steps) - sampler._iteration)
 
             if self.verbose:
                 self.logger.info("production phase complete")
@@ -1179,6 +1294,12 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         positions = pdb_file.getPositions(asNumpy=True)
 
+        # Check for a restart
+        self.restart = self._check_restart(
+            output_settings=settings["output_settings"],
+            shared_path=self.shared_basepath,
+        )
+
         # Get the compute platform
         platform = omm_compute.get_openmm_platform(
             platform_name=settings["engine_settings"].compute_platform,
@@ -1187,18 +1308,28 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         )
 
         # Check that the restraints are correctly applied by running a short equilibration
-        equil_positions, box_AB = _pre_equilibrate(
-            system=system,
-            topology=pdb_file.topology,
-            positions=positions,
-            settings=settings,
-            endstate="AB",
-            dry=dry,
-            shared_basepath=self.shared_basepath,
-            platform=platform,
-            verbose=self.verbose,
-            logger=self.logger,
-        )
+        if not self.restart:
+            equil_positions, box_AB = _pre_equilibrate(
+                system=system,
+                topology=pdb_file.topology,
+                positions=positions,
+                settings=settings,
+                endstate="AB",
+                dry=dry,
+                shared_basepath=self.shared_basepath,
+                platform=platform,
+                verbose=self.verbose,
+                logger=self.logger,
+            )
+        else:
+            # If we are doing a restart, we will be using the positions
+            # in the existing checkpoint file and equil_positions is purely
+            # used to create the sampler & compound states (only used for
+            # checking the sampler being created in restarts).
+            # For the sake of simplicity, we assign equil_positions to
+            # the PDB positions and box_AB to the system vectors
+            equil_positions = positions
+            box_AB = system.getDefaultPeriodicBoxVectors()
 
         # Get the lambda schedule
         lambdas = self._get_lambda_schedule(settings)
@@ -1239,6 +1370,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 compound_states=cmp_states,
                 sampler_states=sampler_states,
                 platform=platform,
+                restart=self.restart,
             )
 
             # 8. Run simulation
@@ -1299,6 +1431,10 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
+        # Ensure the environment hasn't changed
+        self._verify_execution_environment(setup.outputs)
+
+        # Get the relevant inputs for running the unit
         system = deserialize(setup.outputs["system"])
         pdb_file = openmm.app.pdbfile.PDBFile(str(setup.outputs["topology"]))
         selection_indices = setup.outputs["selection_indices"]
@@ -1436,6 +1572,10 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
+        # Ensure the environment hasn't changed
+        self._verify_execution_environment(setup.outputs)
+
+        # Get the relevant inputs for running the unit
         trajectory = simulation.outputs["trajectory"]
         checkpoint = simulation.outputs["checkpoint"]
 
