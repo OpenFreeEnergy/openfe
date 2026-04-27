@@ -519,6 +519,15 @@ def septop_result_dir() -> pathlib.Path:
 
 
 class TestGatherSepTop:
+    """
+    Test SepTop gathering.
+
+    Notes
+    -----
+    * Version parameterize option allows for testing of backwards
+      reproducible gathering behaviour as the ProtocolUnit behaviour
+      was changed in openfe v1.11
+    """
     @pytest.mark.parametrize("version", ["current", "pre_openfe_v1.11"])
     @pytest.mark.parametrize("report", ["raw", "ddg", "dg"])
     def test_septop_full_results(self, version, septop_result_dir, report, file_regression):
