@@ -1,23 +1,33 @@
-import json
 import shutil
 from importlib import resources
 from unittest import mock
 
+import gufe
 import numpy as np
 import pytest
 from click.testing import CliRunner
-from gufe import AlchemicalNetwork, SmallMoleculeComponent
 from openff.units import unit
-from openff.utilities import skip_if_missing
 
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL,
-    HAS_OPENEYE,
+from openfe import (
+    AlchemicalNetwork,
+    ProteinMembraneComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
 )
-from openfecli.commands.plan_rbfe_network import (
-    plan_rbfe_network,
-    plan_rbfe_network_main,
+from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEYE
+from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
+from openfe.setup import (
+    LomapAtomMapper,
+    ligand_network_planning,
+    lomap_scorers,
 )
+from openfe.tests.conftest import (
+    T4_protein_component,
+    T4_protein_component_pdb,
+    a2a_protein_membrane_component,
+    a2a_protein_membrane_pdb,
+)
+from openfecli.commands.plan_rbfe_network import plan_rbfe_network, plan_rbfe_network_main
 
 from ..utils import assert_click_success
 
@@ -45,9 +55,14 @@ def dummy_charge_dir_args(tmp_path_factory):
 
 
 @pytest.fixture
-def protein_args():
+def protein_args(T4_protein_component_pdb):
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        return ["--protein", str(d / "181l_only.pdb")]
+        return ["--protein", T4_protein_component_pdb]
+
+
+@pytest.fixture
+def protein_membrane_args(a2a_protein_membrane_pdb):
+    return ["--protein-membrane", a2a_protein_membrane_pdb]
 
 
 def print_test_with_file(
@@ -73,36 +88,27 @@ def validate_charges(smc):
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.fixture
+def ligs_23_55() -> list[SmallMoleculeComponent]:
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
+        return [
+            SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]
+        ]
+
+
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_plan_rbfe_network_main():
-    from gufe import (
-        ProteinComponent,
-        SmallMoleculeComponent,
-        SolventComponent,
-    )
-
-    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
-    from openfe.setup import (
-        LomapAtomMapper,
-        ligand_network_planning,
-        lomap_scorers,
-    )
-
-    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
-        smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]
-        ]
-    with resources.as_file(resources.files("openfe.tests.data")) as d:
-        protein_component = ProteinComponent.from_pdb_file(str(d / "181l_only.pdb"))
-
+@pytest.mark.parametrize(
+    "protein_fixture", ["T4_protein_component", "a2a_protein_membrane_component"]
+)
+def test_plan_rbfe_network_main(request, protein_fixture, ligs_23_55):
+    smallM_components = ligs_23_55
+    protein_component = request.getfixturevalue(protein_fixture)
     solvent_component = SolventComponent()
-    alchemical_network, ligand_network = plan_rbfe_network_main(
+
+    alchemical_network, _ = plan_rbfe_network_main(
         mapper=[LomapAtomMapper()],
         mapping_scorer=lomap_scorers.default_lomap_score,
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
@@ -122,17 +128,20 @@ def test_plan_rbfe_network_main():
     for node in alchemical_network.nodes:
         validate_charges(node.components["ligand"])
 
-    # check that the adaptive settings have been correctly applied
     for edge in alchemical_network.edges:
         settings = edge.protocol.settings
+        expected_barostat = "MonteCarloBarostat"
         if "complex" in edge.name:
             padding = 1.0  # nm
+            if isinstance(protein_component, ProteinMembraneComponent):
+                expected_barostat = "MonteCarloMembraneBarostat"
         else:
             padding = 1.5  # nm
         assert settings.solvation_settings.solvent_padding == padding * unit.nanometer
         assert settings.forcefield_settings.nonbonded_cutoff == 0.9 * unit.nanometer
         assert settings.solvation_settings.box_shape == "dodecahedron"
         assert settings.simulation_settings.time_per_iteration == 2.5 * unit.picosecond
+        assert settings.integrator_settings.barostat == expected_barostat
 
 
 @pytest.fixture
@@ -145,14 +154,12 @@ partial_charge:
 """
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_plan_rbfe_network(mol_dir_args, protein_args, tmp_path, yaml_nagl_settings):
+@pytest.mark.parametrize("protein_fixture", ["protein_args", "protein_membrane_args"])
+def test_plan_rbfe_network(mol_dir_args, request, protein_fixture, tmp_path, yaml_nagl_settings):
     """
     smoke test
     """
@@ -161,10 +168,16 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, tmp_path, yaml_nagl_setti
     with open(settings_path, "w") as f:
         f.write(yaml_nagl_settings)
 
-    args = mol_dir_args + protein_args
+    args = mol_dir_args + request.getfixturevalue(protein_fixture)
+
+    # TODO: this depends on the fixture name, which I do not like
+    expected_protein_type = (
+        "ProteinMembraneComponent" if "membrane" in protein_fixture else "ProteinComponent"
+    )
+
     expected_output_always = [
         "RBFE-NETWORK PLANNER",
-        "Protein: ProteinComponent(name=)",
+        f"{expected_protein_type}: {expected_protein_type}(name=)",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
         # make sure the partial charge settings are picked up
@@ -231,10 +244,7 @@ def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat,
         pytest.param(False, id="No overwrite"),
     ],
 )
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
@@ -286,10 +296,7 @@ def eg5_files():
         yield pdb_path, lig_path, cof_path
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
@@ -394,10 +401,7 @@ partial_charge:
 """
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
@@ -440,10 +444,7 @@ partial_charge:
 """
 
 
-@pytest.mark.skipif(
-    not HAS_NAGL,
-    reason="needs NAGL",
-)
+@pytest.mark.skipif(not HAS_NAGL, reason="needs NAGL")
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
@@ -463,3 +464,32 @@ def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmp_p
         result = runner.invoke(plan_rbfe_network, args)
 
         assert result.exit_code == 0
+
+
+def test_plan_rbfe_invalid_membrane(eg5_files):
+    """eg5_protein has box vectors but no membrane. ProteinMembraneComponent validation should catch this."""
+
+    args = ["--protein-membrane", eg5_files[0], "-M", eg5_files[1]]
+    runner = CliRunner()
+    with pytest.raises(
+        gufe.components.errors.ComponentValidationError,
+        match="This usually indicates missing solvent or incorrect box vectors",
+    ):
+        _ = runner.invoke(plan_rbfe_network, args, catch_exceptions=False)
+
+
+def test_plan_rbfe_missing_protein_args(eg5_files):
+    args = ["-M", eg5_files[1]]
+
+    runner = CliRunner(catch_exceptions=False)
+    result = runner.invoke(plan_rbfe_network, args)
+    assert result.exit_code == 2
+    assert "Either --protein or --protein-membrane must be provided." in result.stderr
+
+
+def test_plan_rbfe_too_many_protein_error(eg5_files):
+    args = ["-M", eg5_files[1], "--protein-membrane", eg5_files[0], "-p", eg5_files[0]]
+
+    runner = CliRunner(catch_exceptions=False)
+    result = runner.invoke(plan_rbfe_network, args)
+    assert "Only --protein (-p) or --protein-membrane may be provided, not both." in result.stderr
