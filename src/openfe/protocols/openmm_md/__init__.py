@@ -9,12 +9,14 @@ from .plain_md_methods import (
     PlainMDProtocol,
     PlainMDProtocolResult,
     PlainMDProtocolSettings,
-    PlainMDProtocolUnit,
+    PlainMDSetupUnit,
+    PlainMDSimulationUnit,
 )
 
 __all__ = [
     "PlainMDProtocol",
     "PlainMDProtocolSettings",
     "PlainMDProtocolResult",
-    "PlainMDProtocolUnit",
+    "PlainMDSetupUnit",
+    "PlainMDSimulationUnit",
 ]

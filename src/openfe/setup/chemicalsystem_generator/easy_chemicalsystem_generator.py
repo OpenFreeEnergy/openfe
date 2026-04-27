@@ -7,6 +7,7 @@ from gufe import (
     ChemicalSystem,
     Component,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
 )
@@ -20,9 +21,9 @@ from .abstract_chemicalsystem_generator import (
 class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
     def __init__(
         self,
-        solvent: Optional[SolventComponent] = None,
-        protein: Optional[ProteinComponent] = None,
-        cofactors: Optional[Iterable[SmallMoleculeComponent]] = None,
+        solvent: SolventComponent | None = None,
+        protein: ProteinComponent | None = None,
+        cofactors: Iterable[SmallMoleculeComponent] | None = None,
         do_vacuum: bool = False,
     ):
         """
@@ -112,7 +113,9 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             }
             for i, c in enumerate(self.cofactors):
                 components.update({f"{RFEComponentLabels.COFACTOR.value}{i + 1}": c})
-            if self.solvent is not None:
+
+            # ProteinMembraneComponent has its own solvent.
+            if self.solvent is not None and not isinstance(self.protein, ProteinMembraneComponent):
                 components.update({RFEComponentLabels.SOLVENT.value: self.solvent})
             chem_sys = ChemicalSystem(components=components, name=component.name + "_complex")
             yield chem_sys
