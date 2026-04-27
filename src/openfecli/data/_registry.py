@@ -24,9 +24,9 @@ zenodo_abfe_data = dict(
     known_hash="md5:44db4ce8195f4fe99989f8f57e0d7081",
 )
 zenodo_septop_data = dict(
-    base_url="doi:10.5281/zenodo.18758162/",
+    base_url="doi:10.5281/zenodo.19805681/",
     fname="septop_results.zip",
-    known_hash="md5:4d1bae4a5a62067c2644059ba183f8a0",
+    known_hash="md5:5de5cac5acdf195a13b0f1ce016a8660",
 )
 
 zenodo_data_registry = [

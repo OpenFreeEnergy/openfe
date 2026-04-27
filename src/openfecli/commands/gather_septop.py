@@ -120,7 +120,8 @@ def _get_legs_from_result_jsons(
                 dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
 
                 ddgs[names][simtype].append([dg, dg_error])
-            elif "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
+
+            if "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
                 corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
                 corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
                 ddgs[names]["standard_state_correction_A"].append(
@@ -129,8 +130,6 @@ def _get_legs_from_result_jsons(
                 ddgs[names]["standard_state_correction_B"].append(
                     [corr_B, 0 * unit.kilocalorie_per_mole]
                 )
-            else:
-                continue
 
     return ddgs
 
