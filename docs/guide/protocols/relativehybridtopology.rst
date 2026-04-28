@@ -38,10 +38,10 @@ The :class:`.RelativeHybridTopologyProtocol` uses a hybrid topology approach to 
 ligands, meaning that a single set of coordinates is used to represent the
 common core of the two ligands while the atoms that differ between the two
 ligands are represented separately. An atom map defines which atoms belong
-to the core (mapped atoms) and which atoms are unmapped and represented
+to the core (mapped atoms) and which atoms are unique and represented
 separately (see :ref:`Creating atom mappings <Creating Atom Mappings>`). During the alchemical transformation, mapped atoms are interpolated
-from their type in ligand at state A to the type in the other ligand at state B, while unmapped
-atoms (also known as dummy atoms) are switched inserted or uncoupled, depending on which ligand they belong to. By default all nonbonded interactions between the
+from their type in the ligand at state A to the type in the other ligand at state B, while unique atoms
+atoms (commonly known as unique or dummy atoms) are switched, inserted or uncoupled, depending on which ligand they belong to. By default all nonbonded interactions between the
 dummy region and the core region are removed to avoid coupling their motion.
 
 .. note:: In this hybrid topology approach, all bonded interactions between the dummy region and the core region are kept. 
