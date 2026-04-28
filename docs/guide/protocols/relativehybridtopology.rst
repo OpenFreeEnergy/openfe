@@ -41,7 +41,7 @@ ligands are represented separately. An atom map defines which atoms belong
 to the core (mapped atoms) and which atoms are unique and represented
 separately (see :ref:`Creating atom mappings <Creating Atom Mappings>`). During the alchemical transformation, mapped atoms are interpolated
 from their type in the ligand at state A to the type in the other ligand at state B, while unique atoms
-atoms (commonly known as unique or dummy atoms) are switched, inserted or uncoupled, depending on which ligand they belong to. By default all nonbonded interactions between the
+atoms (commonly known as dummy atoms) are switched, inserted or uncoupled, depending on which ligand they belong to. By default all nonbonded interactions between the
 dummy region and the core region are removed to avoid coupling their motion.
 
 .. note:: In this hybrid topology approach, all bonded interactions between the dummy region and the core region are kept. 
