@@ -193,7 +193,7 @@ try:
     else:
         repo = git.Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch="main",  # TODO: update this after making ExampleNotebooks release
+            branch="2026.04.28",
             to_path=example_notebooks_path,
         )
 except Exception as e:
