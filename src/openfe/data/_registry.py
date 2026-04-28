@@ -18,7 +18,7 @@ zenodo_industry_benchmark_systems = dict(
     known_hash="sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd",
 )
 zenodo_resume_data = dict(
-    base_url="doi:10.5281/zenodo.18331259",
+    base_url="doi:10.5281/zenodo.19694844",
     fname="multistate_checkpoints.zip",
     known_hash="md5:a6bdceff0c4a2f200538edb17c21d443",
 )

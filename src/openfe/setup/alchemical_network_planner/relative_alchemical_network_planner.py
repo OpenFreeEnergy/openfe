@@ -15,7 +15,6 @@ from gufe import (
     SolventComponent,
     Transformation,
 )
-from openff.units import unit
 
 from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
 from .. import LomapAtomMapper
@@ -334,7 +333,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
             protocol_settings.nonbonded_method = "nocutoff"
 
         transformation_protocol = transformation_protocol.__class__(settings=protocol_settings)
-
+        transformation_protocol.validate(stateA=stateA, stateB=stateB, mapping=ligand_mapping_edge)
         return Transformation(
             stateA=stateA,
             stateB=stateB,

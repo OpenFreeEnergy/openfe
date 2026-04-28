@@ -519,9 +519,20 @@ def septop_result_dir() -> pathlib.Path:
 
 
 class TestGatherSepTop:
+    """
+    Test SepTop gathering.
+
+    Notes
+    -----
+    * Version parameterize option allows for testing of backwards
+      reproducible gathering behaviour as the ProtocolUnit behaviour
+      was changed in openfe v1.11
+    """
+
+    @pytest.mark.parametrize("version", ["current", "pre_openfe_v1.11"])
     @pytest.mark.parametrize("report", ["raw", "ddg", "dg"])
-    def test_septop_full_results(self, septop_result_dir, report, file_regression):
-        results = [str(septop_result_dir / f"results_{i}") for i in range(3)]
+    def test_septop_full_results(self, version, septop_result_dir, report, file_regression):
+        results = [str(septop_result_dir / version / f"results_{i}") for i in range(3)]
         args = ["--report", report]
         runner = CliRunner()
         cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
@@ -531,9 +542,10 @@ class TestGatherSepTop:
 
         file_regression.check(cli_result.stdout, extension=".tsv")
 
+    @pytest.mark.parametrize("version", ["current", "pre_openfe_v1.11"])
     @pytest.mark.parametrize("report", ["raw", "ddg", "dg"])
-    def test_septop_single_repeat(self, septop_result_dir, report, file_regression):
-        results = [str(septop_result_dir / "results_0")]
+    def test_septop_single_repeat(self, version, septop_result_dir, report, file_regression):
+        results = [str(septop_result_dir / version / "results_0")]
         args = ["--report", report]
         runner = CliRunner()
         cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
