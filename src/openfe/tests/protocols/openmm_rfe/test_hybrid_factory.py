@@ -553,19 +553,21 @@ def test_torsion_force_no_dummy(htf_chloro_fluoroethane):
         p1, p2, p3, p4, periodicity, phase, k = standard_torsion_force.getTorsionParameters(i)
         # p1, p2, p3, p4 are the index in chloroethane get the expected parameters from the labels
         chloro_torsion = chloro_labels["ProperTorsions"][(p1, p2, p3, p4)]
-        assert periodicity == chloro_torsion.periodicity1
-        assert phase == chloro_torsion.phase1.m_as(offunit.radian) * unit.radian
-        assert k == chloro_torsion.k1.m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
+        term_index = chloro_torsion.periodicity.index(periodicity)
+        assert periodicity == chloro_torsion.periodicity[term_index]
+        assert phase == chloro_torsion.phase[term_index].m_as(offunit.radian) * unit.radian
+        assert k == chloro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
         # map to fluoroethane
         f1 = mapping.componentA_to_componentB[p1]
         f2 = mapping.componentA_to_componentB[p2]
         f3 = mapping.componentA_to_componentB[p3]
         f4 = mapping.componentA_to_componentB[p4]
         fluoro_torsion = fluoro_labels["ProperTorsions"][(f1, f2, f3, f4)]
+        term_index = fluoro_torsion.periodicity.index(periodicity)
         # make sure those parameters also match
-        assert periodicity == fluoro_torsion.periodicity1
-        assert phase == fluoro_torsion.phase1.m_as(offunit.radian) * unit.radian
-        assert k == fluoro_torsion.k1.m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
+        assert periodicity == fluoro_torsion.periodicity[term_index]
+        assert phase == fluoro_torsion.phase[term_index].m_as(offunit.radian) * unit.radian
+        assert k == fluoro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
 
     # custom torsion forces
     custom_torsion_force = forces["CustomTorsionForce"]
