@@ -556,7 +556,11 @@ def test_torsion_force_no_dummy(htf_chloro_fluoroethane):
         term_index = chloro_torsion.periodicity.index(periodicity)
         assert periodicity == chloro_torsion.periodicity[term_index]
         assert phase == chloro_torsion.phase[term_index].m_as(offunit.radian) * unit.radian
-        assert k == chloro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
+        assert (
+            k
+            == chloro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole)
+            * unit.kilojoule_per_mole
+        )
         # map to fluoroethane
         f1 = mapping.componentA_to_componentB[p1]
         f2 = mapping.componentA_to_componentB[p2]
@@ -567,7 +571,11 @@ def test_torsion_force_no_dummy(htf_chloro_fluoroethane):
         # make sure those parameters also match
         assert periodicity == fluoro_torsion.periodicity[term_index]
         assert phase == fluoro_torsion.phase[term_index].m_as(offunit.radian) * unit.radian
-        assert k == fluoro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole) * unit.kilojoule_per_mole
+        assert (
+            k
+            == fluoro_torsion.k[term_index].m_as(offunit.kilojoule_per_mole)
+            * unit.kilojoule_per_mole
+        )
 
     # custom torsion forces
     custom_torsion_force = forces["CustomTorsionForce"]
