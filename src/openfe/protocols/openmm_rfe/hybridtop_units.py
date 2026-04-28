@@ -19,7 +19,7 @@ from typing import Any
 
 import gufe
 import matplotlib.pyplot as plt
-import mdtraj
+import mdtraj as mdt
 import numpy as np
 import numpy.typing as npt
 import openmm
@@ -643,7 +643,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
     def _subsample_topology(
         self,
-        hybrid_topology: openmm.app.Topology,
+        hybrid_topology: mdt.Topology,
         hybrid_positions: openmm.unit.Quantity,
         output_selection: str,
         output_filename: str,
@@ -655,7 +655,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
         Parameters
         ----------
-        hybrid_topology : openmm.app.Topology
+        hybrid_topology : mdtraj.Topology
           The hybrid system topology to subsample.
         hybrid_positions : openmm.unit.Quantity
           The hybrid system positions.
@@ -674,7 +674,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
         TODO
         ----
-        Modify this to also store the full system.
+        * Modify this to also store the full system.
+        * Use the mdtraj_from_openmm utility.
         """
         selection_indices = hybrid_topology.select(output_selection)
 
@@ -690,7 +691,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         bfactors[np.isin(selection_indices, list(atom_classes["unique_new_atoms"]))] = 0.75
 
         if len(selection_indices) > 0:
-            traj = mdtraj.Trajectory(
+            traj = mdt.Trajectory(
                 hybrid_positions[selection_indices, :],
                 hybrid_topology.subset(selection_indices),
             ).save_pdb(

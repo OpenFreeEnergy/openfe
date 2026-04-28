@@ -39,6 +39,13 @@ def solvent_run_protocol_unit(protocol_units):
 
 
 @pytest.fixture
+def solvent_analysis_protocol_unit(protocol_units):
+    for pu in protocol_units:
+        if isinstance(pu, openmm_septop.SepTopSolventAnalysisUnit):
+            return pu
+
+
+@pytest.fixture
 def complex_setup_protocol_unit(protocol_units):
     for pu in protocol_units:
         if isinstance(pu, openmm_septop.SepTopComplexSetupUnit):
@@ -49,6 +56,13 @@ def complex_setup_protocol_unit(protocol_units):
 def complex_run_protocol_unit(protocol_units):
     for pu in protocol_units:
         if isinstance(pu, openmm_septop.SepTopComplexRunUnit):
+            return pu
+
+
+@pytest.fixture
+def complex_analysis_protocol_unit(protocol_units):
+    for pu in protocol_units:
+        if isinstance(pu, openmm_septop.SepTopComplexAnalysisUnit):
             return pu
 
 
@@ -115,6 +129,23 @@ class TestSepTopSolventRunUnit(GufeTokenizableTestsMixin):
         assert self.repr in repr(instance)
 
 
+class TestSepTopSolventAnalysisUnit(GufeTokenizableTestsMixin):
+    cls = openmm_septop.SepTopSolventAnalysisUnit
+    repr = "SepTopSolventAnalysisUnit(SepTop RBFE Analysis, transformation benzene to toluene, solvent leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, solvent_analysis_protocol_unit):
+        return solvent_analysis_protocol_unit
+
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
+
+
 class TestSepTopComplexSetupUnit(GufeTokenizableTestsMixin):
     cls = openmm_septop.SepTopComplexSetupUnit
     repr = (
@@ -142,6 +173,23 @@ class TestSepTopComplexRunUnit(GufeTokenizableTestsMixin):
     @pytest.fixture()
     def instance(self, complex_run_protocol_unit):
         return complex_run_protocol_unit
+
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
+
+
+class TestSepTopComplexAnalysisUnit(GufeTokenizableTestsMixin):
+    cls = openmm_septop.SepTopComplexAnalysisUnit
+    repr = "SepTopComplexAnalysisUnit(SepTop RBFE Analysis, transformation benzene to toluene, complex leg"
+    key = None
+
+    @pytest.fixture()
+    def instance(self, complex_analysis_protocol_unit):
+        return complex_analysis_protocol_unit
 
     def test_repr(self, instance):
         """

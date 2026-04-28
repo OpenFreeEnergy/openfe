@@ -12,6 +12,7 @@ from openfecli.parameters import (
     OUTPUT_DIR,
     OVERWRITE,
     PROTEIN,
+    PROTEIN_MEMBRANE,
     YAML_OPTIONS,
 )
 from openfecli.utils import print_duration, write
@@ -45,7 +46,7 @@ def plan_rbfe_network_main(
     solvent : SolventComponent
         Solvent component used for solvation
     protein : ProteinComponent
-        protein component for complex simulations, to which the ligands are bound
+        ProteinComponent for complex simulations, to which the ligands are bound.
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongside the protein, can be empty list
     n_protocol_repeats: int
@@ -123,7 +124,10 @@ def plan_rbfe_network_main(
     ),
 )
 @MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
-@PROTEIN.parameter(multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"])
+@PROTEIN.parameter(multiple=False, required=False, default=None, help=PROTEIN.kwargs["help"])
+@PROTEIN_MEMBRANE.parameter(
+    multiple=False, required=False, default=None, help=PROTEIN_MEMBRANE.kwargs["help"]
+)
 @COFACTORS.parameter(multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"])
 @YAML_OPTIONS.parameter(multiple=False, required=False, default=None, help=YAML_OPTIONS.kwargs["help"])  # fmt: skip
 @OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.", default="alchemicalNetwork")  # fmt: skip
@@ -133,7 +137,8 @@ def plan_rbfe_network_main(
 @print_duration
 def plan_rbfe_network(
     molecules: list[str],
-    protein: str,
+    protein: str | None,
+    protein_membrane: str | None,
     cofactors: tuple[str],
     yaml_settings: str,
     output_dir: str,
@@ -142,14 +147,12 @@ def plan_rbfe_network(
     overwrite_charges: bool,
 ):
     """
-    Plan a relative binding free energy network, saved as JSON files for use by
-    the quickrun command.
+    Plan a relative binding free energy AlchemicalNetwork, saved as JSON files for use by the quickrun command.
 
     This tool is an easy way to set up a RBFE calculation campaign.
-    The JSON files this outputs can be used to run each leg of the campaign.
-    openfe.
-    The generated Network will be stored in a folder containing for each
-    transformation a JSON file, that can be run with quickrun.
+
+    The generated AlchemicalNetwork will be stored in --output-directory along with JSON files for each alchemical transformation
+    that can be used to execute the campaign using ``openfe quickrun``.
 
     .. note::
 
@@ -169,9 +172,7 @@ def plan_rbfe_network(
     * Protocol is the OpenMM-based relative hybrid topology protocol, with
       default settings.
 
-    These choices can be customized by creating a settings yaml file,
-    which is passed in via the ``-s settings.yaml`` option,
-    which is detailed in the Options section.
+    These choices can be customized by creating a settings yaml file, which is passed in via the ``-s settings.yaml`` option.
     For more advanced setups, please consider using the Python layer of openfe.
     """
     write("RBFE-NETWORK PLANNER")
@@ -187,9 +188,18 @@ def plan_rbfe_network(
 
     small_molecules = MOL_DIR.get(molecules)
     write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
-
-    protein = PROTEIN.get(protein)
-    write("\t\tProtein: " + str(protein))
+    if protein and protein_membrane:
+        raise click.UsageError(
+            "Only --protein (-p) or --protein-membrane may be provided, not both."
+        )
+    elif protein:
+        protein_component = PROTEIN.get(protein)
+        write("\t\tProteinComponent: " + str(protein_component))
+    elif protein_membrane:
+        protein_component = PROTEIN_MEMBRANE.get(protein_membrane)
+        write("\t\tProteinMembraneComponent: " + str(protein_component))
+    else:
+        raise click.UsageError("Either --protein or --protein-membrane must be provided.")
 
     if cofactors is not None:
         cofactors = sum((COFACTORS.get(c) for c in cofactors), start=[])
@@ -206,16 +216,10 @@ def plan_rbfe_network(
 
     write("\t\tSolvent: " + str(solvent))
     write("")
-
     write("Using Options:")
     write("\tMapper: " + str(mapper_obj))
-
-    # TODO:  write nice parameter
     write("\tMapping Scorer: " + str(mapping_scorer))
-
-    # TODO:  write nice parameter
     write("\tNetwork Generation: " + str(ligand_network_planner))
-
     write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
     if overwrite_charges:
         write("\tOverwriting partial charges")
@@ -230,7 +234,7 @@ def plan_rbfe_network(
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
-        protein=protein,
+        protein=protein_component,
         cofactors=cofactors,
         n_protocol_repeats=n_protocol_repeats,
         partial_charge_settings=partial_charge,
