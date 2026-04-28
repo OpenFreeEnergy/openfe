@@ -4,6 +4,7 @@ Changelog
 
 .. current developments
 
+
 v1.11.0
 ====================
 
@@ -24,6 +25,8 @@ v1.11.0
   At the top level API, this does not change behavior, but if you are directly interfacing with th ProtocolUnits, you will have to account for this change.
   The SepTopProtocolResult now solely uses the Analysis units (`PR #1937 <https://github.com/OpenFreeEnergy/openfe/pull/1937>`_).
 * Updated the chemical systems user guide and the defining protocols user guide to reflect recent protocol updates, including adding membrane support (`PR #1933 <https://github.com/OpenFreeEnergy/openfe/pull/1933>`_).
+* The default value for the Hybrid TopologyProtocol setting ``turn_off_core_unique_exceptions`` has been changed to ``True``.
+  This means 1-4 interactions involving the unique alchemical atoms and core regions will now be interpolated on/off accordingly by default (`PR #1856 <https://github.com/OpenFreeEnergy/openfe/pull/1856>`_).
 
 **Deprecated:**
 
