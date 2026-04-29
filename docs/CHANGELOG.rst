@@ -8,7 +8,7 @@ Changelog
 v1.11.0
 ====================
 
-* **openfe v1.11.0 ** introduces support for protein-membrane systems both with the Python API and the CLI. See our tutorial `RBFE calculations of a Protein-Membrane System <https://docs.openfree.energy/en/latest/tutorials/rbfe_membrane_protein.html>`_ for details.
+* **openfe v1.11.0** introduces support for protein-membrane systems both with the Python API and the CLI. See our tutorial `RBFE calculations of a Protein-Membrane System <https://docs.openfree.energy/en/latest/tutorials/rbfe_membrane_protein.html>`_ for details.
 
 The `ability to resume execution of incomplete transformations <https://docs.openfree.energy/en/v1.10.0/guide/execution/quickrun_execution.html>`_ that was introduced in ``openfe v1.10.0`` is now available for the plain MD and SepTop protocols.
 
