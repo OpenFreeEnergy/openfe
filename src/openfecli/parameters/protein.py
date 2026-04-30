@@ -6,8 +6,6 @@ from typing import Iterable
 import click
 from plugcli.params import Option
 
-from openfe import ProteinComponent, ProteinMembraneComponent
-
 _PDB_EXT = [".pdb"]
 _PDBX_EXT = [".cif", ".pdbx"]
 
@@ -16,7 +14,7 @@ def _contains_any_substring(input: str, substrings: Iterable[str]) -> bool:
     return any([substring in input for substring in substrings])
 
 
-def _load_protein_from_file(input_file, protein_class: ProteinComponent | ProteinMembraneComponent):
+def _load_protein_from_file(input_file, protein_class):
     valid_ext = _PDB_EXT + _PDBX_EXT
     info_str = (
         f"Unable to load a {protein_class.__name__} from {click.format_filename(input_file)}: "
@@ -34,10 +32,14 @@ def _load_protein_from_file(input_file, protein_class: ProteinComponent | Protei
 
 # TODO: these functions are shims to work with plugcli. We should consider migrating to just click.
 def _get_protein(user_input, context):
+    from openfe import ProteinComponent
+
     return _load_protein_from_file(user_input, ProteinComponent)
 
 
 def _get_protein_membrane(user_input, context):
+    from openfe import ProteinMembraneComponent
+
     return _load_protein_from_file(user_input, ProteinMembraneComponent)
 
 
