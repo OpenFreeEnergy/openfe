@@ -2,15 +2,15 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from __future__ import annotations
 
-import json
 import pathlib
 
+from openfe import AlchemicalNetwork, LigandNetwork
 from openfecli.utils import write
 
 
 def plan_alchemical_network_output(
-    alchemical_network,
-    ligand_network,
+    alchemical_network: AlchemicalNetwork,
+    ligand_network: LigandNetwork,
     folder_path: pathlib.Path,
 ):
     """Write the contents of an alchemical network into the structure"""
