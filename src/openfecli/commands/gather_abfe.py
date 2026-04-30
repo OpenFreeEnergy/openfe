@@ -6,7 +6,6 @@ from typing import List, Literal
 import click
 import numpy as np
 import pandas as pd
-from openff.units import unit
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -107,6 +106,8 @@ def _get_legs_from_result_jsons(
         Data extracted from the given result JSONs, organized by the leg's ligand name and simulation type.
     """
     from collections import defaultdict
+
+    from openff.units import unit
 
     dgs = defaultdict(lambda: defaultdict(list))
 
