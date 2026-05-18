@@ -2010,9 +2010,9 @@ def test_handle_alchemwats_incorrect_count(
             system=system,
             system_mapping={},
             charge_difference=1,
-            positive_ion_resname='NA',
-            negative_ion_resname='CL',
-            water_resname='HOH',
+            positive_ion_resname="NA",
+            negative_ion_resname="CL",
+            water_resname="HOH",
         )
 
 
@@ -2036,9 +2036,9 @@ def test_handle_alchemwats_too_many_nbf(
             system=new_system,
             system_mapping={},
             charge_difference=1,
-            positive_ion_resname='NA',
-            negative_ion_resname='CL',
-            water_resname='HOH',
+            positive_ion_resname="NA",
+            negative_ion_resname="CL",
+            water_resname="HOH",
         )
 
 
@@ -2060,9 +2060,9 @@ def test_handle_alchemwats_vsite_water(
             system=system,
             system_mapping={},
             charge_difference=1,
-            positive_ion_resname='NA',
-            negative_ion_resname='CL',
-            water_resname='HOH',
+            positive_ion_resname="NA",
+            negative_ion_resname="CL",
+            water_resname="HOH",
         )
 
 
@@ -2090,9 +2090,9 @@ def test_handle_alchemwats_incorrect_atom(
             system=new_system,
             system_mapping=benzene_self_system_mapping,
             charge_difference=1,
-            positive_ion_resname='NA',
-            negative_ion_resname='CL',
-            water_resname='HOH',
+            positive_ion_resname="NA",
+            negative_ion_resname="CL",
+            water_resname="HOH",
         )
 
 
@@ -2111,9 +2111,9 @@ def test_handle_alchemical_wats(
         system=system,
         system_mapping=benzene_self_system_mapping,
         charge_difference=1,
-        positive_ion_resname='NA',
-        negative_ion_resname='CL',
-        water_resname='HOH',
+        positive_ion_resname="NA",
+        negative_ion_resname="CL",
+        water_resname="HOH",
     )
 
     # check the mappings
