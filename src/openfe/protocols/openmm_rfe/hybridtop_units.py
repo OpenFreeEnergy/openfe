@@ -410,6 +410,16 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         if charge_difference == 0:
             return
 
+        # Resolve ion names from the solvent component if available,
+        # otherwise infer from the topology (for explicitly solvated systems).
+        if isinstance(solvent_component, SolventComponent):
+            positive_ion = solvent_component.positive_ion.strip("-+").upper()
+            negative_ion = solvent_component.negative_ion.strip("-+").upper()
+        else:
+            positive_ion, negative_ion = _rfe_utils.topologyhelpers._get_ion_resnames_from_topology(
+                stateA_topology
+            )
+
         # Get the residue ids for waters to turn alchemical
         alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_waters(
             topology=stateA_topology,
@@ -425,7 +435,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             system=stateB_system,
             system_mapping=system_mappings,
             charge_difference=charge_difference,
-            solvent_component=solvent_component,
+            positive_ion_resname=positive_ion,
+            negative_ion_resname=negative_ion,
+            water_resname="HOH",  # Need to check if this is also true for systems not prepped with addSolvent
         )
 
     def _get_omm_objects(

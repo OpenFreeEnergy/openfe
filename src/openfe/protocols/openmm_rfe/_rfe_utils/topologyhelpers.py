@@ -10,6 +10,7 @@
 import itertools
 import logging
 import warnings
+from collections import Counter
 from copy import deepcopy
 from typing import Optional, Union
 
@@ -123,10 +124,14 @@ def _fix_alchemical_water_atom_mapping(
 
 
 def handle_alchemical_waters(
-    water_resids: list[int], topology: app.Topology,
-    system: System, system_mapping: dict,
+    water_resids: list[int],
+    topology: app.Topology,
+    system: System,
+    system_mapping: dict,
     charge_difference: int,
-    solvent_component: SolventComponent,
+    positive_ion_resname: str,
+    negative_ion_resname: str,
+    water_resname: str,
 ):
     """
     Add alchemical waters from a pre-defined list.
@@ -150,7 +155,7 @@ def handle_alchemical_waters(
       The name of a negative ion to replace the water with if the absolute
       charge difference is negative.
     water_resname : str
-      The residue name of the water to get parameters for. Default 'HOH'.
+      The residue name of the water to get parameters for.
 
     Raises
     ------
@@ -172,16 +177,16 @@ def handle_alchemical_waters(
         raise ValueError(errmsg)
 
     if charge_difference > 0:
-        ion_resname = solvent_component.positive_ion.strip('-+').upper()
+        ion_resname = positive_ion_resname
     elif charge_difference < 0:
-        ion_resname = solvent_component.negative_ion.strip('-+').upper()
+        ion_resname = negative_ion_resname
     # if there's no charge difference then just skip altogether
     else:
         return None
 
     ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge = _get_ion_and_water_parameters(
         topology, system, ion_resname,
-        'HOH',  # Modeller always adds HOH waters
+        water_resname,
     )
 
     # get the nonbonded forces
@@ -433,7 +438,6 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     * Very slow, needs refactoring
     * Can we drop having topologies as inputs here?
     """
-    from collections import Counter
 
     no_const_old_to_new_atom_map = deepcopy(old_to_new_atom_map)
 
@@ -720,3 +724,60 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
             logging.warning(wmsg)
 
     return new_pos_array * omm_unit.angstrom
+
+
+def _get_ion_resnames_from_topology(topology: app.Topology) -> tuple[str, str]:
+    """
+    Infer positive and negative ion residue names from a topology by
+    finding the most common monovalent ion of each charge type.
+    Falls back to NA/CL if none are found.
+
+    Parameters
+    ----------
+    topology : app.Topology
+        The topology to search for ions.
+
+    Returns
+    -------
+    pos_ion : str
+        The residue name of the most abundant positive monovalent ion (Na, K).
+    neg_ion : str
+        The residue name of the most abundant negative monovalent ion (Cl).
+    """
+    known_positive = {'NA', 'K'}
+    # This doesn't make much sense yet to check it, since it's only Cl, but
+    # leaving it here for now so we can add other neg ions.
+    known_negative = {'CL'}
+
+    pos_counts = Counter(
+        r.name for r in topology.residues() if r.name in known_positive
+    )
+    neg_counts = Counter(
+        r.name for r in topology.residues() if r.name in known_negative
+    )
+
+    if not pos_counts:
+        wmsg = (
+            "Could not find any known positive monovalent ions "
+            f"(searched for {known_positive}) in the topology. "
+            "Defaulting to NA for explicit charge correction."
+        )
+        warnings.warn(wmsg)
+        logger.warning(wmsg)
+        pos_ion = 'NA'
+    else:
+        pos_ion = max(pos_counts, key=pos_counts.get)
+
+    if not neg_counts:
+        wmsg = (
+            "Could not find any known negative monovalent ions "
+            f"(searched for {known_negative}) in the topology. "
+            "Defaulting to CL for explicit charge correction."
+        )
+        warnings.warn(wmsg)
+        logger.warning(wmsg)
+        neg_ion = 'CL'
+    else:
+        neg_ion = max(neg_counts, key=neg_counts.get)
+
+    return pos_ion, neg_ion

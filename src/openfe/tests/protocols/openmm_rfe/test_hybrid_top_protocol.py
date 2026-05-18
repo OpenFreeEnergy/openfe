@@ -1215,6 +1215,36 @@ def test_dry_run_membrane_complex(
         )
 
 
+def test_validate_charge_difference_membrane_system(
+    a2a_protein_membrane_component,
+    a2a_ligands,
+):
+    ligA = next(c for c in a2a_ligands if c.name == "4g")
+    ligB = next(c for c in a2a_ligands if c.name == "4h")
+
+    mapping = openfe.LigandAtomMapping(
+        componentA=ligA,
+        componentB=ligB,
+        componentA_to_componentB={i: i for i in range(36)},
+    )
+
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+
+    # Mock get_alchemical_charge_difference to return non-zero
+    with mock.patch.object(
+        mapping,
+        "get_alchemical_charge_difference",
+        return_value=1,
+    ):
+        protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+        protocol._validate_charge_difference(
+            mapping=mapping,
+            nonbonded_method=settings.forcefield_settings.nonbonded_method,
+            explicit_charge_correction=True,
+            solvent_component=a2a_protein_membrane_component,
+        )
+
+
 def test_lambda_schedule_default():
     lambdas = openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(functions="default")
     assert len(lambdas.lambda_schedule) == 10
@@ -1980,7 +2010,9 @@ def test_handle_alchemwats_incorrect_count(
             system=system,
             system_mapping={},
             charge_difference=1,
-            solvent_component=openfe.SolventComponent(),
+            positive_ion_resname="NA",
+            negative_ion_resname="CL",
+            water_resname="HOH",
         )
 
 
@@ -2004,7 +2036,9 @@ def test_handle_alchemwats_too_many_nbf(
             system=new_system,
             system_mapping={},
             charge_difference=1,
-            solvent_component=openfe.SolventComponent(),
+            positive_ion_resname="NA",
+            negative_ion_resname="CL",
+            water_resname="HOH",
         )
 
 
@@ -2026,7 +2060,9 @@ def test_handle_alchemwats_vsite_water(
             system=system,
             system_mapping={},
             charge_difference=1,
-            solvent_component=openfe.SolventComponent(),
+            positive_ion_resname="NA",
+            negative_ion_resname="CL",
+            water_resname="HOH",
         )
 
 
@@ -2054,7 +2090,9 @@ def test_handle_alchemwats_incorrect_atom(
             system=new_system,
             system_mapping=benzene_self_system_mapping,
             charge_difference=1,
-            solvent_component=openfe.SolventComponent(),
+            positive_ion_resname="NA",
+            negative_ion_resname="CL",
+            water_resname="HOH",
         )
 
 
@@ -2073,7 +2111,9 @@ def test_handle_alchemical_wats(
         system=system,
         system_mapping=benzene_self_system_mapping,
         charge_difference=1,
-        solvent_component=openfe.SolventComponent(),
+        positive_ion_resname="NA",
+        negative_ion_resname="CL",
+        water_resname="HOH",
     )
 
     # check the mappings
