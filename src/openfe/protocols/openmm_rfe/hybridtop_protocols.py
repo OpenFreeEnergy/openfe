@@ -272,8 +272,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         ValueError
           * If there are more than one mapping or mapping is None
           * If the mapping components are not in the alchemical components.
-        UserWarning
-          * Mappings which involve element changes in core atoms
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
@@ -293,26 +291,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                         f"Mapping component{state} {comp} not "
                         f"in alchemical components of state{state}"
                     )
-
-        # TODO: remove - this is now the default behaviour?
-        # Check for element changes in mappings
-        for m in mapping:
-            molA = m.componentA.to_rdkit()
-            molB = m.componentB.to_rdkit()
-            for i, j in m.componentA_to_componentB.items():
-                atomA = molA.GetAtomWithIdx(i)
-                atomB = molB.GetAtomWithIdx(j)
-                if atomA.GetAtomicNum() != atomB.GetAtomicNum():
-                    wmsg = (
-                        f"Element change in mapping between atoms "
-                        f"Ligand A: {i} (element {atomA.GetAtomicNum()}) and "
-                        f"Ligand B: {j} (element {atomB.GetAtomicNum()})\n"
-                        "No mass scaling is attempted in the hybrid topology, "
-                        "the average mass of the two atoms will be used in the "
-                        "simulation"
-                    )
-                    logger.warning(wmsg)
-                    warnings.warn(wmsg)
 
     @staticmethod
     def _validate_smcs(
