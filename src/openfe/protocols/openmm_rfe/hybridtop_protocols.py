@@ -28,6 +28,7 @@ from gufe import (
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -50,6 +51,7 @@ from .equil_rfe_settings import (
     OpenMMSolvationSettings,
     RelativeHybridTopologyProtocolSettings,
 )
+from . import _rfe_utils
 from .hybridtop_protocol_results import RelativeHybridTopologyProtocolResult
 from .hybridtop_units import (
     HybridTopologyMultiStateAnalysisUnit,
@@ -435,7 +437,20 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             )
             raise ValueError(errmsg)
 
-        ion = {-1: solvent_component.positive_ion, 1: solvent_component.negative_ion}[difference]
+        # resolve ion names from SolventComponent or topology
+        if isinstance(solvent_component, SolventComponent):
+            positive_ion = solvent_component.positive_ion.strip(
+                '-+').upper()
+            negative_ion = solvent_component.negative_ion.strip(
+                '-+').upper()
+        elif isinstance(solvent_component, SolvatedPDBComponent):
+            positive_ion, negative_ion = (
+                _rfe_utils.topologyhelpers._get_ion_resnames_from_topology(
+                    solvent_component.to_openmm_topology()
+                )
+            )
+
+        ion = {-1: positive_ion, 1: negative_ion}[difference]
 
         wmsg = (
             f"A charge difference of {difference} is observed "
