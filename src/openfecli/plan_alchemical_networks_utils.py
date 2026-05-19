@@ -2,7 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from __future__ import annotations
 
-import json
 import pathlib
 
 from openfe import AlchemicalNetwork, LigandNetwork

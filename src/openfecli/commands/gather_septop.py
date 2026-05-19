@@ -6,8 +6,6 @@ from typing import List, Literal
 import click
 import numpy as np
 import pandas as pd
-from cinnabar import FEMap, Measurement
-from openff.units import unit
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -83,6 +81,8 @@ def _get_legs_from_result_jsons(
         Data extracted from the given result JSONs, organized by the leg's ligand names and simulation type.
     """
     from collections import defaultdict
+
+    from openff.units import unit
 
     ddgs = defaultdict(lambda: defaultdict(list))
 
@@ -253,6 +253,8 @@ def _generate_dg_mle(
     pd.DataFrame
         A pandas DataFrame with the dG results for each ligand pair.
     """
+    from cinnabar import FEMap, Measurement
+    from openff.units import unit
 
     DDGs = _get_ddgs(results_dict)
 
