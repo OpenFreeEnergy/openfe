@@ -1962,10 +1962,10 @@ def benzene_self_system_mapping(benzene_solvent_openmm_system):
     return system_mapping
 
 
-def test_get_ion_water_parameters_fallback_to_forcefield(benzene_modifications):
+def test_get_ion_parameters_fallback_to_forcefield(benzene_modifications):
     """
     Check that when no matching ion is found in the topology,
-    parameters are obtained from the forcefield (NA/CL fallback).
+    parameters are obtained from the forcefield (NA fallback).
     """
     smc = benzene_modifications["benzene"]
     offmol = smc.to_openff()
@@ -1995,17 +1995,15 @@ def test_get_ion_water_parameters_fallback_to_forcefield(benzene_modifications):
     system = system_generator.create_system(topology, molecules=[offmol])
 
     with pytest.warns(UserWarning, match="No monovalent ion"):
-        ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge = (
-            topologyhelpers._get_ion_and_water_parameters(
-                topology, system, system_generator.forcefield,
-                charge_difference=1,
-            )
+        ion_charge, ion_sigma, ion_epsilon = topologyhelpers._get_ion_parameters(
+            topology, system, charge_difference=1,
+            forcefield=system_generator.forcefield,
         )
 
     assert ion_charge.value_in_unit(omm_unit.elementary_charge) == pytest.approx(1.0)
 
 
-def test_get_ion_water_parameters_bad_water(benzene_solvent_openmm_system):
+def test_get_water_parameters_bad_water(benzene_solvent_openmm_system):
     """
     Check that a ValueError is raised when the water residue name
     is not found in the topology.
@@ -2014,8 +2012,8 @@ def test_get_ion_water_parameters_bad_water(benzene_solvent_openmm_system):
 
     errmsg = "Could not find water residue"
     with pytest.raises(ValueError, match=errmsg):
-        topologyhelpers._get_ion_and_water_parameters(
-            topology, system, forcefield, charge_difference=1, water_resname="SOL"
+        topologyhelpers._get_water_parameters(
+            topology, system, water_resname="SOL"
         )
 
 
@@ -2163,8 +2161,8 @@ def test_handle_alchemical_wats(
     # system parameters checks
     nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
     # check the oxygen parameters
-    i_chg, i_sig, i_eps, o_chg, h_chg = (topologyhelpers._get_ion_and_water_parameters(
-        topology, system, forcefield, charge_difference=1)
+    i_chg, i_sig, i_eps = topologyhelpers._get_ion_parameters(
+        topology, system, charge_difference=1, forcefield=forcefield
     )
 
 
