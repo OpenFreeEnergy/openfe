@@ -19,7 +19,7 @@ dependencies:
   - openff-toolkit-base >=0.16.2
   - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
   - openmm ~=8.4.0  # omit 8.3.0 and 8.3.1 due to https://github.com/openmm/openmm/pull/5069
-  - openmmforcefields >=0.15.1  # min needed for https://github.com/OpenFreeEnergy/openfe/pull/414
+  - openmmforcefields >=0.15.1  # min needed for https://github.com/openmm/openmmforcefields/pull/414
   - openmmtools >=0.26  # fix to support membrane barostat: https://github.com/choderalab/openmmtools/pull/798
   - packaging
   - pandas

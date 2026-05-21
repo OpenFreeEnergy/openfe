@@ -65,7 +65,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenFFPartialChargeSettings,
     ThermoSettings,
 )
-from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
+from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import (
     charge_generation,
     multistate_analysis,
@@ -320,9 +320,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             box = system.getDefaultPeriodicBoxVectors()
             return positions, to_openmm(from_openmm(box))
 
-        # Use the _run_MD method from the PlainMDProtocolUnit
+        # Use the _run_MD method from the PlainMDSimulationUnit
         # Should in-place modify the simulation
-        PlainMDProtocolUnit._run_MD(
+        PlainMDSimulationUnit._run_MD(
             simulation=simulation,
             positions=positions,
             simulation_settings=settings["equil_simulation_settings"],

@@ -6,8 +6,6 @@ from typing import List, Literal
 import click
 import numpy as np
 import pandas as pd
-from cinnabar import FEMap, Measurement
-from openff.units import unit
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -84,6 +82,8 @@ def _get_legs_from_result_jsons(
     """
     from collections import defaultdict
 
+    from openff.units import unit
+
     ddgs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
@@ -120,7 +120,8 @@ def _get_legs_from_result_jsons(
                 dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
 
                 ddgs[names][simtype].append([dg, dg_error])
-            elif "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
+
+            if "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
                 corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
                 corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
                 ddgs[names]["standard_state_correction_A"].append(
@@ -129,8 +130,6 @@ def _get_legs_from_result_jsons(
                 ddgs[names]["standard_state_correction_B"].append(
                     [corr_B, 0 * unit.kilocalorie_per_mole]
                 )
-            else:
-                continue
 
     return ddgs
 
@@ -254,6 +253,8 @@ def _generate_dg_mle(
     pd.DataFrame
         A pandas DataFrame with the dG results for each ligand pair.
     """
+    from cinnabar import FEMap, Measurement
+    from openff.units import unit
 
     DDGs = _get_ddgs(results_dict)
 
