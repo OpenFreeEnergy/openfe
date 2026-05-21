@@ -18,6 +18,9 @@ from openfe.protocols import openmm_rfe
 def untar(fn):
     """extract tarfile called *fn*"""
     with tarfile.open(fn) as f:
+        for member in f.getmembers():
+            if os.path.isabs(member.name) or '..' in member.name:
+                raise ValueError(f"Invalid tar member: {member.name}")
         f.extractall()
 
 
