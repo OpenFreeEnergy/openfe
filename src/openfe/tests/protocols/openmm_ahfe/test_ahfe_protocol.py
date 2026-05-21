@@ -142,8 +142,8 @@ def test_create_independent_repeat_ids(benzene_system):
         for u in dag.protocol_units:
             repeat_ids.add(u.inputs["repeat_id"])
 
-    # squashed by repeat_id, that's 2 sets of 6
-    assert len(repeat_ids) == 12
+    # squashed by repeat_id, that's 1 uuid by repeat
+    assert len(repeat_ids) == 6
 
 
 def _assert_num_forces(system, forcetype, number):
