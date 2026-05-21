@@ -1996,7 +1996,9 @@ def test_get_ion_parameters_fallback_to_forcefield(benzene_modifications):
 
     with pytest.warns(UserWarning, match="No monovalent ion"):
         ion_charge, ion_sigma, ion_epsilon = topologyhelpers._get_ion_parameters(
-            topology, system, charge_difference=1,
+            topology,
+            system,
+            charge_difference=1,
             forcefield=system_generator.forcefield,
         )
 
@@ -2012,9 +2014,7 @@ def test_get_water_parameters_bad_water(benzene_solvent_openmm_system):
 
     errmsg = "Could not find water residue"
     with pytest.raises(ValueError, match=errmsg):
-        topologyhelpers._get_water_parameters(
-            topology, system, water_resname="SOL"
-        )
+        topologyhelpers._get_water_parameters(topology, system, water_resname="SOL")
 
 
 def test_get_alchemical_waters_no_waters(
@@ -2164,7 +2164,6 @@ def test_handle_alchemical_wats(
     i_chg, i_sig, i_eps = topologyhelpers._get_ion_parameters(
         topology, system, charge_difference=1, forcefield=forcefield
     )
-
 
     charge, sigma, epsilon = nbf.getParticleParameters(24)
     assert charge == 1.0 * omm_unit.elementary_charge == i_chg
