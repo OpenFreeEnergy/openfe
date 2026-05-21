@@ -390,7 +390,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         charge_difference: int,
         system_mappings: dict[str, dict[int, int]],
         distance_cutoff: Quantity,
-        solvent_component: SolventComponent | None,
+        forcefield: openmm.app.ForceField,
     ) -> None:
         """
         Handle system net charge by adding an alchemical water.
@@ -404,21 +404,11 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         charge_difference : int
         system_mappings : dict[str, dict[int, int]]
         distance_cutoff : Quantity
-        solvent_component : SolventComponent | None
+        forcefield: openmm.app.ForceField
         """
         # Base case, return if no net charge
         if charge_difference == 0:
             return
-
-        # Resolve ion names from the solvent component if available,
-        # otherwise infer from the topology (for explicitly solvated systems).
-        if isinstance(solvent_component, SolventComponent):
-            positive_ion = solvent_component.positive_ion.strip("-+").upper()
-            negative_ion = solvent_component.negative_ion.strip("-+").upper()
-        else:
-            positive_ion, negative_ion = _rfe_utils.topologyhelpers._get_ion_resnames_from_topology(
-                stateA_topology
-            )
 
         # Get the residue ids for waters to turn alchemical
         alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_waters(
@@ -435,8 +425,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             system=stateB_system,
             system_mapping=system_mappings,
             charge_difference=charge_difference,
-            positive_ion_resname=positive_ion,
-            negative_ion_resname=negative_ion,
+            forcefield=forcefield,
             water_resname="HOH",  # Need to check if this is also true for systems not prepped with addSolvent
         )
 
@@ -557,6 +546,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # Net charge: add alchemical water if needed
         # Must be done here as we in-place modify the particles of state B.
         if settings["alchemical_settings"].explicit_charge_correction:
+            forcefield = states_inputs["A"]["generator"].forcefield
             self._handle_net_charge(
                 stateA_topology=stateA_topology,
                 stateA_positions=stateA_positions,
@@ -565,7 +555,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
                 charge_difference=mapping.get_alchemical_charge_difference(),
                 system_mappings=system_mappings,
                 distance_cutoff=settings["alchemical_settings"].explicit_charge_correction_cutoff,
-                solvent_component=solvent_component,
+                forcefield=forcefield,
             )
 
         # Finally get the state B positions

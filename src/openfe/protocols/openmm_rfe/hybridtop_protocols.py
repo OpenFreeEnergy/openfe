@@ -374,7 +374,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         mapping: LigandAtomMapping,
         nonbonded_method: str,
         explicit_charge_correction: bool,
-        solvent_component: SolventComponent | None,
+        solvent_component: SolventComponent | SolvatedPDBComponent | None,
     ):
         """
         Validates the net charge difference between the two states.
@@ -441,18 +441,18 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         if isinstance(solvent_component, SolventComponent):
             positive_ion = solvent_component.positive_ion.strip("-+").upper()
             negative_ion = solvent_component.negative_ion.strip("-+").upper()
-        elif isinstance(solvent_component, SolvatedPDBComponent):
-            positive_ion, negative_ion = _rfe_utils.topologyhelpers._get_ion_resnames_from_topology(
-                solvent_component.to_openmm_topology()
+            ion = {-1: positive_ion, 1: negative_ion}[difference]
+            wmsg = (
+                f"A charge difference of {difference} is observed "
+                "between the end states. This will be addressed by "
+                f"transforming a water into a {ion} ion"
             )
-
-        ion = {-1: positive_ion, 1: negative_ion}[difference]
-
-        wmsg = (
-            f"A charge difference of {difference} is observed "
-            "between the end states. This will be addressed by "
-            f"transforming a water into a {ion} ion"
-        )
+        elif isinstance(solvent_component, SolvatedPDBComponent):
+            wmsg = (
+                f"A charge difference of {difference} is observed "
+                "between the end states. This will be addressed by "
+                "transforming a water into an ion."
+            )
         logger.info(wmsg)
 
     @staticmethod
@@ -571,6 +571,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Note: validation depends on the mapping & solvent component checks
         if stateA.contains(SolventComponent):
             solv_comp = stateA.get_components_of_type(SolventComponent)[0]
+        elif stateA.contains(SolvatedPDBComponent):
+            solv_comp = stateA.get_components_of_type(SolvatedPDBComponent)[0]
         else:
             solv_comp = None
 
