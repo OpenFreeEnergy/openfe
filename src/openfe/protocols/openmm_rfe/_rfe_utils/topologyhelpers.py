@@ -10,6 +10,7 @@
 import itertools
 import logging
 import warnings
+from collections import Counter
 from copy import deepcopy
 from typing import Optional, Union
 
@@ -21,76 +22,208 @@ from openff.units import Quantity, unit
 from openmm import NonbondedForce, System, app
 from openmm import unit as omm_unit
 
-from openfe import SolventComponent
-
 logger = logging.getLogger(__name__)
 
 
-def _get_ion_and_water_parameters(
+def _get_ion_parameters_from_forcefield(
+    forcefield: app.ForceField,
+    ion_resname: str,
+    ion_element: app.Element,
+) -> tuple:
+    """
+    Get NonbondedForce parameters for a bare monovalent ion by creating a
+    minimal single-ion system via the ForceField. Used as a fallback when
+    no ion of the required type is present in the topology.
+
+    Parameters
+    ----------
+    forcefield : app.ForceField
+        The ForceField to use to parameterize the ion.
+    ion_resname : str
+        The residue name of the ion to parameterize (e.g. 'NA', 'CL').
+    ion_element : app.Element
+        The element of the ion.
+
+    Returns
+    -------
+    ion_charge : openmm.unit.Quantity
+        The partial charge of the ion.
+    ion_sigma : openmm.unit.Quantity
+        The NonbondedForce sigma parameter of the ion.
+    ion_epsilon : openmm.unit.Quantity
+        The NonbondedForce epsilon parameter of the ion.
+    """
+    dummy_top = app.Topology()
+    res = dummy_top.addResidue(ion_resname, dummy_top.addChain())
+    dummy_top.addAtom(ion_resname, ion_element, res)
+    dummy_system = forcefield.createSystem(dummy_top)
+
+    nbf = [i for i in dummy_system.getForces()
+           if isinstance(i, NonbondedForce)][0]
+
+    return nbf.getParticleParameters(0)
+
+
+def _get_water_parameters(
     topology: app.Topology,
     system: System,
-    ion_resname: str,
     water_resname: str = 'HOH',
-):
+) -> tuple:
     """
-    Get ion, and water (oxygen and hydrogen) atoms parameters.
+    Get water oxygen and hydrogen partial charges from the system.
 
     Parameters
     ----------
     topology : app.Topology
-      The topology to search for the ion and water
+      The topology to search for water atoms.
     system : app.System
       The system associated with the input topology object.
-    ion_resname : str
-      The residue name of the ion to get parameters for
     water_resname : str
-      The residue name of the water to get parameters for. Default 'HOH'.
+      The residue name of the water. Default 'HOH'.
 
     Returns
     -------
-    ion_charge : float
-      The partial charge of the ion atom
-    ion_sigma : float
-      The NonbondedForce sigma parameter of the ion atom
-    ion_epsilon : float
-      The NonbondedForce epsilon parameter of the ion atom
-    o_charge : float
+    o_charge : openmm.unit.Quantity
       The partial charge of the water oxygen.
-    h_charge : float
+    h_charge : openmm.unit.Quantity
       The partial charge of the water hydrogen.
 
     Raises
     ------
     ValueError
-      If there are no ``ion_resname`` or ``water_resname`` named residues in
-      the input ``topology``.
-
-    Attribution
-    -----------
-    Based on `perses.utils.charge_changing.get_ion_and_water_parameters`.
+      If no water residue named ``water_resname`` with O and H atoms
+      is found in the topology.
     """
-    def _find_atom(topology, resname, elementname):
-        for atom in topology.atoms():
-            if atom.residue.name == resname:
-                if (elementname is None or atom.element.symbol == elementname):
-                    return atom.index
-        errmsg = ("Error encountered when attempting to explicitly handle "
-                  "charge changes using an alchemical water. No residue "
-                  f"named: {resname} found, with element {elementname}")
-        raise ValueError(errmsg)
-
-    ion_index = _find_atom(topology, ion_resname, None)
-    oxygen_index = _find_atom(topology, water_resname, 'O')
-    hydrogen_index = _find_atom(topology, water_resname, 'H')
-
     nbf = [i for i in system.getForces()
            if isinstance(i, NonbondedForce)][0]
 
-    ion_charge, ion_sigma, ion_epsilon = nbf.getParticleParameters(ion_index)
-    o_charge, _, _ = nbf.getParticleParameters(oxygen_index)
-    h_charge, _, _ = nbf.getParticleParameters(hydrogen_index)
+    o_charge = None
+    h_charge = None
 
-    return ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge
+    for residue in topology.residues():
+        if residue.name != water_resname:
+            continue
+        for atom in residue.atoms():
+            if atom.element is None:
+                continue
+            charge, _, _ = nbf.getParticleParameters(atom.index)
+            if atom.element.symbol == 'O':
+                o_charge = charge
+            elif atom.element.symbol == 'H':
+                h_charge = charge
+        if o_charge is not None and h_charge is not None:
+            break
+
+    if o_charge is None or h_charge is None:
+        raise ValueError(
+            f"Could not find water residue '{water_resname}' with O and H "
+            "atoms in the topology. Water parameters are required for "
+            "alchemical charge correction."
+        )
+
+    return o_charge, h_charge
+
+
+def _get_ion_parameters(
+    topology: app.Topology,
+    system: System,
+    charge_difference: int,
+    forcefield: app.ForceField,
+) -> tuple:
+    """
+    Get NonbondedForce parameters for a monovalent counter-ion to
+    compensate a charge-changing alchemical transformation.
+
+    The ion is selected by scanning the topology for monatomic residues
+    whose charge matches the sign of the charge difference.  Three
+    scenarios are handled:
+
+    1. **Monovalent ions present** \u2014 parameters are taken from the most
+       abundant matching ion in the topology (e.g. if the system has
+       both Na+ and K+, the more numerous species is used).
+    2. **Only divalent or wrong-sign ions present** \u2014 these are skipped
+       by the monovalent filter (|q| \u2248 1) and we fall through to the
+       forcefield fallback.
+    3. **No ions at all** (e.g. zero ionic strength, or a
+       SolvatedPDBComponent without ions) \u2014 a minimal single-ion
+       system is built from the forcefield to obtain NA or CL
+       parameters directly.
+
+    Parameters
+    ----------
+    topology : app.Topology
+      The topology to search for the most abundant ion type.
+    system : app.System
+      The system associated with the input topology object.
+    charge_difference : int
+      The charge difference between state A and state B. Determines
+      whether to look for a positive or negative ion.
+    forcefield : app.ForceField
+      The force field to use for parameterization if no ion is found
+      in the topology.
+
+    Returns
+    -------
+    ion_charge : openmm.unit.Quantity
+    ion_sigma : openmm.unit.Quantity
+    ion_epsilon : openmm.unit.Quantity
+
+    Attribution
+    -----------
+    Based on `perses.utils.charge_changing.get_ion_and_water_parameters`
+    and OpenFE PR #1978.
+    """
+    nbf = [i for i in system.getForces()
+           if isinstance(i, NonbondedForce)][0]
+
+    # We need an ion whose charge sign matches the charge difference:
+    # a positive charge_difference means the system lost positive charge
+    # (stateA more positive), so we need a positive ion to compensate.
+    desired_sign = np.sign(charge_difference)
+    ion_counts: Counter = Counter()
+    ion_atom_indices: dict[str, int] = {}
+
+    for residue in topology.residues():
+        atoms = list(residue.atoms())
+        # Monatomic residues are ion candidates.
+        if len(atoms) != 1:
+            continue
+        atom = atoms[0]
+        if atom.element is None:
+            continue
+        charge, _, _ = nbf.getParticleParameters(atom.index)
+        charge_val = charge.value_in_unit(omm_unit.elementary_charge)
+        is_monovalent = abs(abs(charge_val) - 1.0) < 0.01
+        has_correct_sign = np.sign(charge_val) == desired_sign
+        if is_monovalent and has_correct_sign:
+            ion_counts[residue.name] += 1
+            if residue.name not in ion_atom_indices:
+                ion_atom_indices[residue.name] = atom.index
+
+    if ion_counts:
+        # Use parameters from the most abundant matching ion in the topology.
+        best_resname = ion_counts.most_common(1)[0][0]
+        return nbf.getParticleParameters(ion_atom_indices[best_resname])
+
+    # No matching ion in the topology — fall back to NA/CL from the forcefield.
+    if charge_difference > 0:
+        fallback_resname = 'NA'
+        fallback_element = app.Element.getByAtomicNumber(11)  # Na
+    else:
+        fallback_resname = 'CL'
+        fallback_element = app.Element.getByAtomicNumber(17)  # Cl
+
+    wmsg = (
+        f"No monovalent ion with the appropriate charge sign found in "
+        f"the topology. Defaulting to '{fallback_resname}' and obtaining "
+        f"parameters from the forcefield directly."
+    )
+    warnings.warn(wmsg)
+    logger.warning(wmsg)
+
+    return _get_ion_parameters_from_forcefield(
+        forcefield, fallback_resname, fallback_element,
+    )
 
 
 def _fix_alchemical_water_atom_mapping(
@@ -123,13 +256,36 @@ def _fix_alchemical_water_atom_mapping(
 
 
 def handle_alchemical_waters(
-    water_resids: list[int], topology: app.Topology,
-    system: System, system_mapping: dict,
+    water_resids: list[int],
+    topology: app.Topology,
+    system: System,
+    system_mapping: dict,
     charge_difference: int,
-    solvent_component: SolventComponent,
+    forcefield: app.ForceField,
+    water_resname: str,
 ):
     """
-    Add alchemical waters from a pre-defined list.
+    Correct for a net charge change by alchemically mutating water
+    molecules into monovalent ions.
+
+    A water far from the solute is selected and its NonbondedForce
+    parameters are replaced: the oxygen receives the ion's charge,
+    sigma, and epsilon, while the hydrogen charges are zeroed out.
+    No bonded parameters are modified — this is safe because standard
+    rigid water models (TIP3P, SPC/E) use distance constraints
+    (SETTLE / SHAKE) rather than harmonic bond and angle forces.
+    If a flexible water model were used, the residual O-H bond and
+    H-O-H angle springs would create unphysical restoring forces on
+    the ghost hydrogens.
+
+    Ion parameters are resolved in order of preference:
+
+    1. From the most abundant monovalent ion of the correct charge
+       sign already present in the topology (e.g. Na+ or K+).
+    2. If only divalent or wrong-sign ions exist, they are skipped.
+    3. If no suitable ion is found at all, parameters are obtained
+       by creating a minimal single-ion system from the forcefield
+       (defaults to NA / CL).
 
     Parameters
     ----------
@@ -143,14 +299,11 @@ def handle_alchemical_waters(
       A dictionary of system mappings between the stateA and stateB systems
     charge_difference : int
       The charge difference between state A and state B.
-    positive_ion_resname : str
-      The name of a positive ion to replace the water with if the absolute
-      charge difference is positive.
-    negative_ion_resname : str
-      The name of a negative ion to replace the water with if the absolute
-      charge difference is negative.
+    forcefield : app.ForceField
+      The forcefield to use for ion parameterization. Used as a fallback
+      when no suitable ion is present in the topology.
     water_resname : str
-      The residue name of the water to get parameters for. Default 'HOH'.
+      The residue name of the water to get parameters for.
 
     Raises
     ------
@@ -171,17 +324,14 @@ def handle_alchemical_waters(
                   f"difference: {abs(charge_difference)}")
         raise ValueError(errmsg)
 
-    if charge_difference > 0:
-        ion_resname = solvent_component.positive_ion.strip('-+').upper()
-    elif charge_difference < 0:
-        ion_resname = solvent_component.negative_ion.strip('-+').upper()
-    # if there's no charge difference then just skip altogether
-    else:
+    if charge_difference == 0:
         return None
 
-    ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge = _get_ion_and_water_parameters(
-        topology, system, ion_resname,
-        'HOH',  # Modeller always adds HOH waters
+    ion_charge, ion_sigma, ion_epsilon = _get_ion_parameters(
+        topology, system, charge_difference, forcefield,
+    )
+    o_charge, h_charge = _get_water_parameters(
+        topology, system, water_resname,
     )
 
     # get the nonbonded forces
@@ -193,12 +343,15 @@ def handle_alchemical_waters(
     # for convenience just grab the first & only entry
     nbf = nbfrcs[0]
 
-    # Loop through residues, check if they match the residue index
-    # mutate the atom as necessary
+    # Mutate selected water residues into ions by replacing only their
+    # nonbonded parameters.  The bonded topology is left untouched:
+    # this is correct for rigid water models (TIP3P, SPC/E) where O-H
+    # distances and H-O-H angles are enforced by SETTLE / SHAKE
+    # constraints, not by harmonic force terms.  For flexible water
+    # models the leftover bond/angle springs would apply unphysical
+    # forces to the ghost hydrogens — those models are not supported.
     for res in topology.residues():
         if res.index in water_resids:
-            # if the number of atoms > 3, then we have virtual sites which are
-            # not supported currently
             if len([at for at in res.atoms()]) > 3:
                 errmsg = ("Non 3-site waters (i.e. waters with virtual sites) "
                           "are not currently supported as alchemical waters")
@@ -209,10 +362,12 @@ def handle_alchemical_waters(
                 charge, sigma, epsilon = nbf.getParticleParameters(idx)
                 _fix_alchemical_water_atom_mapping(system_mapping, idx)
 
+                # Oxygen → ion: replace charge, sigma, epsilon.
                 if charge == o_charge:
                     nbf.setParticleParameters(
                         idx, ion_charge, ion_sigma, ion_epsilon
                     )
+                # Hydrogen → ghost: zero charge, keep LJ.
                 else:
                     if charge != h_charge:
                         errmsg = ("modifying an atom that doesn't match known "
@@ -433,7 +588,6 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     * Very slow, needs refactoring
     * Can we drop having topologies as inputs here?
     """
-    from collections import Counter
 
     no_const_old_to_new_atom_map = deepcopy(old_to_new_atom_map)
 

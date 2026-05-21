@@ -28,6 +28,7 @@ from gufe import (
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -372,7 +373,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         mapping: LigandAtomMapping,
         nonbonded_method: str,
         explicit_charge_correction: bool,
-        solvent_component: SolventComponent | None,
+        solvent_component: SolventComponent | SolvatedPDBComponent | None,
     ):
         """
         Validates the net charge difference between the two states.
@@ -385,8 +386,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           The OpenMM nonbonded method used for the simulation.
         explicit_charge_correction : bool
           Whether or not to use an explicit charge correction.
-        solvent_component : openfe.SolventComponent | None
-          The SolventComponent of the simulation.
+        solvent_component : SolventComponent | SolvatedPDBComponent | None
+          The solvent-bearing component of the simulation.
 
         Raises
         ------
@@ -435,13 +436,25 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             )
             raise ValueError(errmsg)
 
-        ion = {-1: solvent_component.positive_ion, 1: solvent_component.negative_ion}[difference]
+        # SolventComponent carries explicit ion names; SolvatedPDBComponent
+        # (e.g. ProteinMembraneComponent) does not — the actual ion type will
+        # be resolved at runtime from the topology or forcefield.
+        if isinstance(solvent_component, SolventComponent):
+            positive_ion = solvent_component.positive_ion.strip("-+").upper()
+            negative_ion = solvent_component.negative_ion.strip("-+").upper()
+            ion = {-1: positive_ion, 1: negative_ion}[difference]
+            wmsg = (
+                f"A charge difference of {difference} is observed "
+                "between the end states. This will be addressed by "
+                f"transforming a water into a {ion} ion"
+            )
+        elif isinstance(solvent_component, SolvatedPDBComponent):
+            wmsg = (
+                f"A charge difference of {difference} is observed "
+                "between the end states. This will be addressed by "
+                "transforming a water into an ion."
+            )
 
-        wmsg = (
-            f"A charge difference of {difference} is observed "
-            "between the end states. This will be addressed by "
-            f"transforming a water into a {ion} ion"
-        )
         logger.info(wmsg)
 
     @staticmethod
@@ -560,6 +573,18 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Note: validation depends on the mapping & solvent component checks
         if stateA.contains(SolventComponent):
             solv_comp = stateA.get_components_of_type(SolventComponent)[0]
+        elif stateA.contains(SolvatedPDBComponent):
+            # ProteinMembraneComponent (and other SolvatedPDBComponents)
+            # already contain explicit water and ions as part of the
+            # pre-equilibrated box.  Treating them as solvated here lets
+            # _validate_charge_difference enable explicit charge correction
+            # (alchemical water → ion mutation) for charge-changing edges,
+            # which would otherwise fail with "Cannot use explicit charge
+            # correction without solvent".
+            #
+            # validate_solvent() (called above) guarantees at most one
+            # SolvatedPDBComponent, so [0] is safe.
+            solv_comp = stateA.get_components_of_type(SolvatedPDBComponent)[0]
         else:
             solv_comp = None
 
