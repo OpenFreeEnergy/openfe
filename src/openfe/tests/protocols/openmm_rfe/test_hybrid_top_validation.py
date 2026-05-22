@@ -1,13 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import logging
-import warnings
 
 import pytest
 from openff.units import unit as offunit
 
 import openfe
-from openfe import setup
 from openfe.protocols import openmm_rfe
 
 
@@ -355,29 +353,6 @@ def test_too_many_prot_comps_error(
             stateB=stateB,
             mapping=benzene_to_toluene_mapping,
         )
-
-
-def test_element_change_warning(atom_mapping_basic_test_files):
-    # in openfe <v1.11, this would raise a warning, but now is acceptable.
-    # TODO: can remove this test in v1.13 if we want
-    l1 = atom_mapping_basic_test_files["2-methylnaphthalene"]
-    l2 = atom_mapping_basic_test_files["2-naftanol"]
-
-    # We use the 'old' lomap defaults because the
-    # basic test files inputs we use aren't fully aligned
-    mapper = setup.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
-    )
-
-    mapping = next(mapper.suggest_mappings(l1, l2))
-
-    alchem_comps = {"stateA": [l1], "stateB": [l2]}
-
-    with warnings.catch_warnings(record=True) as record:
-        warnings.simplefilter("always")
-        openmm_rfe.RelativeHybridTopologyProtocol._validate_mapping([mapping], alchem_comps)
-        # there may be other warnings bubbling up, but we make sure mass scaling warning isn't here.
-        assert not any(["mass scaling" in str(r.message) for r in record])
 
 
 def test_charge_difference_no_corr(benzene_to_benzoic_mapping):
