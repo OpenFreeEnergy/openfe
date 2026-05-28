@@ -855,6 +855,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "restraint_geometry_B": restraint_geom_B.model_dump(),
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
+                "ligand_A_indices": atom_indices_AB_A,
+                "ligand_B_indices": atom_indices_AB_B,
             }
         else:
             return {
@@ -870,6 +872,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "positions": equil_positions_AB,
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
+                "ligand_A_indices": atom_indices_AB_A,
+                "ligand_B_indices": atom_indices_AB_B,
             }
 
 
@@ -1133,6 +1137,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "standard_state_correction": corr.to("kilocalorie_per_mole"),
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
+                "ligand_A_indices": atom_indices_AB_A,
+                "ligand_B_indices": atom_indices_AB_B,
             }
         else:
             return {
@@ -1146,6 +1152,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "positions": positions_AB,
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
+                "ligand_A_indices": atom_indices_AB_A,
+                "ligand_B_indices": atom_indices_AB_B,
             }
 
 
