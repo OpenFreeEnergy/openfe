@@ -1701,7 +1701,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             structural data, or the analysis error.
         """
         import netCDF4 as nc
-        from openfe_analysis import plotting
+        from openfe_analysis.utils import plotting
 
         try:
             with nc.Dataset(trj_file) as ds:
