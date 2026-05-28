@@ -1551,8 +1551,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         from openfe_analysis.utils.apply_transformations import (
             apply_alignment_transformations,
         )
-        from openfe_analysis.utils.universe_utils import \
-            create_universe_single_state
+        from openfe_analysis.utils.universe_utils import create_universe_single_state
 
         n_lambda = ds.dimensions["state"].size
         data: dict[str, Any] = {
@@ -1569,8 +1568,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             prot = u.select_atoms("protein and name CA")
             lig_A = u.atoms[ligand_A_indices]
             lig_B = u.atoms[ligand_B_indices]
-            apply_alignment_transformations(u, protein=prot,
-                                            ligand=lig_A + lig_B)
+            apply_alignment_transformations(u, protein=prot, ligand=lig_A + lig_B)
 
             if prot:
                 prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
@@ -1580,17 +1578,14 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 ("ligand_A", lig_A, rdmol_A),
                 ("ligand_B", lig_B, rdmol_B),
             ]:
-                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(
-                    step=skip)
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
                 data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
 
                 lig_drift = LigandCOMDrift(lig).run(step=skip)
                 data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
 
             if data["time_ps"] is None:
-                data["time_ps"] = (
-                        np.arange(len(u.trajectory))[::skip] * u.trajectory.dt
-                )
+                data["time_ps"] = np.arange(len(u.trajectory))[::skip] * u.trajectory.dt
 
         return data
 
@@ -1635,8 +1630,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         from openfe_analysis.utils.apply_transformations import (
             apply_alignment_transformations,
         )
-        from openfe_analysis.utils.universe_utils import \
-            create_universe_single_state
+        from openfe_analysis.utils.universe_utils import create_universe_single_state
 
         n_lambda = ds.dimensions["state"].size
         data: dict[str, Any] = {
@@ -1654,15 +1648,11 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 lig = u.atoms[indices]
                 apply_alignment_transformations(u, ligand=lig)
 
-                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(
-                    step=skip)
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
                 data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
 
                 if data["time_ps"] is None:
-                    data["time_ps"] = (
-                            np.arange(len(u.trajectory))[
-                            ::skip] * u.trajectory.dt
-                    )
+                    data["time_ps"] = np.arange(len(u.trajectory))[::skip] * u.trajectory.dt
 
         return data
 
@@ -1717,25 +1707,30 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             with nc.Dataset(trj_file) as ds:
                 # Frame stride: aim for ~500 frames per state
                 if hasattr(ds, "PositionInterval"):
-                    n_frames = len(
-                        range(0, ds.dimensions["iteration"].size,
-                              ds.PositionInterval)
-                    )
+                    n_frames = len(range(0, ds.dimensions["iteration"].size, ds.PositionInterval))
                 else:
                     n_frames = ds.dimensions["iteration"].size
                 skip = max(n_frames // 500, 1)
 
                 if simtype == "complex":
                     data = cls._run_complex_analysis(
-                        ds, pdb_file, skip,
-                        ligand_A_indices, ligand_B_indices,
-                        rdmol_A, rdmol_B,
+                        ds,
+                        pdb_file,
+                        skip,
+                        ligand_A_indices,
+                        ligand_B_indices,
+                        rdmol_A,
+                        rdmol_B,
                     )
                 else:
                     data = cls._run_solvent_analysis(
-                        ds, pdb_file, skip,
-                        ligand_A_indices, ligand_B_indices,
-                        rdmol_A, rdmol_B,
+                        ds,
+                        pdb_file,
+                        skip,
+                        ligand_A_indices,
+                        ligand_B_indices,
+                        rdmol_A,
+                        rdmol_B,
                     )
 
         except Exception as e:
@@ -1751,24 +1746,17 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
             for label in ["ligand_A", "ligand_B"]:
                 if data.get(f"{label}_RMSD"):
-                    fig = plotting.plot_ligand_RMSD(time_ps,
-                                                    data[f"{label}_RMSD"])
+                    fig = plotting.plot_ligand_RMSD(time_ps, data[f"{label}_RMSD"])
                     fig.savefig(output_directory / f"{label}_RMSD.png")
                     plt.close(fig)
 
                 if data.get(f"{label}_COM_drift"):
-                    fig = plotting.plot_ligand_COM_drift(
-                        time_ps, data[f"{label}_COM_drift"]
-                    )
+                    fig = plotting.plot_ligand_COM_drift(time_ps, data[f"{label}_COM_drift"])
                     fig.savefig(output_directory / f"{label}_COM_drift.png")
                     plt.close(fig)
 
         npz_file = output_directory / "structural_analysis.npz"
-        npz_data = {
-            k: np.asarray(v, dtype=np.float32)
-            for k, v in data.items()
-            if v is not None
-        }
+        npz_data = {k: np.asarray(v, dtype=np.float32) for k, v in data.items() if v is not None}
         np.savez_compressed(npz_file, **npz_data)
         return {"structural_analysis": npz_file}
 
