@@ -1568,7 +1568,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             prot = u.select_atoms("protein and name CA")
             lig_A = u.atoms[ligand_A_indices]
             lig_B = u.atoms[ligand_B_indices]
-            apply_complex_alignment_transformations(u, protein=prot, ligand=[lig_A, lig_B])
+            apply_complex_alignment_transformations(u, protein=prot, ligands=[lig_A, lig_B])
 
             if prot:
                 prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
