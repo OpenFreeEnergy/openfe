@@ -1549,7 +1549,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             SymmetryCorrectedLigandRMSD,
         )
         from openfe_analysis.utils.apply_transformations import (
-            apply_alignment_transformations,
+            apply_complex_alignment_transformations,
         )
         from openfe_analysis.utils.universe_utils import create_universe_single_state
 
@@ -1568,7 +1568,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             prot = u.select_atoms("protein and name CA")
             lig_A = u.atoms[ligand_A_indices]
             lig_B = u.atoms[ligand_B_indices]
-            apply_alignment_transformations(u, protein=prot, ligand=lig_A + lig_B)
+            apply_complex_alignment_transformations(u, protein=prot, ligand=[lig_A, lig_B])
 
             if prot:
                 prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
@@ -1628,7 +1628,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         """
         from openfe_analysis.rmsd import SymmetryCorrectedLigandRMSD
         from openfe_analysis.utils.apply_transformations import (
-            apply_alignment_transformations,
+            apply_ligand_alignment_transformations,
         )
         from openfe_analysis.utils.universe_utils import create_universe_single_state
 
@@ -1646,7 +1646,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             ]:
                 u = create_universe_single_state(pdb_file, ds, state=state_idx)
                 lig = u.atoms[indices]
-                apply_alignment_transformations(u, ligand=lig)
+                apply_ligand_alignment_transformations(u, ligand=lig)
 
                 lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
                 data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
