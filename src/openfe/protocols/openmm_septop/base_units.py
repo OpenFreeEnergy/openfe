@@ -1870,12 +1870,21 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         rdmol_A = alchem_comps["stateA"][0].to_rdkit()
         rdmol_B = alchem_comps["stateB"][0].to_rdkit()
 
+        # Remap ligand indices from full system to subsampled system
+        selection_indices = np.array(setup.outputs["selection_indices"])
+        ligand_A_indices = np.where(
+            np.isin(selection_indices, setup.outputs["ligand_A_indices"])
+        )[0].tolist()
+        ligand_B_indices = np.where(
+            np.isin(selection_indices, setup.outputs["ligand_B_indices"])
+        )[0].tolist()
+
         outputs = self.run(
             trajectory=trajectory,
             checkpoint=checkpoint,
             pdb_file=setup.outputs["subsampled_pdb_structure"],
-            ligand_A_indices=setup.outputs["ligand_A_indices"],
-            ligand_B_indices=setup.outputs["ligand_B_indices"],
+            ligand_A_indices=ligand_A_indices,
+            ligand_B_indices=ligand_B_indices,
             rdmol_A=rdmol_A,
             rdmol_B=rdmol_B,
             scratch_basepath=ctx.scratch,
