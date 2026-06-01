@@ -437,22 +437,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             )
             raise ValueError(errmsg)
 
-        # resolve ion names from SolventComponent or topology
-        if isinstance(solvent_component, SolventComponent):
-            positive_ion = solvent_component.positive_ion.strip("-+").upper()
-            negative_ion = solvent_component.negative_ion.strip("-+").upper()
-            ion = {-1: positive_ion, 1: negative_ion}[difference]
-            wmsg = (
-                f"A charge difference of {difference} is observed "
-                "between the end states. This will be addressed by "
-                f"transforming a water into a {ion} ion"
-            )
-        elif isinstance(solvent_component, SolvatedPDBComponent):
-            wmsg = (
-                f"A charge difference of {difference} is observed "
-                "between the end states. This will be addressed by "
-                "transforming a water into an ion."
-            )
+        wmsg = (
+            f"A charge difference of {difference} is observed "
+            "between the end states. This will be addressed by "
+            "transforming a water into an ion of opposite charge."
+        )
         logger.info(wmsg)
 
     @staticmethod

@@ -166,7 +166,7 @@ def _get_ion_parameters(
             continue
         charge, _, _ = nbf.getParticleParameters(atom.index)
         charge_val = charge.value_in_unit(omm_unit.elementary_charge)
-        if (abs(abs(charge_val) - 1.0) < 0.01 and np.sign(charge_val) == desired_sign):
+        if np.isclose(abs(charge_val), 1.0, atol=0.01) and np.sign(charge_val) == desired_sign:
             ion_counts[residue.name] += 1
             if residue.name not in ion_atom_indices:
                 ion_atom_indices[residue.name] = atom.index
