@@ -311,6 +311,11 @@ class MultistateEquilFEAnalysis:
         * This method does not currently use bootstrap uncertainties due to
           issues with the solver when using low amounts of data points. All
           uncertainties are MBAR analytical errors.
+        * If MBAR fails to obtain an estimate for a given sample fraction (a
+          ``ParameterError``, typically at low fractions of uncorrelated
+          samples), a NaN is recorded for that fraction in the relevant
+          direction and the analysis continues, so that estimates at higher
+          fractions are still returned.
         """
         # pymbar has some side effects from being imported, so we only want to import
         # it right when we need it
@@ -339,30 +344,52 @@ class MultistateEquilFEAnalysis:
             for chunk in chunks:
                 new_N_l = np.array([chunk for _ in range(n_states)])
                 samples = chunk * n_states
+                fraction = chunk / N_l[0]
 
                 # Forward
-                DG, dDG = self._get_free_energy(
-                    self.analyzer,
-                    u_ln[:, :samples],
-                    new_N_l,
-                    0,
-                    self.units,
-                )
+                # MBAR can fail to converge at low fractions of uncorrelated
+                # samples. If this happens, append NaN and carry on so that
+                # estimates at higher fractions are still reported.
+                try:
+                    DG, dDG = self._get_free_energy(
+                        self.analyzer,
+                        u_ln[:, :samples],
+                        new_N_l,
+                        0,
+                        self.units,
+                    )
+                except ParameterError:
+                    wmsg = (
+                        "Could not obtain a forward free energy estimate at "
+                        f"fraction {fraction:.2f} of the uncorrelated samples; "
+                        "appending NaN."
+                    )
+                    warnings.warn(wmsg)
+                    DG = dDG = np.nan * self.units
                 forward_DGs.append(DG)
                 forward_dDGs.append(dDG)
 
                 # Reverse
-                DG, dDG = self._get_free_energy(
-                    self.analyzer,
-                    u_ln[:, -samples:],
-                    new_N_l,
-                    0,
-                    self.units,
-                )
+                try:
+                    DG, dDG = self._get_free_energy(
+                        self.analyzer,
+                        u_ln[:, -samples:],
+                        new_N_l,
+                        0,
+                        self.units,
+                    )
+                except ParameterError:
+                    wmsg = (
+                        "Could not obtain a reverse free energy estimate at "
+                        f"fraction {fraction:.2f} of the uncorrelated samples; "
+                        "appending NaN."
+                    )
+                    warnings.warn(wmsg)
+                    DG = dDG = np.nan * self.units
                 reverse_DGs.append(DG)
                 reverse_dDGs.append(dDG)
 
-                fractions.append(chunk / N_l[0])
+                fractions.append(fraction)
         except ParameterError:
             return None
 
