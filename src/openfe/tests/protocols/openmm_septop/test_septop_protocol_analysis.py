@@ -1,12 +1,12 @@
 import pathlib
+
 import numpy as np
+import pooch
 import pytest
 from rdkit.Chem import SDMolSupplier
-from openfe.protocols.openmm_septop.base_units import BaseSepTopAnalysisUnit
 
-
-import pooch
 from openfe.data._registry import POOCH_CACHE
+from openfe.protocols.openmm_septop.base_units import BaseSepTopAnalysisUnit
 
 pooch_septop_structural = pooch.create(
     path=POOCH_CACHE,
@@ -19,9 +19,7 @@ pooch_septop_structural = pooch.create(
 
 @pytest.fixture(scope="session")
 def septop_structural_results_dir():
-    pooch_septop_structural.fetch(
-        "septop_structural_results.zip", processor=pooch.Unzip()
-    )
+    pooch_septop_structural.fetch("septop_structural_results.zip", processor=pooch.Unzip())
     return pathlib.Path(
         POOCH_CACHE / "septop_structural_results.zip.unzip/septop_structural_results"
     )
@@ -90,7 +88,6 @@ def solvent_structural_analysis_result(septop_solvent_data, tmp_path_factory):
 
 
 class TestComplexStructuralAnalysis:
-
     def test_npz_written(self, complex_structural_analysis_result):
         result, _ = complex_structural_analysis_result
         assert "structural_analysis" in result
@@ -100,9 +97,12 @@ class TestComplexStructuralAnalysis:
         result, _ = complex_structural_analysis_result
         npz = np.load(result["structural_analysis"])
         expected_keys = {
-            "ligand_A_RMSD", "ligand_B_RMSD",
-            "ligand_A_COM_drift", "ligand_B_COM_drift",
-            "protein_2D_RMSD", "time_ps",
+            "ligand_A_RMSD",
+            "ligand_B_RMSD",
+            "ligand_A_COM_drift",
+            "ligand_B_COM_drift",
+            "protein_2D_RMSD",
+            "time_ps",
         }
         assert set(npz.files) == expected_keys
 
@@ -133,17 +133,16 @@ class TestComplexStructuralAnalysis:
     def test_plots_written(self, complex_structural_analysis_result):
         result, tmp = complex_structural_analysis_result
         expected_plots = {
-            "ligand_A_RMSD.png", "ligand_B_RMSD.png",
-            "ligand_A_COM_drift.png", "ligand_B_COM_drift.png",
+            "ligand_A_RMSD.png",
+            "ligand_B_RMSD.png",
+            "ligand_A_COM_drift.png",
+            "ligand_B_COM_drift.png",
             "protein_2D_RMSD.png",
         }
         written = {f.name for f in tmp.glob("*.png")}
         assert written == expected_plots
 
-
-    def test_bad_trajectory_returns_error_dict(
-            self, septop_complex_data, tmp_path
-    ):
+    def test_bad_trajectory_returns_error_dict(self, septop_complex_data, tmp_path):
         d = septop_complex_data
         result = BaseSepTopAnalysisUnit._structural_analysis(
             pdb_file=d["pdb"],
@@ -162,7 +161,6 @@ class TestComplexStructuralAnalysis:
 
 
 class TestSolventStructuralAnalysis:
-
     def test_npz_written(self, solvent_structural_analysis_result):
         result, _ = solvent_structural_analysis_result
         assert "structural_analysis" in result
@@ -198,10 +196,7 @@ class TestSolventStructuralAnalysis:
         written = {f.name for f in tmp.glob("*.png")}
         assert written == expected_plots
 
-
-    def test_bad_trajectory_returns_error_dict(
-            self, septop_solvent_data, tmp_path
-    ):
+    def test_bad_trajectory_returns_error_dict(self, septop_solvent_data, tmp_path):
         d = septop_solvent_data
         result = BaseSepTopAnalysisUnit._structural_analysis(
             pdb_file=d["pdb"],

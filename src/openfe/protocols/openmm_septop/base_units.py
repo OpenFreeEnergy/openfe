@@ -1590,7 +1590,9 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
 
             if data["time_ps"] is None:
-                data["time_ps"] = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+                data["time_ps"] = (
+                    np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+                )
 
         return data
 
@@ -1657,7 +1659,9 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
 
                 if data["time_ps"] is None:
-                    data["time_ps"] = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+                    data["time_ps"] = (
+                        np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+                    )
 
         return data
 
@@ -1891,12 +1895,12 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         # Remap ligand indices from full system to subsampled system
         selection_indices = np.array(setup.outputs["selection_indices"])
-        ligand_A_indices = np.where(
-            np.isin(selection_indices, setup.outputs["ligand_A_indices"])
-        )[0].tolist()
-        ligand_B_indices = np.where(
-            np.isin(selection_indices, setup.outputs["ligand_B_indices"])
-        )[0].tolist()
+        ligand_A_indices = np.where(np.isin(selection_indices, setup.outputs["ligand_A_indices"]))[
+            0
+        ].tolist()
+        ligand_B_indices = np.where(np.isin(selection_indices, setup.outputs["ligand_B_indices"]))[
+            0
+        ].tolist()
 
         outputs = self.run(
             trajectory=trajectory,
