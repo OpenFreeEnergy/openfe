@@ -1776,25 +1776,18 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         if simtype == "complex":
             np.savez_compressed(
                 npz_file,
-                ligand_A_RMSD=np.asarray(data["ligand_A_RMSD"],
-                                         dtype=np.float32),
-                ligand_B_RMSD=np.asarray(data["ligand_B_RMSD"],
-                                         dtype=np.float32),
-                ligand_A_COM_drift=np.asarray(data["ligand_A_COM_drift"],
-                                              dtype=np.float32),
-                ligand_B_COM_drift=np.asarray(data["ligand_B_COM_drift"],
-                                              dtype=np.float32),
-                protein_2D_RMSD=np.asarray(data["protein_2D_RMSD"],
-                                           dtype=np.float32),
+                ligand_A_RMSD=np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
+                ligand_B_RMSD=np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
+                ligand_A_COM_drift=np.asarray(data["ligand_A_COM_drift"], dtype=np.float32),
+                ligand_B_COM_drift=np.asarray(data["ligand_B_COM_drift"], dtype=np.float32),
+                protein_2D_RMSD=np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
                 time_ps=np.asarray(data["time_ps"], dtype=np.float32),
             )
         else:
             np.savez_compressed(
                 npz_file,
-                ligand_A_RMSD=np.asarray(data["ligand_A_RMSD"],
-                                         dtype=np.float32),
-                ligand_B_RMSD=np.asarray(data["ligand_B_RMSD"],
-                                         dtype=np.float32),
+                ligand_A_RMSD=np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
+                ligand_B_RMSD=np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
                 time_ps=np.asarray(data["time_ps"], dtype=np.float32),
             )
         return {"structural_analysis": npz_file}
