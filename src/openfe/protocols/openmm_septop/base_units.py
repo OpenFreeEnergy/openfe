@@ -1773,8 +1773,30 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         # Write out an NPZ with all the relevant analysis data
         npz_file = output_directory / "structural_analysis.npz"
-        npz_data = {k: np.asarray(v, dtype=np.float32) for k, v in data.items() if v is not None}
-        np.savez_compressed(npz_file, **npz_data)
+        if simtype == "complex":
+            np.savez_compressed(
+                npz_file,
+                ligand_A_RMSD=np.asarray(data["ligand_A_RMSD"],
+                                         dtype=np.float32),
+                ligand_B_RMSD=np.asarray(data["ligand_B_RMSD"],
+                                         dtype=np.float32),
+                ligand_A_COM_drift=np.asarray(data["ligand_A_COM_drift"],
+                                              dtype=np.float32),
+                ligand_B_COM_drift=np.asarray(data["ligand_B_COM_drift"],
+                                              dtype=np.float32),
+                protein_2D_RMSD=np.asarray(data["protein_2D_RMSD"],
+                                           dtype=np.float32),
+                time_ps=np.asarray(data["time_ps"], dtype=np.float32),
+            )
+        else:
+            np.savez_compressed(
+                npz_file,
+                ligand_A_RMSD=np.asarray(data["ligand_A_RMSD"],
+                                         dtype=np.float32),
+                ligand_B_RMSD=np.asarray(data["ligand_B_RMSD"],
+                                         dtype=np.float32),
+                time_ps=np.asarray(data["time_ps"], dtype=np.float32),
+            )
         return {"structural_analysis": npz_file}
 
     def run(
