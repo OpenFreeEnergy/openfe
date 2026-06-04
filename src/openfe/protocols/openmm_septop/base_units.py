@@ -1512,7 +1512,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         cls,
         ds,
         pdb_file: pathlib.Path,
-        skip: int,
+        skip: int | None,
         ligand_A_indices: list[int],
         ligand_B_indices: list[int],
         rdmol_A: Chem.Mol,
@@ -1528,7 +1528,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Open NetCDF dataset for the multistate trajectory.
         pdb_file : pathlib.Path
           Path to the subsampled PDB file.
-        skip : int
+        skip : int | None
           Frame stride for analysis.
         ligand_A_indices : list[int]
           Atom indices of ligand A in the subsampled system.
@@ -1602,7 +1602,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         cls,
         ds,
         pdb_file: pathlib.Path,
-        skip: int,
+        skip: int | None,
         ligand_A_indices: list[int],
         ligand_B_indices: list[int],
         rdmol_A: Chem.Mol,
@@ -1617,7 +1617,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Open NetCDF dataset for the multistate trajectory.
         pdb_file : pathlib.Path
           Path to the subsampled PDB file.
-        skip : int
+        skip : int | None
           Frame stride for analysis.
         ligand_A_indices : list[int]
           Atom indices of ligand A in the subsampled system.
@@ -1679,7 +1679,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
         protein_selection: str,
-        skip: int,
+        skip: int | None,
     ) -> dict[str, str | pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
@@ -1710,7 +1710,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations in the complex phase.
           Ignored for the solvent phase.
-        skip : int
+        skip : int | None
           Frame stride for structural analysis. If ``None``, a stride is
           chosen such that approximately (max.) 500 frames are analyzed per state.
           Set to 1 to analyze every frame.
@@ -1808,7 +1808,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 }
             )
 
-        np.savez_compressed(npz_file, **npz_data)
+        np.savez_compressed(npz_file, **npz_data)  # type: ignore[arg-type]
 
         return {"structural_analysis": npz_file}
 
