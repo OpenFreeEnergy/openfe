@@ -65,6 +65,8 @@ def complex_structural_analysis_result(septop_complex_data, tmp_path_factory):
         ligand_B_indices=d["ligand_B_indices"],
         rdmol_A=d["rdmol_A"],
         rdmol_B=d["rdmol_B"],
+        protein_selection="protein and name CA",
+        skip=None,
     )
     return result, tmp
 
@@ -83,6 +85,8 @@ def solvent_structural_analysis_result(septop_solvent_data, tmp_path_factory):
         ligand_B_indices=d["ligand_B_indices"],
         rdmol_A=d["rdmol_A"],
         rdmol_B=d["rdmol_B"],
+        protein_selection="protein and name CA",
+        skip=None,
     )
     return result, tmp
 
@@ -154,6 +158,8 @@ class TestComplexStructuralAnalysis:
             ligand_B_indices=d["ligand_B_indices"],
             rdmol_A=d["rdmol_A"],
             rdmol_B=d["rdmol_B"],
+            protein_selection="protein and name CA",
+            skip=None,
         )
 
         assert "structural_analysis_error" in result
@@ -208,7 +214,35 @@ class TestSolventStructuralAnalysis:
             ligand_B_indices=d["ligand_B_indices"],
             rdmol_A=d["rdmol_A"],
             rdmol_B=d["rdmol_B"],
+            protein_selection="protein and name CA",
+            skip=None,
         )
 
         assert "structural_analysis_error" in result
         assert "structural_analysis" not in result
+
+    def test_empty_ligand_indices_warning_and_error(
+            self, septop_solvent_data, tmp_path, caplog
+    ):
+        import logging
+
+        d = septop_solvent_data
+
+        with caplog.at_level(logging.WARNING):
+            result = BaseSepTopAnalysisUnit._structural_analysis(
+                pdb_file=d["pdb"],
+                trj_file=tmp_path / "nonexistent.nc",  # won't be accessed
+                output_directory=tmp_path,
+                dry=True,
+                simtype="solvent",
+                ligand_A_indices=[],
+                ligand_B_indices=[],
+                rdmol_A=d["rdmol_A"],
+                rdmol_B=d["rdmol_B"],
+                protein_selection="protein and name CA",
+                skip=None,
+            )
+
+        assert "structural_analysis_error" in result
+        assert "structural_analysis" not in result
+        assert any("No ligand atoms found" in msg for msg in caplog.messages)

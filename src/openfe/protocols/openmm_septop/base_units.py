@@ -1517,7 +1517,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         ligand_B_indices: list[int],
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
-        protein_selection: str = "protein and name CA",
+        protein_selection: str,
     ) -> dict[str, Any]:
         """
         Run structural analysis for the complex phase.
@@ -1540,7 +1540,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           RDKit molecule for ligand B, used for symmetry-corrected RMSD.
         protein_selection : str
           MDAnalysis selection string for the protein atoms used for
-          alignment and RMSD calculations. Default: "protein and name CA".
+          alignment and RMSD calculations.
 
         Returns
         -------
@@ -1568,9 +1568,10 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             "time_ps": None,
         }
         u_top = mda.Universe(pdb_file)
+        prot_indices = u_top.select_atoms(protein_selection).indices
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
-            prot = universe.select_atoms(protein_selection)
+            prot = universe.atoms[prot_indices]
             lig_A = universe.atoms[ligand_A_indices]
             lig_B = universe.atoms[ligand_B_indices]
             apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig_A, lig_B])
@@ -1672,12 +1673,13 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         trj_file: pathlib.Path,
         output_directory: pathlib.Path,
         dry: bool,
-        simtype: str,
+        simtype: Literal["complex", "solvent"],
         ligand_A_indices: list[int],
         ligand_B_indices: list[int],
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
-        protein_selection: str = "protein and name CA",
+        protein_selection: str,
+        skip: int,
     ) -> dict[str, str | pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
@@ -1693,7 +1695,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             will be stored.
         dry : bool
             Whether or not we are running a dry run.
-        simtype : str
+        simtype : Literal["complex", "solvent"]
             Either ``"complex"`` or ``"solvent"``. Controls whether protein
             analyses are run and how alignment is applied.
         ligand_A_indices : list[int]
@@ -1707,7 +1709,11 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         protein_selection : str
           MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations in the complex phase.
-          Ignored for the solvent phase. Default "protein and name CA".
+          Ignored for the solvent phase.
+        skip : int
+          Frame stride for structural analysis. If ``None``, a stride is
+          chosen such that approximately (max.) 500 frames are analyzed per state.
+          Set to 1 to analyze every frame.
 
         Returns
         -------
@@ -1718,13 +1724,27 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         import netCDF4 as nc
         from openfe_analysis.utils import plotting
 
+        if len(ligand_A_indices) == 0 or len(ligand_B_indices) == 0:
+            errmsg = (
+                "No ligand atoms found in the subsampled trajectory. "
+                "This likely means the output_indices selection does not include "
+                "the ligands. Check the output_indices setting in your protocol "
+                "settings to ensure ligand atoms are included in the trajectory output."
+            )
+            logger.warning(errmsg)
+            return {"structural_analysis_error": errmsg}
+
         try:
             with nc.Dataset(trj_file) as ds:
                 if hasattr(ds, "PositionInterval"):
                     n_frames = len(range(0, ds.dimensions["iteration"].size, ds.PositionInterval))
                 else:
                     n_frames = ds.dimensions["iteration"].size
-                skip = max(n_frames // 500, 1)
+
+                if skip is None:
+                    # find skip that would give ~500 frames of output
+                    # max against 1 to avoid skip=0 case
+                    skip = max(n_frames // 500, 1)
 
                 if simtype == "complex":
                     data = cls._run_complex_analysis(
@@ -1773,23 +1793,21 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         # Write out an NPZ with all the relevant analysis data
         npz_file = output_directory / "structural_analysis.npz"
+        npz_data = {
+            "ligand_A_RMSD": np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
+            "ligand_B_RMSD": np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
+            "time_ps": np.asarray(data["time_ps"], dtype=np.float32),
+        }
+
         if simtype == "complex":
-            np.savez_compressed(
-                npz_file,
-                ligand_A_RMSD=np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
-                ligand_B_RMSD=np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
-                ligand_A_COM_drift=np.asarray(data["ligand_A_COM_drift"], dtype=np.float32),
-                ligand_B_COM_drift=np.asarray(data["ligand_B_COM_drift"], dtype=np.float32),
-                protein_2D_RMSD=np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
-                time_ps=np.asarray(data["time_ps"], dtype=np.float32),
-            )
-        else:
-            np.savez_compressed(
-                npz_file,
-                ligand_A_RMSD=np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
-                ligand_B_RMSD=np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
-                time_ps=np.asarray(data["time_ps"], dtype=np.float32),
-            )
+            npz_data.update({
+                "ligand_A_COM_drift": np.asarray(data["ligand_A_COM_drift"], dtype=np.float32),
+                "ligand_B_COM_drift": np.asarray(data["ligand_B_COM_drift"], dtype=np.float32),
+                "protein_2D_RMSD": np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
+            })
+
+        np.savez_compressed(npz_file, **npz_data)
+
         return {"structural_analysis": npz_file}
 
     def run(
@@ -1803,6 +1821,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
         protein_selection: str = "protein and name CA",
+        skip: int | None = None,
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
@@ -1830,6 +1849,10 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations in the complex phase.
           Ignored for the solvent phase. Default "protein and name CA".
+        skip : int | None
+          Frame stride for structural analysis. If ``None``, a stride is
+          chosen such that approximately (max.) 500 frames are analyzed per state.
+          Set to 1 to analyze every frame.
         dry : bool
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
@@ -1883,6 +1906,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             rdmol_A=rdmol_A,
             rdmol_B=rdmol_B,
             protein_selection=protein_selection,
+            skip=skip,
         )
 
         return energy_analysis | structural_analysis
@@ -1909,13 +1933,15 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         rdmol_B = alchem_comps["stateB"][0].to_rdkit()
 
         # Remap ligand indices from full system to subsampled system
+        # selection_indices maps: position in subsampled system to index in full system
         selection_indices = np.array(setup.outputs["selection_indices"])
-        ligand_A_indices = np.where(np.isin(selection_indices, setup.outputs["ligand_A_indices"]))[
-            0
-        ].tolist()
-        ligand_B_indices = np.where(np.isin(selection_indices, setup.outputs["ligand_B_indices"]))[
-            0
-        ].tolist()
+        ligand_A_full_indices = np.array(setup.outputs["ligand_A_indices"])
+        ligand_B_full_indices = np.array(setup.outputs["ligand_B_indices"])
+
+        # Find where the full-system ligand indices appear in the subsampled system
+        # np.isin returns a boolean mask, np.where converts to positional indices
+        ligand_A_indices = np.where(np.isin(selection_indices, ligand_A_full_indices))[0].tolist()
+        ligand_B_indices = np.where(np.isin(selection_indices, ligand_B_full_indices))[0].tolist()
 
         outputs = self.run(
             trajectory=trajectory,
