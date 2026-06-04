@@ -77,17 +77,22 @@ def _get_ion_parameters(
     system : app.System
       The system associated with the input topology object.
     charge_difference : int
-      The charge difference between state A and state B. Determines
-      whether to look for a positive or negative ion.
+      The charge difference between state A and state B,
+      calculated as stateA_formal_charge - stateB_formal_charge.
+      Positive values indicate a positive ion is needed,
+      negative values a negative ion.
     forcefield : app.ForceField
       The force field to use for parameterization if no ion is found
       in the topology.
 
     Returns
     -------
-    ion_charge : openmm.unit.Quantity
-    ion_sigma : openmm.unit.Quantity
-    ion_epsilon : openmm.unit.Quantity
+    ion_charge : float
+      The partial charge of the ion atom
+    ion_sigma : float
+      The NonbondedForce sigma parameter of the ion atom
+    ion_epsilon : float
+      The NonbondedForce epsilon parameter of the ion atom
     """
     nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
 
@@ -182,7 +187,10 @@ def handle_alchemical_waters(
     system_mapping : dictionary
       A dictionary of system mappings between the stateA and stateB systems
     charge_difference : int
-      The charge difference between state A and state B.
+      The charge difference between state A and state B,
+      calculated as stateA_formal_charge - stateB_formal_charge.
+      Positive values indicate a positive ion is needed,
+      negative values a negative ion.
     forcefield : app.ForceField
       The forcefield to use for ion parameterization.
 
