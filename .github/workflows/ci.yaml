@@ -35,9 +35,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: "macos-latest"
-        python-version: "3.12"
-        openeye: "no"
+        os: ["macos-latest"]
+        python-version: ["3.12"]
+        openeye: ["no"]
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
