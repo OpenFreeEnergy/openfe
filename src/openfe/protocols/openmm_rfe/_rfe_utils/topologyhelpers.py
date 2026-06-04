@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def _get_ff_parameters(
     forcefield: app.ForceField,
     smiles: str,
-) -> list[tuple]:
+) -> dict[str, tuple]:
     """
     Get NonbondedForce parameters for all atoms in a molecule by creating
     a minimal dummy system from a SMILES string with the given forcefield.
@@ -43,9 +43,9 @@ def _get_ff_parameters(
 
     Returns
     -------
-    list[tuple]
-      A list of (charge, sigma, epsilon) tuples for each atom in the
-      molecule, in the same order as the SMILES.
+    dict[str, tuple]
+      A dictionary keyed by element symbol, with (charge, sigma, epsilon)
+      tuples as values.
     """
     from openff.toolkit import Molecule
 
@@ -54,7 +54,10 @@ def _get_ff_parameters(
     dummy_system = forcefield.createSystem(dummy_top)
     nbf = [f for f in dummy_system.getForces() if isinstance(f, NonbondedForce)][0]
 
-    return [nbf.getParticleParameters(i) for i in range(dummy_top.getNumAtoms())]
+    return {
+        atom.element.symbol: nbf.getParticleParameters(atom.index)
+        for atom in dummy_top.atoms()
+    }
 
 def _get_ion_parameters(
     topology: app.Topology,
@@ -125,7 +128,8 @@ def _get_ion_parameters(
     warnings.warn(wmsg)
     logger.warning(wmsg)
 
-    return _get_ff_parameters(forcefield, fallback_smiles)[0]
+    ion_params = _get_ff_parameters(forcefield, fallback_smiles)
+    return next(iter(ion_params.values()))
 
 def _fix_alchemical_water_atom_mapping(
     system_mapping: dict[str, Union[dict[int, int], list[int]]],
@@ -226,10 +230,10 @@ def handle_alchemical_waters(
     ion_charge, ion_sigma, ion_epsilon = _get_ion_parameters(
         topology, system, charge_difference, forcefield,
     )
-    # Get water parameters (O is index 0, H is index 1 and 2)
+    # Get water parameters
     water_params = _get_ff_parameters(forcefield, '[H]O[H]')
-    o_charge, _, _ = water_params[0]
-    h_charge, _, _ = water_params[1]
+    o_charge = water_params['O'][0]
+    h_charge = water_params['H'][0]
 
     # Loop through residues, check if they match the residue index
     # mutate the atom as necessary
