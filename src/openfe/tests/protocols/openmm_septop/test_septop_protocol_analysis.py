@@ -221,9 +221,7 @@ class TestSolventStructuralAnalysis:
         assert "structural_analysis_error" in result
         assert "structural_analysis" not in result
 
-    def test_empty_ligand_indices_warning_and_error(
-            self, septop_solvent_data, tmp_path, caplog
-    ):
+    def test_empty_ligand_indices_warning_and_error(self, septop_solvent_data, tmp_path, caplog):
         import logging
 
         d = septop_solvent_data

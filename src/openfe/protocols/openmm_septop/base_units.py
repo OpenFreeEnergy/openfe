@@ -1800,11 +1800,13 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         }
 
         if simtype == "complex":
-            npz_data.update({
-                "ligand_A_COM_drift": np.asarray(data["ligand_A_COM_drift"], dtype=np.float32),
-                "ligand_B_COM_drift": np.asarray(data["ligand_B_COM_drift"], dtype=np.float32),
-                "protein_2D_RMSD": np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
-            })
+            npz_data.update(
+                {
+                    "ligand_A_COM_drift": np.asarray(data["ligand_A_COM_drift"], dtype=np.float32),
+                    "ligand_B_COM_drift": np.asarray(data["ligand_B_COM_drift"], dtype=np.float32),
+                    "protein_2D_RMSD": np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
+                }
+            )
 
         np.savez_compressed(npz_file, **npz_data)
 
