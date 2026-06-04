@@ -2,9 +2,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from openff.units import Quantity, unit
 
 from openfe.analysis.plotting import (
     plot_2D_rmsd,
+    plot_convergence,
     plot_lambda_transition_matrix,
 )
 
@@ -167,3 +169,32 @@ def test_plot_2D_rmsd(num):
     data = [[0.5 for x in range(points)] for i in range(num)]
     fig = plot_2D_rmsd(data)
     plt.close(fig)
+
+
+def _make_forward_reverse(forward, forward_err, reverse, reverse_err):
+    kcal = unit.kilocalorie_per_mole
+    n = len(forward)
+    return {
+        "fractions": np.linspace(1 / n, 1.0, n),
+        "forward_DGs": Quantity.from_list([v * kcal for v in forward]),
+        "forward_dDGs": Quantity.from_list([v * kcal for v in forward_err]),
+        "reverse_DGs": Quantity.from_list([v * kcal for v in reverse]),
+        "reverse_dDGs": Quantity.from_list([v * kcal for v in reverse_err]),
+    }
+
+
+def test_plot_convergence_with_nan():
+    """
+    NaN entries (e.g. from MBAR failing to converge at low fractions of
+    uncorrelated samples) should be rendered as gaps without raising.
+    """
+    forward_reverse = _make_forward_reverse(
+        forward=[np.nan, np.nan, -9.2, -9.4, -9.5, -9.6, -9.65, -9.7, -9.72, -9.75],
+        forward_err=[np.nan, np.nan, 0.5, 0.4, 0.35, 0.3, 0.28, 0.25, 0.24, 0.22],
+        reverse=[np.nan, -10.1, -9.9, -9.85, -9.8, -9.78, -9.77, -9.76, -9.75, -9.75],
+        reverse_err=[np.nan, 0.6, 0.5, 0.45, 0.4, 0.35, 0.3, 0.26, 0.23, 0.22],
+    )
+
+    ax = plot_convergence(forward_reverse, unit.kilocalorie_per_mole)
+    assert isinstance(ax, matplotlib.axes.Axes)
+    plt.close(ax.figure)

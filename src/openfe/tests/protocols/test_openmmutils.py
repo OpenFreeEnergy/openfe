@@ -408,6 +408,50 @@ class TestFEAnalysis:
             rtol=5e-01,
         )  # fmt: skip
 
+    def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer):
+        """
+        If MBAR fails to obtain an estimate for a given fraction of the
+        uncorrelated samples, NaN is recorded for that fraction (in the
+        failing direction) and the rest of the analysis is still returned,
+        rather than discarding everything by returning ``None``.
+        This test injects a NaN failure for the lowest fraction in the
+        forwards estimate.
+        """
+        original = type(analyzer)._get_free_energy
+        state = {"calls": 0}
+
+        def flaky_get_free_energy(analyzer_arg, u_ln, N_l, bootstraps, return_units):
+            state["calls"] += 1
+            # Fail only the forward estimate of the lowest fraction (the very
+            # first call) to mimic an MBAR convergence failure on sparse data.
+            if state["calls"] == 1:
+                raise ParameterError("forced low-fraction MBAR failure")
+            return original(analyzer_arg, u_ln, N_l, bootstraps, return_units)
+
+        with mock.patch.object(analyzer, "_get_free_energy", flaky_get_free_energy):
+            with pytest.warns(UserWarning, match="Could not obtain a forward free energy estimate"):
+                ret = analyzer.get_forward_and_reverse_analysis(num_samples=10)
+
+        # The analysis is still returned rather than being discarded.
+        assert ret is not None
+
+        forward_DGs = ret["forward_DGs"].m
+        forward_dDGs = ret["forward_dDGs"].m
+        reverse_DGs = ret["reverse_DGs"].m
+        reverse_dDGs = ret["reverse_dDGs"].m
+
+        # The lowest-fraction forward estimate (value and error) -> should give NaN
+        assert np.isnan(forward_DGs[0])
+        assert np.isnan(forward_dDGs[0])
+        # Lowest-fraction reverse is ok
+        assert np.isfinite(reverse_DGs[0])
+        assert np.isfinite(reverse_dDGs[0])
+        # Every higher fraction is finite in both directions.
+        assert np.all(np.isfinite(forward_DGs[1:]))
+        assert np.all(np.isfinite(reverse_DGs))
+        # The fractions axis is preserved at the full requested length.
+        assert len(ret["fractions"]) == 10
+
     def test_plots(self, analyzer, tmp_path):
         analyzer.plot(filepath=Path(tmp_path), filename_prefix="")
         assert Path(tmp_path / "forward_reverse_convergence.png").is_file()
