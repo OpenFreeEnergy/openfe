@@ -2005,18 +2005,6 @@ def test_get_ion_parameters_fallback_to_forcefield(benzene_modifications):
     assert ion_charge.value_in_unit(omm_unit.elementary_charge) == pytest.approx(1.0)
 
 
-def test_get_water_parameters_bad_water(benzene_solvent_openmm_system):
-    """
-    Check that a ValueError is raised when the water residue name
-    is not found in the topology.
-    """
-    system, topology, positions, forcefield = benzene_solvent_openmm_system
-
-    errmsg = "Could not find water residue"
-    with pytest.raises(ValueError, match=errmsg):
-        topologyhelpers._get_water_parameters(topology, system, water_resname="SOL")
-
-
 def test_get_alchemical_waters_no_waters(
     benzene_solvent_openmm_system,
 ):
@@ -2048,7 +2036,6 @@ def test_handle_alchemwats_incorrect_count(
             system_mapping={},
             charge_difference=1,
             forcefield=forcefield,
-            water_resname="HOH",
         )
 
 
@@ -2073,7 +2060,6 @@ def test_handle_alchemwats_too_many_nbf(
             system_mapping={},
             charge_difference=1,
             forcefield=forcefield,
-            water_resname="HOH",
         )
 
 
@@ -2096,7 +2082,6 @@ def test_handle_alchemwats_vsite_water(
             system_mapping={},
             charge_difference=1,
             forcefield=app.ForceField(),
-            water_resname="HOH",
         )
 
 
@@ -2125,7 +2110,6 @@ def test_handle_alchemwats_incorrect_atom(
             system_mapping=benzene_self_system_mapping,
             charge_difference=1,
             forcefield=forcefield,
-            water_resname="HOH",
         )
 
 
@@ -2145,7 +2129,6 @@ def test_handle_alchemical_wats(
         system_mapping=benzene_self_system_mapping,
         charge_difference=1,
         forcefield=forcefield,
-        water_resname="HOH",
     )
 
     # check the mappings

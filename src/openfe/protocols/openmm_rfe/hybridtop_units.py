@@ -426,7 +426,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             system_mapping=system_mappings,
             charge_difference=charge_difference,
             forcefield=forcefield,
-            water_resname="HOH",  # Need to check if this is also true for systems not prepped with addSolvent
         )
 
     def _get_omm_objects(
