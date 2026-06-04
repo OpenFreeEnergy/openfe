@@ -39,4 +39,4 @@ Enforcement of this Code of Conduct will be respectful and not include any haras
 
 You deserve sincere thanks for helping to make this a welcoming, friendly community for all.
 
-This Code of Conduct was adpated from the [cmelab](https://github.com/cmelab/getting-started/blob/master/wiki/pages/Code_of_Conduct.md).
+This Code of Conduct was adapted from the [cmelab](https://github.com/cmelab/getting-started/blob/master/wiki/pages/Code_of_Conduct.md).

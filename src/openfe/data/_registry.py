@@ -17,8 +17,21 @@ zenodo_industry_benchmark_systems = dict(
     fname="industry_benchmark_systems.zip",
     known_hash="sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd",
 )
+zenodo_resume_data = dict(
+    base_url="doi:10.5281/zenodo.19694844",
+    fname="multistate_checkpoints.zip",
+    known_hash="md5:a6bdceff0c4a2f200538edb17c21d443",
+)
+zenodo_md_resume_data = dict(
+    base_url="doi:10.5281/zenodo.19694944",
+    fname="checkpoint.xml",
+    known_hash="md5:0f3957c263b5def8de727c5c419b31b5",
+)
+
 zenodo_data_registry = [
     zenodo_rfe_simulation_nc,
     zenodo_t4_lysozyme_traj,
     zenodo_industry_benchmark_systems,
+    zenodo_resume_data,
+    zenodo_md_resume_data,
 ]

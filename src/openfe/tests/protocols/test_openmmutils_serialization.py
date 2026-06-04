@@ -26,8 +26,8 @@ def test_serialize_xml(tmp_path):
         assert f.read() == "<data>"
 
 
-def test_serialize_bz2(tmpdir):
-    filename = pathlib.Path(tmpdir / "file.xml.bz2")
+def test_serialize_bz2(tmp_path):
+    filename = pathlib.Path(tmp_path / "file.xml.bz2")
     expected = "<bz2_data>"
 
     with mock.patch("openmm.XmlSerializer.serialize", return_value=expected):
@@ -38,8 +38,8 @@ def test_serialize_bz2(tmpdir):
     assert read_back == expected
 
 
-def test_deserialize_xml(tmpdir):
-    filename = pathlib.Path(tmpdir / "file.xml")
+def test_deserialize_xml(tmp_path):
+    filename = pathlib.Path(tmp_path / "file.xml")
     filename.write_text("<xml>things</xml>")
 
     with mock.patch("openmm.XmlSerializer.deserialize", return_value="DESERIALIZED") as deser:
@@ -49,8 +49,8 @@ def test_deserialize_xml(tmpdir):
     assert result == "DESERIALIZED"
 
 
-def test_deserialize_bz2(tmpdir):
-    filename = pathlib.Path(tmpdir / "file.xml.bz2")
+def test_deserialize_bz2(tmp_path):
+    filename = pathlib.Path(tmp_path / "file.xml.bz2")
     expected_serialized = "<xml>bz2</xml>"
     with bz2.open(filename, "wb") as f:
         f.write(expected_serialized.encode())

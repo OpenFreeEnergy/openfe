@@ -1,5 +1,5 @@
 # from https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manage-caches#force-deleting-cache-entries
-name: Cleanup github runner caches on closed pull requests
+name: "clean up github runner caches on closed pull requests"
 on:
   workflow_dispatch:
   pull_request:

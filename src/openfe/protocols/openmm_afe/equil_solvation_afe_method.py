@@ -14,7 +14,7 @@ alchemical sampling methods:
 Current limitations
 -------------------
 * Alchemical species with a net charge are not currently supported.
-* Disapearing molecules are only allowed in state A. Support for
+* Disappearing molecules are only allowed in state A. Support for
   appearing molecules will be added in due course.
 * Only small molecules are allowed to act as alchemical molecules.
   Alchemically changing protein or solvent components would induce
@@ -266,7 +266,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Make sure that the state A unique is an SMC
         if not isinstance(diff[0][0], SmallMoleculeComponent):
             errmsg = (
-                "Only dissapearing SmallMoleculeComponents "
+                "Only disappearing SmallMoleculeComponents "
                 "are supported by this protocol. "
                 f"Found a {type(diff[0][0])}"
             )
@@ -381,6 +381,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             warnings.warn(wmsg)
 
         # Validate the endstates & alchemical components
+        system_validation.validate_chemical_system(stateA)
+        system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
         # Validate the lambda schedule
@@ -449,7 +451,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Get the name of the alchemical species
         alchname = alchem_comps["stateA"][0].name
 
-        unit_classes = {
+        unit_classes: dict[str, dict[str, type[gufe.ProtocolUnit]]] = {
             "solvent": {
                 "setup": AHFESolventSetupUnit,
                 "simulation": AHFESolventSimUnit,
@@ -464,10 +466,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
         protocol_units: dict[str, list[gufe.ProtocolUnit]] = {"solvent": [], "vacuum": []}
 
-        for phase in ["solvent", "vacuum"]:
-            for i in range(self.settings.protocol_repeats):
-                repeat_id = int(uuid.uuid4())
-
+        for i in range(self.settings.protocol_repeats):
+            repeat_id = int(uuid.uuid4())
+            for phase in ["solvent", "vacuum"]:
                 setup = unit_classes[phase]["setup"](
                     protocol=self,
                     stateA=stateA,

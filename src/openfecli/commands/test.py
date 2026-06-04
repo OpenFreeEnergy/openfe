@@ -4,11 +4,7 @@ import sys
 import click
 import pytest
 
-from openfe.data import _downloader
-from openfe.data._registry import zenodo_data_registry as api_test_data_registry
 from openfecli import OFECommandPlugin
-from openfecli.data._registry import POOCH_CACHE
-from openfecli.data._registry import zenodo_data_registry as cli_test_data_registry
 from openfecli.utils import write
 
 
@@ -34,7 +30,13 @@ def test(long, download_only):
     """
 
     if download_only:
+        from openfe.data import _downloader
+        from openfe.data._registry import zenodo_data_registry as api_test_data_registry
+        from openfecli.data._registry import POOCH_CACHE
+        from openfecli.data._registry import zenodo_data_registry as cli_test_data_registry
+
         click.echo(f"Checking for test data in cache location:\n{POOCH_CACHE}")
+
         _downloader.retrieve_registry_data(
             cli_test_data_registry + api_test_data_registry, POOCH_CACHE
         )

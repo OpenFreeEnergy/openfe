@@ -40,9 +40,9 @@ def methane_with_charges(methane) -> Molecule:
     return methane
 
 
-def test_missing_output(methane, tmpdir):
+def test_missing_output(methane, tmp_path):
     runner = CliRunner()
-    mol_path = tmpdir / "methane.sdf"
+    mol_path = tmp_path / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
 
     cli_result = runner.invoke(charge_molecules, ["-M", mol_path])
@@ -50,9 +50,9 @@ def test_missing_output(methane, tmpdir):
     assert "Missing option '-o'" in cli_result.output
 
 
-def test_write_charges_to_input(methane, tmpdir):
+def test_write_charges_to_input(methane, tmp_path):
     runner = CliRunner()
-    mol_path = tmpdir / "methane.sdf"
+    mol_path = tmp_path / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
 
     with runner.isolated_filesystem():
@@ -63,11 +63,11 @@ def test_write_charges_to_input(methane, tmpdir):
             )
 
 
-def test_charge_molecules_default(methane, tmpdir, caplog):
+def test_charge_molecules_default(methane, tmp_path, caplog):
     runner = CliRunner()
-    mol_path = tmpdir / "methane.sdf"
+    mol_path = tmp_path / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
-    output_file = str(tmpdir / "charged_methane.sdf")
+    output_file = str(tmp_path / "charged_methane.sdf")
     caplog.set_level(logging.INFO)
     with runner.isolated_filesystem():
         # make sure the charges are picked up
@@ -91,12 +91,12 @@ def test_charge_molecules_default(methane, tmpdir, caplog):
     ],
 )
 def test_charge_molecules_overwrite(
-    overwrite, tmpdir, caplog, methane_with_charges, expected_charges
+    overwrite, tmp_path, caplog, methane_with_charges, expected_charges
 ):
     runner = CliRunner()
-    mol_path = tmpdir / "methane.sdf"
+    mol_path = tmp_path / "methane.sdf"
     methane_with_charges.to_file(str(mol_path), "sdf")
-    output_file = str(tmpdir / "charged_methane.sdf")
+    output_file = str(tmp_path / "charged_methane.sdf")
 
     args = ["-M", mol_path, "-o", output_file]
     if overwrite:
@@ -133,14 +133,14 @@ def test_charge_molecules_overwrite(
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_charge_settings(methane, tmpdir, caplog, yaml_nagl_settings, ncores):
+def test_charge_settings(methane, tmp_path, caplog, yaml_nagl_settings, ncores):
     runner = CliRunner()
-    mol_path = tmpdir / "methane.sdf"
+    mol_path = tmp_path / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
-    output_file = str(tmpdir / "charged_methane.sdf")
+    output_file = str(tmp_path / "charged_methane.sdf")
 
     # use nagl charges for CI speed!
-    settings_path = tmpdir / "settings.yaml"
+    settings_path = tmp_path / "settings.yaml"
     with open(settings_path, "w") as f:
         f.write(yaml_nagl_settings)
 

@@ -15,13 +15,27 @@ def protocol():
 
 
 @pytest.fixture
-def protocol_unit(protocol, benzene_system):
+def protocol_units(protocol, benzene_system):
     pus = protocol.create(
         stateA=benzene_system,
         stateB=benzene_system,
         mapping=None,
     )
-    return list(pus.protocol_units)[0]
+    return list(pus.protocol_units)
+
+
+@pytest.fixture
+def protocol_setup_unit(protocol, protocol_units):
+    for pu in protocol_units:
+        if isinstance(pu, openmm_md.PlainMDSetupUnit):
+            return pu
+
+
+@pytest.fixture
+def protocol_simulation_unit(protocol, protocol_units):
+    for pu in protocol_units:
+        if isinstance(pu, openmm_md.PlainMDSimulationUnit):
+            return pu
 
 
 @pytest.fixture
@@ -48,19 +62,33 @@ class TestPlainMDProtocol(GufeTokenizableTestsMixin):
         assert self.repr in repr(instance)
 
 
-class TestPlainMDProtocolUnit(GufeTokenizableTestsMixin):
-    cls = openmm_md.PlainMDProtocolUnit
-    repr = "PlainMDProtocolUnit("
+class TestPlainMDSetupUnit(GufeTokenizableTestsMixin):
+    cls = openmm_md.PlainMDSetupUnit
+    repr = "PlainMDSetupUnit("
     key = None
 
     @pytest.fixture
-    def instance(self, protocol_unit):
-        return protocol_unit
+    def instance(self, protocol_setup_unit):
+        return protocol_setup_unit
 
     def test_repr(self, instance):
         """
         Overwrites the base `test_repr` call to do a bit more.
         """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
+
+
+class TestPlainMDSimulationUnit(GufeTokenizableTestsMixin):
+    cls = openmm_md.PlainMDSimulationUnit
+    repr = "PlainMDSimulationUnit("
+    key = None
+
+    @pytest.fixture()
+    def instance(self, protocol_simulation_unit):
+        return protocol_simulation_unit
+
+    def test_repr(self, instance):
         assert isinstance(repr(instance), str)
         assert self.repr in repr(instance)
 

@@ -19,14 +19,14 @@ zenodo_rbfe_parallel_data = dict(
     known_hash="md5:ff7313e14eb6f2940c6ffd50f2192181",
 )
 zenodo_abfe_data = dict(
-    base_url="doi:10.5281/zenodo.17348229/",
+    base_url="doi:10.5281/zenodo.19498687/",
     fname="abfe_results.zip",
-    known_hash="md5:547f896e867cce61979d75b7e082f6ba",
+    known_hash="md5:44db4ce8195f4fe99989f8f57e0d7081",
 )
 zenodo_septop_data = dict(
-    base_url="doi:10.5281/zenodo.17435569/",
+    base_url="doi:10.5281/zenodo.19805681/",
     fname="septop_results.zip",
-    known_hash="md5:2cfa18da59a20228f5c75a1de6ec879e",
+    known_hash="md5:5de5cac5acdf195a13b0f1ce016a8660",
 )
 
 zenodo_data_registry = [

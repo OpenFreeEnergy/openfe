@@ -20,17 +20,11 @@ import openfe
 from openfe.data._registry import (
     POOCH_CACHE,
     zenodo_industry_benchmark_systems,
+    zenodo_md_resume_data,
+    zenodo_resume_data,
     zenodo_rfe_simulation_nc,
     zenodo_t4_lysozyme_traj,
 )
-
-
-@pytest.fixture
-def available_platforms() -> set[str]:
-    return {
-        Platform.getPlatform(i).getName()
-        for i in range(Platform.getNumPlatforms())
-    }  # fmt: skip
 
 
 @pytest.fixture
@@ -334,7 +328,107 @@ def simulation_nc():
     )
 
 
-@pytest.fixture
+pooch_resume_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_resume_data["base_url"],
+    registry={zenodo_resume_data["fname"]: zenodo_resume_data["known_hash"]},
+)
+
+
+@pytest.fixture(scope="session")
+def htop_trajectory_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "hybrid_top"
+    filename = "simulation.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="session")
+def htop_checkpoint_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "hybrid_top"
+    filename = "checkpoint.chk"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def ahfe_vac_trajectory_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "ahfes"
+    filename = "vacuum.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def vac_checkpoint_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "ahfes"
+    filename = "vacuum_checkpoint.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def ahfe_solv_trajectory_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "ahfes"
+    filename = "solvent.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def ahfe_solv_checkpoint_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "ahfes"
+    filename = "solvent_checkpoint.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def septop_solv_trajectory_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "septop"
+    filename = "solvent.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+@pytest.fixture(scope="module")
+def septop_solv_checkpoint_path():
+    pooch_resume_data.fetch("multistate_checkpoints.zip", processor=pooch.Unzip())
+    topdir = "multistate_checkpoints.zip.unzip/multistate_checkpoints"
+    subdir = "septop"
+    filename = "solvent_checkpoint.nc"
+    return pathlib.Path(pooch.os_cache("openfe") / f"{topdir}/{subdir}/{filename}")
+
+
+pooch_md_resume_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_md_resume_data["base_url"],
+    registry={zenodo_md_resume_data["fname"]: zenodo_md_resume_data["known_hash"]},
+)
+
+
+@pytest.fixture(scope="module")
+def plain_md_checkpoint_path():
+    pooch_md_resume_data.fetch("checkpoint.xml")
+    return pathlib.Path(pooch.os_cache("openfe") / "checkpoint.xml")
+
+
+@pytest.fixture(scope="session")
+def available_platforms() -> set[str]:
+    return {
+        Platform.getPlatform(i).getName()
+        for i in range(Platform.getNumPlatforms())
+    }  # fmt: skip
+
+
+@pytest.fixture(scope="session")
 def get_available_openmm_platforms() -> set[str]:
     """
     OpenMM Platforms that are available and functional on system

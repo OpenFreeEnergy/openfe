@@ -7,8 +7,10 @@ import sys
 from unittest import mock
 
 import gufe
+import numpy as np
+import openmm
 import pytest
-from gufe import ChemicalSystem, SmallMoleculeComponent
+from gufe import ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent
 from numpy.testing import assert_allclose
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
@@ -22,8 +24,10 @@ from openfe.protocols import openmm_md
 from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol,
     PlainMDProtocolResult,
-    PlainMDProtocolUnit,
+    PlainMDSetupUnit,
+    PlainMDSimulationUnit,
 )
+from openfe.protocols.openmm_utils import serialization
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
@@ -38,6 +42,25 @@ def vac_settings():
     settings.forcefield_settings.nonbonded_method = "nocutoff"
     settings.engine_settings.compute_platform = None
     return settings
+
+
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        # inputs are current step count, nvt steps, npt steps and prod steps
+        # outputs are steps to run for nvt, npt, prod and if the production phase has started
+        pytest.param([50, 100, 100, 100], [50, 100, 100, False], id="nvt resuming"),
+        pytest.param([101, 100, 100, 100], [0, 99, 100, False], id="npt resuming"),
+        pytest.param([220, 100, 100, 100], [0, 0, 80, True], id="prod resuming"),
+        pytest.param([200, 100, 100, 100], [0, 0, 100, False], id="prod resuming not started"),
+    ],
+)
+def test_get_remaining_steps(inputs, expected):
+    nvt, npt, prod, is_prod = PlainMDSimulationUnit._get_remaining_steps(*inputs)
+    assert nvt == expected[0]
+    assert npt == expected[1]
+    assert prod == expected[2]
+    assert is_prod == expected[3]
 
 
 def test_create_default_settings():
@@ -92,7 +115,7 @@ def test_create_independent_repeat_ids(benzene_system):
     )
 
     repeat_ids = set()
-    u: PlainMDProtocolUnit
+    u: PlainMDSetupUnit | PlainMDSimulationUnit
     for u in dag1.protocol_units:
         repeat_ids.add(u.inputs["repeat_id"])
     for u in dag2.protocol_units:
@@ -101,34 +124,35 @@ def test_create_independent_repeat_ids(benzene_system):
     assert len(repeat_ids) == 6
 
 
-def test_dry_run_default_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
+def test_dry_run_default_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
     protocol = PlainMDProtocol(settings=vac_settings)
 
-    # create DAG from protocol and take first (and only) work unit from within
+    # create DAG from protocol and take the setup unit
     dag = protocol.create(
         stateA=benzene_vacuum_system,
         stateB=benzene_vacuum_system,
         mapping=None,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    setup_unit = list(dag.protocol_units)[0]
+    result = setup_unit.run(
+        dry=True, verbose=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+    system = result["debug"]["system"]
+    assert not ThermodynamicState(
+        system,
+        temperature=to_openmm(protocol.settings.thermo_settings.temperature),
+    ).is_periodic
 
-    with tmpdir.as_cwd():
-        sim = dag_unit.run(dry=True, verbose=True)["debug"]["system"]
-        assert not ThermodynamicState(
-            sim,
+    assert (
+        ThermodynamicState(
+            system,
             temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-        ).is_periodic
-
-        assert (
-            ThermodynamicState(
-                sim,
-                temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-            ).barostat
-            is None
-        )
+        ).barostat
+        is None
+    )
 
 
-def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmpdir, caplog):
+def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, caplog):
     vac_settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
     vac_settings.simulation_settings.equilibration_length = 1 * unit.picosecond
     vac_settings.simulation_settings.production_length = 1 * unit.picosecond
@@ -137,26 +161,49 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmpdir, capl
         settings=vac_settings,
     )
 
-    # create DAG from protocol and take first (and only) work unit from within
+    # create DAG from protocol
     dag = protocol.create(
         stateA=benzene_vacuum_system,
         stateB=benzene_vacuum_system,
         mapping=None,
     )
-    dag_unit = list(dag.protocol_units)[0]
+    setup_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        caplog.set_level(logging.INFO)
-        dag_unit.run(dry=False, verbose=True)
+    caplog.set_level(logging.INFO)
+    setup_results = setup_unit.run(
+        dry=False, verbose=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
 
-        messages = [r.message for r in caplog.records]
-        assert "minimizing systems" in messages
-        assert "Running NVT equilibration" in messages
-        assert "Running NPT equilibration" in messages
-        assert "running production phase" in messages
+    messages = [r.message for r in caplog.records]
+    assert "Creating system" in messages
+    # now run the production unit after extracting outputs from the setup unit
+    system = serialization.deserialize(setup_results["system"])
+    positions = np.load(setup_results["positions"]) * omm_unit.nanometers
+    topology = openmm.app.PDBFile(str(setup_results["system_pdb"])).getTopology()
+    equil_steps_nvt = setup_results["equil_steps_nvt"]
+    equil_steps_npt = setup_results["equil_steps_npt"]
+    prod_steps = setup_results["prod_steps"]
+    prod_unit = list(dag.protocol_units)[1]
+    prod_unit.run(
+        system=system,
+        positions=positions,
+        topology=topology,
+        equil_steps_nvt=equil_steps_nvt,
+        equil_steps_npt=equil_steps_npt,
+        prod_steps=prod_steps,
+        dry=False,
+        verbose=True,
+        scratch_basepath=tmp_path,
+        shared_basepath=tmp_path,
+    )
+    messages = [r.message for r in caplog.records]
+    assert "Minimizing systems" in messages
+    assert "Running NVT equilibration for 250 steps" in messages
+    assert "Running NPT equilibration for 250 steps" in messages
+    assert "Running production phase for 250 steps" in messages
 
 
-def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
+def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
     vac_settings.output_settings.forcefield_cache = None
 
     protocol = PlainMDProtocol(
@@ -171,12 +218,10 @@ def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmpdir
         mapping=None,
     )
     dag_unit = list(dag.protocol_units)[0]
-
-    with tmpdir.as_cwd():
-        dag_unit.run(dry=True)["debug"]["system"]
+    dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
 
 
-def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
+def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
     vac_settings.forcefield_settings.small_molecule_forcefield = "gaff-2.11"
 
     protocol = PlainMDProtocol(
@@ -190,12 +235,12 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
         mapping=None,
     )
     dag_unit = list(dag.protocol_units)[0]
-    with tmpdir.as_cwd():
-        system = dag_unit.run(dry=True)["debug"]["system"]
+    dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
 
 
+@pytest.mark.xfail(reason="Issue #1940")
 @pytest.mark.skipif(not HAS_ESPALOMA, reason="espaloma is not available")
-def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_settings, tmpdir):
+def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_settings, tmp_path):
     vac_settings.forcefield_settings.small_molecule_forcefield = "espaloma-0.3.2"
 
     protocol = PlainMDProtocol(
@@ -216,16 +261,16 @@ def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_setting
         mapping=None,
     )
     dag_unit = list(dag.protocol_units)[0]
-    with tmpdir.as_cwd():
-        system = dag_unit.run(dry=True)["debug"]["system"]
-        assert system.getNumParticles() == 12
-        # check the charges assigned
-        nb_force = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
-        charges = []
-        for i in range(nb_force.getNumParticles()):
-            c, _, _ = nb_force.getParticleParameters(i)
-            charges.append(c.value_in_unit(omm_unit.elementary_charge))
-        assert_allclose(charges, expected_charges, rtol=1e-6)
+    result = dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = result["debug"]["system"]
+    assert system.getNumParticles() == 12
+    # check the charges assigned
+    nb_force = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
+    charges = []
+    for i in range(nb_force.getNumParticles()):
+        c, _, _ = nb_force.getParticleParameters(i)
+        charges.append(c.value_in_unit(omm_unit.elementary_charge))
+    assert_allclose(charges, expected_charges, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -256,7 +301,7 @@ def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_setting
     ],
 )
 def test_dry_run_charge_backends(
-    CN_molecule, tmpdir, method, backend, ref_key, vac_settings, am1bcc_ref_charges
+    CN_molecule, tmp_path, method, backend, ref_key, vac_settings, am1bcc_ref_charges
 ):
     vac_settings.partial_charge_settings.partial_charge_method = method
     vac_settings.partial_charge_settings.off_toolkit_backend = backend
@@ -269,22 +314,22 @@ def test_dry_run_charge_backends(
     dag = protocol.create(stateA=csystem, stateB=csystem, mapping=None)
     md_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        system = md_unit.run(dry=True)["debug"]["system"]
+    result = md_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = result["debug"]["system"]
 
-        nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
+    nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
 
-        charges = []
-        for i in range(system.getNumParticles()):
-            c, s, e = nonbond.getParticleParameters(i)
-            charges.append(from_openmm(c))
+    charges = []
+    for i in range(system.getNumParticles()):
+        c, s, e = nonbond.getParticleParameters(i)
+        charges.append(from_openmm(c))
 
     charges = unit.Quantity.from_list(charges)
 
     assert_allclose(am1bcc_ref_charges[ref_key], charges, rtol=1e-4)
 
 
-def test_dry_many_molecules_solvent(benzene_many_solv_system, tmpdir):
+def test_dry_many_molecules_solvent(benzene_many_solv_system, tmp_path):
     """
     A basic test flushing "will it work if you pass multiple molecules"
     """
@@ -301,8 +346,7 @@ def test_dry_many_molecules_solvent(benzene_many_solv_system, tmpdir):
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        system = dag_unit.run(dry=True)["debug"]["system"]
+    dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
 
 
 BENZ = """\
@@ -371,7 +415,7 @@ $$$$
 """
 
 
-def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
+def test_dry_run_ligand_tip4p(benzene_system, tmp_path):
     """
     Test that we can create a system with virtual sites in the
     environment (waters)
@@ -380,7 +424,7 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
     settings.engine_settings.compute_platform = None
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
-        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     # we need a larger padding distance when using the dodecahedron box
@@ -397,13 +441,13 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        system = dag_unit.run(dry=True)["debug"]["system"]
-        assert system
+    result = dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = result["debug"]["system"]
+    assert system
 
 
 @pytest.mark.slow
-def test_dry_run_complex(benzene_complex_system, tmpdir):
+def test_dry_run_complex(benzene_complex_system, tmp_path):
     # this will be very time consuming
     settings = PlainMDProtocol.default_settings()
     settings.engine_settings.compute_platform = None
@@ -416,46 +460,42 @@ def test_dry_run_complex(benzene_complex_system, tmpdir):
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        sim = dag_unit.run(dry=True)["debug"]["system"]
-        assert ThermodynamicState(
+    result = dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    sim = result["debug"]["system"]
+    assert ThermodynamicState(
+        sim,
+        temperature=to_openmm(protocol.settings.thermo_settings.temperature),
+    ).is_periodic
+    assert isinstance(
+        ThermodynamicState(
             sim,
             temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-        ).is_periodic
-        assert isinstance(
-            ThermodynamicState(
-                sim,
-                temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-            ).barostat,
-            MonteCarloBarostat,
-        )
-        assert (
-            ThermodynamicState(
-                sim,
-                temperature=to_openmm(protocol.settings.thermo_settings.temperature),
-            ).pressure
-            == 1 * omm_unit.bar
-        )
+        ).barostat,
+        MonteCarloBarostat,
+    )
+    assert (
+        ThermodynamicState(
+            sim,
+            temperature=to_openmm(protocol.settings.thermo_settings.temperature),
+        ).pressure
+        == 1 * omm_unit.bar
+    )
 
 
-def test_hightimestep(benzene_vacuum_system, tmpdir):
+def test_hightimestep(benzene_vacuum_system, tmp_path):
     settings = PlainMDProtocol.default_settings()
     settings.forcefield_settings.hydrogen_mass = 1.0
     settings.forcefield_settings.nonbonded_method = "nocutoff"
 
     p = PlainMDProtocol(settings=settings)
-
-    dag = p.create(
-        stateA=benzene_vacuum_system,
-        stateB=benzene_vacuum_system,
-        mapping=None,
-    )
-    dag_unit = list(dag.protocol_units)[0]
-
     errmsg = "too large for hydrogen mass"
-    with tmpdir.as_cwd():
-        with pytest.raises(ValueError, match=errmsg):
-            dag_unit.run(dry=True)
+    # make sure this is triggered in validate
+    with pytest.raises(ValueError, match=errmsg):
+        _ = p.create(
+            stateA=benzene_vacuum_system,
+            stateB=benzene_vacuum_system,
+            mapping=None,
+        )
 
 
 def test_vaccuum_PME_error(benzene_vacuum_system):
@@ -463,11 +503,60 @@ def test_vaccuum_PME_error(benzene_vacuum_system):
         settings=PlainMDProtocol.default_settings(),
     )
     errmsg = "PME cannot be used for vacuum transform"
+    # make sure this is triggered in validate
     with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_vacuum_system,
             stateB=benzene_vacuum_system,
             mapping=None,
+        )
+
+
+def test_multiple_basesolvents_error(a2a_protein_membrane_component):
+    p = PlainMDProtocol(
+        settings=PlainMDProtocol.default_settings(),
+    )
+    system = ChemicalSystem(
+        {
+            "protein-membrane": a2a_protein_membrane_component,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+    errmsg = "Multiple BaseSolventComponents found, only one is supported."
+    with pytest.raises(ValueError, match=errmsg):
+        _ = p.create(
+            stateA=system,
+            stateB=system,
+            mapping=None,
+        )
+
+
+def test_states_not_matching_error(benzene_vacuum_system, toluene_vacuum_system):
+    p = PlainMDProtocol(settings=PlainMDProtocol.default_settings())
+    errmsg = "The two end states do not match."
+    with pytest.raises(ValueError, match=errmsg):
+        _ = p.create(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=None,
+        )
+
+
+def test_mapping_warning(benzene_vacuum_system, tmp_path):
+    settings = PlainMDProtocol.default_settings()
+    settings.forcefield_settings.nonbonded_method = "nocutoff"
+    p = PlainMDProtocol(settings=settings)
+    warnmsg = "A mapping was passed but is not used by this Protocol."
+    benzene = benzene_vacuum_system.components["ligand"]
+    with pytest.warns(match=warnmsg):
+        _ = p.create(
+            stateA=benzene_vacuum_system,
+            stateB=benzene_vacuum_system,
+            mapping=LigandAtomMapping(
+                componentA=benzene,
+                componentB=benzene,
+                componentA_to_componentB=dict((i, i) for i in range(12)),
+            ),
         )
 
 
@@ -484,11 +573,20 @@ def solvent_protocol_dag(benzene_system):
     )
 
 
-def test_unit_tagging(solvent_protocol_dag, tmpdir):
+def test_unit_tagging(benzene_system, tmp_path):
     # test that executing the Units includes correct generation and repeat info
-    dag_units = solvent_protocol_dag.protocol_units
+    settings = PlainMDProtocol.default_settings()
+    settings.protocol_repeats = 3
+    protocol = PlainMDProtocol(settings=settings)
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=benzene_system,
+        mapping=None,
+    )
+    dag_units = dag.protocol_units
+
     with mock.patch(
-        "openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run",
+        "openfe.protocols.openmm_md.plain_md_methods.PlainMDSimulationUnit.run",
         return_value={
             "nc": "simulation.xtc",
             "last_checkpoint": "checkpoint.chk",
@@ -496,8 +594,10 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
     ):
         results = []
         for u in dag_units:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
-            results.append(ret)
+            # just execute the setup unit so we don't have to pass the results though to the simulation unit
+            if isinstance(u, PlainMDSetupUnit):
+                ret = u.execute(context=gufe.Context(tmp_path, tmp_path))
+                results.append(ret)
 
     repeats = set()
     for ret in results:
@@ -508,10 +608,10 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
     assert len(repeats) == 3
 
 
-def test_gather(solvent_protocol_dag, tmpdir):
+def test_gather(solvent_protocol_dag, tmp_path):
     # check .gather behaves as expected
     with mock.patch(
-        "openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run",
+        "openfe.protocols.openmm_md.plain_md_methods.PlainMDSimulationUnit.run",
         return_value={
             "nc": "simulation.xtc",
             "last_checkpoint": "checkpoint.chk",
@@ -519,8 +619,8 @@ def test_gather(solvent_protocol_dag, tmpdir):
     ):
         dagres = gufe.protocols.execute_DAG(
             solvent_protocol_dag,
-            shared_basedir=tmpdir,
-            scratch_basedir=tmpdir,
+            shared_basedir=tmp_path,
+            scratch_basedir=tmp_path,
             keep_shared=True,
         )
 
