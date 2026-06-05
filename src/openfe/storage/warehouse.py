@@ -1,17 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/gufe
-import abc
 import json
 import re
-from typing import Literal, TypedDict
+from typing import Literal, Required, TypedDict
 
 from gufe.storage.externalresource import ExternalStorage, FileStorage
 from gufe.tokenization import (
     JSON_HANDLER,
     GufeKey,
     GufeTokenizable,
-    from_dict,
-    get_all_gufe_objs,
     key_decode_dependencies,
 )
 
@@ -23,18 +20,27 @@ class WarehouseStores(TypedDict):
 
     Parameters
     ----------
-    setup : ExternalStorage
+    setup : RequiredExternalStorage
         Storage location for setup-related objects and configurations.
     result : ExternalStorage
         Storage location for result-related object.
 
-    Notes
+    Example
+    -------
+
+    >>> from gufe.storage.externalresource import FileStorage, MemoryStorage
+    >>> setup_store = MemoryStorage()
+    >>> result_store = FileStorage(f"warehouse/results/")
+    >>> stores = WarehouseStores(setup=setup_store, result=result_store)
+
+    Note
     -----
     Additional stores for results and tasks may be added in future versions.
+
     """
 
-    setup: ExternalStorage
-    result: ExternalStorage
+    setup: Required[ExternalStorage]
+    result: Required[ExternalStorage]
 
 
 class WarehouseBaseClass:
@@ -53,6 +59,10 @@ class WarehouseBaseClass:
     ----------
     stores : WarehouseStores
         The storage locations managed by this warehouse instance.
+
+    See Also
+    --------
+    FileSystemWarehouse : An example implementation using filesystems for all storage locations.
     """
 
     def __init__(self, stores: WarehouseStores):
@@ -70,7 +80,7 @@ class WarehouseBaseClass:
 
         Parameters
         ----------
-        store_name : Literal["setup"]
+        store_name : Literal["setup", "result"]
             Name of the store to delete from.
         location : str
             Location/path of the object to delete.
@@ -176,7 +186,7 @@ class WarehouseBaseClass:
 
             Parameters
             ----------
-            store_name : Literal["setup"]
+            store_name : Literal["setup", "result"]
                 Name of the store to store the object in.
             obj : GufeTokenizable
                 The object to store.
@@ -217,7 +227,7 @@ class WarehouseBaseClass:
         Uses depth-first search to rebuild object hierarchy and ensure
         proper deduplication in memory.
         """
-        registry = {}
+        registry: dict[GufeKey, GufeTokenizable] = {}
 
         def recursive_build_object_cache(key: GufeKey) -> GufeTokenizable:
             """DFS to rebuild object hierarchy.
