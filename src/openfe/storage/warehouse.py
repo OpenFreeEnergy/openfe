@@ -27,14 +27,16 @@ class WarehouseStores(TypedDict):
 
     Example
     -------
-    >>> from gufe.storage.externalresource import MemoryStorage
+
+    >>> from gufe.storage.externalresource import FileStorage, MemoryStorage
     >>> setup_store = MemoryStorage()
-    >>> result_store = MemoryStorage()
+    >>> result_store = FileStorage(f"warehouse/results/")
     >>> stores = WarehouseStores(setup=setup_store, result=result_store)
 
     Note
     -----
     Additional stores for results and tasks may be added in future versions.
+
     """
 
     setup: Required[ExternalStorage]
@@ -57,6 +59,10 @@ class WarehouseBaseClass:
     ----------
     stores : WarehouseStores
         The storage locations managed by this warehouse instance.
+
+    See Also
+    --------
+    FileSystemWarehouse : An example implementation using filesystems for all storage locations.
     """
 
     def __init__(self, stores: WarehouseStores):
