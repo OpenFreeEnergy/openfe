@@ -340,7 +340,7 @@ class MultistateEquilFEAnalysis:
                 "appending NaN."
             )
             warnings.warn(wmsg)
-            DG = dDG = np.nan * self.units # type: ignore
+            DG = dDG = np.nan * self.units  # type: ignore
 
         return DG, dDG
 
