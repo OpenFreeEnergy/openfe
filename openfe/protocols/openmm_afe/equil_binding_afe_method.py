@@ -1057,6 +1057,9 @@ class AbsoluteBindingUnitMixin:
         if abs(total_charge) > 1:
             errmsg = "Cannot handle net charge correction on charges greater than one"
             raise ValueError(errmsg)
+        
+         # Declare resname to only select counterions (exclude ligand)
+        ion_resnames = [e.upper() for e in IONS[total_charge]]  
 
         univ = _get_mda_universe(
             omm_topology,
@@ -1067,7 +1070,7 @@ class AbsoluteBindingUnitMixin:
         counter_ions_idxs = [
             at.ix
             for at in univ.atoms
-            if at.element in IONS[total_charge]
+            if at.resname in ion_resnames
         ]
         counter_ions = univ.atoms[counter_ions_idxs]
 
