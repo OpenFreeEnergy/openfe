@@ -31,7 +31,7 @@ class TestWarehouseBaseClass:
     @staticmethod
     def _test_store_load_same_process(
         obj, store_func_name, load_func_name, store_name: Literal["setup", "result"]
-    ):
+    ) -> tuple[GufeTokenizable, WarehouseBaseClass]:
         setup_store = MemoryStorage()
         result_store = MemoryStorage()
         stores = WarehouseStores(setup=setup_store, result=result_store)
@@ -53,7 +53,7 @@ class TestWarehouseBaseClass:
         store_func_name,
         load_func_name,
         store_name: Literal["setup", "result"],
-    ):
+    ) -> None:
         setup_store = MemoryStorage()
         result_store = MemoryStorage()
         stores = WarehouseStores(setup=setup_store, result=result_store)

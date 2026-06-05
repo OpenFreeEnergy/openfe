@@ -88,7 +88,7 @@ class WarehouseBaseClass:
         Raises
         -------
         MissingExternalResourceError
-            Thrown if the object you are trying to delete, can't delete from the store
+            If the object cannot be deleted from the store.
         """
         store: ExternalStorage = self.stores[store_name]
         store.delete(location)
