@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/gufe
 import json
 import re
-from typing import Literal, TypedDict
+from typing import Literal, Required, TypedDict
 
 from gufe.storage.externalresource import ExternalStorage, FileStorage
 from gufe.tokenization import (
@@ -20,18 +20,25 @@ class WarehouseStores(TypedDict):
 
     Parameters
     ----------
-    setup : ExternalStorage
+    setup : RequiredExternalStorage
         Storage location for setup-related objects and configurations.
     result : ExternalStorage
         Storage location for result-related object.
 
-    Notes
+    Example
+    -------
+    >>> from gufe.storage.externalresource import MemoryStorage
+    >>> setup_store = MemoryStorage()
+    >>> result_store = MemoryStorage()
+    >>> stores = WarehouseStores(setup=setup_store, result=result_store)
+
+    Note
     -----
     Additional stores for results and tasks may be added in future versions.
     """
 
-    setup: ExternalStorage
-    result: ExternalStorage
+    setup: Required[ExternalStorage]
+    result: Required[ExternalStorage]
 
 
 class WarehouseBaseClass:
