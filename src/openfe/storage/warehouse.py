@@ -217,7 +217,7 @@ class WarehouseBaseClass:
         Uses depth-first search to rebuild object hierarchy and ensure
         proper deduplication in memory.
         """
-        registry = {}
+        registry: dict[GufeKey, GufeTokenizable] = {}
 
         def recursive_build_object_cache(key: GufeKey) -> GufeTokenizable:
             """DFS to rebuild object hierarchy.
