@@ -70,7 +70,7 @@ class WarehouseBaseClass:
 
         Parameters
         ----------
-        store_name : Literal["setup"]
+        store_name : Literal["setup", "result"]
             Name of the store to delete from.
         location : str
             Location/path of the object to delete.
@@ -176,7 +176,7 @@ class WarehouseBaseClass:
 
             Parameters
             ----------
-            store_name : Literal["setup"]
+            store_name : Literal["setup", "result"]
                 Name of the store to store the object in.
             obj : GufeTokenizable
                 The object to store.
