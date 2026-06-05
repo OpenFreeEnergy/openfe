@@ -12,10 +12,11 @@ Executing Simulations
     :noindex:
 
 .. autosummary::
-    :nosignatures:
     :toctree: generated/
+    :recursive:
 
     execute_DAG
+    storage
 
 General classes
 ---------------
@@ -32,10 +33,10 @@ General classes
     ProtocolUnitFailure
     ProtocolDAGResult
 
-Specialised classes
+Specialized classes
 -------------------
 
-These classes are abstract classes that are specialised (subclassed) for an individual Protocol.
+These classes are abstract classes that are specialized (subclassed) for an individual Protocol.
 
 .. module:: openfe
     :noindex:
