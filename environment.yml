@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
 #  - cinnabar ~=0.5.0
+  - adjusttext  # temporary fix until the new cinnabar c-f release is available
   - click >=8.2.0
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
