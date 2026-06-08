@@ -586,9 +586,13 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
         missing_data = []
         for ligand in missing_ligands:
             # add the data to the dataframe
-            missing_data.append({
-                "ligand": ligand, "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR
-            })
+            missing_data.append(
+                {
+                    "ligand": ligand,
+                    "DG(MLE) (kcal/mol)": FAIL_STR,
+                    "uncertainty (kcal/mol)": FAIL_STR,
+                }
+            )
 
         df = pd.concat([df, pd.DataFrame(missing_data)])
 
