@@ -16,13 +16,20 @@ Protocol API specification
    :toctree: generated/
 
    SepTopProtocol
+   SepTopProtocolResult
+
+.. module:: openfe.protocols.openmm_septop.septop_units
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
    SepTopComplexSetupUnit
    SepTopComplexRunUnit
    SepTopComplexAnalysisUnit
    SepTopSolventSetupUnit
    SepTopSolventRunUnit
    SepTopSolventAnalysisUnit
-   SepTopProtocolResult
 
 Protocol Settings
 -----------------
