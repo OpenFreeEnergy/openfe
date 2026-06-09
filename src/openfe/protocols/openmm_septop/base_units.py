@@ -1597,9 +1597,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
 
             if time_ps is None:
-                time_ps = (
-                    np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
-                )
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
         return per_state_data, time_ps
 
     @staticmethod
@@ -1662,9 +1660,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
 
                 if time_ps is None:
-                    time_ps = (
-                        np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
-                    )
+                    time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
         return per_state_data, time_ps
 
@@ -1766,10 +1762,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                         rdmol_A=rdmol_A,
                         rdmol_B=rdmol_B,
                     )
-            npz_data = {
-                k: np.asarray(v, dtype=np.float32)
-                for k, v in data.items()
-            }
+            npz_data = {k: np.asarray(v, dtype=np.float32) for k, v in data.items()}
             npz_data["time_ps"] = np.asarray(time_ps, dtype=np.float32)
 
         except Exception as e:
