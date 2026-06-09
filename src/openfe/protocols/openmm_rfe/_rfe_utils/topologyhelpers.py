@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def _get_ff_parameters(
     forcefield: app.ForceField,
     smiles: str,
-) -> dict[str, tuple]:
+) -> dict[str, tuple[float, float, float]]:
     """
     Get NonbondedForce parameters for all atoms in a molecule by creating
     a minimal dummy system from a SMILES string with the given forcefield.
