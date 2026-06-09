@@ -1560,7 +1560,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           and a single time_ps array.
         """
         n_lambda = ds.dimensions["state"].size
-        data: dict[str, list[np.ndarray] | float | None] = {
+        data: dict[str, list[np.ndarray] | np.ndarray | None] = {
             "ligand_A_RMSD": [],
             "ligand_B_RMSD": [],
             "ligand_A_COM_drift": [],
@@ -1638,7 +1638,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           time_ps array.
         """
         n_lambda = ds.dimensions["state"].size
-        data: dict[str, list[np.ndarray] | float | None] = {
+        data: dict[str, list[np.ndarray] | np.ndarray | None] = {
             "ligand_A_RMSD": [],
             "ligand_B_RMSD": [],
             "time_ps": None,
@@ -1949,8 +1949,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             pdb_file=setup.outputs["subsampled_pdb_structure"],
             ligand_A_indices=ligand_A_indices,
             ligand_B_indices=ligand_B_indices,
-            rdmol_A=smc_A,
-            rdmol_B=smc_B,
+            smc_A=smc_A,
+            smc_B=smc_B,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
