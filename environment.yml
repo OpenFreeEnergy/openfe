@@ -12,6 +12,7 @@ dependencies:
   - lomap2>=3.2.1
   - networkx
   - numpy
+  - openfe-analysis>=0.5.0
   - openff-interchange-base >=0.5.0,!= 0.5.1  # https://github.com/openforcefield/openff-interchange/issues/1450 and https://github.com/OpenFreeEnergy/openfe/pull/1901
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
@@ -53,7 +54,6 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/OpenFreeEnergy/openfe_analysis@main
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
