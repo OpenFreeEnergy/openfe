@@ -440,7 +440,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         wmsg = (
             f"A charge difference of {difference} is observed "
             "between the end states. This will be addressed by "
-            "transforming a water into an ion of opposite charge."
+            "transforming a water into an ion of the same charge."
         )
         logger.info(wmsg)
 
