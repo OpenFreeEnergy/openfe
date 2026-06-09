@@ -1523,13 +1523,13 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     def _run_complex_analysis(
         ds,
         pdb_file: pathlib.Path,
-        skip: int | None,
+        skip: int,
         ligand_A_indices: list[int],
         ligand_B_indices: list[int],
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
         protein_selection: str,
-    ) -> dict[str, Any]:
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
         """
         Run structural analysis for the complex phase.
 
@@ -1539,7 +1539,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Open NetCDF dataset for the multistate trajectory.
         pdb_file : pathlib.Path
           Path to the subsampled PDB file.
-        skip : int | None
+        skip : int
           Frame stride for analysis.
         ligand_A_indices : list[int]
           Atom indices of ligand A in the subsampled system.
@@ -1555,19 +1555,21 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         Returns
         -------
-        dict[str, Any]
-          Per-state lists for ligand RMSD, COM drift, protein 2D RMSD,
-          and a single time_ps array.
+        per_state_data : dict[str, list[np.ndarray]]
+          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``,
+          ``ligand_A_COM_drift``, ``ligand_B_COM_drift``, and ``protein_2D_RMSD``.`.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
         """
         n_lambda = ds.dimensions["state"].size
-        data: dict[str, list[np.ndarray] | np.ndarray | None] = {
+        per_state_data: dict[str, list[np.ndarray]] = {
             "ligand_A_RMSD": [],
             "ligand_B_RMSD": [],
             "ligand_A_COM_drift": [],
             "ligand_B_COM_drift": [],
             "protein_2D_RMSD": [],
-            "time_ps": None,
         }
+        time_ps: np.ndarray | None = None
         # Read the PDB topology once and reuse across all lambda states.
         # Passing u_top._topology to create_universe_single_state avoids
         # reading the PDB file from disk for every lambda.
@@ -1582,35 +1584,34 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
             if prot:
                 prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
-                data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+                per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
 
             for label, lig, rdmol in [
                 ("ligand_A", lig_A, rdmol_A),
                 ("ligand_B", lig_B, rdmol_B),
             ]:
                 lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
-                data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+                per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
 
                 lig_drift = LigandCOMDrift(lig).run(step=skip)
-                data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
+                per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
 
-            if data["time_ps"] is None:
-                data["time_ps"] = (
+            if time_ps is None:
+                time_ps = (
                     np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
                 )
-
-        return data
+        return per_state_data, time_ps
 
     @staticmethod
     def _run_solvent_analysis(
         ds,
         pdb_file: pathlib.Path,
-        skip: int | None,
+        skip: int,
         ligand_A_indices: list[int],
         ligand_B_indices: list[int],
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
-    ) -> dict[str, Any]:
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
         """
         Run structural analysis for the solvent phase.
 
@@ -1620,7 +1621,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Open NetCDF dataset for the multistate trajectory.
         pdb_file : pathlib.Path
           Path to the subsampled PDB file.
-        skip : int | None
+        skip : int
           Frame stride for analysis.
         ligand_A_indices : list[int]
           Atom indices of ligand A in the subsampled system.
@@ -1633,16 +1634,17 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         Returns
         -------
-        dict[str, Any]
-          Per-state lists for ligand RMSD and a single
-          time_ps array.
+        per_state_data : dict[str, list[np.ndarray]]
+          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
         """
         n_lambda = ds.dimensions["state"].size
-        data: dict[str, list[np.ndarray] | np.ndarray | None] = {
+        per_state_data: dict[str, list[np.ndarray]] = {
             "ligand_A_RMSD": [],
             "ligand_B_RMSD": [],
-            "time_ps": None,
         }
+        time_ps: np.ndarray | None = None
         # Read the PDB topology once and reuse across all lambda states.
         # Passing u_top._topology to create_universe_single_state avoids
         # reading the PDB file from disk for every lambda.
@@ -1657,14 +1659,14 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 apply_ligand_alignment_transformations(universe, ligand=lig)
 
                 lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
-                data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+                per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
 
-                if data["time_ps"] is None:
-                    data["time_ps"] = (
+                if time_ps is None:
+                    time_ps = (
                         np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
                     )
 
-        return data
+        return per_state_data, time_ps
 
     @staticmethod
     def _structural_analysis(
@@ -1743,7 +1745,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                     skip = max(n_frames // 500, 1)
 
                 if simtype == "complex":
-                    data = BaseSepTopAnalysisUnit._run_complex_analysis(
+                    data, time_ps = BaseSepTopAnalysisUnit._run_complex_analysis(
                         ds=ds,
                         pdb_file=pdb_file,
                         skip=skip,
@@ -1753,20 +1755,9 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                         rdmol_B=rdmol_B,
                         protein_selection=protein_selection,
                     )
-                    npz_data = {
-                        "ligand_A_RMSD": np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
-                        "ligand_B_RMSD": np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
-                        "ligand_A_COM_drift": np.asarray(
-                            data["ligand_A_COM_drift"], dtype=np.float32
-                        ),
-                        "ligand_B_COM_drift": np.asarray(
-                            data["ligand_B_COM_drift"], dtype=np.float32
-                        ),
-                        "protein_2D_RMSD": np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
-                        "time_ps": np.asarray(data["time_ps"], dtype=np.float32),
-                    }
+
                 else:
-                    data = BaseSepTopAnalysisUnit._run_solvent_analysis(
+                    data, time_ps = BaseSepTopAnalysisUnit._run_solvent_analysis(
                         ds=ds,
                         pdb_file=pdb_file,
                         skip=skip,
@@ -1775,19 +1766,17 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                         rdmol_A=rdmol_A,
                         rdmol_B=rdmol_B,
                     )
-                    npz_data = {
-                        "ligand_A_RMSD": np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
-                        "ligand_B_RMSD": np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
-                        "time_ps": np.asarray(data["time_ps"], dtype=np.float32),
-                    }
+            npz_data = {
+                k: np.asarray(v, dtype=np.float32)
+                for k, v in data.items()
+            }
+            npz_data["time_ps"] = np.asarray(time_ps, dtype=np.float32)
 
         except Exception as e:
             return {"structural_analysis_error": str(e)}
 
         # Generate relevant plots if not a dry run
         if not dry:
-            time_ps = data.get("time_ps", [])
-
             if data.get("protein_2D_RMSD"):
                 fig = plotting.plot_2D_rmsd(data["protein_2D_RMSD"])
                 fig.savefig(output_directory / "protein_2D_RMSD.png")
