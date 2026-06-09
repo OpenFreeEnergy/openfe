@@ -577,9 +577,6 @@ class SepTopProtocol(gufe.Protocol):
 
                 analysis = unit_classes[phase]["analysis"](
                     protocol=self,
-                    stateA=stateA,
-                    stateB=stateB,
-                    alchemical_components=alchem_comps,
                     setup=setup,
                     simulation=simulation,
                     generation=0,

@@ -66,6 +66,19 @@ from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import log_system_probe, without_oechem_backend
 
+import netCDF4 as nc
+from openfe_analysis.utils import plotting
+from openfe_analysis.utils.apply_transformations import (
+    apply_ligand_alignment_transformations,
+    apply_complex_alignment_transformations,
+)
+from openfe_analysis.utils.universe_utils import create_universe_single_state
+from openfe_analysis.rmsd import (
+    LigandCOMDrift,
+    Protein2DRMSD,
+    SymmetryCorrectedLigandRMSD,
+)
+
 from ..openmm_utils import (
     charge_generation,
     multistate_analysis,
@@ -1507,9 +1520,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         reporter.close()
         return analyzer.unit_results_dict
 
-    @classmethod
+    @staticmethod
     def _run_complex_analysis(
-        cls,
         ds,
         pdb_file: pathlib.Path,
         skip: int | None,
@@ -1548,18 +1560,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Per-state lists for ligand RMSD, COM drift, protein 2D RMSD,
           and a single time_ps array.
         """
-        from openfe_analysis.rmsd import (
-            LigandCOMDrift,
-            Protein2DRMSD,
-            SymmetryCorrectedLigandRMSD,
-        )
-        from openfe_analysis.utils.apply_transformations import (
-            apply_complex_alignment_transformations,
-        )
-        from openfe_analysis.utils.universe_utils import create_universe_single_state
-
         n_lambda = ds.dimensions["state"].size
-        data: dict[str, Any] = {
+        data: dict[str, list[np.ndarray] | float | None] = {
             "ligand_A_RMSD": [],
             "ligand_B_RMSD": [],
             "ligand_A_COM_drift": [],
@@ -1567,6 +1569,9 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             "protein_2D_RMSD": [],
             "time_ps": None,
         }
+        # Read the PDB topology once and reuse across all lambda states.
+        # Passing u_top._topology to create_universe_single_state avoids
+        # reading the PDB file from disk for every lambda.
         u_top = mda.Universe(pdb_file)
         prot_indices = u_top.select_atoms(protein_selection).indices
         for state_idx in range(n_lambda):
@@ -1597,9 +1602,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         return data
 
-    @classmethod
+    @staticmethod
     def _run_solvent_analysis(
-        cls,
         ds,
         pdb_file: pathlib.Path,
         skip: int | None,
@@ -1634,18 +1638,15 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Per-state lists for ligand RMSD and a single
           time_ps array.
         """
-        from openfe_analysis.rmsd import SymmetryCorrectedLigandRMSD
-        from openfe_analysis.utils.apply_transformations import (
-            apply_ligand_alignment_transformations,
-        )
-        from openfe_analysis.utils.universe_utils import create_universe_single_state
-
         n_lambda = ds.dimensions["state"].size
-        data: dict[str, Any] = {
+        data: dict[str, list[np.ndarray] | float | None] = {
             "ligand_A_RMSD": [],
             "ligand_B_RMSD": [],
             "time_ps": None,
         }
+        # Read the PDB topology once and reuse across all lambda states.
+        # Passing u_top._topology to create_universe_single_state avoids
+        # reading the PDB file from disk for every lambda.
         u_top = mda.Universe(pdb_file)
         for state_idx in range(n_lambda):
             for label, indices, rdmol in [
@@ -1666,13 +1667,11 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         return data
 
-    @classmethod
+    @staticmethod
     def _structural_analysis(
-        cls,
         pdb_file: pathlib.Path,
         trj_file: pathlib.Path,
         output_directory: pathlib.Path,
-        dry: bool,
         simtype: Literal["complex", "solvent"],
         ligand_A_indices: list[int],
         ligand_B_indices: list[int],
@@ -1680,6 +1679,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         rdmol_B: Chem.Mol,
         protein_selection: str,
         skip: int | None,
+        dry: bool,
     ) -> dict[str, str | pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
@@ -1693,8 +1693,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         output_directory : pathlib.Path
             The output directory where plots and the data NPZ file
             will be stored.
-        dry : bool
-            Whether or not we are running a dry run.
         simtype : Literal["complex", "solvent"]
             Either ``"complex"`` or ``"solvent"``. Controls whether protein
             analyses are run and how alignment is applied.
@@ -1714,6 +1712,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Frame stride for structural analysis. If ``None``, a stride is
           chosen such that approximately (max.) 500 frames are analyzed per state.
           Set to 1 to analyze every frame.
+        dry : bool
+            Whether or not we are running a dry run.
 
         Returns
         -------
@@ -1721,9 +1721,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             Dictionary containing either the path to the NPZ file with the
             structural data, or the analysis error.
         """
-        import netCDF4 as nc
-        from openfe_analysis.utils import plotting
-
         if len(ligand_A_indices) == 0 or len(ligand_B_indices) == 0:
             errmsg = (
                 "No ligand atoms found in the subsampled trajectory. "
@@ -1747,26 +1744,39 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                     skip = max(n_frames // 500, 1)
 
                 if simtype == "complex":
-                    data = cls._run_complex_analysis(
-                        ds,
-                        pdb_file,
-                        skip,
-                        ligand_A_indices,
-                        ligand_B_indices,
-                        rdmol_A,
-                        rdmol_B,
+                    data = BaseSepTopAnalysisUnit._run_complex_analysis(
+                        ds=ds,
+                        pdb_file=pdb_file,
+                        skip=skip,
+                        ligand_A_indices=ligand_A_indices,
+                        ligand_B_indices=ligand_B_indices,
+                        rdmol_A=rdmol_A,
+                        rdmol_B=rdmol_B,
                         protein_selection=protein_selection,
                     )
+                    npz_data = {
+                        "ligand_A_RMSD": np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
+                        "ligand_B_RMSD": np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
+                        "ligand_A_COM_drift": np.asarray(data["ligand_A_COM_drift"], dtype=np.float32),
+                        "ligand_B_COM_drift": np.asarray(data["ligand_B_COM_drift"], dtype=np.float32),
+                        "protein_2D_RMSD": np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
+                        "time_ps": np.asarray(data["time_ps"], dtype=np.float32),
+                    }
                 else:
-                    data = cls._run_solvent_analysis(
-                        ds,
-                        pdb_file,
-                        skip,
-                        ligand_A_indices,
-                        ligand_B_indices,
-                        rdmol_A,
-                        rdmol_B,
+                    data = BaseSepTopAnalysisUnit._run_solvent_analysis(
+                        ds=ds,
+                        pdb_file=pdb_file,
+                        skip=skip,
+                        ligand_A_indices=ligand_A_indices,
+                        ligand_B_indices=ligand_B_indices,
+                        rdmol_A=rdmol_A,
+                        rdmol_B=rdmol_B,
                     )
+                    npz_data = {
+                        "ligand_A_RMSD": np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
+                        "ligand_B_RMSD": np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
+                        "time_ps": np.asarray(data["time_ps"], dtype=np.float32),
+                    }
 
         except Exception as e:
             return {"structural_analysis_error": str(e)}
@@ -1793,21 +1803,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         # Write out an NPZ with all the relevant analysis data
         npz_file = output_directory / "structural_analysis.npz"
-        npz_data = {
-            "ligand_A_RMSD": np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
-            "ligand_B_RMSD": np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
-            "time_ps": np.asarray(data["time_ps"], dtype=np.float32),
-        }
-
-        if simtype == "complex":
-            npz_data.update(
-                {
-                    "ligand_A_COM_drift": np.asarray(data["ligand_A_COM_drift"], dtype=np.float32),
-                    "ligand_B_COM_drift": np.asarray(data["ligand_B_COM_drift"], dtype=np.float32),
-                    "protein_2D_RMSD": np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
-                }
-            )
-
         np.savez_compressed(npz_file, **npz_data)  # type: ignore[arg-type]
 
         return {"structural_analysis": npz_file}
@@ -1820,8 +1815,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         pdb_file: pathlib.Path,
         ligand_A_indices: list[int],
         ligand_B_indices: list[int],
-        rdmol_A: Chem.Mol,
-        rdmol_B: Chem.Mol,
+        smc_A: SmallMoleculeComponent,
+        smc_B: SmallMoleculeComponent,
         protein_selection: str = "protein and name CA",
         skip: int | None = None,
         dry: bool = False,
@@ -1843,10 +1838,10 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Atom indices of ligand A in the subsampled system.
         ligand_B_indices : list[int]
           Atom indices of ligand B in the subsampled system.
-        rdmol_A : Chem.Mol
-          RDKit molecule for ligand A.
-        rdmol_B : Chem.Mol
-          RDKit molecule for ligand B.
+        smc_A : SmallMoleculeComponent
+          SmallMoleculeComponent for ligand A.
+        smc_B : SmallMoleculeComponent
+          SmallMoleculeComponent for ligand B.
         protein_selection : str
           MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations in the complex phase.
@@ -1901,14 +1896,14 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             pdb_file=pdb_file,
             trj_file=trajectory,
             output_directory=self.shared_basepath,
-            dry=dry,
             simtype=self.simtype,
             ligand_A_indices=ligand_A_indices,
             ligand_B_indices=ligand_B_indices,
-            rdmol_A=rdmol_A,
-            rdmol_B=rdmol_B,
+            rdmol_A=smc_A.to_rdkit(),
+            rdmol_B=smc_B.to_rdkit(),
             protein_selection=protein_selection,
             skip=skip,
+            dry=dry,
         )
 
         return energy_analysis | structural_analysis
@@ -1930,9 +1925,9 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         trajectory = simulation.outputs["trajectory"]
         checkpoint = simulation.outputs["checkpoint"]
 
-        alchem_comps = self._inputs["alchemical_components"]
-        rdmol_A = alchem_comps["stateA"][0].to_rdkit()
-        rdmol_B = alchem_comps["stateB"][0].to_rdkit()
+        alchem_comps = setup.inputs["alchemical_components"]
+        smc_A = alchem_comps["stateA"][0]
+        smc_B = alchem_comps["stateB"][0]
 
         # Remap ligand indices from full system to subsampled system
         # selection_indices maps: position in subsampled system to index in full system
@@ -1951,12 +1946,13 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             pdb_file=setup.outputs["subsampled_pdb_structure"],
             ligand_A_indices=ligand_A_indices,
             ligand_B_indices=ligand_B_indices,
-            rdmol_A=rdmol_A,
-            rdmol_B=rdmol_B,
+            rdmol_A=smc_A,
+            rdmol_B=smc_B,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
 
+        # We re-include things here to make life easier when gathering results
         if self.simtype == "complex":
             previous_outputs = {
                 "standard_state_correction_A": setup.outputs["standard_state_correction_A"],

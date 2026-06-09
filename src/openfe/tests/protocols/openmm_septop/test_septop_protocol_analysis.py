@@ -1,28 +1,8 @@
-import pathlib
-
 import numpy as np
-import pooch
 import pytest
 from rdkit.Chem import SDMolSupplier
 
-from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.openmm_septop.base_units import BaseSepTopAnalysisUnit
-
-pooch_septop_structural = pooch.create(
-    path=POOCH_CACHE,
-    base_url="https://zenodo.org/records/20507106/files/",
-    registry={
-        "septop_structural_results.zip": "md5:cffc193dacb5ad8d26c5467ae05b1a00",
-    },
-)
-
-
-@pytest.fixture(scope="session")
-def septop_structural_results_dir():
-    pooch_septop_structural.fetch("septop_structural_results.zip", processor=pooch.Unzip())
-    return pathlib.Path(
-        POOCH_CACHE / "septop_structural_results.zip.unzip/septop_structural_results"
-    )
 
 
 @pytest.fixture(scope="session")
@@ -52,9 +32,9 @@ def septop_solvent_data(septop_structural_results_dir):
 
 
 @pytest.fixture(scope="session")
-def complex_structural_analysis_result(septop_complex_data, tmp_path_factory):
+def septop_complex_structural_analysis_result(septop_complex_data, tmp_path_factory):
     d = septop_complex_data
-    tmp = tmp_path_factory.mktemp("complex_structural_analysis")
+    tmp = tmp_path_factory.mktemp("septop_complex_structural_analysis_result")
     result = BaseSepTopAnalysisUnit._structural_analysis(
         pdb_file=d["pdb"],
         trj_file=d["nc"],
@@ -72,7 +52,7 @@ def complex_structural_analysis_result(septop_complex_data, tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def solvent_structural_analysis_result(septop_solvent_data, tmp_path_factory):
+def septop_solvent_structural_analysis_result(septop_solvent_data, tmp_path_factory):
     d = septop_solvent_data
     tmp = tmp_path_factory.mktemp("solvent_structural_analysis")
     result = BaseSepTopAnalysisUnit._structural_analysis(
@@ -92,13 +72,13 @@ def solvent_structural_analysis_result(septop_solvent_data, tmp_path_factory):
 
 
 class TestComplexStructuralAnalysis:
-    def test_npz_written(self, complex_structural_analysis_result):
-        result, _ = complex_structural_analysis_result
+    def test_npz_written(self, septop_complex_structural_analysis_result):
+        result, _ = septop_complex_structural_analysis_result
         assert "structural_analysis" in result
         assert result["structural_analysis"].exists()
 
-    def test_npz_keys_values_shape(self, complex_structural_analysis_result):
-        result, _ = complex_structural_analysis_result
+    def test_npz_keys_values_shape(self, septop_complex_structural_analysis_result):
+        result, _ = septop_complex_structural_analysis_result
         npz = np.load(result["structural_analysis"])
         expected_keys = {
             "ligand_A_RMSD",
@@ -134,8 +114,8 @@ class TestComplexStructuralAnalysis:
         for key in expected_keys - {"time_ps"}:
             assert len(npz[key]) == n_lambda
 
-    def test_plots_written(self, complex_structural_analysis_result):
-        result, tmp = complex_structural_analysis_result
+    def test_plots_written(self, septop_complex_structural_analysis_result):
+        result, tmp = septop_complex_structural_analysis_result
         expected_plots = {
             "ligand_A_RMSD.png",
             "ligand_B_RMSD.png",
@@ -167,13 +147,13 @@ class TestComplexStructuralAnalysis:
 
 
 class TestSolventStructuralAnalysis:
-    def test_npz_written(self, solvent_structural_analysis_result):
-        result, _ = solvent_structural_analysis_result
+    def test_npz_written(self, septop_solvent_structural_analysis_result):
+        result, _ = septop_solvent_structural_analysis_result
         assert "structural_analysis" in result
         assert result["structural_analysis"].exists()
 
-    def test_npz_keys_values_shape(self, solvent_structural_analysis_result):
-        result, _ = solvent_structural_analysis_result
+    def test_npz_keys_values_shape(self, septop_solvent_structural_analysis_result):
+        result, _ = septop_solvent_structural_analysis_result
         npz = np.load(result["structural_analysis"])
         expected_keys = {"ligand_A_RMSD", "ligand_B_RMSD", "time_ps"}
         assert set(npz.files) == expected_keys
@@ -196,8 +176,8 @@ class TestSolventStructuralAnalysis:
         for key in expected_keys - {"time_ps"}:
             assert len(npz[key]) == n_lambda
 
-    def test_plots_written(self, solvent_structural_analysis_result):
-        result, tmp = solvent_structural_analysis_result
+    def test_plots_written(self, septop_solvent_structural_analysis_result):
+        result, tmp = septop_solvent_structural_analysis_result
         expected_plots = {"ligand_A_RMSD.png", "ligand_B_RMSD.png"}
         written = {f.name for f in tmp.glob("*.png")}
         assert written == expected_plots
