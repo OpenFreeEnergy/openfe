@@ -1909,8 +1909,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         # Get the relevant inputs for running the unit
         trajectory = simulation.outputs["trajectory"]
         checkpoint = simulation.outputs["checkpoint"]
-
-        alchem_comps = setup.inputs["alchemical_components"]
+        alchem_comps = self._inputs["alchemical_components"]
         smc_A = alchem_comps["stateA"][0]
         smc_B = alchem_comps["stateB"][0]
 
