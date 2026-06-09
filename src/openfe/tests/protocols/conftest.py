@@ -23,8 +23,8 @@ from openfe.data._registry import (
     zenodo_md_resume_data,
     zenodo_resume_data,
     zenodo_rfe_simulation_nc,
-    zenodo_t4_lysozyme_traj,
     zenodo_septop_structural,
+    zenodo_t4_lysozyme_traj,
 )
 
 

@@ -22,6 +22,7 @@ from typing import Any, Literal, Optional
 import gufe
 import matplotlib.pyplot as plt
 import MDAnalysis as mda
+import netCDF4 as nc
 import numpy as np
 import numpy.typing as npt
 import openmm
@@ -34,6 +35,17 @@ from gufe import (
 )
 from gufe.components import Component
 from gufe.protocols.errors import ProtocolUnitExecutionError
+from openfe_analysis.rmsd import (
+    LigandCOMDrift,
+    Protein2DRMSD,
+    SymmetryCorrectedLigandRMSD,
+)
+from openfe_analysis.utils import plotting
+from openfe_analysis.utils.apply_transformations import (
+    apply_complex_alignment_transformations,
+    apply_ligand_alignment_transformations,
+)
+from openfe_analysis.utils.universe_utils import create_universe_single_state
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
@@ -65,19 +77,6 @@ from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import log_system_probe, without_oechem_backend
-
-import netCDF4 as nc
-from openfe_analysis.utils import plotting
-from openfe_analysis.utils.apply_transformations import (
-    apply_ligand_alignment_transformations,
-    apply_complex_alignment_transformations,
-)
-from openfe_analysis.utils.universe_utils import create_universe_single_state
-from openfe_analysis.rmsd import (
-    LigandCOMDrift,
-    Protein2DRMSD,
-    SymmetryCorrectedLigandRMSD,
-)
 
 from ..openmm_utils import (
     charge_generation,
@@ -1757,8 +1756,12 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                     npz_data = {
                         "ligand_A_RMSD": np.asarray(data["ligand_A_RMSD"], dtype=np.float32),
                         "ligand_B_RMSD": np.asarray(data["ligand_B_RMSD"], dtype=np.float32),
-                        "ligand_A_COM_drift": np.asarray(data["ligand_A_COM_drift"], dtype=np.float32),
-                        "ligand_B_COM_drift": np.asarray(data["ligand_B_COM_drift"], dtype=np.float32),
+                        "ligand_A_COM_drift": np.asarray(
+                            data["ligand_A_COM_drift"], dtype=np.float32
+                        ),
+                        "ligand_B_COM_drift": np.asarray(
+                            data["ligand_B_COM_drift"], dtype=np.float32
+                        ),
                         "protein_2D_RMSD": np.asarray(data["protein_2D_RMSD"], dtype=np.float32),
                         "time_ps": np.asarray(data["time_ps"], dtype=np.float32),
                     }
