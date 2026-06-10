@@ -1948,12 +1948,18 @@ def benzene_self_system_mapping(benzene_solvent_openmm_system):
     return system_mapping
 
 
-@pytest.mark.parametrize("charge_difference,expected_charge", [
-    (1, 1.0),   # positive charge difference -> Na+ fallback
-    (-1, -1.0), # negative charge difference -> Cl- fallback
-])
+@pytest.mark.parametrize(
+    "charge_difference,expected_charge",
+    [
+        (1, 1.0),  # positive charge difference -> Na+ fallback
+        (-1, -1.0),  # negative charge difference -> Cl- fallback
+    ],
+)
 def test_get_ion_parameters_fallback_to_forcefield(
-    benzene_modifications, charge_difference, expected_charge, caplog,
+    benzene_modifications,
+    charge_difference,
+    expected_charge,
+    caplog,
 ):
     """
     Check that when no matching ion is found in the topology,
@@ -1989,7 +1995,8 @@ def test_get_ion_parameters_fallback_to_forcefield(
 
     with caplog.at_level(logging.WARNING):
         ion_charge, ion_sigma, ion_epsilon = topologyhelpers._get_ion_parameters(
-            topology, system,
+            topology,
+            system,
             charge_difference=charge_difference,
             forcefield=system_generator.forcefield,
         )
@@ -2106,10 +2113,13 @@ def test_handle_alchemwats_incorrect_atom(
         )
 
 
-@pytest.mark.parametrize("charge_difference,expected_charge", [
-    (1, 1.0),   # positive charge difference -> water becomes Na+
-    (-1, -1.0), # negative charge difference -> water becomes Cl-
-])
+@pytest.mark.parametrize(
+    "charge_difference,expected_charge",
+    [
+        (1, 1.0),  # positive charge difference -> water becomes Na+
+        (-1, -1.0),  # negative charge difference -> water becomes Cl-
+    ],
+)
 def test_handle_alchemical_wats(
     benzene_solvent_openmm_system,
     benzene_self_system_mapping,
@@ -2144,7 +2154,10 @@ def test_handle_alchemical_wats(
     # check ion parameters were correctly applied
     nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
     i_chg, i_sig, i_eps = topologyhelpers._get_ion_parameters(
-        topology, system, charge_difference=charge_difference, forcefield=forcefield,
+        topology,
+        system,
+        charge_difference=charge_difference,
+        forcefield=forcefield,
     )
 
     charge, sigma, epsilon = nbf.getParticleParameters(24)
