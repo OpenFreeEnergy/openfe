@@ -113,6 +113,42 @@ which is different compared to the results in the :class:`.RelativeHybridTopolog
 
 In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
 
+Analysis
+~~~~~~~~
+
+As with the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`,
+the protocol performs both energetic and structural analysis automatically after each simulation repeat.
+The energetic analysis (MBAR overlap matrix, replica exchange statistics, forward/reverse convergence)
+is identical to that described in the :ref:`multistate analysis section <multistate_analysis>`.
+
+Structural analysis
+"""""""""""""""""""
+
+The structural analysis differs from the hybrid topology protocol in two key ways:
+
+* **Two ligands per simulation.** Since both ligands are present simultaneously throughout
+  the SepTop simulation, structural metrics are computed independently for both ligand A
+  and ligand B in every lambda state.
+
+* **Symmetry-corrected RMSD.** A symmetry-corrected RMSD is used to account for equivalent
+  atom orderings in symmetric molecules (e.g. a flipping phenyl
+  ring) instead of a standard mass-weighted RMSD.
+
+The following metrics are computed per lambda state for both the complex and solvent legs:
+
+* **Ligand A and B RMSD** — symmetry-corrected RMSD relative to the first production frame.
+* **Ligand A and B COM drift** — centre-of-mass displacement from the initial position
+  (complex leg only).
+* **Protein 2D RMSD** — pairwise RMSD matrix between all analyzed frames (complex leg only).
+
+Results are saved as an NPZ file (``structural_analysis.npz``) and plots are generated
+automatically. The analysis settings (protein selection string and frame stride) can be
+configured via ``analysis_settings`` in :class:`SepTopSettings`.
+
+For further guidance on interpreting these plots, see the
+:ref:`structural analysis section <multistate_analysis>` of the hybrid topology protocol
+documentation.
+
 See Also
 --------
 
