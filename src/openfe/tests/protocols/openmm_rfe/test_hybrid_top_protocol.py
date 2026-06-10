@@ -1963,8 +1963,7 @@ def test_get_ion_parameters_fallback_to_forcefield(
 ):
     """
     Check that when no matching ion is found in the topology,
-    parameters are obtained from the forcefield. Tests both positive
-    (NA fallback) and negative (CL fallback) charge differences.
+    parameters are obtained from the forcefield.
     """
     smc = benzene_modifications["benzene"]
     offmol = smc.to_openff()
@@ -2166,7 +2165,7 @@ def test_handle_alchemical_wats(
     assert sigma == i_sig
     assert epsilon == i_eps
 
-    # check hydrogen parameters were zeroed out
+    # check the hydrogen parameters
     for i in [25, 26]:
         charge, _, _ = nbf.getParticleParameters(i)
         assert charge == 0.0 * omm_unit.elementary_charge
