@@ -43,9 +43,14 @@ def _get_ff_parameters(
 
     Returns
     -------
-    dict[str, tuple]
+    dict[str, tuple[float, float, float]]
       A dictionary keyed by element symbol, with (charge, sigma, epsilon)
       tuples as values.
+
+    Notes
+    -----
+    Parameters are keyed by element symbol. Only suitable for molecules
+    where all atoms of the same element are equivalent (e.g. ions, water).
     """
     from openff.toolkit import Molecule
 
@@ -105,8 +110,6 @@ def _get_ion_parameters(
         if len(atoms) != 1:
             continue
         atom = atoms[0]
-        if atom.element is None:
-            continue
         charge, _, _ = nbf.getParticleParameters(atom.index)
         charge_val = charge.value_in_unit(omm_unit.elementary_charge)
         if np.isclose(abs(charge_val), 1.0, atol=0.01) and np.sign(charge_val) == desired_sign:
@@ -130,7 +133,6 @@ def _get_ion_parameters(
         f"the topology. Defaulting to '{fallback_smiles}' and obtaining "
         f"parameters from the forcefield directly."
     )
-    warnings.warn(wmsg)
     logger.warning(wmsg)
 
     ion_params = _get_ff_parameters(forcefield, fallback_smiles)

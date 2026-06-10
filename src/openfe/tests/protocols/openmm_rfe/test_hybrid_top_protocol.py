@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
 import json
+import logging
 import sys
 import xml.etree.ElementTree as ET
 from importlib import resources
@@ -1217,32 +1218,17 @@ def test_dry_run_membrane_complex(
 
 def test_validate_charge_difference_membrane_system(
     a2a_protein_membrane_component,
-    a2a_ligands,
+    benzene_to_aniline_mapping,
 ):
-    ligA = next(c for c in a2a_ligands if c.name == "4g")
-    ligB = next(c for c in a2a_ligands if c.name == "4h")
-
-    mapping = openfe.LigandAtomMapping(
-        componentA=ligA,
-        componentB=ligB,
-        componentA_to_componentB={i: i for i in range(36)},
-    )
-
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
 
-    # Mock get_alchemical_charge_difference to return non-zero
-    with mock.patch.object(
-        mapping,
-        "get_alchemical_charge_difference",
-        return_value=1,
-    ):
-        protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
-        protocol._validate_charge_difference(
-            mapping=mapping,
-            nonbonded_method=settings.forcefield_settings.nonbonded_method,
-            explicit_charge_correction=True,
-            solvent_component=a2a_protein_membrane_component,
-        )
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+    protocol._validate_charge_difference(
+        mapping=benzene_to_aniline_mapping,
+        nonbonded_method=settings.forcefield_settings.nonbonded_method,
+        explicit_charge_correction=True,
+        solvent_component=a2a_protein_membrane_component,
+    )
 
 
 def test_lambda_schedule_default():
@@ -1962,10 +1948,17 @@ def benzene_self_system_mapping(benzene_solvent_openmm_system):
     return system_mapping
 
 
-def test_get_ion_parameters_fallback_to_forcefield(benzene_modifications):
+@pytest.mark.parametrize("charge_difference,expected_charge", [
+    (1, 1.0),   # positive charge difference -> Na+ fallback
+    (-1, -1.0), # negative charge difference -> Cl- fallback
+])
+def test_get_ion_parameters_fallback_to_forcefield(
+    benzene_modifications, charge_difference, expected_charge, caplog,
+):
     """
     Check that when no matching ion is found in the topology,
-    parameters are obtained from the forcefield (NA fallback).
+    parameters are obtained from the forcefield. Tests both positive
+    (NA fallback) and negative (CL fallback) charge differences.
     """
     smc = benzene_modifications["benzene"]
     offmol = smc.to_openff()
@@ -1994,15 +1987,15 @@ def test_get_ion_parameters_fallback_to_forcefield(benzene_modifications):
     topology = modeller.getTopology()
     system = system_generator.create_system(topology, molecules=[offmol])
 
-    with pytest.warns(UserWarning, match="No monovalent ion"):
+    with caplog.at_level(logging.WARNING):
         ion_charge, ion_sigma, ion_epsilon = topologyhelpers._get_ion_parameters(
-            topology,
-            system,
-            charge_difference=1,
+            topology, system,
+            charge_difference=charge_difference,
             forcefield=system_generator.forcefield,
         )
 
-    assert ion_charge.value_in_unit(omm_unit.elementary_charge) == pytest.approx(1.0)
+    assert "No monovalent ion" in caplog.text
+    assert ion_charge.value_in_unit(omm_unit.elementary_charge) == pytest.approx(expected_charge)
 
 
 def test_get_alchemical_waters_no_waters(
@@ -2113,11 +2106,18 @@ def test_handle_alchemwats_incorrect_atom(
         )
 
 
+@pytest.mark.parametrize("charge_difference,expected_charge", [
+    (1, 1.0),   # positive charge difference -> water becomes Na+
+    (-1, -1.0), # negative charge difference -> water becomes Cl-
+])
 def test_handle_alchemical_wats(
     benzene_solvent_openmm_system,
     benzene_self_system_mapping,
+    charge_difference,
+    expected_charge,
 ):
     system, topology, positions, forcefield = benzene_solvent_openmm_system
+    system = copy.deepcopy(system)
 
     n_env = len(benzene_self_system_mapping["old_to_new_env_atom_map"])
     n_core = len(benzene_self_system_mapping["old_to_new_core_atom_map"])
@@ -2127,7 +2127,7 @@ def test_handle_alchemical_wats(
         topology=topology,
         system=system,
         system_mapping=benzene_self_system_mapping,
-        charge_difference=1,
+        charge_difference=charge_difference,
         forcefield=forcefield,
     )
 
@@ -2141,19 +2141,19 @@ def test_handle_alchemical_wats(
     expected_old_new_core = {i: i for i in range(12)} | {24: 24, 25: 25, 26: 26}
     assert old_new_core == expected_old_new_core
 
-    # system parameters checks
+    # check ion parameters were correctly applied
     nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
-    # check the oxygen parameters
     i_chg, i_sig, i_eps = topologyhelpers._get_ion_parameters(
-        topology, system, charge_difference=1, forcefield=forcefield
+        topology, system, charge_difference=charge_difference, forcefield=forcefield,
     )
 
     charge, sigma, epsilon = nbf.getParticleParameters(24)
-    assert charge == 1.0 * omm_unit.elementary_charge == i_chg
+    assert charge.value_in_unit(omm_unit.elementary_charge) == pytest.approx(expected_charge)
+    assert charge == i_chg
     assert sigma == i_sig
     assert epsilon == i_eps
 
-    # check the hydrogen parameters
+    # check hydrogen parameters were zeroed out
     for i in [25, 26]:
         charge, _, _ = nbf.getParticleParameters(i)
         assert charge == 0.0 * omm_unit.elementary_charge
