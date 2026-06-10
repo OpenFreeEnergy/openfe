@@ -61,7 +61,6 @@ from openmmtools.states import (
 from rdkit import Chem
 
 import openfe
-from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AlchemicalSettings,
     BaseSolvationSettings,
@@ -73,6 +72,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
+from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_septop.equil_septop_settings import MultiStateAnalysisSettings
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
