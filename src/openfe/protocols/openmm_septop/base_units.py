@@ -61,7 +61,7 @@ from openmmtools.states import (
 from rdkit import Chem
 
 import openfe
-from openfe.protocols.openmm_afe.equil_afe_settings import (
+from openfe.protocols.openmm_afe.equil_septop_settings import (
     AlchemicalSettings,
     BaseSolvationSettings,
     IntegratorSettings,
