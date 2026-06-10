@@ -16,13 +16,13 @@ Protocol API specification
    :toctree: generated/
 
    SepTopProtocol
-   SepTopProtocolResult
    SepTopComplexSetupUnit
    SepTopComplexRunUnit
    SepTopComplexAnalysisUnit
    SepTopSolventSetupUnit
    SepTopSolventRunUnit
    SepTopSolventAnalysisUnit
+   SepTopProtocolResult
 
 Protocol Settings
 -----------------

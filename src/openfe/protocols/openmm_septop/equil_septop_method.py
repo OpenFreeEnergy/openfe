@@ -59,6 +59,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     MDSimulationSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
+    MultiStateAnalysisSettings,
     OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
@@ -267,6 +268,7 @@ class SepTopProtocol(gufe.Protocol):
                 spring_constant=1000.0 * offunit.kilojoule_per_mole / offunit.nanometer**2,
             ),
             complex_restraint_settings=BoreschRestraintSettings(),
+            analysis_settings=MultiStateAnalysisSettings(),
         )  # fmt: skip
 
     @classmethod

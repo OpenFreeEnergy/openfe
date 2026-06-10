@@ -30,6 +30,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     MDSimulationSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
+    MultiStateAnalysisSettings,
     OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
@@ -360,4 +361,8 @@ class SepTopSettings(SettingsBaseModel):
     complex_restraint_settings: BaseRestraintSettings
     """
     Settings for the Boresch restraints in the complex
+    """
+    analysis_settings: MultiStateAnalysisSettings
+    """
+    Settings for the structural analysis of the multistate trajectories
     """

@@ -67,6 +67,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     IntegratorSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
+    MultiStateAnalysisSettings,
     OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSystemGeneratorFFSettings,
@@ -1802,8 +1803,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         ligand_B_indices: list[int],
         smc_A: SmallMoleculeComponent,
         smc_B: SmallMoleculeComponent,
-        protein_selection: str = "protein and name CA",
-        skip: int | None = None,
+        analysis_settings: MultiStateAnalysisSettings,
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
@@ -1827,14 +1827,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           SmallMoleculeComponent for ligand A.
         smc_B : SmallMoleculeComponent
           SmallMoleculeComponent for ligand B.
-        protein_selection : str
-          MDAnalysis selection string for the protein atoms used for
-          alignment and RMSD calculations in the complex phase.
-          Ignored for the solvent phase. Default "protein and name CA".
-        skip : int | None
-          Frame stride for structural analysis. If ``None``, a stride is
-          chosen such that approximately (max.) 500 frames are analyzed per state.
-          Set to 1 to analyze every frame.
+        analysis_settings: MultiStateAnalysisSettings
+          Settings for the structural analysis of the multistate trajectory.
         dry : bool
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
@@ -1886,8 +1880,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             ligand_B_indices=ligand_B_indices,
             rdmol_A=smc_A.to_rdkit(),
             rdmol_B=smc_B.to_rdkit(),
-            protein_selection=protein_selection,
-            skip=skip,
+            protein_selection=analysis_settings.protein_selection,
+            skip=analysis_settings.skip,
             dry=dry,
         )
 
@@ -1913,6 +1907,10 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         smc_A = alchem_comps["stateA"][0]
         smc_B = alchem_comps["stateB"][0]
 
+        # Get the analysis settings
+        settings = self._get_settings()
+        analysis_settings = settings["analysis_settings"]
+
         # Remap ligand indices from full system to subsampled system
         # selection_indices maps: position in subsampled system to index in full system
         selection_indices = np.array(setup.outputs["selection_indices"])
@@ -1932,6 +1930,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             ligand_B_indices=ligand_B_indices,
             smc_A=smc_A,
             smc_B=smc_B,
+            analysis_settings=analysis_settings,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )

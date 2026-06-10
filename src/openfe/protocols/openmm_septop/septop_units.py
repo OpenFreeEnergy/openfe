@@ -137,6 +137,7 @@ class SepTopComplexMixin:
             "simulation_settings": prot_settings.complex_simulation_settings,
             "output_settings": prot_settings.complex_output_settings,
             "restraint_settings": prot_settings.complex_restraint_settings,
+            "analysis_settings": prot_settings.analysis_settings,
         }
 
         settings_validation.validate_timestep(
@@ -223,6 +224,7 @@ class SepTopSolventMixin:
             "simulation_settings": prot_settings.solvent_simulation_settings,
             "output_settings": prot_settings.solvent_output_settings,
             "restraint_settings": prot_settings.solvent_restraint_settings,
+            "analysis_settings": prot_settings.analysis_settings,
         }
 
         settings_validation.validate_timestep(
