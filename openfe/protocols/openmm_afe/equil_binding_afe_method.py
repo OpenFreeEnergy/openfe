@@ -36,6 +36,7 @@ from typing import Any, Iterable, Optional, Union
 import gufe
 import MDAnalysis as mda
 from MDAnalysis.lib.distances import calc_bonds
+from MDAnalysis.lib.mdamath import triclinic_vectors
 import numpy as np
 import numpy.typing as npt
 from gufe import (
@@ -1079,6 +1080,25 @@ class AbsoluteBindingUnitMixin:
         alchem_idxs = _get_idxs_from_residxs(topology=omm_topology, residxs=residxs)
         alchem_atoms = univ.atoms[alchem_idxs]
 
+        # Cap the search at the periodic minimum-image limit
+        univ.trajectory[-1]  # read the box from the final frame
+        box = univ.dimensions
+        if box is None or not np.all(np.isfinite(box)) or np.any(box[:3] <= 0.0):
+            errmsg = (
+                "Could not identify a periodic box for the co-alchemical ion "
+                "search. The search distance is bounded by the periodic "
+                "minimum-image convention, which requires a valid (non-zero) "
+                f"box in the equilibrated frame; got dimensions: {box}."
+            )
+            raise ValueError(errmsg)
+        bvecs = triclinic_vectors(box)  # box vectors, Angstrom
+        vol = abs(np.dot(bvecs[0], np.cross(bvecs[1], bvecs[2])))
+        perp_widths = [
+            vol / np.linalg.norm(np.cross(bvecs[(i + 1) % 3], bvecs[(i + 2) % 3]))
+            for i in range(3)
+        ]
+        max_dist = (0.5 * min(perp_widths) / 10.0 - 0.1) * offunit.nanometer  # Å -> nm
+
         # Re-using a utility from the restraints utilities
         # TODO: rename this class!
         atom_finder = FindHostAtoms(
@@ -1087,7 +1107,7 @@ class AbsoluteBindingUnitMixin:
             min_search_distance=settings['alchemical_settings'].alchemical_ion_min_distance,
             # set max distance to just above solvent padding to avoid picking
             # an ion more than half a box distance away
-            max_search_distance=settings['solvation_settings'].solvent_padding + 0.1 * offunit.nanometer,
+            max_search_distance=max_dist,
         )
 
         # only run on the final frame
