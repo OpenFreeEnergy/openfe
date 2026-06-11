@@ -286,63 +286,75 @@ class MultistateEquilFEAnalysis:
         self,
         u_ln: npt.NDArray,
         N_l: npt.NDArray,
+        samples: int,
         fraction: float,
-        direction: str,
-    ) -> tuple[Quantity, Quantity]:
+    ) -> tuple[tuple[Quantity, Quantity], tuple[Quantity, Quantity]]:
         """
-        Helper method to estimate the free energy for a fraction of the
-        uncorrelated samples, returning NaN if MBAR fails to obtain an estimate.
+        Helper method to estimate the forward and reverse free energies for a
+        fraction of the uncorrelated samples.
 
-        Used by :meth:`get_forward_and_reverse_analysis` for each forward and
-        reverse chunk. MBAR can fail to converge at low fractions of
-        uncorrelated samples; in that case a NaN is returned (and a warning
-        raised) so that the caller can carry on and still report the estimates
-        at higher fractions.
+        Used by :meth:`get_forward_and_reverse_analysis` for each chunk. MBAR
+        can fail to converge at low fractions of uncorrelated samples. While
+        such a failure is directly caused by the estimator, it is more broadly
+        caused by too few (effective) data points at that fraction, so it is
+        not reasonable to trust either direction. Therefore, if MBAR fails for
+        *either* the forward or reverse estimate, NaN is recorded for *both*
+        directions (and a warning raised) and the analysis continues, so that
+        estimates at higher fractions are still reported.
 
         Parameters
         ----------
         u_ln : npt.NDArray
-          The sub-sampled energy matrix to pass to MBAR.
+          The full sub-sampled energy matrix. The forward estimate uses the
+          first ``samples`` columns and the reverse estimate the last
+          ``samples`` columns.
         N_l : npt.NDArray
           An array containing the number of samples drawn from each state.
+        samples : int
+          The number of samples (columns of ``u_ln``) to use for each estimate.
         fraction : float
-          The fraction of uncorrelated samples ``u_ln`` corresponds to. Only
-          used for the warning message.
-        direction : str
-          Either ``"forward"`` or ``"reverse"``. Only used for the warning
-          message.
+          The fraction of uncorrelated samples this corresponds to. Only used
+          for the warning message.
 
         Returns
         -------
-        DG : openff.units.Quantity
-          The free energy difference between the end states, or NaN if MBAR
-          failed to obtain an estimate.
-        dDG : openff.units.Quantity
-          The MBAR error estimate for the free energy difference, or NaN if
-          MBAR failed to obtain an estimate.
+        forward : tuple[openff.units.Quantity, openff.units.Quantity]
+          The forward free energy difference and its MBAR error estimate, or
+          NaN for both if MBAR failed to obtain an estimate.
+        reverse : tuple[openff.units.Quantity, openff.units.Quantity]
+          The reverse free energy difference and its MBAR error estimate, or
+          NaN for both if MBAR failed to obtain an estimate.
         """
         # pymbar has some side effects from being imported, so we only want to
         # import it right when we need it
         from pymbar.utils import ParameterError
 
         try:
-            DG, dDG = self._get_free_energy(
+            forward = self._get_free_energy(
                 self.analyzer,
-                u_ln,
+                u_ln[:, :samples],
+                N_l,
+                0,
+                self.units,
+            )
+            reverse = self._get_free_energy(
+                self.analyzer,
+                u_ln[:, -samples:],
                 N_l,
                 0,
                 self.units,
             )
         except ParameterError:
             wmsg = (
-                f"Could not obtain a {direction} free energy estimate at "
-                f"fraction {fraction:.2f} of the uncorrelated samples; "
-                "appending NaN."
+                f"Could not obtain a free energy estimate at fraction "
+                f"{fraction:.2f} of the uncorrelated samples; recording NaN "
+                "for both the forward and reverse estimates."
             )
             warnings.warn(wmsg)
-            DG = dDG = np.nan * self.units  # type: ignore
+            nan = np.nan * self.units  # type: ignore
+            forward = reverse = (nan, nan)
 
-        return DG, dDG
+        return forward, reverse
 
     def get_forward_and_reverse_analysis(
         self, num_samples: int = 10
@@ -408,19 +420,16 @@ class MultistateEquilFEAnalysis:
                 samples = chunk * n_states
                 fraction = chunk / N_l[0]
 
-                # Forward
-                DG, dDG = self._get_fraction_free_energy(
-                    u_ln[:, :samples], new_N_l, fraction, "forward"
+                # If MBAR fails for either the forward or reverse estimate, both
+                # are recorded as NaN (too few effective samples at this
+                # fraction to trust either direction).
+                (forward_DG, forward_dDG), (reverse_DG, reverse_dDG) = (
+                    self._get_fraction_free_energy(u_ln, new_N_l, samples, fraction)
                 )
-                forward_DGs.append(DG)
-                forward_dDGs.append(dDG)
-
-                # Reverse
-                DG, dDG = self._get_fraction_free_energy(
-                    u_ln[:, -samples:], new_N_l, fraction, "reverse"
-                )
-                reverse_DGs.append(DG)
-                reverse_dDGs.append(dDG)
+                forward_DGs.append(forward_DG)
+                forward_dDGs.append(forward_dDG)
+                reverse_DGs.append(reverse_DG)
+                reverse_dDGs.append(reverse_dDG)
 
                 fractions.append(fraction)
         except ParameterError:
