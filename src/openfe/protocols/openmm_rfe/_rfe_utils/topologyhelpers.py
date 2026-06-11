@@ -64,6 +64,7 @@ def _get_ff_parameters(
         for atom in dummy_top.atoms()
     }
 
+
 def _get_ion_parameters(
     topology: app.Topology,
     system: System,
