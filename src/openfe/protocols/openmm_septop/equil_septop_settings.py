@@ -362,7 +362,9 @@ class SepTopSettings(SettingsBaseModel):
     """
     Settings for the Boresch restraints in the complex
     """
-    analysis_settings: MultiStateAnalysisSettings = Field(default_factory=MultiStateAnalysisSettings())
+    analysis_settings: MultiStateAnalysisSettings = Field(
+        default_factory=MultiStateAnalysisSettings()
+    )
     """
     Settings for the structural analysis of the multistate trajectories
     """
