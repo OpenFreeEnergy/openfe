@@ -73,9 +73,8 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     ThermoSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
-from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings
 from openfe.protocols.openmm_utils import omm_compute
-from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
+from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings, SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import log_system_probe, without_oechem_backend
 
