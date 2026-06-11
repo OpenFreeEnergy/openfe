@@ -70,7 +70,7 @@ def _get_ion_parameters(
     system: System,
     charge_difference: int,
     forcefield: app.ForceField,
-) -> tuple:
+) -> tuple[float, float, float]:
     """
     Get NonbondedForce parameters for the most abundant monovalent ion of
     the appropriate charge sign found in the topology. Falls back to
