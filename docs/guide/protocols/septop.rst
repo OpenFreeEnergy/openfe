@@ -134,10 +134,10 @@ The structural analysis differs from the hybrid topology protocol in two key way
   atom orderings in symmetric molecules (e.g. a flipping phenyl
   ring) instead of a standard mass-weighted RMSD.
 
-The following metrics are computed per lambda state for both the complex and solvent legs:
+The following metrics are computed per lambda state for both the complex and solvent leg production simulations only:
 
 * **Ligand A and B RMSD** — symmetry-corrected RMSD relative to the first production frame.
-* **Ligand A and B COM drift** — centre-of-mass displacement from the initial position
+* **Ligand A and B COM drift** — centre-of-mass displacement from the initial production simulation position
   (complex leg only).
 * **Protein 2D RMSD** — pairwise RMSD matrix between all analyzed frames (complex leg only).
 
