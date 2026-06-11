@@ -39,7 +39,6 @@ def septop_complex_structural_analysis_result(septop_complex_data, tmp_path_fact
         pdb_file=d["pdb"],
         trj_file=d["nc"],
         output_directory=tmp,
-        dry=False,
         simtype="complex",
         ligand_A_indices=d["ligand_A_indices"],
         ligand_B_indices=d["ligand_B_indices"],
@@ -47,6 +46,7 @@ def septop_complex_structural_analysis_result(septop_complex_data, tmp_path_fact
         rdmol_B=d["rdmol_B"],
         protein_selection="protein and name CA",
         skip=None,
+        dry=False,
     )
     return result, tmp
 
@@ -59,7 +59,6 @@ def septop_solvent_structural_analysis_result(septop_solvent_data, tmp_path_fact
         pdb_file=d["pdb"],
         trj_file=d["nc"],
         output_directory=tmp,
-        dry=False,
         simtype="solvent",
         ligand_A_indices=d["ligand_A_indices"],
         ligand_B_indices=d["ligand_B_indices"],
@@ -67,6 +66,7 @@ def septop_solvent_structural_analysis_result(septop_solvent_data, tmp_path_fact
         rdmol_B=d["rdmol_B"],
         protein_selection="protein and name CA",
         skip=None,
+        dry=False,
     )
     return result, tmp
 
@@ -132,7 +132,6 @@ class TestComplexStructuralAnalysis:
             pdb_file=d["pdb"],
             trj_file=tmp_path / "nonexistent.nc",
             output_directory=tmp_path,
-            dry=True,
             simtype="complex",
             ligand_A_indices=d["ligand_A_indices"],
             ligand_B_indices=d["ligand_B_indices"],
@@ -140,6 +139,7 @@ class TestComplexStructuralAnalysis:
             rdmol_B=d["rdmol_B"],
             protein_selection="protein and name CA",
             skip=None,
+            dry=True,
         )
 
         assert "structural_analysis_error" in result
@@ -147,16 +147,11 @@ class TestComplexStructuralAnalysis:
 
     def test_skip_affects_output_length(self, septop_complex_data, tmp_path):
         d = septop_complex_data
-        skip1_dir = tmp_path / "skip1"
-        skip2_dir = tmp_path / "skip2"
-        skip1_dir.mkdir()
-        skip2_dir.mkdir()
 
         result_skip1 = BaseSepTopAnalysisUnit._structural_analysis(
             pdb_file=d["pdb"],
             trj_file=d["nc"],
-            output_directory=skip1_dir,
-            dry=False,
+            output_directory=tmp_path,
             simtype="complex",
             ligand_A_indices=d["ligand_A_indices"],
             ligand_B_indices=d["ligand_B_indices"],
@@ -164,13 +159,14 @@ class TestComplexStructuralAnalysis:
             rdmol_B=d["rdmol_B"],
             protein_selection="protein and name CA",
             skip=1,
+            dry=True,
         )
+        n_frames_skip1 = len(np.load(result_skip1["structural_analysis"])["time_ps"])
 
         result_skip2 = BaseSepTopAnalysisUnit._structural_analysis(
             pdb_file=d["pdb"],
             trj_file=d["nc"],
-            output_directory=skip2_dir,
-            dry=False,
+            output_directory=tmp_path,
             simtype="complex",
             ligand_A_indices=d["ligand_A_indices"],
             ligand_B_indices=d["ligand_B_indices"],
@@ -178,15 +174,14 @@ class TestComplexStructuralAnalysis:
             rdmol_B=d["rdmol_B"],
             protein_selection="protein and name CA",
             skip=2,
+            dry=True,
         )
-
-        npz1 = np.load(result_skip1["structural_analysis"])
-        npz2 = np.load(result_skip2["structural_analysis"])
+        n_frames_skip2 = len(np.load(result_skip2["structural_analysis"])["time_ps"])
 
         # With skip=2 we should get half the frames as skip=1
-        assert len(npz1["time_ps"]) > len(npz2["time_ps"])
-        assert len(npz1["time_ps"]) == 6
-        assert len(npz2["time_ps"]) == 3
+        assert n_frames_skip1 > n_frames_skip2
+        assert n_frames_skip1 == 6
+        assert n_frames_skip2 == 3
 
 
 class TestSolventStructuralAnalysis:
@@ -231,7 +226,6 @@ class TestSolventStructuralAnalysis:
             pdb_file=d["pdb"],
             trj_file=tmp_path / "nonexistent.nc",
             output_directory=tmp_path,
-            dry=True,
             simtype="solvent",
             ligand_A_indices=d["ligand_A_indices"],
             ligand_B_indices=d["ligand_B_indices"],
@@ -239,6 +233,7 @@ class TestSolventStructuralAnalysis:
             rdmol_B=d["rdmol_B"],
             protein_selection="protein and name CA",
             skip=None,
+            dry=True,
         )
 
         assert "structural_analysis_error" in result
@@ -254,7 +249,6 @@ class TestSolventStructuralAnalysis:
                 pdb_file=d["pdb"],
                 trj_file=tmp_path / "nonexistent.nc",  # won't be accessed
                 output_directory=tmp_path,
-                dry=True,
                 simtype="solvent",
                 ligand_A_indices=[],
                 ligand_B_indices=[],
@@ -262,6 +256,7 @@ class TestSolventStructuralAnalysis:
                 rdmol_B=d["rdmol_B"],
                 protein_selection="protein and name CA",
                 skip=None,
+                dry=True,
             )
 
         assert "structural_analysis_error" in result
