@@ -445,6 +445,22 @@ class MultistateEquilFEAnalysis:
             "reverse_DGs": Quantity.from_list(reverse_DGs),  # type: ignore
             "reverse_dDGs": Quantity.from_list(reverse_dDGs),  # type: ignore
         }
+
+        # The final fraction (1.0) uses the full set of uncorrelated samples.
+        # Its estimate is the reported free energy and anchors the error band in
+        # the convergence plot, so if MBAR failed for it (NaN) the whole
+        # analysis is not meaningful and we discard it by returning None.
+        final_forward = forward_reverse["forward_DGs"][-1].m
+        final_reverse = forward_reverse["reverse_DGs"][-1].m
+        if np.isnan(final_forward) or np.isnan(final_reverse):
+            wmsg = (
+                "MBAR could not obtain a free energy estimate using the full set "
+                "of uncorrelated samples (fraction 1.0); discarding the forward "
+                "and reverse convergence analysis."
+            )
+            warnings.warn(wmsg)
+            return None
+
         return forward_reverse
 
     def get_overlap_matrix(self) -> dict[str, npt.NDArray]:

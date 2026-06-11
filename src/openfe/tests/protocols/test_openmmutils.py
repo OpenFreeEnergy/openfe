@@ -456,6 +456,29 @@ class TestFEAnalysis:
         # The fractions axis is preserved at the full requested length.
         assert len(ret["fractions"]) == 10
 
+    def test_forward_and_reverse_none_on_final_fraction_failure(self, analyzer):
+        """
+        If MBAR fails for the final fraction (1.0, the full set of uncorrelated
+        samples), the whole analysis is discarded (returns ``None``), since that
+        estimate is the reported free energy and anchors the convergence plot.
+        """
+        # The final fraction uses every column of the decorrelated energy
+        # matrix, so its forward/reverse slices span the full width. Failing on
+        # that width targets the fraction-1.0 estimate regardless of num_samples.
+        full_width = analyzer.analyzer._unbiased_decorrelated_u_ln.shape[1]
+        original = type(analyzer)._get_free_energy
+
+        def flaky_get_free_energy(analyzer_arg, u_ln, N_l, bootstraps, return_units):
+            if u_ln.shape[1] == full_width:
+                raise ParameterError("forced full-data MBAR failure")
+            return original(analyzer_arg, u_ln, N_l, bootstraps, return_units)
+
+        with mock.patch.object(analyzer, "_get_free_energy", flaky_get_free_energy):
+            with pytest.warns(UserWarning, match="full set of uncorrelated samples"):
+                ret = analyzer.get_forward_and_reverse_analysis(num_samples=10)
+
+        assert ret is None
+
     def test_plots(self, analyzer, tmp_path):
         analyzer.plot(filepath=Path(tmp_path), filename_prefix="")
         assert Path(tmp_path / "forward_reverse_convergence.png").is_file()
