@@ -73,7 +73,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     ThermoSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
-from openfe.protocols.openmm_septop.equil_septop_settings import MultiStateAnalysisSettings
+from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
@@ -1803,7 +1803,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         ligand_B_indices: list[int],
         smc_A: SmallMoleculeComponent,
         smc_B: SmallMoleculeComponent,
-        analysis_settings: MultiStateAnalysisSettings,
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
@@ -1827,8 +1826,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           SmallMoleculeComponent for ligand A.
         smc_B : SmallMoleculeComponent
           SmallMoleculeComponent for ligand B.
-        analysis_settings: MultiStateAnalysisSettings
-          Settings for the structural analysis of the multistate trajectory.
         dry : bool
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
@@ -1871,6 +1868,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         if self.verbose:
             self.logger.info("Analyzing structural outputs")
 
+        analysis_settings = settings["analysis_settings"]
         structural_analysis = self._structural_analysis(
             pdb_file=pdb_file,
             trj_file=trajectory,
@@ -1907,10 +1905,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         smc_A = alchem_comps["stateA"][0]
         smc_B = alchem_comps["stateB"][0]
 
-        # Get the analysis settings
-        settings = self._get_settings()
-        analysis_settings = settings["analysis_settings"]
-
         # Remap ligand indices from full system to subsampled system
         # selection_indices maps: position in subsampled system to index in full system
         selection_indices = np.array(setup.outputs["selection_indices"])
@@ -1930,7 +1924,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             ligand_B_indices=ligand_B_indices,
             smc_A=smc_A,
             smc_B=smc_B,
-            analysis_settings=analysis_settings,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )

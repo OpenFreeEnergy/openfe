@@ -141,7 +141,7 @@ The following metrics are computed per lambda state for both the complex and sol
   (complex leg only).
 * **Protein 2D RMSD** — pairwise RMSD matrix between all analyzed frames (complex leg only).
 
-Results are saved as an NPZ file (``structural_analysis.npz``) and plots are generated
+Results are saved as an `NPZ file <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`_ (``structural_analysis.npz``) and plots are generated
 automatically. The analysis settings (protein selection string and frame stride) can be
 configured via ``analysis_settings`` in :class:`SepTopSettings`.
 
