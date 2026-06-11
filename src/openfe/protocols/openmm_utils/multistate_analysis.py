@@ -351,8 +351,7 @@ class MultistateEquilFEAnalysis:
                 "for both the forward and reverse estimates."
             )
             warnings.warn(wmsg)
-            nan = np.nan * self.units  # type: ignore
-            forward = reverse = (nan, nan)
+            forward = reverse = (np.nan * self.units, np.nan * self.units)  # type: ignore
 
         return forward, reverse
 
@@ -387,9 +386,13 @@ class MultistateEquilFEAnalysis:
           uncertainties are MBAR analytical errors.
         * If MBAR fails to obtain an estimate for a given sample fraction (a
           ``ParameterError``, typically at low fractions of uncorrelated
-          samples), a NaN is recorded for that fraction in the relevant
-          direction and the analysis continues, so that estimates at higher
-          fractions are still returned.
+          samples), a NaN is recorded for that fraction in both the forward
+          and reverse directions and the analysis continues, so that estimates
+          at higher fractions are still returned.
+        * The exception is the final fraction (1.0, the full set of
+          uncorrelated samples): if MBAR fails there, the whole analysis is
+          discarded and None is returned, since that estimate is the reported
+          free energy and anchors the convergence plot.
         """
         # pymbar has some side effects from being imported, so we only want to import
         # it right when we need it
