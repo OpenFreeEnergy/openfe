@@ -408,28 +408,32 @@ class TestFEAnalysis:
             rtol=5e-01,
         )  # fmt: skip
 
-    def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer):
+    @pytest.mark.parametrize("fail_on_call", [1, 2], ids=["forward_fails", "reverse_fails"])
+    def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer, fail_on_call):
         """
-        If MBAR fails to obtain an estimate for a given fraction of the
-        uncorrelated samples, NaN is recorded for that fraction (in the
-        failing direction) and the rest of the analysis is still returned,
-        rather than discarding everything by returning ``None``.
-        This test injects a NaN failure for the lowest fraction in the
-        forwards estimate.
+        If MBAR fails for *either* the forward or reverse estimate of a given
+        fraction of the uncorrelated samples, NaN is recorded for *both*
+        directions at that fraction (too few effective samples to trust either)
+        and the rest of the analysis is still returned, rather than discarding
+        everything by returning ``None``.
+
+        The two parametrizations inject the failure into the lowest fraction's
+        forward estimate (call 1) and reverse estimate (call 2) respectively.
         """
         original = type(analyzer)._get_free_energy
         state = {"calls": 0}
 
         def flaky_get_free_energy(analyzer_arg, u_ln, N_l, bootstraps, return_units):
             state["calls"] += 1
-            # Fail only the forward estimate of the lowest fraction (the very
-            # first call) to mimic an MBAR convergence failure on sparse data.
-            if state["calls"] == 1:
+            # Fail the forward (call 1) or reverse (call 2) estimate of the
+            # lowest fraction, mimicking an MBAR convergence failure on sparse
+            # data in one of the two directions.
+            if state["calls"] == fail_on_call:
                 raise ParameterError("forced low-fraction MBAR failure")
             return original(analyzer_arg, u_ln, N_l, bootstraps, return_units)
 
         with mock.patch.object(analyzer, "_get_free_energy", flaky_get_free_energy):
-            with pytest.warns(UserWarning, match="Could not obtain a forward free energy estimate"):
+            with pytest.warns(UserWarning, match="Could not obtain a free energy estimate"):
                 ret = analyzer.get_forward_and_reverse_analysis(num_samples=10)
 
         # The analysis is still returned rather than being discarded.
@@ -440,15 +444,15 @@ class TestFEAnalysis:
         reverse_DGs = ret["reverse_DGs"].m
         reverse_dDGs = ret["reverse_dDGs"].m
 
-        # The lowest-fraction forward estimate (value and error) -> should give NaN
+        # A failure in either direction -> NaN for both directions (value and
+        # error) at the lowest fraction.
         assert np.isnan(forward_DGs[0])
         assert np.isnan(forward_dDGs[0])
-        # Lowest-fraction reverse is ok
-        assert np.isfinite(reverse_DGs[0])
-        assert np.isfinite(reverse_dDGs[0])
+        assert np.isnan(reverse_DGs[0])
+        assert np.isnan(reverse_dDGs[0])
         # Every higher fraction is finite in both directions.
         assert np.all(np.isfinite(forward_DGs[1:]))
-        assert np.all(np.isfinite(reverse_DGs))
+        assert np.all(np.isfinite(reverse_DGs[1:]))
         # The fractions axis is preserved at the full requested length.
         assert len(ret["fractions"]) == 10
 

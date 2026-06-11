@@ -186,13 +186,15 @@ def _make_forward_reverse(forward, forward_err, reverse, reverse_err):
 def test_plot_convergence_with_nan():
     """
     NaN entries (e.g. from MBAR failing to converge at low fractions of
-    uncorrelated samples) should be rendered as gaps without raising.
+    uncorrelated samples) should be rendered as gaps without raising. A
+    failure at a given fraction NaNs both directions, so the gaps line up
+    across the forward and reverse curves.
     """
     forward_reverse = _make_forward_reverse(
         forward=[np.nan, np.nan, -9.2, -9.4, -9.5, -9.6, -9.65, -9.7, -9.72, -9.75],
         forward_err=[np.nan, np.nan, 0.5, 0.4, 0.35, 0.3, 0.28, 0.25, 0.24, 0.22],
-        reverse=[np.nan, -10.1, -9.9, -9.85, -9.8, -9.78, -9.77, -9.76, -9.75, -9.75],
-        reverse_err=[np.nan, 0.6, 0.5, 0.45, 0.4, 0.35, 0.3, 0.26, 0.23, 0.22],
+        reverse=[np.nan, np.nan, -9.9, -9.85, -9.8, -9.78, -9.77, -9.76, -9.75, -9.75],
+        reverse_err=[np.nan, np.nan, 0.5, 0.45, 0.4, 0.35, 0.3, 0.26, 0.23, 0.22],
     )
 
     ax = plot_convergence(forward_reverse, unit.kilocalorie_per_mole)
