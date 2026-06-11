@@ -145,6 +145,49 @@ class TestComplexStructuralAnalysis:
         assert "structural_analysis_error" in result
         assert "structural_analysis" not in result
 
+    def test_skip_affects_output_length(self, septop_complex_data, tmp_path):
+        d = septop_complex_data
+        skip1_dir = tmp_path / "skip1"
+        skip2_dir = tmp_path / "skip2"
+        skip1_dir.mkdir()
+        skip2_dir.mkdir()
+
+        result_skip1 = BaseSepTopAnalysisUnit._structural_analysis(
+            pdb_file=d["pdb"],
+            trj_file=d["nc"],
+            output_directory=skip1_dir,
+            dry=False,
+            simtype="complex",
+            ligand_A_indices=d["ligand_A_indices"],
+            ligand_B_indices=d["ligand_B_indices"],
+            rdmol_A=d["rdmol_A"],
+            rdmol_B=d["rdmol_B"],
+            protein_selection="protein and name CA",
+            skip=1,
+        )
+
+        result_skip2 = BaseSepTopAnalysisUnit._structural_analysis(
+            pdb_file=d["pdb"],
+            trj_file=d["nc"],
+            output_directory=skip2_dir,
+            dry=False,
+            simtype="complex",
+            ligand_A_indices=d["ligand_A_indices"],
+            ligand_B_indices=d["ligand_B_indices"],
+            rdmol_A=d["rdmol_A"],
+            rdmol_B=d["rdmol_B"],
+            protein_selection="protein and name CA",
+            skip=2,
+        )
+
+        npz1 = np.load(result_skip1["structural_analysis"])
+        npz2 = np.load(result_skip2["structural_analysis"])
+
+        # With skip=2 we should get half the frames as skip=1
+        assert len(npz1["time_ps"]) > len(npz2["time_ps"])
+        assert len(npz1["time_ps"]) == 6
+        assert len(npz2["time_ps"]) == 3
+
 
 class TestSolventStructuralAnalysis:
     def test_npz_written(self, septop_solvent_structural_analysis_result):
