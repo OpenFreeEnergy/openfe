@@ -441,11 +441,10 @@ def test_get_charge_difference(mapping_name, result, request, caplog):
     mapping = request.getfixturevalue(mapping_name)
     caplog.set_level(logging.INFO)
 
-    ion = r"Na+" if result == -1 else r"Cl-"
     msg = (
         f"A charge difference of {result} is observed "
         "between the end states. This will be addressed by "
-        f"transforming a water into a {ion} ion"
+        f"transforming a water into an ion of the same charge"
     )
 
     openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
