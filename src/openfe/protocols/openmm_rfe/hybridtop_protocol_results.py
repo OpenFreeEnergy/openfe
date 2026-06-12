@@ -59,11 +59,12 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
         vals = np.asarray([dG.to(u).m for dG in dGs])
-
-        return np.std(vals) * u
+        # use the unbiased sample standard deviation (ddof=1) as the repeats are sampled from the
+        # (inaccessible) population of possible repeats.
+        return np.std(vals, ddof=1) * u
 
     def get_uncertainty(self) -> Quantity:
-        """The uncertainty/error in the dG value: The std of the estimates of
+        """The uncertainty/error in the dG value: The unbiased sample std of the estimates of
         each independent repeat
         """
 

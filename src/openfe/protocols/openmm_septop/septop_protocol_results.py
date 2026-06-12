@@ -222,7 +222,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         Returns
         -------
         err : unit.Quantity
-          The standard deviation between estimates of the relative binding free
+          The unbiased standard deviation between estimates of the relative binding free
           energy. This is a Quantity defined with units.
         """
 
@@ -233,7 +233,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             # in the unit of the first estimate
             ddGs = [i[0].to(u).m for i in estimates]
 
-            return np.std(ddGs) * u
+            return np.std(ddGs, ddof=1) * u
 
         individual_estimates = self.get_individual_estimates()
         solv_err = _get_stdev(

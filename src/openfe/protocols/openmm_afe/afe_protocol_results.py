@@ -355,7 +355,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResul
         Returns
         -------
         err : openff.units.Quantity
-          The standard deviation between estimates of the solvation free
+          The unbiased standard deviation between estimates of the solvation free
           energy. This is a Quantity defined with units.
         """
 
@@ -366,7 +366,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResul
             # in the unit of the first estimate
             dGs = [i[0].to(u).m for i in estimates]
 
-            return np.std(dGs) * u
+            return np.std(dGs, ddof=1) * u
 
         individual_estimates = self.get_individual_estimates()
         vac_err = _get_stdev(individual_estimates["vacuum"])
@@ -504,7 +504,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResultM
         Returns
         -------
         err : openff.units.Quantity
-          The standard deviation between estimates of the binding free
+          The unbiased standard deviation between estimates of the binding free
           energy. This is a Quantity defined with units.
         """
 
@@ -515,7 +515,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResultM
             # in the unit of the first estimate
             dGs = [i[0].to(u).m for i in estimates]
 
-            return np.std(dGs) * u
+            return np.std(dGs, ddof=1) * u
 
         individual_estimates = self.get_individual_estimates()
 
