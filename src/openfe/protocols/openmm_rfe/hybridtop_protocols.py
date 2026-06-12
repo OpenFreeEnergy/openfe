@@ -28,6 +28,7 @@ from gufe import (
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -39,6 +40,7 @@ from ..openmm_utils import (
     settings_validation,
     system_validation,
 )
+from . import _rfe_utils
 from .equil_rfe_settings import (
     AlchemicalSettings,
     IntegratorSettings,
@@ -372,7 +374,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         mapping: LigandAtomMapping,
         nonbonded_method: str,
         explicit_charge_correction: bool,
-        solvent_component: SolventComponent | None,
+        solvent_component: SolventComponent | SolvatedPDBComponent | None,
     ):
         """
         Validates the net charge difference between the two states.
@@ -435,12 +437,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             )
             raise ValueError(errmsg)
 
-        ion = {-1: solvent_component.positive_ion, 1: solvent_component.negative_ion}[difference]
-
         wmsg = (
             f"A charge difference of {difference} is observed "
             "between the end states. This will be addressed by "
-            f"transforming a water into a {ion} ion"
+            "transforming a water into an ion of the same charge."
         )
         logger.info(wmsg)
 
@@ -560,6 +560,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Note: validation depends on the mapping & solvent component checks
         if stateA.contains(SolventComponent):
             solv_comp = stateA.get_components_of_type(SolventComponent)[0]
+        elif stateA.contains(SolvatedPDBComponent):
+            solv_comp = stateA.get_components_of_type(SolvatedPDBComponent)[0]
         else:
             solv_comp = None
 
