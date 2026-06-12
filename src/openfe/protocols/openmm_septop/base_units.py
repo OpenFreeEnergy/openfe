@@ -1765,6 +1765,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             npz_data = {k: np.asarray(v, dtype=np.float32) for k, v in data.items()}
             npz_data["time_ps"] = np.asarray(time_ps, dtype=np.float32)
 
+        # TODO: eventually change this to more specific exception types
         except Exception as e:
             return {"structural_analysis_error": str(e)}
 
