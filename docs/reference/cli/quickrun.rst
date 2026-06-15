@@ -1,6 +1,6 @@
 .. _cli_quickrun:
 
-``quickrun`` command
+``openfe quickrun`` command
 ====================
 
 .. click:: openfecli.commands.quickrun:quickrun

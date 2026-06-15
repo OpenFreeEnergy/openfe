@@ -1,6 +1,6 @@
 .. _cli_plan-rhfe-network:
 
-``plan-rhfe-network`` command
+``openfe plan-rhfe-network`` command
 =============================
 
 .. click:: openfecli.commands.plan_rhfe_network:plan_rhfe_network
