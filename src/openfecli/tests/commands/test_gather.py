@@ -1,4 +1,5 @@
 import glob
+import gzip
 import os
 import pathlib
 from unittest import mock
@@ -511,9 +512,16 @@ class TestGatherABFE:
 
 
 @pytest.fixture
-def septop_result_dir() -> pathlib.Path:
+def septop_result_dir(tmp_path_factory) -> pathlib.Path:
     ZENODO_SEPTOP_DATA.fetch("septop_results.zip", processor=pooch.Unzip())
     result_dir = pathlib.Path(POOCH_CACHE) / "septop_results.zip.unzip/septop_results/"
+
+    for gz_file in result_dir.rglob("*.json.gz"):
+        json_file = gz_file.with_suffix("")  # removes .gz, leaving .json
+        with gzip.open(gz_file, "rb") as f_in:
+            with open(json_file, "wb") as f_out:
+                f_out.write(f_in.read())
+        gz_file.unlink()  # remove the .gz file
 
     return result_dir
 
