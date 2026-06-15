@@ -741,3 +741,30 @@ class MDOutputSettings(OutputSettings):
     Filename for writing the log of the MD simulation, including timesteps,
     energies, density, etc.
     """
+
+
+class BaseAnalysisSettings(SettingsBaseModel):
+    """
+    Settings for analyzing trajectories
+    """
+
+
+class MultiStateAnalysisSettings(BaseAnalysisSettings):
+    """
+    Settings for MultiState simulation analysis
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    protein_selection: str = "protein and name CA"
+    """
+    MDAnalysis selection string for the guest atoms used for
+    alignment and RMSD calculations in the complex phase.
+    Ignored for the solvent phase. Default "protein and name CA".
+    """
+    skip: int | None = None
+    """
+    Frame stride for structural analysis. If ``None``, a stride is
+    chosen such that approximately (max.) 500 frames are analyzed per state.
+    Set to 1 to analyze every frame.
+    """
