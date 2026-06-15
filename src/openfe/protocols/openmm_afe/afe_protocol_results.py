@@ -365,8 +365,12 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResul
             # Loop through estimates and get the free energy values
             # in the unit of the first estimate
             dGs = [i[0].to(u).m for i in estimates]
-
-            return np.std(dGs, ddof=1) * u
+            # use the unbiased sample standard deviation (ddof=1) as the repeats are sampled from the
+            # (inaccessible) population of possible repeats.
+            std = np.std(dGs, ddof=1)
+            if np.isnan(std):
+                std = 0.0
+            return std * u
 
         individual_estimates = self.get_individual_estimates()
         vac_err = _get_stdev(individual_estimates["vacuum"])
@@ -514,8 +518,12 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResultM
             # Loop through estimates and get the free energy values
             # in the unit of the first estimate
             dGs = [i[0].to(u).m for i in estimates]
-
-            return np.std(dGs, ddof=1) * u
+            # use the unbiased sample standard deviation (ddof=1) as the repeats are sampled from the
+            # (inaccessible) population of possible repeats.
+            std = np.std(dGs, ddof=1)
+            if np.isnan(std):
+                std = 0.0
+            return std * u
 
         individual_estimates = self.get_individual_estimates()
 
