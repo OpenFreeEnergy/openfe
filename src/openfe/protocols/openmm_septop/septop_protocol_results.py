@@ -233,7 +233,10 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             # in the unit of the first estimate
             ddGs = [i[0].to(u).m for i in estimates]
 
-            return np.std(ddGs, ddof=1) * u
+            std = np.std(ddGs, ddof=1)
+            if np.isnan(std):
+                std = 0.0
+            return std * u
 
         individual_estimates = self.get_individual_estimates()
         solv_err = _get_stdev(

@@ -1760,6 +1760,18 @@ class TestProtocolResult:
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
+    def test_get_uncertainty_single_result(self, protocolresult):
+        """Make sure this is 0.0 and not nan when we have a single result"""
+        res = protocolresult.to_dict()
+        keys = list(res["data"].keys())
+        for key in keys[1:]:
+            res["data"].pop(key)
+        single_pr = openfe.ProtocolResult.from_dict(res)
+        est = single_pr.get_uncertainty()
+        assert est.m == 0.0
+        assert isinstance(est, unit.Quantity)
+        assert est.is_compatible_with(unit.kilojoule_per_mole)
+
     def test_get_uncertainty(self, protocolresult):
         est = protocolresult.get_uncertainty()
 

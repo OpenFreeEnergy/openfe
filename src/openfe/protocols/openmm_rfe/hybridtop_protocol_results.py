@@ -61,7 +61,10 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         vals = np.asarray([dG.to(u).m for dG in dGs])
         # use the unbiased sample standard deviation (ddof=1) as the repeats are sampled from the
         # (inaccessible) population of possible repeats.
-        return np.std(vals, ddof=1) * u
+        std = np.std(vals, ddof=1)
+        if np.isnan(std):
+            std = 0.0
+        return std * u
 
     def get_uncertainty(self) -> Quantity:
         """The uncertainty/error in the dG value: The unbiased sample std of the estimates of
