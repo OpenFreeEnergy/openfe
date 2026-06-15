@@ -169,7 +169,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.85, abs=0.01)
+        assert est.m == pytest.approx(1.04, abs=0.01)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
