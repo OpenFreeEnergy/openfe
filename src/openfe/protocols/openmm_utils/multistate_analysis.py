@@ -451,7 +451,7 @@ class MultistateEquilFEAnalysis:
                 "of uncorrelated samples (fraction 1.0); discarding the forward "
                 "and reverse convergence analysis."
             )
-            warnings.warn(wmsg)
+            warnings.warn(wmsg, stacklevel=2)
             return None
 
         return forward_reverse
