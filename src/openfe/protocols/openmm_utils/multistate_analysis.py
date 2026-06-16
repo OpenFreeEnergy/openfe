@@ -394,49 +394,42 @@ class MultistateEquilFEAnalysis:
           discarded and None is returned, since that estimate is the reported
           free energy and anchors the convergence plot.
         """
-        # pymbar has some side effects from being imported, so we only want to import
-        # it right when we need it
-        from pymbar.utils import ParameterError
+        u_ln = self.analyzer._unbiased_decorrelated_u_ln
+        N_l = self.analyzer._unbiased_decorrelated_N_l
+        n_states = len(N_l)
 
-        try:
-            u_ln = self.analyzer._unbiased_decorrelated_u_ln
-            N_l = self.analyzer._unbiased_decorrelated_N_l
-            n_states = len(N_l)
+        # Check that the N_l is the same across all states
+        if not np.all(N_l == N_l[0]):
+            errmsg = f"The number of samples is not equivalent across all states {N_l}"
+            raise ValueError(errmsg)
 
-            # Check that the N_l is the same across all states
-            if not np.all(N_l == N_l[0]):
-                errmsg = f"The number of samples is not equivalent across all states {N_l}"
-                raise ValueError(errmsg)
+        # Get the chunks of N_l going from 10% to ~ 100%
+        # Note: you always lose out a few data points but it's fine
+        chunks = [max(int(N_l[0] / num_samples * i), 1) for i in range(1, num_samples + 1)]
 
-            # Get the chunks of N_l going from 10% to ~ 100%
-            # Note: you always lose out a few data points but it's fine
-            chunks = [max(int(N_l[0] / num_samples * i), 1) for i in range(1, num_samples + 1)]
+        forward_DGs = []
+        forward_dDGs = []
+        reverse_DGs = []
+        reverse_dDGs = []
+        fractions = []
 
-            forward_DGs = []
-            forward_dDGs = []
-            reverse_DGs = []
-            reverse_dDGs = []
-            fractions = []
+        for chunk in chunks:
+            new_N_l = np.array([chunk for _ in range(n_states)])
+            samples = chunk * n_states
+            fraction = chunk / N_l[0]
 
-            for chunk in chunks:
-                new_N_l = np.array([chunk for _ in range(n_states)])
-                samples = chunk * n_states
-                fraction = chunk / N_l[0]
+            # If MBAR fails for either the forward or reverse estimate, both
+            # are recorded as NaN (too few effective samples at this
+            # fraction to trust either direction).
+            (forward_DG, forward_dDG), (reverse_DG, reverse_dDG) = self._get_fraction_free_energy(
+                u_ln, new_N_l, samples, fraction
+            )
+            forward_DGs.append(forward_DG)
+            forward_dDGs.append(forward_dDG)
+            reverse_DGs.append(reverse_DG)
+            reverse_dDGs.append(reverse_dDG)
 
-                # If MBAR fails for either the forward or reverse estimate, both
-                # are recorded as NaN (too few effective samples at this
-                # fraction to trust either direction).
-                (forward_DG, forward_dDG), (reverse_DG, reverse_dDG) = (
-                    self._get_fraction_free_energy(u_ln, new_N_l, samples, fraction)
-                )
-                forward_DGs.append(forward_DG)
-                forward_dDGs.append(forward_dDG)
-                reverse_DGs.append(reverse_DG)
-                reverse_dDGs.append(reverse_dDG)
-
-                fractions.append(fraction)
-        except ParameterError:
-            return None
+            fractions.append(fraction)
 
         forward_reverse = {
             "fractions": np.array(fractions),
