@@ -174,18 +174,6 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Boresch-like restraint search parameter.
     The maximum distance between any host atom and the guest G0 atom. Must be in units compatible with nanometer.
     """
-    host_atoms: Optional[tuple[int, int, int]] = None
-    """
-    The indices of the host component atoms to restrain.
-    The entries define the H0, H1, and H2 atoms in order.
-    If defined, these will override any automatic selection.
-    """
-    guest_atoms: Optional[tuple[int, int, int]] = None
-    """
-    The indices of the guest component atoms to restraint.
-    The entries define the G0, G1, and G2 atoms in order.
-    If defined, these will override any automatic selection.
-    """
     anchor_finding_strategy: Literal["multi-residue", "bonded"] = "bonded"
     """
     The Boresch atom picking strategy to use.
@@ -194,14 +182,3 @@ class BoreschRestraintSettings(BaseRestraintSettings):
       * `bonded`: pick host atoms that are bonded to each other.
       * `multi-residue`: pick host atoms which can span multiple residues.
     """
-
-    @field_validator("guest_atoms", "host_atoms")
-    def positive_idxs_three_tuple(cls, v):
-        if v is not None:
-            if len(v) != 3:
-                errmsg = "``guest_atoms`` and ``host_atoms`` must contain three elements."
-                raise ValueError(errmsg)
-            if any([i < 0 for i in v]):
-                errmsg = "``guest_atoms`` and ``host_atoms`` cannot have negative indices."
-                raise ValueError(errmsg)
-        return v
