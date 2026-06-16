@@ -67,12 +67,16 @@ Templates are provided when opening an issue to act as a guideline for best prac
 <!-- - PR titles should be essentially a changelog entry. TODO: make this clearer, maybe examples -->
 
 ### CI, linting, style guide
-- CI tests, docs, etc, will run on every PR that has `main` or a branch that begins with `feat/` as a target.
+
+All PRs come templated with a checklist of the highest priority criteria, along with CI that runs tests, linting, and other relevant checks that should all pass before a PR is merged.
+
+- Use [numpy docstrings](https://numpydoc.readthedocs.io/en/latest/format.html)
 - Add a news item for any user-facing changes.
 - Rebase or merge, we don't care, but keep your branch up to date with `main`.
-- Always "squash and merge" to keep the git log readable (this is enforced by default on most OpenFE projects).
-- Use [numpy docstrings](https://numpydoc.readthedocs.io/en/latest/format.html)
-- We encourage but do not require [type hints](https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html).
+- Always "squash and merge" when merging pull requests into main to keep the git log readable.
+  This also makes it easier to use the `git bisect` tool.
+  Squash and merge is enforced by default on most OpenFE projects.
+- Use [type hints](https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html), especially for new code.
 - Every PR should have tests that cover changes. You will see the coverage report in CI.
 - Any pins to versions in `environment.yaml` etc. need to have a comment explaining the purpose of the pin and/or a link to the related issue.
 
