@@ -46,7 +46,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     ABFEPreEquilOutputSettings,
     AbsoluteBindingSettings,
     AlchemicalSettings,
-    BoreschRestraintSettings,
+    ABFEBoreschRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
     MDSimulationSettings,
@@ -174,7 +174,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             engine_settings=OpenMMEngineSettings(),
             solvent_integrator_settings=IntegratorSettings(),
             complex_integrator_settings=IntegratorSettings(),
-            restraint_settings=BoreschRestraintSettings(),
+            restraint_settings=ABFEBoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
                 equilibration_length=0.2 * offunit.nanosecond,

@@ -26,7 +26,7 @@ from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    BoreschRestraintSettings,
+    ABFEBoreschRestraintSettings,
     SettingsBaseModel,
 )
 from openfe.protocols.openmm_utils import system_validation
@@ -218,7 +218,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
         guest_atom_ids: list[int],
         host_atom_ids: list[int],
         temperature: Quantity,
-        settings: BoreschRestraintSettings,
+        settings: ABFEBoreschRestraintSettings,
     ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
         """
         Get a Boresch-like restraint Geometry and OpenMM restraint force
@@ -236,7 +236,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
           A list of atom indices defining the host molecules in the universe.
         temperature : openff.units.Quantity
           The temperature of the simulation where the restraint will be added.
-        settings : BoreschRestraintSettings
+        settings : ABFEBoreschRestraintSettings
           Settings on how the Boresch-like restraint should be defined.
 
         Returns
@@ -357,7 +357,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
             self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
         )
 
-        if isinstance(settings["restraint_settings"], BoreschRestraintSettings):
+        if isinstance(settings["restraint_settings"], ABFEBoreschRestraintSettings):
             rest_geom, restraint = self._get_boresch_restraint(
                 univ,
                 guest_rdmol,

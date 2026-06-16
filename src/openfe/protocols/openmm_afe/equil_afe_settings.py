@@ -214,13 +214,13 @@ class ABFEPreEquilOutputSettings(MDOutputSettings):
 
 
 class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
-    host_atoms: Optional[tuple[int, int, int]] = None
+    host_atoms: tuple[int, int, int] | None = None
     """
     The indices of the host component atoms to restrain.
     The entries define the H0, H1, and H2 atoms in order.
     If defined, these will override any automatic selection.
     """
-    guest_atoms: Optional[tuple[int, int, int]] = None
+    guest_atoms: tuple[int, int, int] | None = None
     """
     The indices of the guest component atoms to restraint.
     The entries define the G0, G1, and G2 atoms in order.
