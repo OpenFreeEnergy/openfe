@@ -1,6 +1,6 @@
 **Added:**
 
-* Added CLI reference documentation for ``openfe test`` and ``openfe view_ligand_network`` (`PR #2017 <https://github.com/OpenFreeEnergy/openfe/pull/2017>`_).
+* Added CLI reference documentation for ``openfe test`` and ``openfe view-ligand-network`` (`PR #2017 <https://github.com/OpenFreeEnergy/openfe/pull/2017>`_).
 
 **Changed:**
 
