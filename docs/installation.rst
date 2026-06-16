@@ -439,6 +439,7 @@ Finally, create the editable installation::
 Note the ``.`` at the end of that command, which indicates the current
 directory.
 
+.. See our contribution guide for details on installation for multi-project development
 
 .. _testing:
 
