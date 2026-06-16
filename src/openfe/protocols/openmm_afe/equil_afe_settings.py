@@ -214,19 +214,19 @@ class ABFEPreEquilOutputSettings(MDOutputSettings):
 
 
 class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
-    host_atoms: tuple[int, int, int] | None = None
+    host_restraint_ids: tuple[int, int, int] | None = None
     """
     The indices of the host component atoms to restrain.
     The entries define the H0, H1, and H2 atoms in order.
     If defined, these will override any automatic selection.
     """
-    guest_atoms: tuple[int, int, int] | None = None
+    guest_restraint_ids: tuple[int, int, int] | None = None
     """
     The indices of the guest component atoms to restraint.
     The entries define the G0, G1, and G2 atoms in order.
     If defined, these will override any automatic selection.
     """
-    @field_validator("guest_atoms", "host_atoms")
+    @field_validator("guest_restraint_ids", "host_restraint_ids")
     def positive_idxs_three_tuple(cls, v):
         if v is not None:
             if len(v) != 3:
