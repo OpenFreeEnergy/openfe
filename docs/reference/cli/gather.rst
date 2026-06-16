@@ -1,7 +1,7 @@
 .. _cli_gather:
 
-``openfe gather`` command
-=========================
+``openfe gather``
+=================
 
 Currently, ``openfe gather`` is only able to gather results from Relative Binding Free Energy (RBFE) calculations.
 
