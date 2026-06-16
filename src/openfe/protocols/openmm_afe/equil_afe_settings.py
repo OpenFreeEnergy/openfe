@@ -229,9 +229,6 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
     @field_validator("guest_restraint_ids", "host_restraint_ids")
     def positive_idxs_three_tuple(cls, v):
         if v is not None:
-            if len(v) != 3:
-                errmsg = "``guest_atoms`` and ``host_atoms`` must contain three elements."
-                raise ValueError(errmsg)
             if any([i < 0 for i in v]):
                 errmsg = "``guest_atoms`` and ``host_atoms`` cannot have negative indices."
                 raise ValueError(errmsg)
