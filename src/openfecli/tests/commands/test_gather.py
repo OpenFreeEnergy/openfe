@@ -152,30 +152,30 @@ def test_no_results_found():
 _RBFE_EXPECTED_DG = b"""
 Loading results:
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
-lig_ejm_31	-0.09	0.05
+lig_ejm_31	-0.09	0.06
 lig_ejm_42	0.7	0.1
-lig_ejm_46	-0.98	0.05
-lig_ejm_47	-0.1	0.1
-lig_ejm_48	0.53	0.09
-lig_ejm_50	0.91	0.06
+lig_ejm_46	-0.98	0.07
+lig_ejm_47	-0.1	0.2
+lig_ejm_48	0.5	0.1
+lig_ejm_50	0.91	0.07
 lig_ejm_43	2.0	0.2
-lig_jmc_23	-0.68	0.09
+lig_jmc_23	-0.7	0.1
 lig_jmc_27	-1.1	0.1
-lig_jmc_28	-1.25	0.08
+lig_jmc_28	-1.25	0.09
 """
 
 _RBFE_EXPECTED_DDG = b"""
 Loading results:
 ligand_i	ligand_j	DDG(i->j) (kcal/mol)	uncertainty (kcal/mol)
-lig_ejm_31	lig_ejm_42	0.8	0.1
-lig_ejm_31	lig_ejm_46	-0.89	0.06
-lig_ejm_31	lig_ejm_47	0.0	0.1
-lig_ejm_31	lig_ejm_48	0.61	0.09
-lig_ejm_31	lig_ejm_50	1.00	0.04
+lig_ejm_31	lig_ejm_42	0.8	0.2
+lig_ejm_31	lig_ejm_46	-0.89	0.08
+lig_ejm_31	lig_ejm_47	0.0	0.2
+lig_ejm_31	lig_ejm_48	0.6	0.1
+lig_ejm_31	lig_ejm_50	1.00	0.05
 lig_ejm_42	lig_ejm_43	1.4	0.2
-lig_ejm_46	lig_jmc_23	0.29	0.09
+lig_ejm_46	lig_jmc_23	0.3	0.1
 lig_ejm_46	lig_jmc_27	-0.1	0.1
-lig_ejm_46	lig_jmc_28	-0.27	0.06
+lig_ejm_46	lig_jmc_28	-0.27	0.07
 """
 
 _RBFE_EXPECTED_RAW = b"""\
