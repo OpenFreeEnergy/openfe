@@ -10,6 +10,7 @@ repos:
   rev: v6.0.0
   hooks:
   - id: check-added-large-files
+    args: ["--maxkb=900"]
   - id: check-case-conflict
   - id: check-executables-have-shebangs
   - id: check-symlinks
@@ -19,12 +20,12 @@ repos:
   - id: debug-statements
 
 - repo: https://github.com/tox-dev/pyproject-fmt
-  rev: "v2.11.1"
+  rev: "v2.21.0"
   hooks:
     - id: pyproject-fmt
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.10
+  rev: v0.15.9
   hooks:
     # Run the linter.
     - id: ruff

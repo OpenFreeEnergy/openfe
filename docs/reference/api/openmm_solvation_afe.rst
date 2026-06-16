@@ -16,8 +16,12 @@ Protocol API specification
    :toctree: generated/
 
    AbsoluteSolvationProtocol
-   AbsoluteSolvationVacuumUnit
-   AbsoluteSolvationSolventUnit
+   AHFESolventAnalysisUnit
+   AHFESolventSetupUnit
+   AHFESolventSimUnit
+   AHFEVacuumAnalysisUnit
+   AHFEVacuumSetupUnit
+   AHFEVacuumSimUnit
    AbsoluteSolvationProtocolResult
 
 Protocol Settings

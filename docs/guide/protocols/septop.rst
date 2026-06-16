@@ -1,3 +1,5 @@
+.. _userguide_septop_protocol:
+
 Separated Topologies Protocol
 =============================
 
@@ -32,7 +34,7 @@ Scientific Details
 Orientational restraints
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Orientational, or Boresch-style, restraints are automaticallly (unless manually specified) applied between three protein and three ligand atoms using one bond,
+Orientational, or Boresch-style, restraints are automatically (unless manually specified) applied between three protein and three ligand atoms using one bond,
 two angle, and three dihedral restraints. Reference atoms are picked based on different criteria, such as the root mean squared
 fluctuation of the atoms in a short MD simulation, the secondary structure of the protein, and the distance between atoms,
 based on heuristics from Baumann et al. [2]_ and Alibay et al. [3]_.
@@ -110,6 +112,42 @@ Both the MBAR estimates of the two legs of the thermodynamic cycle, and the over
 which is different compared to the results in the :class:`.RelativeHybridTopologyProtocol` where results from two legs of the thermodynamic cycle are obtained separately.
 
 In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
+
+Analysis
+~~~~~~~~
+
+As with the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`,
+the protocol performs both energetic and structural analysis automatically after each simulation repeat.
+The energetic analysis (MBAR overlap matrix, replica exchange statistics, forward/reverse convergence)
+is identical to that described in the :ref:`multistate analysis section <multistate_analysis>`.
+
+Structural analysis
+"""""""""""""""""""
+
+The structural analysis differs from the hybrid topology protocol in two key ways:
+
+* **Two ligands per simulation.** Since both ligands are present simultaneously throughout
+  the SepTop simulation, structural metrics are computed independently for both ligand A
+  and ligand B in every lambda state.
+
+* **Symmetry-corrected RMSD.** A symmetry-corrected RMSD is used to account for equivalent
+  atom orderings in symmetric molecules (e.g. a flipping phenyl
+  ring) instead of a standard mass-weighted RMSD.
+
+The following metrics are computed per lambda state for both the complex and solvent leg production simulations only:
+
+* **Ligand A and B RMSD** — symmetry-corrected RMSD relative to the first production frame.
+* **Ligand A and B COM drift** — centre-of-mass displacement from the initial production simulation position
+  (complex leg only).
+* **Protein 2D RMSD** — pairwise RMSD matrix between all analyzed frames (complex leg only).
+
+Results are saved as an `NPZ file <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`_ (``structural_analysis.npz``) and plots are generated
+automatically. The analysis settings (protein selection string and frame stride) can be
+configured via ``analysis_settings`` in :class:`SepTopSettings`.
+
+For further guidance on interpreting these plots, see the
+:ref:`structural analysis section <multistate_analysis>` of the hybrid topology protocol
+documentation.
 
 See Also
 --------
