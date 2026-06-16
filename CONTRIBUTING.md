@@ -57,7 +57,7 @@ Templates are provided when opening an issue to act as a guideline for best prac
 <!-- Ensuring scientific validity -->
 
 ### Use semantic branch names
-- Start branch names with one of the following "types", followed by a short description or issue number.
+- We encourage starting branch names with one of the following "types", followed by a short description or issue number.
     - `feat/`: new user-facing feature
     - `fix/`: bugfixes
     - `docs/`: changes to documentation only
