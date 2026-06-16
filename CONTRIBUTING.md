@@ -21,7 +21,7 @@ To build dev versions of both packages locally, follow the above instructions fo
 mamba activate openfe_env  # if not already activated
 git clone git@github.com:OpenFreeEnergy/gufe.git
 cd gufe/
-pip install -e .
+pip install -e . --no-deps
 ```
 
 To make sure the CI tests run properly on your PR, in `openfe/env.yaml` and `openfe/docs/env.yaml`, pin **gufe** to your dev working branch
