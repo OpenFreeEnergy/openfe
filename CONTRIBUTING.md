@@ -9,7 +9,7 @@ Please read our [code of conduct](Code_of_Conduct.md) to understand the standard
 
 ## Setting up a Development Environment
 
-See the [instructions for installing a local dev environment](https://docs.openfree.energy/en/latest/installation.html#developer-install) to get started.
+See the instructions for [installing a local dev environment](https://docs.openfree.energy/en/latest/installation.html#developer-install) to get started.
 
 
 It's common to need to develop **openfe** in tandem with another OpenFE Ecosystem package.
@@ -57,12 +57,12 @@ Templates are provided when opening an issue to act as a guideline for best prac
 <!-- Ensuring scientific validity -->
 
 ### Use semantic branch names
-- We encourage starting branch names with one of the following "types", followed by a short description or issue number.
-    - `feat/`: new user-facing feature
-    - `fix/`: bugfixes
-    - `docs/`: changes to documentation only
-    - `refactor/`: refactoring that does not change behavior
-    - `ci/`: changes to CI workflows
+We encourage starting branch names with one of the following "types", followed by a short description or issue number.
+  - `feat/`: new user-facing feature
+  - `fix/`: bugfixes
+  - `docs/`: changes to documentation only
+  - `refactor/`: refactoring that does not change behavior
+  - `ci/`: changes to CI workflows
 
 <!-- - PR titles should be essentially a changelog entry. TODO: make this clearer, maybe examples -->
 
@@ -104,6 +104,7 @@ We care about promoting new contributions and are willing to spend time reviewin
 However, with generative AI, a large volume of code can be generated quickly, pushing the burden onto reviewers.
 
 Scientific validity is at the core of OpenFE's development process, and it is critical that the code author and reviewer(s) have a shared understanding of what science the code contribution is meant to accomplish.
+
 Test driven development (with tests defined and written _by the code author_), thoughtful conversation on Issues and PRs, and thorough code review are how we prioritize scientific validity and code quality.
 
 <!-- this is subject to change, as the team is continually reevaluating  -->
