@@ -254,8 +254,12 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
             guest_rdmol=guest_rdmol,
             guest_idxs=guest_atom_ids,
             host_idxs=host_atom_ids,
-            guest_restraint_atoms_idxs=list(settings.guest_restraint_ids) if settings.guest_restraint_ids is not None else None,
-            host_restraint_atoms_idxs=list(settings.host_restraint_ids) if settings.host_restraint_ids is not None else None,
+            guest_restraint_atoms_idxs=list(settings.guest_restraint_ids)
+            if settings.guest_restraint_ids is not None
+            else None,
+            host_restraint_atoms_idxs=list(settings.host_restraint_ids)
+            if settings.host_restraint_ids is not None
+            else None,
             host_selection=settings.host_selection,
             anchor_finding_strategy=settings.anchor_finding_strategy,
             dssp_filter=settings.dssp_filter,
