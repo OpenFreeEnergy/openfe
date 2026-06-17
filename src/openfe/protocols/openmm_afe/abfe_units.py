@@ -12,6 +12,7 @@ from collections.abc import Iterable
 from copy import deepcopy
 
 import MDAnalysis as mda
+from MDAnalysis.lib.distances import calc_bonds
 import numpy as np
 import numpy.typing as npt
 from gufe import (
@@ -21,7 +22,11 @@ from gufe.components import Component, SolvatedPDBComponent
 from openff.units import unit as offunit
 from openff.units import Quantity
 from openff.units.openmm import to_openmm
-from openmm import System, HarmonicBondForce
+from openmm import (
+    System,
+    HarmonicBondForce,
+    NonbondedForce,
+)
 from openmm import unit as ommunit
 from openmm.app import Topology as omm_topology
 from openmmtools.states import ThermodynamicState
