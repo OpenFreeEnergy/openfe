@@ -127,7 +127,7 @@ def test_validate_no_protcomp(
 
     errmsg = "No suitable host molecule found"
     with pytest.raises(ValueError, match=errmsg):
-        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB, True)
 
 
 def test_validate_smc_host(
@@ -151,7 +151,7 @@ def test_validate_smc_host(
         }
     )
 
-    AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+    AbsoluteBindingProtocol._validate_endstates(stateA, stateB, True)
 
 
 def test_validate_endstates_nosolvcomp_stateA(benzene_modifications, T4_protein_component):
@@ -171,7 +171,7 @@ def test_validate_endstates_nosolvcomp_stateA(benzene_modifications, T4_protein_
     )
 
     with pytest.raises(ValueError, match="No SolventComponent found"):
-        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB, True)
 
 
 def test_validate_endstates_nosolvcomp_stateB(benzene_modifications, T4_protein_component):
@@ -191,7 +191,7 @@ def test_validate_endstates_nosolvcomp_stateB(benzene_modifications, T4_protein_
     )
 
     with pytest.raises(ValueError, match="No SolventComponent found"):
-        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB, True)
 
 
 def test_validate_endstates_multiple_uniqueA(benzene_modifications, T4_protein_component):
@@ -212,7 +212,7 @@ def test_validate_endstates_multiple_uniqueA(benzene_modifications, T4_protein_c
     )
 
     with pytest.raises(ValueError, match="Only one alchemical species"):
-        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB, True)
 
 
 def test_validate_solvent_endstates_solvent_dissapearing(
@@ -237,7 +237,7 @@ def test_validate_solvent_endstates_solvent_dissapearing(
 
     errmsg = "Only disappearing small molecule components"
     with pytest.raises(ValueError, match=errmsg):
-        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB, True)
 
 
 def test_validate_endstates_unique_stateB(benzene_modifications, T4_protein_component):
@@ -258,10 +258,31 @@ def test_validate_endstates_unique_stateB(benzene_modifications, T4_protein_comp
     )
 
     with pytest.raises(ValueError, match="appearing in state B"):
-        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB, True)
 
 
-def test_charged_endstate(charged_benzene_modifications, T4_protein_component):
+def test_highly_charged_endstate_error(charged_benzene_modifications, T4_protein_component):
+    stateA = ChemicalSystem(
+        {
+            "benzene": charged_benzene_modifications["phthalic_acid"],
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    stateB = ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    errmsg = "Alchemical molecules with a formal charge of greater than 1"
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB, True)
+
+
+def test_charge_endstate_warning(charged_benzene_modifications, T4_protein_component):
     stateA = ChemicalSystem(
         {
             "benzene": charged_benzene_modifications["benzoic_acid"],
@@ -277,9 +298,9 @@ def test_charged_endstate(charged_benzene_modifications, T4_protein_component):
         }
     )
 
-    errmsg = "Charged alchemical molecules are not currently supported"
-    with pytest.raises(ValueError, match=errmsg):
-        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+    msg = "Ligand has a net charge but no charge correction scheme has been requested."
+    with pytest.warns(UserWarning, match=msg):
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB, False)
 
 
 def test_validate_fail_extends(benzene_modifications, T4_protein_component, default_settings):
