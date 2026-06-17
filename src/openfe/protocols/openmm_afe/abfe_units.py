@@ -152,8 +152,8 @@ def _get_minimum_image_distance(box_dimensions: npt.NDArray) -> Quantity:
     volume = mdamath.stp(box_vectors[0], box_vectors[1], box_vectors[2])
     
     # Now calculate the perpendicular widths using perp_width_i = Volume / Area_of_face_i
-    # Where Area_of_face_i is |b_{i+1} × b_{i+2}|.
-    areas = np.cross(bvecs[[1, 2, 0]], bvecs[[2, 0, 1]])
+    # Where Area_of_face_i is |box_vectors_{i+1} × box_vectors_{i+2}|.
+    areas = np.cross(box_vectors[[1, 2, 0]], box_vectors[[2, 0, 1]])
     perp_widths = vol / np.linalg.norm(face_normals, axis=1)
 
     return perp_widths.min() * offunit.angstrom
@@ -193,7 +193,7 @@ def _find_most_common_ions(
     ion_counts: Counter = Counter()
     ion_atom_indices: dict[str, int] = defaultdict(list)
 
-    for residue in topology.residues():
+    for residue in openmm_topology.residues():
         atoms = list(residue.atoms())
 
         # We are only interested in single atom counterions
@@ -289,7 +289,7 @@ class ABFESetupUnitMixin:
         )
 
         # get an atomgroup of the possible alchemical ions
-        ion_atomgroup = univ.atoms[ion_indices]
+        ions_atomgroup = univ.atoms[ion_indices]
 
         # get the alchemical atoms
         residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
@@ -310,10 +310,10 @@ class ABFESetupUnitMixin:
 
             # For a dry execution, just assign a super high value
             max_search_distance= 999 * offunit.nanometer
-
-        # Set the max search distance to half the smallest perpendicular width
-        # with a 1 Angstrom padding
-        max_search_distance = (_get_minimum_image_distance(box) * 0.5) - 1 * offunit.angstrom
+        else:
+            # Set the max search distance to half the smallest perpendicular width
+            # with a 1 Angstrom padding
+            max_search_distance = (_get_minimum_image_distance(box) * 0.5) - 1 * offunit.angstrom
 
         # Re-using a utility from the restraints utilities
         # TODO: rename this class!
@@ -780,7 +780,7 @@ class ABFESolventSetupUnit(ABFESetupUnitMixin, SolventComponentsMixin, SolventSe
         Expand to support restraining multiple ions.
         """
         if alchemical_ions is None:
-            return None, None, system, None
+            return None, system, None
 
         if len(alchemical_ions) > 1:
             errmsg = "Currentlyl cannot handle more than one alchemical ion"
@@ -834,7 +834,7 @@ class ABFESolventSetupUnit(ABFESetupUnitMixin, SolventComponentsMixin, SolventSe
         force.setName("ion_restraint")
         add_force_in_separate_group(restrained_system, force)
 
-        return None, None, restrained_system, None
+        return None, restrained_system, None
 
 
 class ABFESolventSimUnit(

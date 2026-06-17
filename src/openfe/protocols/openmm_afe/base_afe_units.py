@@ -757,7 +757,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         )
 
         # Get alchemical ions, if needed / allowed
-        alchem_ion = self._get_alchemical_ions(
+        alchem_ions = self._get_alchemical_ions(
             alchemical_components=alchem_comps,
             comp_resids=comp_resids,
             openmm_topology=omm_topology,
@@ -1009,9 +1009,9 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         """
         # Fetch an alchemical state
         if len(alchemical_indices) == 1:
-            alchemical_state = SingleAlchemicalState.from_system(alchemical_system)
+            alchemical_state = SingleRegionAlchemicalState.from_system(alchemical_system)
         elif len(alchemical_indices) == 2:
-            alchemical_state = DoubleAclhemicalState.from_system(alchemical_system)
+            alchemical_state = DoubleRegionAclhemicalState.from_system(alchemical_system)
         else:
             errmsg = "More than two alchemical regions are not supported"
             raise ValueError(errmsg)
@@ -1038,7 +1038,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
 
         # If we have two regions (i.e. an alchemical ion) add
         if len(alchemical_indices) == 2:
-            _add_lambdas_to_protocol(param_protocol, lambdas, "A")
+            _add_lambdas_to_protocol(param_protocol, lambdas, "B")
 
         # Only the first region (ligand) can be restrained
         if alchemically_restrained:
@@ -1601,7 +1601,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         system = deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nanometer)
         selection_indices = setup_results.outputs["selection_indices"]
-        alchemical_indices = setup_rersults.outputs["alchemical_indices"]
+        alchemical_indices = setup_results.outputs["alchemical_indices"]
         box_vectors = setup_results.outputs["box_vectors"]
 
         if setup_results.outputs["restraint_geometry"] is not None:
