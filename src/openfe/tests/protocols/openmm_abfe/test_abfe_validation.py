@@ -121,14 +121,36 @@ def test_validate_no_protcomp(
 
     stateB = ChemicalSystem(
         {
-            "benzene": benzene_modifications["benzene"],
             "solvent": SolventComponent(),
         }
     )
 
-    errmsg = "No ProteinComponent found"
+    errmsg = "No suitable host molecule found"
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+
+
+def test_validate_smc_host(
+    benzene_modifications,
+):
+    """
+    Should pass if there's another smc present that could be a host.
+    """
+    stateA = ChemicalSystem(
+        {
+            "benzene": benzene_modifications["benzene"],
+            "toluene": benzene_modifications["toluene"],
+            "solvent": SolventComponent()}
+    )
+
+    stateB = ChemicalSystem(
+        {
+            "toluene": benzene_modifications["toluene"],
+            "solvent": SolventComponent(),
+        }
+    )
+
+    AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
 def test_validate_endstates_nosolvcomp_stateA(benzene_modifications, T4_protein_component):

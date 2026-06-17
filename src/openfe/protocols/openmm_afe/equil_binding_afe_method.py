@@ -278,8 +278,12 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If the alchemical species is charged.
         """
         if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
-            errmsg = "No ProteinComponent found"
-            raise ValueError(errmsg)
+            # Check if there is a suitable SmallMoleculeComponent that could
+            # be the host molecule instead.
+            smcs = stateA.get_components_of_type(SmallMoleculeComponent)
+            if all(smc in stateA.component_diff(stateB)[0] for smc in smcs):
+                errmsg = "No suitable host molecule found"
+                raise ValueError(errmsg)
 
         if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
             errmsg = "No SolventComponent found"
