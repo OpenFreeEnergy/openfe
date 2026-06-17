@@ -18,7 +18,7 @@ from gufe import (
     SolventComponent,
 )
 from gufe.components import Component, SolvatedPDBComponent
-from openff.units import unit and offunit
+from openff.units import unit as offunit
 from openff.units import Quantity
 from openff.units.openmm import to_openmm
 from openmm import System, HarmonicBondForce
