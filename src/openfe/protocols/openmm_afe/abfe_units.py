@@ -160,7 +160,7 @@ def _get_minimum_image_distance(box_dimensions: npt.NDArray) -> Quantity:
 
 
 def _find_most_common_ions(
-    openmm_topology: app.Topology,
+    openmm_topology: omm_topology,
     openmm_system: System,
     target_charge: int,
 ) -> list[int] | None:
@@ -220,7 +220,7 @@ class ABFESetupUnitMixin:
     """
     def _get_alchemical_ions(
         self,
-        alchem_comps: dict[str, list[Component]],
+        alchemical_components: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         openmm_topology: omm_topology,
         openmm_system: System,
@@ -233,7 +233,7 @@ class ABFESetupUnitMixin:
 
         Parameters
         ----------
-        alchem_comps: dict[str, list[Component]]
+        alchemical_components: dict[str, list[Component]]
           A dictionary with a list of alchemical components
           in both state A and B.
         comp_resids: dict[Component, npt.NDArray]
@@ -258,7 +258,7 @@ class ABFESetupUnitMixin:
           The indices of the alchemical ions.
 
         """
-        total_charge = alchem_comps["stateA"][0].total_charge
+        total_charge = alchemical_components["stateA"][0].total_charge
 
         # Don't add an alchemical ion if we have zero net charge
         # or we didn't request it.
@@ -287,7 +287,7 @@ class ABFESetupUnitMixin:
         ions_atomgroup = univ.atoms[ion_indices]
 
         # get the alchemical atoms
-        residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
+        residxs = np.concatenate([comp_resids[key] for key in alchemical_components["stateA"]])
         alchem_idxs = _get_idxs_from_residxs(topology=openmm_topology, residxs=residxs)
         alchem_atomgroup = univ.atoms[alchem_idxs]
 

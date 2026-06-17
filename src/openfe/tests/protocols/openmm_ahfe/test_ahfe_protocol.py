@@ -230,6 +230,7 @@ def test_setup_dry_sim_vac_benzene(benzene_system, method, protocol_dry_settings
         selection_indices=setup_results["selection_indices"],
         box_vectors=setup_results["box_vectors"],
         alchemical_restraints=False,
+        alchemical_indices=setup_results["alchemical_indices"],
         dry=True,
     )
 
@@ -398,6 +399,7 @@ def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmp_path):
         selection_indices=setup_results["selection_indices"],
         box_vectors=setup_results["box_vectors"],
         alchemical_restraints=False,
+        alchemical_indices=setup_results["alchemical_indices"],
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
@@ -451,6 +453,7 @@ def test_dry_run_vsite_fail(benzene_system, tmp_path, protocol_dry_settings):
             selection_indices=setup_results["selection_indices"],
             box_vectors=setup_results["box_vectors"],
             alchemical_restraints=False,
+            alchemical_indices=setup_results["alchemical_indices"],
             dry=True,
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,
@@ -498,6 +501,7 @@ def test_setup_dry_sim_solv_benzene_tip4p(benzene_system, protocol_dry_settings,
         selection_indices=setup_results["selection_indices"],
         box_vectors=setup_results["box_vectors"],
         alchemical_restraints=False,
+        alchemical_indices=setup_results["alchemical_indices"],
         dry=True,
         scratch_basepath=tmp_path,
         shared_basepath=tmp_path,
@@ -608,7 +612,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
     nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
     assert len(nonbond) == 4
 
-    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics"][0]
+    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics_A"][0]
 
     # loop through the 12 benzene atoms
     for i in range(12):
@@ -675,7 +679,7 @@ def test_dry_run_charge_backends(
     nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
     assert len(nonbond) == 4
 
-    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics"][0]
+    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics_A"][0]
 
     charges = []
     for i in range(system.getNumParticles()):
@@ -756,6 +760,7 @@ def test_dry_run_vacuum_write_frequency(
             selection_indices=setup_results["selection_indices"],
             box_vectors=setup_results["box_vectors"],
             alchemical_restraints=False,
+            alchemical_indices=setup_results["alchemical_indices"],
             dry=True,
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,

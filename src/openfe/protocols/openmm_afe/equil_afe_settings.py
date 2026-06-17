@@ -411,6 +411,17 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
     Alchemical protocol settings.
     """
+
+    @field_validator("alchemical_settings", mode="before")
+    @classmethod
+    def coerce_alchemical_settings(cls, v):
+        """
+        Migration from previous default to the new one
+        """
+        if isinstance(v, AlchemicalSettings) and not isinstance(v, ABFEAlchemicalSettings):
+            return ABFEAlchemicalSettings(**v.model_dump())
+        return v
+
     complex_lambda_settings: LambdaSettings
     """
     Settings for controlling the complex transformation leg

@@ -30,8 +30,8 @@ from openmmtools.alchemy import (
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 from openmmtools.tests import test_alchemy
 from openmmtools.tests.test_alchemy import (
-    check_interacting_energy_components,
-    check_noninteracting_energy_components,
+    check_multi_interacting_energy_components,
+    check_multi_noninteracting_energy_components,
     compare_system_energies,
 )
 
@@ -41,6 +41,7 @@ from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
 )
+from openfe.protocols.openmm_afe.abfe_units import _get_mda_universe
 from openfe.protocols.restraint_utils.geometry import BoreschRestraintGeometry
 
 from .utils import UNIT_TYPES, _get_units
@@ -169,7 +170,7 @@ def test_mda_universe_error():
     when calling the mda Universe getter.
     """
     with pytest.raises(ValueError, match="No positions to create"):
-        _ = openmm_afe.ABFEComplexSetupUnit._get_mda_universe(
+        _ = _get_mda_universe(
             topology="foo", positions=None, trajectory=None
         )
 
@@ -437,14 +438,14 @@ class TestT4LysozymeDryRun:
             positions=positions,
         )
 
-        check_noninteracting_energy_components(
+        check_multi_noninteracting_energy_components(
             reference_system=reference_system,
             alchemical_system=alchemical_system,
             alchemical_regions=alchemical_regions,
             positions=positions,
         )
 
-        check_interacting_energy_components(
+        check_multi_interacting_energy_components(
             reference_system=reference_system,
             alchemical_system=alchemical_system,
             alchemical_regions=alchemical_regions,
@@ -462,6 +463,7 @@ class TestT4LysozymeDryRun:
             system=setup_results["alchem_system"],
             positions=setup_results["debug_positions"],
             selection_indices=setup_results["selection_indices"],
+            alchemical_indices=setup_results["alchemical_indices"],
             box_vectors=setup_results["box_vectors"],
             alchemical_restraints=True,
             dry=True,
@@ -483,7 +485,7 @@ class TestT4LysozymeDryRun:
         expected_indices = [
             i + self.num_protein_component_atoms - 1 for i in range(self.num_ligand_atoms)
         ]
-        assert expected_indices == setup_results["alchem_indices"]
+        assert expected_indices == setup_results["alchemical_indices"]["A"]
 
         # Check the non-alchemical system
         assert setup_results["standard_system"].getNumParticles() == self.expected_complex_particles
@@ -504,11 +506,19 @@ class TestT4LysozymeDryRun:
         assert pdb.n_atoms == self.num_all_not_water
 
         # Check energies
-        alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
+        alchemical_regions = []
+        for key in setup_results["alchemical_indices"]:
+            alchemical_regions.append(
+                AlchemicalRegion(
+                    alchemical_atoms=setup_results["alchemical_indices"][key],
+                    name=key,
+                )
+            )
+
         self._test_energies(
             reference_system=setup_results["standard_system"],
             alchemical_system=setup_results["alchem_system"],
-            alchemical_regions=alchem_region,
+            alchemical_regions=alchemical_regions,
             positions=setup_results["debug_positions"],
         )
 
@@ -523,6 +533,7 @@ class TestT4LysozymeDryRun:
             system=setup_results["alchem_system"],
             positions=setup_results["debug_positions"],
             selection_indices=setup_results["selection_indices"],
+            alchemical_indices=setup_results["alchemical_indices"],
             box_vectors=setup_results["box_vectors"],
             alchemical_restraints=False,
             dry=True,
@@ -545,7 +556,7 @@ class TestT4LysozymeDryRun:
 
         # Check the alchemical indices
         expected_indices = [i for i in range(self.num_ligand_atoms)]
-        assert expected_indices == setup_results["alchem_indices"]
+        assert expected_indices == setup_results["alchemical_indices"]["A"]
 
         # Check the non-alchemical system
         assert (
@@ -568,12 +579,19 @@ class TestT4LysozymeDryRun:
         assert pdb.n_atoms == self.num_ligand_atoms
 
         # Check energies
-        alchem_region = AlchemicalRegion(alchemical_atoms=setup_results["alchem_indices"])
+        alchemical_regions = []
+        for key in setup_results["alchemical_indices"]:
+            alchemical_regions.append(
+                AlchemicalRegion(
+                    alchemical_atoms=setup_results["alchemical_indices"][key],
+                    name=key,
+                )
+            )
 
         self._test_energies(
             reference_system=setup_results["standard_system"],
             alchemical_system=setup_results["alchem_system"],
-            alchemical_regions=alchem_region,
+            alchemical_regions=alchemical_regions,
             positions=setup_results["debug_positions"],
         )
 
