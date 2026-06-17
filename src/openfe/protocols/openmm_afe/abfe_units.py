@@ -12,20 +12,20 @@ from collections.abc import Iterable
 from copy import deepcopy
 
 import MDAnalysis as mda
-from MDAnalysis.lib.distances import calc_bonds
 import numpy as np
 import numpy.typing as npt
 from gufe import (
     SolventComponent,
 )
 from gufe.components import Component, SolvatedPDBComponent
-from openff.units import unit as offunit
+from MDAnalysis.lib.distances import calc_bonds
 from openff.units import Quantity
+from openff.units import unit as offunit
 from openff.units.openmm import to_openmm
 from openmm import (
-    System,
     HarmonicBondForce,
     NonbondedForce,
+    System,
 )
 from openmm import unit as ommunit
 from openmm.app import Topology as omm_topology
@@ -41,8 +41,8 @@ from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.geometry.utils import FindHostAtoms, get_central_atom_idx
 from openfe.protocols.restraint_utils.openmm import omm_restraints
-from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 from openfe.protocols.restraint_utils.openmm.omm_forces import add_force_in_separate_group
+from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 
 from .base_afe_units import (
     BaseAbsoluteMultiStateAnalysisUnit,
