@@ -154,7 +154,7 @@ def _get_minimum_image_distance(box_dimensions: npt.NDArray) -> Quantity:
     # Now calculate the perpendicular widths using perp_width_i = Volume / Area_of_face_i
     # Where Area_of_face_i is |box_vectors_{i+1} × box_vectors_{i+2}|.
     areas = np.cross(box_vectors[[1, 2, 0]], box_vectors[[2, 0, 1]])
-    perp_widths = vol / np.linalg.norm(face_normals, axis=1)
+    perp_widths = volume / np.linalg.norm(areas, axis=1)
 
     return perp_widths.min() * offunit.angstrom
 
@@ -258,11 +258,6 @@ class ABFESetupUnitMixin:
           The indices of the alchemical ions.
 
         """
-        IONS = {
-            -1: ['Na', 'K', 'Li', 'Cs', 'Rb'],
-            1: ['Cl', 'Br', 'F', 'I']
-        }
-
         total_charge = alchem_comps["stateA"][0].total_charge
 
         # Don't add an alchemical ion if we have zero net charge
