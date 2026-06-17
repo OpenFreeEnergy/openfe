@@ -9,6 +9,7 @@ This module defines the ProtocolUnits for the
 import logging
 import pathlib
 from collections.abc import Iterable
+from copy import deepcopy
 
 import MDAnalysis as mda
 import numpy as np
@@ -17,9 +18,10 @@ from gufe import (
     SolventComponent,
 )
 from gufe.components import Component, SolvatedPDBComponent
+from openff.units import unit and offunit
 from openff.units import Quantity
 from openff.units.openmm import to_openmm
-from openmm import System
+from openmm import System, HarmonicBondForce
 from openmm import unit as ommunit
 from openmm.app import Topology as omm_topology
 from openmmtools.states import ThermodynamicState
@@ -35,6 +37,7 @@ from openfe.protocols.restraint_utils.geometry.utils import FindHostAtoms, get_c
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
+from openfe.protocols.restraint_utils.openmm.omm_forces import add_force_in_separate_group
 
 from .base_afe_units import (
     BaseAbsoluteMultiStateAnalysisUnit,
@@ -201,7 +204,7 @@ def _find_most_common_ions(
             continue
 
         charge, _, _ = nbf.getParticleParameters(atoms[0].index)
-        charge_val = charge.value_in_unit(omm_unit.elementary_charge)
+        charge_val = charge.value_in_unit(ommunit.elementary_charge)
 
         if np.isclose(charge_val, target_charge, atol=0.01):
             ion_counts[residue.name] += 1
