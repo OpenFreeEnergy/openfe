@@ -41,6 +41,7 @@ from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
 )
+from openfe.protocols.restraint_utils.geometry import BoreschRestraintGeometry
 
 from .utils import UNIT_TYPES, _get_units
 
@@ -612,6 +613,49 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         s.solvent_integrator_settings.barostat_frequency = 100.0 * offunit.timestep
         s.thermo_settings.pressure = 1.1 * offunit.bar
         return s
+
+
+def test_user_restraint(benzene_modifications_am1bcc, T4_protein_component, tmp_path):
+    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.engine_settings.compute_platform = "cpu"
+    s.restraint_settings.guest_restraint_ids = [0, 1, 2]
+    # Ca and C from VAL 87, and N from TYR 88
+    s.restraint_settings.host_restraint_ids = [1383, 1384, 1398]
+
+    protocol = openmm_afe.AbsoluteBindingProtocol(settings=s)
+
+    stateA = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "benzene": benzene_modifications_am1bcc["benzene"],
+            "solvent": gufe.SolventComponent(),
+        }
+    )
+
+    stateB = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": gufe.SolventComponent(),
+        }
+    )
+
+    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
+
+    complex_setup_units = _get_units(dag.protocol_units, UNIT_TYPES["complex"]["setup"])
+
+    results = complex_setup_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+
+    geom = BoreschRestraintGeometry.model_validate(results['restraint_geometry'])
+    # This should be C1, C2, and C3 on the benzene
+    assert geom.guest_atoms == [2613, 2614, 2615]
+    assert geom.host_atoms == [1383, 1384, 1398]
+    assert pytest.approx(geom.r_aA0.to("nanometer").m, rel=1e-4) == 0.510798
+    assert pytest.approx(geom.theta_A0.to("radians").m, rel=1e-4) == 1.20278
+    assert pytest.approx(geom.theta_B0.to("radians").m, rel=1e-4) == 1.25705
+    assert pytest.approx(geom.phi_A0.to("radians").m, rel=1e-4) == 0.86035
+    assert pytest.approx(geom.phi_B0.to("radians").m, rel=1e-4) == 1.59444
+    assert pytest.approx(geom.phi_C0.to("radians").m, rel=1e-4) == 2.92365
 
 
 def test_user_charges(benzene_modifications, T4_protein_component, tmp_path):
