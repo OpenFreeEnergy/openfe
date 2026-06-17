@@ -140,7 +140,8 @@ def test_validate_smc_host(
         {
             "benzene": benzene_modifications["benzene"],
             "toluene": benzene_modifications["toluene"],
-            "solvent": SolventComponent()}
+            "solvent": SolventComponent(),
+        }
     )
 
     stateB = ChemicalSystem(
