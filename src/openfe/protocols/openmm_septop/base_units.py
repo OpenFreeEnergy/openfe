@@ -86,7 +86,7 @@ from ..openmm_utils import (
     system_validation,
 )
 from ..openmm_utils.mdtraj_utils import mdtraj_from_openmm
-from .utils import SepTopParameterState
+from openfe.protocols.openmm_utils.states import DualRegionAlchemicalState
 
 logger = logging.getLogger(__name__)
 
@@ -879,7 +879,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         cmp_states : list[ThermodynamicState]
           A list of ThermodynamicState for each replica in the system.
         """
-        alchemical_state = SepTopParameterState.from_system(alchemical_system)
+        alchemical_state = DualRegionAlchemicalState.from_system(alchemical_system)
 
         # Set up the system constants
         temperature = settings["thermo_settings"].temperature
