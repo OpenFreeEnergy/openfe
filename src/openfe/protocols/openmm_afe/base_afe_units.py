@@ -583,7 +583,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         alchemical_components: dict[str, list[Component]],
         alchemical_ions: list[int] | None,
         alchemical_settings: AlchemicalSettings,
-    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[int]]:
+    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, dict[str, list[int]]]:
         """
         Get an alchemically modified system and its associated factory
 
@@ -1032,7 +1032,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             for key in ["lambda_electrostatics", "lambda_sterics"]:
                 protocol[f"{key}_{region_name}"] = copy.deepcopy(lambdas[key])
 
-        param_protocol = {}
+        param_protocol: dict[str, list[float]] = {}
         # Always add for the first region
         _add_lambdas_to_protocol(param_protocol, lambdas, "A")
 

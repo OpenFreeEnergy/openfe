@@ -199,7 +199,7 @@ def _find_most_common_ions(
     nbf = [i for i in openmm_system.getForces() if isinstance(i, NonbondedForce)][0]
 
     ion_counts: Counter = Counter()
-    ion_atom_indices: dict[str, int] = defaultdict(list)
+    ion_atom_indices: dict[str, list[int]] = defaultdict(list)  # type: ignore[arg-type]
 
     for residue in openmm_topology.residues():
         atoms = list(residue.atoms())
@@ -289,7 +289,7 @@ class ABFESetupUnitMixin:
         univ = _get_mda_universe(
             openmm_topology,
             positions,
-            self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
+            self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,  # type: ignore[attr-defined]
         )
 
         # get an atomgroup of the possible alchemical ions
@@ -304,7 +304,7 @@ class ABFESetupUnitMixin:
         univ.trajectory[-1]  # use the box dimensions from the last frame
         box = univ.dimensions
 
-        if box is None or np.all(np.isinfinite(box)) or np.any(box[:3] <= 0.0):
+        if box is None or np.all(np.isinf(box)) or np.any(box[:3] <= 0.0):
             # If it's not a dry simulation then error out
             if not dry:
                 errmsg = f"Invalid box for co-alchemical ion search: {box}"
@@ -315,7 +315,7 @@ class ABFESetupUnitMixin:
         else:
             # Set the max search distance to half the smallest perpendicular width
             # with a 1 Angstrom padding
-            max_search_distance = (_get_minimum_image_distance(box) * 0.5) - 1 * offunit.angstrom
+            max_search_distance = (_get_minimum_image_distance(box) * 0.5) - 1 * offunit.angstrom  # type: ignore[operator]
 
         # Re-using a utility from the restraints utilities
         # TODO: rename this class!
