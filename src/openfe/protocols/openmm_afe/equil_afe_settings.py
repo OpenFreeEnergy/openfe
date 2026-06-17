@@ -17,10 +17,14 @@ TODO
 """
 
 import numpy as np
+from openff.units import unit as offunit
 from gufe.settings import (
     OpenMMSystemGeneratorFFSettings,
     SettingsBaseModel,
     ThermoSettings,
+)
+from gufe.settings.typing import (
+    NanometerQuantity,
 )
 from pydantic import field_validator
 
@@ -38,6 +42,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
     BoreschRestraintSettings,
+    SpringConstantLinearQuantity,
 )
 
 
@@ -84,6 +89,25 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     Scaling constant ``c`` in
     Eq. 13 from Pham and Shirts, J. Chem. Phys. 135, 034114 (2011).
+    """
+
+
+class ABFEAlchemicalSettings(AlchemicalSettings):
+    # Dev note: we make a separate class for ABFEs so that SepTop and AHFE can
+    # use the parent class without having ABFE-specific net charge settings
+    explicit_charge_correction: bool = True
+    """
+    Whether or not to use explicit charge correction using
+    a co-alchemical ion.
+    """
+    alchemical_ion_min_distance: NanometerQuantity = 1.0 * offunit.nanometer
+    """
+    The minimum distance to search for a co-alchemical ion.
+    """
+    alchemical_ion_solvent_spring_constant: SpringConstantLinearQuantity = 1000.0 * offunit.kilojoule_per_mole / offunit.nm**2
+    """
+    The spring constant holding the ion away from the alchemical solute
+    in the solvent leg.
     """
 
 
@@ -383,7 +407,7 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """Settings for solvating the system in the complex."""
 
     # Alchemical settings
-    alchemical_settings: AlchemicalSettings
+    alchemical_settings: ABFEAlchemicalSettings
     """
     Alchemical protocol settings.
     """

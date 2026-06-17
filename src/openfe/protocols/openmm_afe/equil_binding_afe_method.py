@@ -46,7 +46,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     ABFEBoreschRestraintSettings,
     ABFEPreEquilOutputSettings,
     AbsoluteBindingSettings,
-    AlchemicalSettings,
+    ABFEAlchemicalSettings,
     IntegratorSettings,
     LambdaSettings,
     MDSimulationSettings,
@@ -134,7 +134,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 temperature=298.15 * offunit.kelvin,
                 pressure=1 * offunit.bar,
             ),
-            alchemical_settings=AlchemicalSettings(),
+            alchemical_settings=ABFEAlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
                 lambda_elec=[
                     0.0, 0.25, 0.5, 0.75, 1.0,
