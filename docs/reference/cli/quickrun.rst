@@ -1,7 +1,7 @@
 .. _cli_quickrun:
 
-``quickrun`` command
-====================
+``openfe quickrun``
+===================
 
 .. click:: openfecli.commands.quickrun:quickrun
    :prog: openfe quickrun
