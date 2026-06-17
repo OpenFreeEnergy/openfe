@@ -10,7 +10,7 @@ from openmmtools.states import GlobalParameterState
 
 class _LambdaParameter(GlobalParameterState.GlobalParameter):
     """
-    A global parameter in the interval [0,, 1] with standard value 1.
+    A global parameter in the interval [0, 1] with standard value 1.
     """
     def __init__(self, parameter_name):
         super().__init__(parameter_name, standard_value=1.0, validator=self.lambda_validator)
@@ -51,12 +51,12 @@ class SingleRegionAlchemicalState(GlobalParameterState):
       Control parameter for alchemically modified dihedrals for ligand A.
       If defined, must be between 0 and 1.
     lambda_restraints_A : float | None
-      Control parameter for alchmemically modified restraints for ligand A.
+      Control parameter for alchemically modified restraints for ligand A.
 
     See Also
     --------
     :class:`openmmtools.states.GlobalParameterState`
-    :class:`openfe.protocols.restraint_utils.geometry.DualRegionAlchemicalState`
+    :class:`openfe.protocols.openmm_utils.states.DualRegionAlchemicalState`
     """
     lambda_sterics_A = _LambdaParameter("lambda_sterics_A")
     lambda_electrostatics_A = _LambdaParameter("lambda_electrostatics_A")
@@ -93,7 +93,7 @@ class DualRegionAlchemicalState(SingleRegionAlchemicalState):
       Control parameter for alchemically modified dihedrals for ligand A.
       If defined, must be between 0 and 1.
     lambda_restraints_A : float | None
-      Control parameter for alchmemically modified restraints for ligand A.
+      Control parameter for alchemically modified restraints for ligand A.
     lambda_sterics_B : float | None
       Control parameter for the vdW interactions for ligand B.
       If defined, must be between 0 and 1.
@@ -110,12 +110,12 @@ class DualRegionAlchemicalState(SingleRegionAlchemicalState):
       Control parameter for alchemically modified dihedrals for ligand B.
       If defined, must be between 0 and 1.
     lambda_restraints_B : float | None
-      Control parameter for alchmemically modified restraints for ligand B.
+      Control parameter for alchemically modified restraints for ligand B.
 
     See Also
     --------
     :class:`openmmtools.states.GlobalParameterState`
-    :class:`openfe.protocols.restraint_utils.geometry.SingleRegionAlchemicalState`
+    :class:`openfe.protocols.openmm_utils.states.SingleRegionAlchemicalState`
     """
     lambda_sterics_B = _LambdaParameter("lambda_sterics_B")
     lambda_electrostatics_B = _LambdaParameter("lambda_electrostatics_B")

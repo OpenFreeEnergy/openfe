@@ -554,7 +554,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         -------
         None
         """
-        None
+        return None
 
     def _add_restraints(
         self,
@@ -780,7 +780,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             alchem_comps,
             comp_resids,
             settings,
-            alchem_ion,
+            alchem_ions,
         )
 
         # Get alchemical system
@@ -1011,7 +1011,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         if len(alchemical_indices) == 1:
             alchemical_state = SingleRegionAlchemicalState.from_system(alchemical_system)
         elif len(alchemical_indices) == 2:
-            alchemical_state = DoubleRegionAclhemicalState.from_system(alchemical_system)
+            alchemical_state = DualRegionAlchemicalState.from_system(alchemical_system)
         else:
             errmsg = "More than two alchemical regions are not supported"
             raise ValueError(errmsg)

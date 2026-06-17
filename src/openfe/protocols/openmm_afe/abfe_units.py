@@ -278,7 +278,7 @@ class ABFESetupUnitMixin:
             raise ValueError(errmsg)
 
         univ = _get_mda_universe(
-            omm_topology,
+            openmm_topology,
             positions,
             self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
         )
@@ -288,7 +288,7 @@ class ABFESetupUnitMixin:
 
         # get the alchemical atoms
         residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
-        alchem_idxs = _get_idxs_from_residxs(topology=omm_topology, residxs=residxs)
+        alchem_idxs = _get_idxs_from_residxs(topology=openmm_topology, residxs=residxs)
         alchem_atomgroup = univ.atoms[alchem_idxs]
 
         # Get the maximum distance we can use to find ions
@@ -327,7 +327,7 @@ class ABFESetupUnitMixin:
             raise ValueError(errmsg)
 
         # Just use the first one that comes back ok
-        return atom_finder.results.host_idxs[0]
+        return [atom_finder.results.host_idxs[0]]
 
 
 class ComplexComponentsMixin:
@@ -778,7 +778,7 @@ class ABFESolventSetupUnit(ABFESetupUnitMixin, SolventComponentsMixin, SolventSe
             return None, system, None
 
         if len(alchemical_ions) > 1:
-            errmsg = "Currentlyl cannot handle more than one alchemical ion"
+            errmsg = "Currently cannot handle more than one alchemical ion"
             raise ValueError(errmsg)
 
         restrained_system = deepcopy(system)
