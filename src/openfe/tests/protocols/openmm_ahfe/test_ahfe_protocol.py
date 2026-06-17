@@ -612,7 +612,9 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
     nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
     assert len(nonbond) == 4
 
-    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics_A"][0]
+    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics_A"][
+        0
+    ]
 
     # loop through the 12 benzene atoms
     for i in range(12):
@@ -679,7 +681,9 @@ def test_dry_run_charge_backends(
     nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
     assert len(nonbond) == 4
 
-    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics_A"][0]
+    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics_A"][
+        0
+    ]
 
     charges = []
     for i in range(system.getNumParticles()):

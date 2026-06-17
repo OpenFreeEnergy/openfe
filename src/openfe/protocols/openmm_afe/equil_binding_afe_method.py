@@ -43,10 +43,10 @@ from openff.units import unit as offunit
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
+    ABFEAlchemicalSettings,
     ABFEBoreschRestraintSettings,
     ABFEPreEquilOutputSettings,
     AbsoluteBindingSettings,
-    ABFEAlchemicalSettings,
     IntegratorSettings,
     LambdaSettings,
     MDSimulationSettings,

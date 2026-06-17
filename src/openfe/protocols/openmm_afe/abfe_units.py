@@ -31,8 +31,8 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.restraint_utils import geometry
-from openfe.protocols.restraint_utils.geometry.utils import FindHostAtoms, get_central_atom_idx
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
+from openfe.protocols.restraint_utils.geometry.utils import FindHostAtoms, get_central_atom_idx
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 
@@ -147,10 +147,10 @@ def _get_minimum_image_distance(box_dimensions: npt.NDArray) -> Quantity:
     from MDAnalysis.lib import mdamath
 
     box_vectors = mdamath.triclinic_vectors(box_dimensions)
-    
+
     # Calculate the volume based on the scalar triple product
     volume = mdamath.stp(box_vectors[0], box_vectors[1], box_vectors[2])
-    
+
     # Now calculate the perpendicular widths using perp_width_i = Volume / Area_of_face_i
     # Where Area_of_face_i is |box_vectors_{i+1} × box_vectors_{i+2}|.
     areas = np.cross(box_vectors[[1, 2, 0]], box_vectors[[2, 0, 1]])
@@ -218,6 +218,7 @@ class ABFESetupUnitMixin:
     """
     Mixin for common class methods between Units
     """
+
     def _get_alchemical_ions(
         self,
         alchemical_components: dict[str, list[Component]],
@@ -262,7 +263,7 @@ class ABFESetupUnitMixin:
 
         # Don't add an alchemical ion if we have zero net charge
         # or we didn't request it.
-        if total_charge == 0 or not settings['alchemical_settings'].explicit_charge_correction:
+        if total_charge == 0 or not settings["alchemical_settings"].explicit_charge_correction:
             return None
 
         # TODO: For now, let's stick with a single -1/+1 case, but we should expand to more
@@ -298,13 +299,11 @@ class ABFESetupUnitMixin:
         if box is None or np.all(np.isinfinite(box)) or np.any(box[:3] <= 0.0):
             # If it's not a dry simulation then error out
             if not dry:
-                errmsg = (
-                    f"Invalid box for co-alchemical ion search: {box}"
-                )
+                errmsg = f"Invalid box for co-alchemical ion search: {box}"
                 raise ValueError(errmsg)
 
             # For a dry execution, just assign a super high value
-            max_search_distance= 999 * offunit.nanometer
+            max_search_distance = 999 * offunit.nanometer
         else:
             # Set the max search distance to half the smallest perpendicular width
             # with a 1 Angstrom padding
@@ -315,7 +314,7 @@ class ABFESetupUnitMixin:
         atom_finder = FindHostAtoms(
             host_atoms=ions_atomgroup,
             guest_atoms=alchem_atomgroup,
-            min_search_distance=settings['alchemical_settings'].alchemical_ion_min_distance,
+            min_search_distance=settings["alchemical_settings"].alchemical_ion_min_distance,
             max_search_distance=max_search_distance,
         )
 
@@ -409,7 +408,9 @@ class ComplexSettingsMixin:
         return settings
 
 
-class ABFEComplexSetupUnit(ABFESetupUnitMixin, ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteSetupUnit):
+class ABFEComplexSetupUnit(
+    ABFESetupUnitMixin, ComplexComponentsMixin, ComplexSettingsMixin, BaseAbsoluteSetupUnit
+):
     """
     Setup unit for the complex phase of absolute binding free energy
     transformations.
@@ -710,7 +711,9 @@ class SolventSettingsMixin:
         return settings
 
 
-class ABFESolventSetupUnit(ABFESetupUnitMixin, SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit):
+class ABFESolventSetupUnit(
+    ABFESetupUnitMixin, SolventComponentsMixin, SolventSettingsMixin, BaseAbsoluteSetupUnit
+):
     """
     Setup unit for the solvent phase of absolute binding free energy
     transformations.

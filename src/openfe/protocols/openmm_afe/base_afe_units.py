@@ -85,8 +85,8 @@ from openfe.protocols.openmm_utils.serialization import (
     serialize,
 )
 from openfe.protocols.openmm_utils.states import (
-    SingleRegionAlchemicalState,
     DualRegionAlchemicalState,
+    SingleRegionAlchemicalState,
 )
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
@@ -564,7 +564,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
-        alchemical_ions : list[int] | None,
+        alchemical_ions: list[int] | None,
     ) -> tuple[
         Quantity | None,
         openmm.System,
@@ -618,11 +618,11 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         """
         # first region is the alchemically changing species
         alchemical_indices = {
-            'A': self._get_alchemical_indices(topology, comp_resids, alchemical_components)
+            "A": self._get_alchemical_indices(topology, comp_resids, alchemical_components)
         }
         # second region is any alchemical ions
         if alchemical_ions is not None:
-            alchemical_indices['B'] = alchemical_ions
+            alchemical_indices["B"] = alchemical_ions
 
         alchemical_regions = []
 

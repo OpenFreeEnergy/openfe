@@ -170,9 +170,7 @@ def test_mda_universe_error():
     when calling the mda Universe getter.
     """
     with pytest.raises(ValueError, match="No positions to create"):
-        _ = _get_mda_universe(
-            topology="foo", positions=None, trajectory=None
-        )
+        _ = _get_mda_universe(topology="foo", positions=None, trajectory=None)
 
 
 class TestT4LysozymeDryRun:

@@ -76,6 +76,7 @@ from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings, SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
+from openfe.protocols.openmm_utils.states import DualRegionAlchemicalState
 from openfe.utils import log_system_probe, without_oechem_backend
 
 from ..openmm_utils import (
@@ -86,7 +87,6 @@ from ..openmm_utils import (
     system_validation,
 )
 from ..openmm_utils.mdtraj_utils import mdtraj_from_openmm
-from openfe.protocols.openmm_utils.states import DualRegionAlchemicalState
 
 logger = logging.getLogger(__name__)
 

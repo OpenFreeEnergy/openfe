@@ -17,7 +17,6 @@ TODO
 """
 
 import numpy as np
-from openff.units import unit as offunit
 from gufe.settings import (
     OpenMMSystemGeneratorFFSettings,
     SettingsBaseModel,
@@ -26,6 +25,7 @@ from gufe.settings import (
 from gufe.settings.typing import (
     NanometerQuantity,
 )
+from openff.units import unit as offunit
 from pydantic import field_validator
 
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -104,7 +104,9 @@ class ABFEAlchemicalSettings(AlchemicalSettings):
     """
     The minimum distance to search for a co-alchemical ion.
     """
-    alchemical_ion_solvent_spring_constant: SpringConstantLinearQuantity = 1000.0 * offunit.kilojoule_per_mole / offunit.nm**2
+    alchemical_ion_solvent_spring_constant: SpringConstantLinearQuantity = (
+        1000.0 * offunit.kilojoule_per_mole / offunit.nm**2
+    )
     """
     The spring constant holding the ion away from the alchemical solute
     in the solvent leg.

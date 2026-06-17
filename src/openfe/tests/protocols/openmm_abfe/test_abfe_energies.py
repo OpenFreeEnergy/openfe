@@ -19,9 +19,9 @@ from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe.abfe_units import (
     ABFEComplexSetupUnit,
 )
-from openfe.protocols.openmm_utils.states import SingleRegionAlchemicalState
 from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 from openfe.protocols.openmm_utils.serialization import deserialize
+from openfe.protocols.openmm_utils.states import SingleRegionAlchemicalState
 
 
 def get_alchemical_energy_components(alchemical_system, alchemical_state, positions, platform):
@@ -248,9 +248,9 @@ class TestT4EnergiesRegression:
 
         # turn off sterics
         expected = copy.deepcopy(energies)
-        expected["alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region A"] = (
-            0 * ommunit.kilojoule_per_mole
-        )
+        expected[
+            "alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region A"
+        ] = 0 * ommunit.kilojoule_per_mole
         expected[
             "alchemically modified BondForce for non-alchemical/alchemical sterics exceptions for region A"
         ] = 0 * ommunit.kilojoule_per_mole
