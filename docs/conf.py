@@ -115,6 +115,7 @@ autodoc_mock_imports = [
     "openmmforcefields",
     "psutil",
     "py3Dmol",
+    "pytest",
     "zstandard",
 ]
 

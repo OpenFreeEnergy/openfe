@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-# 
+#
 # Acknowledgements:
 # This module derives heavily from the AlchemicalState class
 # in openmmtools.alchemy (https://github.com/choderalab/openmmtools).
@@ -12,6 +12,7 @@ class _LambdaParameter(GlobalParameterState.GlobalParameter):
     """
     A global parameter in the interval [0, 1] with standard value 1.
     """
+
     def __init__(self, parameter_name):
         super().__init__(parameter_name, standard_value=1.0, validator=self.lambda_validator)
 
@@ -20,7 +21,7 @@ class _LambdaParameter(GlobalParameterState.GlobalParameter):
         if parameter_value is None:
             return parameter_value
         if not (0.0 <= parameter_value <= 1.0):
-            raise ValueError('{} must be between 0 and 1.'.format(self.parameter_name))
+            raise ValueError("{} must be between 0 and 1.".format(self.parameter_name))
         return float(parameter_value)
 
 
@@ -58,6 +59,7 @@ class SingleRegionAlchemicalState(GlobalParameterState):
     :class:`openmmtools.states.GlobalParameterState`
     :class:`openfe.protocols.openmm_utils.states.DualRegionAlchemicalState`
     """
+
     lambda_sterics_A = _LambdaParameter("lambda_sterics_A")
     lambda_electrostatics_A = _LambdaParameter("lambda_electrostatics_A")
     lambda_bonds_A = _LambdaParameter("lambda_bonds_A")
@@ -117,6 +119,7 @@ class DualRegionAlchemicalState(SingleRegionAlchemicalState):
     :class:`openmmtools.states.GlobalParameterState`
     :class:`openfe.protocols.openmm_utils.states.SingleRegionAlchemicalState`
     """
+
     lambda_sterics_B = _LambdaParameter("lambda_sterics_B")
     lambda_electrostatics_B = _LambdaParameter("lambda_electrostatics_B")
     lambda_bonds_B = _LambdaParameter("lambda_bonds_B")
