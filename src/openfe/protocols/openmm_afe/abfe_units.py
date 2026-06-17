@@ -199,7 +199,7 @@ def _find_most_common_ions(
     nbf = [i for i in openmm_system.getForces() if isinstance(i, NonbondedForce)][0]
 
     ion_counts: Counter = Counter()
-    ion_atom_indices: dict[str, list[int]] = defaultdict(list)  # type: ignore[arg-type]
+    ion_atom_indices: dict[str, list[int]] = defaultdict(list)
 
     for residue in openmm_topology.residues():
         atoms = list(residue.atoms())
