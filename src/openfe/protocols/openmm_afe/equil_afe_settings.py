@@ -226,6 +226,7 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
     The entries define the G0, G1, and G2 atoms in order.
     If defined, these will override any automatic selection.
     """
+
     @field_validator("guest_restraint_ids", "host_restraint_ids")
     def positive_idxs_three_tuple(cls, v):
         if v is not None:

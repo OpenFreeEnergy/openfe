@@ -644,9 +644,11 @@ def test_user_restraint(benzene_modifications_am1bcc, T4_protein_component, tmp_
 
     complex_setup_units = _get_units(dag.protocol_units, UNIT_TYPES["complex"]["setup"])
 
-    results = complex_setup_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    results = complex_setup_units[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
 
-    geom = BoreschRestraintGeometry.model_validate(results['restraint_geometry'])
+    geom = BoreschRestraintGeometry.model_validate(results["restraint_geometry"])
     # This should be C1, C2, and C3 on the benzene
     assert geom.guest_atoms == [2613, 2614, 2615]
     assert geom.host_atoms == [1383, 1384, 1398]
