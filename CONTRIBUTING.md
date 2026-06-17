@@ -1,9 +1,9 @@
 # Contributing to OpenFE
 
 We welcome fixes and code contributions to **openfe** and the [larger OpenFE ecosystem](https://github.com/OpenFreeEnergy).
-Since we practice issue-driven development, please open an issue to discuss a proposed contribution before making a PR.
+Since we practice issue-driven development, please **open an issue to discuss a proposed contribution before making a Pull Request (PR)**.
 
-Note that any contributions made must be made under a MIT license.
+Note that any contributions made must be made under a [MIT license](https://opensource.org/license/mit).
 
 Please read our [code of conduct](Code_of_Conduct.md) to understand the standards you must adhere to.
 
@@ -13,7 +13,7 @@ See the instructions for [installing a local dev environment](https://docs.openf
 
 
 It's common to need to develop **openfe** in tandem with another OpenFE Ecosystem package.
-For example, you may want to add some feature to **gufe**, and make sure that its functionality works as intended with **openfe**.
+For example, you may want to add some feature to [**gufe**](https://github.com/OpenFreeEnergy/gufe), and make sure that its functionality works as intended with **openfe**.
 
 To build dev versions of both packages locally, follow the above instructions for installing **openfe** for development, then (using **gufe** as an example):
 
@@ -24,7 +24,7 @@ cd gufe/
 pip install -e . --no-deps
 ```
 
-To make sure the CI tests run properly on your PR, in `openfe/env.yaml` and `openfe/docs/env.yaml`, pin **gufe** to your dev working branch
+To make sure the Continuous Integration (CI) tests run properly on your PR, in `openfe/env.yaml` and `openfe/docs/env.yaml`, pin **gufe** to your dev working branch
 
 ```yaml
 ...
@@ -52,7 +52,10 @@ A good issue should:
 Templates are provided when opening an issue to act as a guideline for best practices.
 
 
-<!-- ### Test-driven development -->
+### Test-driven development
+
+Scientific validity is at the core of OpenFE's development process, and it is critical that the code author and reviewer(s) have a shared understanding of what science the code contribution is meant to accomplish.
+To this end, we strongly encourage test-driven development, with tests defined and written by a developer who understands (and can clearly explain) the scientific purpose of the code.
 
 <!-- Ensuring scientific validity -->
 
@@ -103,13 +106,14 @@ All PRs come templated with a checklist of the highest priority criteria, along 
 We care about promoting new contributions and are willing to spend time reviewing code from new or inexperienced developers.
 However, with generative AI, a large volume of code can be generated quickly, pushing the burden onto reviewers.
 
-Scientific validity is at the core of OpenFE's development process, and it is critical that the code author and reviewer(s) have a shared understanding of what science the code contribution is meant to accomplish.
 
-Test driven development (with tests defined and written _by the code author_), thoughtful conversation on Issues and PRs, and thorough code review are how we prioritize scientific validity and code quality.
+Furthermore, test driven development (with tests defined and written _by the code author_), thoughtful conversation on Issues and PRs, and thorough code review are how we prioritize scientific validity and code quality.
+
+The OpenFE core developers reserve the right to reject contributions if we judge that they do not follow the spirit of these principles.```
 
 <!-- this is subject to change, as the team is continually reevaluating  -->
 
-OpenFE's guidelines around generative AI are based on the principals described above, and can be summarized as:
+OpenFE's guidelines around generative AI are based on the principles described above, and can be summarized as:
 
 1. **Own your code**: No PRs authored by agentic bots will be accepted. A human author must take responsibility for all issues and PRs.
 2. **Prioritize your reviewer**: OpenFE maintainers review all PRs, meaning that a human reviews every line that is committed.
