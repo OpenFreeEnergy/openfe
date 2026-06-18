@@ -3,7 +3,7 @@
 We welcome fixes and code contributions to **openfe** and the [larger OpenFE ecosystem](https://github.com/OpenFreeEnergy).
 Since we practice issue-driven development, please **open an issue to discuss a proposed contribution before making a Pull Request (PR)**.
 
-Note that any contributions made must be made under a [MIT license](https://opensource.org/license/mit).
+Note that any contributions made must be covered by the [MIT license](https://github.com/OpenFreeEnergy/openfe/blob/main/LICENSE), and [Developer Certificate of Origin](https://developercertificate.org/).
 
 Please read our [code of conduct](Code_of_Conduct.md) to understand the standards you must adhere to.
 
@@ -104,13 +104,12 @@ All PRs come templated with a checklist of the highest priority criteria, along 
 
 ## Generative AI Use Policy
 
-We care about promoting new contributions and are willing to spend time reviewing code from new or inexperienced developers.
+We encourage new contributions and are willing to spend time reviewing code from new or inexperienced developers.
 However, with generative AI, a large volume of code can be generated quickly, pushing the burden onto reviewers.
-
 
 Furthermore, test driven development (with tests defined and written _by the code author_), thoughtful conversation on Issues and PRs, and thorough code review are how we prioritize scientific validity and code quality.
 
-The OpenFE core developers reserve the right to reject contributions if we judge that they do not follow the spirit of these principles.```
+Code authors must also retain full authorship for any contributed code,contributions must be covered by the [MIT license](https://github.com/OpenFreeEnergy/openfe/blob/main/LICENSE), and [Developer Certificate of Origin](https://developercertificate.org/).
 
 <!-- this is subject to change, as the team is continually reevaluating  -->
 
@@ -119,3 +118,5 @@ OpenFE's guidelines around generative AI are based on the principles described a
 1. **Own your code**: No PRs authored by agentic bots will be accepted. A human author must take responsibility for all issues and PRs.
 2. **Prioritize your reviewer**: OpenFE maintainers review all PRs, meaning that a human reviews every line that is committed.
    PRs should be constrained to a size and scope that is reasonable for a human to review thoroughly.
+
+The OpenFE core developers reserve the right to reject contributions if we judge that they do not follow the spirit of these principles.
