@@ -818,7 +818,7 @@ class ABFESolventSetupUnit(
 
         distance = float(
             calc_bonds(
-                alchem_ion_ag.position,
+                alchem_ion_ag.atoms[0].position,
                 ligand_central_atom_ag.position,
                 box=universe.dimensions,
             )
