@@ -59,8 +59,9 @@ To this end, we strongly encourage test-driven development, with tests defined a
 
 <!-- Ensuring scientific validity -->
 
-### Use semantic branch names
+### Semantic branch names
 We encourage starting branch names with one of the following "types", followed by a short description or issue number.
+Semantic naming clarifies the intent of the work done on the branch, makes branch names more easy to find, and implicitly discourages scope creep (e.g. when creating a branch starting with `refactor/`, it indicates that the work should not introduce breaking changes.)
   - `feat/`: new user-facing feature
   - `fix/`: bugfixes
   - `docs/`: changes to documentation only
