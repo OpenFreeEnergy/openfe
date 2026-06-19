@@ -9,5 +9,7 @@ CLI Reference
     charge_molecules
     plan_rhfe_network
     plan_rbfe_network
+    view_ligand_network
     quickrun
     gather
+    test
