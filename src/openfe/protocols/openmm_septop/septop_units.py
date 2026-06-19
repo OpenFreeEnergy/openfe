@@ -39,10 +39,7 @@ from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
-from openfe.protocols.restraint_utils.openmm.omm_restraints import (
-    BoreschRestraint,
-    add_force_in_separate_group,
-)
+from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 
 from ..openmm_utils import (
     settings_validation,
@@ -51,7 +48,6 @@ from ..openmm_utils import (
 from ..openmm_utils.mdtraj_utils import mdtraj_from_openmm
 from ..restraint_utils.settings import (
     BoreschRestraintSettings,
-    DistanceRestraintSettings,
 )
 from .base_units import (
     BaseSepTopAnalysisUnit,
@@ -59,8 +55,39 @@ from .base_units import (
     BaseSepTopSetupUnit,
     _pre_equilibrate,
 )
+from .solvent_boresch import add_solvent_boresch_restraints
 
 logger = logging.getLogger(__name__)
+
+
+def _add_dummy_atoms_to_topology(
+        topology: openmm.app.Topology,
+        n_dummies: int = 6,
+) -> None:
+    """
+    Extend *topology* in-place with *n_dummies* dummy atoms.
+
+    Each dummy is added as a single-atom residue named ``DUM`` in a new
+    chain, with element ``None`` and atom name ``DUM<i>``.  This ensures
+    the topology particle count matches the OpenMM System after
+    ``add_dummy_atoms_to_system`` has been called.
+
+    Modifies the topology in-place (OpenMM Topology is mutable).
+    A deepcopy is deliberately avoided because it breaks the internal
+    atom-object identity that ``PDBFile.writeFooter`` relies on when
+    building CONECT records.
+
+    Parameters
+    ----------
+    topology : openmm.app.Topology
+      The topology to extend. Modified in-place.
+    n_dummies : int
+      Number of dummy atoms to append. Default 6 (3 per ligand).
+    """
+    chain = topology.addChain()
+    for i in range(n_dummies):
+        residue = topology.addResidue("DUM", chain)
+        topology.addAtom(f"DUM{i}", None, residue)
 
 
 class SepTopComplexMixin:
@@ -880,136 +907,80 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
     simtype = "solvent"
 
-    @staticmethod
-    def _update_positions(
-        mol_A: SmallMoleculeComponent,
-        mol_B: SmallMoleculeComponent,
-    ) -> SmallMoleculeComponent:
-        """
-        Computes the amount to offset the second ligand by in the solution
-        phase during RBFE calculations and applies the offset to the ligand,
-        returning the SmallMoleculeComponent with the updated positions.
-
-        Parameters
-        ----------
-        mol_A: SmallMoleculeComponent
-          The SmallMoleculeComponent of ligand A
-        mol_B: SmallMoleculeComponent
-          The SmallMoleculeComponent of ligand B
-        Returns
-        -------
-        updated_mol_B: SmallMoleculeComponent
-          The SmallMoleculeComponent of ligand B after updating its positions
-          to be a certain distance away from ligand A
-        """
-
-        # Convert SmallMolecule to Rdkit Molecule
-        rdmol_A = mol_A.to_rdkit()
-        rdmol_B = mol_B.to_rdkit()
-        # Offset ligand B from ligand A in the solvent
-        pos_ligandA = rdmol_A.GetConformers()[0].GetPositions()
-        pos_ligandB = rdmol_B.GetConformers()[0].GetPositions()
-
-        ligand_1_radius = np.linalg.norm(pos_ligandA - pos_ligandA.mean(axis=0), axis=1).max()
-        ligand_2_radius = np.linalg.norm(pos_ligandB - pos_ligandB.mean(axis=0), axis=1).max()
-        ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5
-
-        ligand_offset = pos_ligandA.mean(0) - pos_ligandB.mean(0)
-        ligand_offset[0] += ligand_distance
-
-        # Offset the ligandB.
-        pos_ligandB += ligand_offset
-
-        # Extract updated system positions.
-        rdmol_B.GetConformers()[0].SetPositions(pos_ligandB)
-
-        updated_mol_B = SmallMoleculeComponent(rdmol_B)
-
-        return updated_mol_B
-
     def _add_restraints(
-        self,
-        system: openmm.System,
-        ligand_1: Chem.rdchem.Mol,
-        ligand_2: Chem.rdchem.Mol,
-        ligand_1_inxs: list[int],
-        ligand_2_inxs: list[int],
-        settings: dict[str, SettingsBaseModel],
-        positions_AB: openmm.unit.Quantity,
+            self,
+            system: openmm.System,
+            rdmol_A: Chem.rdchem.Mol,
+            rdmol_B: Chem.rdchem.Mol,
+            ligand_A_idxs: list[int],
+            ligand_B_idxs: list[int],
+            settings: dict[str, SettingsBaseModel],
+            positions_AB: np.ndarray,
     ) -> tuple[
         Quantity,
+        Quantity,
         openmm.System,
+        np.ndarray,
+        BoreschRestraintGeometry,
+        BoreschRestraintGeometry,
     ]:
         """
-        Apply the distance restraint between the ligands.
+        Apply Boresch restraints for both ligands using analytically-placed
+        dummy atoms as host anchors.
 
         Parameters
         ----------
         system: openmm.System
-          The OpenMM system where the restraints will be applied to.
-        ligand_1: Chem.rdchem.Mol
-          The RDKit Molecule of ligand A
-        ligand_2: Chem.rdchem.Mol
-          The RDKit Molecule of ligand B
-        ligand_1_idxs: list[int]
-          Atom indices from the ligand A in the system.
-        ligand_2_idxs: list[int]
-          Atom indices from the ligand B in the system.
+          The alchemical OpenMM system. Modified in-place.
+        rdmol_A: Chem.rdchem.Mol
+          Sanitised RDKit molecule for ligand A.
+        rdmol_B: Chem.rdchem.Mol
+          Sanitised RDKit molecule for ligand B.
+        ligand_A_idxs: list[int]
+          Atom indices of ligand A in the full system.
+        ligand_B_idxs: list[int]
+          Atom indices of ligand B in the full system.
         settings: dict[str, SettingsBaseModel]
-          The settings dict
-        positions_AB: openmm.unit.Quantity
-          The positions of the OpenMM system
+          Protocol settings dict, must contain ``"restraint_settings"``
+          (a ``BoreschRestraintSettings``) and ``"thermo_settings"``.
+        positions_AB: np.ndarray
+          Full-system positions in Angstroms, shape ``(N, 3)``.
 
         Returns
         -------
-        correction: unit.Quantity
-          Standard state correction for the harmonic distance restraint.
+        correction_A: Quantity
+          Boresch standard-state correction for ligand A (kJ/mol).
+        correction_B: Quantity
+          Boresch standard-state correction for ligand B (kJ/mol).
         system: openmm.System
-          The OpenMM system with the added restraints forces
+          The system with restraint forces added and dummy atoms appended.
+        positions_AB: np.ndarray
+          Extended positions array of shape ``(N + 6, 3)`` in Angstroms,
+          with dummy atom coordinates appended.
+        restraint_geom_A: BoreschRestraintGeometry
+          The restraint Geometry object for ligand A. ``host_atoms`` are
+          the 3 dummy atom indices anchoring ligand A.
+        restraint_geom_B: BoreschRestraintGeometry
+          The restraint Geometry object for ligand B. ``host_atoms`` are
+          the 3 dummy atom indices anchoring ligand B.
         """
-
-        if isinstance(settings["restraint_settings"], DistanceRestraintSettings):
-            rest_geom = geometry.harmonic.get_molecule_centers_restraint(
-                molA_rdmol=ligand_1,
-                molB_rdmol=ligand_2,
-                molA_idxs=ligand_1_inxs,
-                molB_idxs=ligand_2_inxs,
-            )
-
-        else:
-            # TODO turn this into a direction for different restraint types supported?
-            raise NotImplementedError("Other restraint types are not yet available")
+        corr_A, corr_B, system, positions_AB, geom_A, geom_B = add_solvent_boresch_restraints(
+            system=system,
+            positions_ang=positions_AB,
+            rdmol_A=rdmol_A,
+            rdmol_B=rdmol_B,
+            ligand_A_idxs=ligand_A_idxs,
+            ligand_B_idxs=ligand_B_idxs,
+            settings=settings,
+        )
 
         if self.verbose:
-            self.logger.info(f"restraint geometry is: {rest_geom}")
-
-        distance = np.linalg.norm(
-            positions_AB[rest_geom.guest_atoms[0]] - positions_AB[rest_geom.host_atoms[0]]
-        )
-
-        k_distance = to_openmm(settings["restraint_settings"].spring_constant)
-
-        force = openmm.HarmonicBondForce()
-        force.addBond(
-            rest_geom.guest_atoms[0],
-            rest_geom.host_atoms[0],
-            distance * openmm.unit.nanometers,
-            k_distance,
-        )
-        force.setName("alignment_restraint")
-        # Add force to a separate force group
-        add_force_in_separate_group(system, force)
-
-        # No correction necessary as only a single harmonic bond is applied between the ligands
-        correction = (
-            from_openmm(
-                openmm.unit.MOLAR_GAS_CONSTANT_R
-                * to_openmm(settings["thermo_settings"].temperature)
+            self.logger.info(
+                f"Applied dummy-atom Boresch restraints for solvent leg. "
+                f"Standard state corrections: A={corr_A:.3f}, B={corr_B:.3f}"
             )
-            * 0.0
-        )
 
-        return correction, system
+        return corr_A, corr_B, system, positions_AB, geom_A, geom_B
 
     def run(
         self, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
@@ -1052,21 +1023,21 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 3. Assign partial charges
         self._assign_partial_charges(settings["charge_settings"], smc_comps_AB)
-
-        # 4. Update the positions of ligand B:
-        #    - solvent: Offset ligand B with respect to ligand A
-        smc_B = self._update_positions(
-            alchem_comps["stateA"][0],
-            alchem_comps["stateB"][0],
-        )
-        smc_off_B = {smc_B: smc_B.to_openff()}
+        #
+        # # 4. Update the positions of ligand B:
+        # #    - solvent: Offset ligand B with respect to ligand A
+        # smc_B = self._update_positions(
+        #     alchem_comps["stateA"][0],
+        #     alchem_comps["stateB"][0],
+        # )
+        # smc_off_B = {smc_B: smc_B.to_openff()}
 
         # 5. Get the OpenMM systems
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB, comp_resids_AB = (
             self.get_system(
                 solv_comp,
                 prot_comp,
-                smc_comps_A | smc_off_B,
+                smc_comps_A | smc_comps_B,
                 settings,
             )
         )  # fmt: skip
@@ -1075,7 +1046,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # system AB
         comp_atomids_AB = self._get_atom_indices(omm_topology_AB, comp_resids_AB)
         atom_indices_AB_A = comp_atomids_AB[alchem_comps["stateA"][0]]
-        atom_indices_AB_B = comp_atomids_AB[smc_B]
+        atom_indices_AB_B = comp_atomids_AB[alchem_comps["stateB"][0]]
 
         # 7. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
@@ -1089,24 +1060,38 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 8. Apply Restraints
         rdmol_A = alchem_comps["stateA"][0].to_rdkit()
-        rdmol_B = smc_B.to_rdkit()
+        rdmol_B = alchem_comps["stateB"][0].to_rdkit()
         Chem.SanitizeMol(rdmol_A)
         Chem.SanitizeMol(rdmol_B)
 
-        corr, system = self._add_restraints(
-            alchemical_system,
-            rdmol_A,
-            rdmol_B,
-            atom_indices_AB_A,
-            atom_indices_AB_B,
-            settings,
-            positions_AB,
+        # positions_AB is extended by 6 rows (3 dummies per ligand)
+        positions_AB_ang = np.array(
+            positions_AB.value_in_unit(openmm.unit.angstrom))
+        corr_A, corr_B, system, positions_AB_ang, restraint_geom_A, restraint_geom_B = (
+            self._add_restraints(
+                alchemical_system,
+                rdmol_A,
+                rdmol_B,
+                atom_indices_AB_A,
+                atom_indices_AB_B,
+                settings,
+                positions_AB_ang,
+            )
         )
+        positions_AB = positions_AB_ang * openmm.unit.angstrom
 
-        # Write the full system PDB
+        # Extend omm_topology_AB with 6 dummy atoms so the PDB captures all
+        # N+6 particles in the system.  The run unit reads positions from this
+        # PDB, so the particle count must match the serialised system exactly.
+        _add_dummy_atoms_to_topology(omm_topology_AB, n_dummies=6)
+
+        # Write the full system PDB.
+        # positions_AB now has 6 extra rows for the dummy atoms, which are
+        # not in omm_topology_AB. Slice back to the original atom count.
         topology_file = self.shared_basepath / "topology.pdb"
         openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_AB, positions_AB, open(topology_file, "w")
+            omm_topology_AB, positions_AB,
+            open(topology_file, "w")
         )
 
         # Subselect system based on user inputs & write initial subsampled PDB
@@ -1130,13 +1115,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
             return {
                 "system": system_outfile,
                 "topology": topology_file,
-                "standard_state_correction": corr.to("kilocalorie_per_mole"),
+                "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
+                "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
             }
         else:
             return {
-                # Add in various objects we can used to test the system
                 "system": system_outfile,
                 "topology": topology_file,
                 "system_AB": omm_system_AB,
@@ -1144,6 +1129,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "alchem_system": alchemical_system,
                 "alchem_factory": alchemical_factory,
                 "positions": positions_AB,
+                "restraint_geometry_A": restraint_geom_A,
+                "restraint_geometry_B": restraint_geom_B,
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
             }
@@ -1172,14 +1159,15 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
         lambda_vdw_A = [1 - x for x in lambda_vdw_A]
         lambda_elec_B = [1 - x for x in lambda_elec_B]
         lambda_vdw_B = [1 - x for x in lambda_vdw_B]
-        # # Set lambda restraint for the solvent to 1
-        # lambda_restraints = len(lambda_elec_A) * [1]
 
         lambdas["lambda_electrostatics_A"] = lambda_elec_A
         lambdas["lambda_sterics_A"] = lambda_vdw_A
         lambdas["lambda_electrostatics_B"] = lambda_elec_B
         lambdas["lambda_sterics_B"] = lambda_vdw_B
-        # lambdas['lambda_restraints'] = lambda_restraints
+        # Dummy-atom Boresch restraints are always fully on in the solvent leg
+        n_windows = len(lambda_elec_A)
+        lambdas["lambda_restraints_A"] = [1.0] * n_windows
+        lambdas["lambda_restraints_B"] = [1.0] * n_windows
 
         return lambdas
 
