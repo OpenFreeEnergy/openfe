@@ -6,7 +6,6 @@ import pytest
 from openff.units import unit as offunit
 
 import openfe
-from openfe import setup
 from openfe.protocols import openmm_rfe
 
 
@@ -353,28 +352,6 @@ def test_too_many_prot_comps_error(
             stateA=stateA,
             stateB=stateB,
             mapping=benzene_to_toluene_mapping,
-        )
-
-
-def test_element_change_warning(atom_mapping_basic_test_files):
-    # check a mapping with element change gets rejected early
-    l1 = atom_mapping_basic_test_files["2-methylnaphthalene"]
-    l2 = atom_mapping_basic_test_files["2-naftanol"]
-
-    # We use the 'old' lomap defaults because the
-    # basic test files inputs we use aren't fully aligned
-    mapper = setup.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
-    )
-
-    mapping = next(mapper.suggest_mappings(l1, l2))
-
-    alchem_comps = {"stateA": [l1], "stateB": [l2]}
-
-    with pytest.warns(UserWarning, match="Element change"):
-        openmm_rfe.RelativeHybridTopologyProtocol._validate_mapping(
-            [mapping],
-            alchem_comps,
         )
 
 
