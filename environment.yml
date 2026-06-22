@@ -9,7 +9,7 @@ dependencies:
   - duecredit<0.10
   - kartograf>=1.2.0
   - konnektor~=0.2.0
-  - lomap2>=3.3.0
+  - lomap2-base>=3.3.0
   - networkx
   - numpy
   - openfe-analysis>=0.5.0
