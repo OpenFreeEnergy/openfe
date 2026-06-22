@@ -1,9 +1,7 @@
 name: "PR: griffe check for API breaks"
 
 on:
-  pull_request_target:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   check:
