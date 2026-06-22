@@ -57,6 +57,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     IntegratorSettings,
     LambdaSettings,
     MDSimulationSettings,
+    MultiStateAnalysisSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
@@ -262,6 +263,7 @@ class SepTopProtocol(gufe.Protocol):
             ),
             solvent_restraint_settings=BoreschRestraintSettings(),
             complex_restraint_settings=BoreschRestraintSettings(),
+            analysis_settings=MultiStateAnalysisSettings(),
         )  # fmt: skip
 
     @classmethod
@@ -572,6 +574,7 @@ class SepTopProtocol(gufe.Protocol):
 
                 analysis = unit_classes[phase]["analysis"](
                     protocol=self,
+                    alchemical_components=alchem_comps,
                     setup=setup,
                     simulation=simulation,
                     generation=0,

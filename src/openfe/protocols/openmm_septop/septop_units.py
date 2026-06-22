@@ -164,6 +164,7 @@ class SepTopComplexMixin:
             "simulation_settings": prot_settings.complex_simulation_settings,
             "output_settings": prot_settings.complex_output_settings,
             "restraint_settings": prot_settings.complex_restraint_settings,
+            "analysis_settings": prot_settings.analysis_settings,
         }
 
         settings_validation.validate_timestep(
@@ -250,6 +251,7 @@ class SepTopSolventMixin:
             "simulation_settings": prot_settings.solvent_simulation_settings,
             "output_settings": prot_settings.solvent_output_settings,
             "restraint_settings": prot_settings.solvent_restraint_settings,
+            "analysis_settings": prot_settings.analysis_settings,
         }
 
         settings_validation.validate_timestep(
@@ -882,6 +884,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "restraint_geometry_B": restraint_geom_B.model_dump(),
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
+                "ligand_A_indices": atom_indices_AB_A,
+                "ligand_B_indices": atom_indices_AB_B,
             }
         else:
             return {
@@ -897,6 +901,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "positions": equil_positions_AB,
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
+                "ligand_A_indices": atom_indices_AB_A,
+                "ligand_B_indices": atom_indices_AB_B,
             }
 
 
@@ -1121,6 +1127,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "restraint_geometry_B": restraint_geom_B.model_dump(),
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
+                "ligand_A_indices": atom_indices_AB_A,
+                "ligand_B_indices": atom_indices_AB_B,
             }
         else:
             return {
@@ -1134,6 +1142,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "positions": positions_AB,
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
+                "ligand_A_indices": atom_indices_AB_A,
+                "ligand_B_indices": atom_indices_AB_B,
             }
 
 
