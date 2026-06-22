@@ -1587,22 +1587,16 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         )
 
         # We re-include things here to make life easier when gathering results
-        if self.simtype == "complex":
-            previous_outputs = {
-                "standard_state_correction_A": setup.outputs["standard_state_correction_A"],
-                "standard_state_correction_B": setup.outputs["standard_state_correction_B"],
-                "restraint_geometry_A": setup.outputs["restraint_geometry_A"],
-                "restraint_geometry_B": setup.outputs["restraint_geometry_B"],
-            }
-        else:
-            previous_outputs = {
-                "standard_state_correction": setup.outputs["standard_state_correction"]
-            }
-
-        previous_outputs["subsampled_pdb_structure"] = setup.outputs["subsampled_pdb_structure"]
-        previous_outputs["selection_indices"] = setup.outputs["selection_indices"]
-        previous_outputs["trajectory"] = trajectory
-        previous_outputs["checkpoint"] = checkpoint
+        previous_outputs = {
+            "standard_state_correction_A": setup.outputs["standard_state_correction_A"],
+            "standard_state_correction_B": setup.outputs["standard_state_correction_B"],
+            "restraint_geometry_A": setup.outputs["restraint_geometry_A"],
+            "restraint_geometry_B": setup.outputs["restraint_geometry_B"],
+            "subsampled_pdb_structure": setup.outputs["subsampled_pdb_structure"],
+            "selection_indices": setup.outputs["selection_indices"],
+            "trajectory": trajectory,
+            "checkpoint": checkpoint,
+        }
 
         return {
             "repeat_id": self._inputs["repeat_id"],

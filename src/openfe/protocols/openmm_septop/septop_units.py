@@ -1117,11 +1117,14 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "topology": topology_file,
                 "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
                 "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
+                "restraint_geometry_A": restraint_geom_A.model_dump(),
+                "restraint_geometry_B": restraint_geom_B.model_dump(),
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
             }
         else:
             return {
+                # Add in various objects we can use to test the system
                 "system": system_outfile,
                 "topology": topology_file,
                 "system_AB": omm_system_AB,
@@ -1129,8 +1132,6 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "alchem_system": alchemical_system,
                 "alchem_factory": alchemical_factory,
                 "positions": positions_AB,
-                "restraint_geometry_A": restraint_geom_A,
-                "restraint_geometry_B": restraint_geom_B,
                 "selection_indices": selection_indices,
                 "subsampled_pdb_structure": sub_pdb_structure,
             }
