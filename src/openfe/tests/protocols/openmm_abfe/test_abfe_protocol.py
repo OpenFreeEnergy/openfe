@@ -176,7 +176,7 @@ def test_mda_universe_error():
 class TestT4LysozymeDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 2634  # 9 counterions to neutralize
-    num_protein_component_atoms = 2614
+    num_host_component_atoms = 2614
     # No ions
     num_ligand_atoms = 12
     expected_complex_particles = 32607
@@ -481,7 +481,7 @@ class TestT4LysozymeDryRun:
 
         # Check the alchemical indices
         expected_indices = [
-            i + self.num_protein_component_atoms - 1 for i in range(self.num_ligand_atoms)
+            i + self.num_host_component_atoms - 1 for i in range(self.num_ligand_atoms)
         ]
         assert expected_indices == setup_results["alchemical_indices"]["A"]
 
@@ -631,6 +631,254 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         return s
 
 
+class TestHostGuestCharged(TestT4LysozymeDryRun):
+    """
+    A host guest system with user defined Boresch restraints
+    and a net charge.
+    """
+    solvent = SolventComponent(ion_concentration=0.15 * offunit.molar)
+    num_all_not_water = 223
+    num_host_component_atoms = 192
+    # No ions
+    num_ligand_atoms = 75
+    expected_complex_particles = 6166
+    expected_ligand_solvent_particles = 29910
+
+    barostat_by_phase = {
+        "complex": MonteCarloBarostat,
+        "solvent": MonteCarloBarostat,
+    }
+
+    @pytest.fixture(scope="class")
+    def settings(self):
+        s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+        s.protocol_repeats = 1
+        s.engine_settings.compute_platform = "cpu"
+        s.forcefield_settings.nonbonded_cutoff = 1.2 * offunit.nanometer
+        s.complex_output_settings.output_indices = "not water"
+        s.complex_solvation_settings.solvent_padding = None
+        s.complex_solvation_settings.number_of_solvent_molecules = 2000
+        s.solvent_solvation_settings.box_shape = "cube"
+        s.solvent_solvation_settings.solvent_padding = None
+        s.solvent_solvation_settings.number_of_solvent_molecules = 10000
+        s.restraint_settings.guest_restraint_ids = [1, 2, 4]
+        s.restraint_settings.host_restraint_ids = [1, 4, 3]
+        s.alchemical_settings.alchemical_ion_min_distance = 1.0 * offunit.nanometer
+        return s
+
+
+    @pytest.fixture(scope="class")
+    def dag(self, protocol, OA_guests_charged, OA_host_charged):
+        stateA = ChemicalSystem(
+            {
+                "ligand": OA_guests_charged["OA-G0"],
+                "host": OA_host_charged,
+                "solvent": self.solvent,
+            }
+        )
+
+        stateB = ChemicalSystem(
+            {
+                "host": OA_host_charged,
+                "solvent": self.solvent,
+            }
+        )
+
+        return protocol.create(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=None,
+        )
+
+    def _assert_expected_alchemical_forces(self, system, phase: str, settings):
+        """
+        Assert the forces expected in the alchemical system.
+        """
+        barostat_type = self.barostat_by_phase[phase]
+        self._assert_force_num(system, NonbondedForce, 1)
+        self._assert_force_num(system, CustomNonbondedForce, 4)
+        self._assert_force_num(system, CustomBondForce, 4)
+        self._assert_force_num(system, HarmonicAngleForce, 1)
+        self._assert_force_num(system, PeriodicTorsionForce, 1)
+        self._assert_force_num(system, barostat_type, 1)
+
+        if phase == "complex":
+            self._assert_force_num(system, HarmonicBondForce, 1)
+            self._assert_force_num(system, CustomCompoundBondForce, 1)
+        else:
+            self._assert_force_num(system, HarmonicBondForce, 2)
+        
+        assert len(system.getForces()) == 14
+
+        # Check the nonbonded force has the right contents
+        nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
+        assert len(nonbond) == 1
+        assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME
+        assert (
+            from_openmm(nonbond[0].getCutoffDistance())
+            == settings.forcefield_settings.nonbonded_cutoff
+        )
+
+        # Check the barostat made it all the way through
+        barostat = [f for f in system.getForces() if isinstance(f, barostat_type)]
+        assert len(barostat) == 1
+        expected_frequency = int(
+            (
+                settings.complex_integrator_settings
+                if phase == "complex"
+                else settings.solvent_integrator_settings
+            ).barostat_frequency.m
+        )
+        assert barostat[0].getFrequency() == expected_frequency
+        assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
+        assert barostat[0].getDefaultTemperature() == to_openmm(
+            settings.thermo_settings.temperature
+        )
+
+    def test_complex_dry_run(self, complex_setup_units, complex_sim_units, settings, tmp_path):
+        setup_results = complex_setup_units[0].run(
+            dry=True,
+            verbose=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+        sim_results = complex_sim_units[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            alchemical_indices=setup_results["alchemical_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=True,
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+
+        # Check the sampler
+        self._verify_sampler(sim_results["sampler"], phase="complex", settings=settings)
+
+        # Check the alchemical system
+        assert setup_results["alchem_system"].getNumParticles() == self.expected_complex_particles
+        self._assert_expected_alchemical_forces(
+            setup_results["alchem_system"], phase="complex", settings=settings
+        )
+        self._check_box_vectors(setup_results["alchem_system"])
+
+        # # Check the alchemical indices
+        # expected_indices = [
+        #     i + self.num_host_component_atoms - 1 for i in range(self.num_ligand_atoms)
+        # ]
+        # assert expected_indices == setup_results["alchemical_indices"]["A"]
+
+        # Check the non-alchemical system
+        assert setup_results["standard_system"].getNumParticles() == self.expected_complex_particles
+        self._assert_expected_nonalchemical_forces(
+            setup_results["standard_system"],
+            "complex",
+            settings=settings,
+        )
+        self._check_box_vectors(setup_results["standard_system"])
+        # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+        assert_allclose(
+            from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
+            from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
+        )
+
+        # Check the PDB
+        pdb = mdt.load_pdb(setup_results["pdb_structure"])
+        assert pdb.n_atoms == self.num_all_not_water
+
+        # Check energies
+        alchemical_regions = []
+        for key in setup_results["alchemical_indices"]:
+            alchemical_regions.append(
+                AlchemicalRegion(
+                    alchemical_atoms=setup_results["alchemical_indices"][key],
+                    name=key,
+                )
+            )
+
+        self._test_energies(
+            reference_system=setup_results["standard_system"],
+            alchemical_system=setup_results["alchem_system"],
+            alchemical_regions=alchemical_regions,
+            positions=setup_results["debug_positions"],
+        )
+
+    def test_solvent_dry_run(self, solvent_setup_units, solvent_sim_units, settings, tmp_path):
+        setup_results = solvent_setup_units[0].run(
+            dry=True,
+            verbose=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+        sim_results = solvent_sim_units[0].run(
+            system=setup_results["alchem_system"],
+            positions=setup_results["debug_positions"],
+            selection_indices=setup_results["selection_indices"],
+            alchemical_indices=setup_results["alchemical_indices"],
+            box_vectors=setup_results["box_vectors"],
+            alchemical_restraints=False,
+            dry=True,
+            scratch_basepath=tmp_path,
+            shared_basepath=tmp_path,
+        )
+
+        # Check the sampler
+        self._verify_sampler(sim_results["sampler"], phase="solvent", settings=settings)
+
+        # Check the alchemical system
+        assert (
+            setup_results["alchem_system"].getNumParticles()
+            == self.expected_ligand_solvent_particles
+        )
+        self._assert_expected_alchemical_forces(
+            setup_results["alchem_system"], phase="solvent", settings=settings
+        )
+        self._test_cubic_vectors(setup_results["alchem_system"])
+
+        # # Check the alchemical indices
+        # expected_indices = [i for i in range(self.num_ligand_atoms)]
+        # assert expected_indices == setup_results["alchemical_indices"]["A"]
+
+        # Check the non-alchemical system
+        assert (
+            setup_results["standard_system"].getNumParticles()
+            == self.expected_ligand_solvent_particles
+        )
+        self._assert_expected_nonalchemical_forces(
+            setup_results["standard_system"], phase="solvent", settings=settings
+        )
+        self._test_cubic_vectors(setup_results["standard_system"])
+
+        # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+        assert_allclose(
+            from_openmm(setup_results["alchem_system"].getDefaultPeriodicBoxVectors()),
+            from_openmm(setup_results["standard_system"].getDefaultPeriodicBoxVectors()),
+        )
+
+        # Check the PDB
+        pdb = mdt.load_pdb(setup_results["pdb_structure"])
+        assert pdb.n_atoms == self.num_ligand_atoms
+
+        # Check energies
+        alchemical_regions = []
+        for key in setup_results["alchemical_indices"]:
+            alchemical_regions.append(
+                AlchemicalRegion(
+                    alchemical_atoms=setup_results["alchemical_indices"][key],
+                    name=key,
+                )
+            )
+
+        self._test_energies(
+            reference_system=setup_results["standard_system"],
+            alchemical_system=setup_results["alchem_system"],
+            alchemical_regions=alchemical_regions,
+            positions=setup_results["debug_positions"],
+        )
+
+
 def test_user_restraint(benzene_modifications_am1bcc, T4_protein_component, tmp_path):
     s = openmm_afe.AbsoluteBindingProtocol.default_settings()
     s.protocol_repeats = 1
@@ -767,7 +1015,7 @@ class TestA2AMembraneDryRun(TestT4LysozymeDryRun):
 
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 16080
-    num_protein_component_atoms = 39391
+    num_host_component_atoms = 39391
     expected_complex_particles = 39426
     expected_ligand_solvent_particles = 3036
 

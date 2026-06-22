@@ -256,6 +256,25 @@ def charged_benzene_modifications():
 
 
 @pytest.fixture(scope="session")
+def OA_guests_charged() -> dict[str, SmallMoleculeComponent]:
+    files = {}
+    with resources.as_file(resources.files("openfe.tests.data.host_guest")) as d:
+        fn = str(d / "OA_guests_nagl_charged.sdf")
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp("_Name")] = SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture(scope="session")
+def OA_host_charged() -> SmallMoleculeComponent:
+    with resources.as_file(resources.files("openfe.tests.data.host_guest")) as d:
+        fn = str(d / "OA_host_nagl_charges.sdf")
+        mol = [m for m in Chem.SDMolSupplier(str(fn), removeHs=False)][0]
+        yield SmallMoleculeComponent(mol)
+
+
+@pytest.fixture(scope="session")
 def T4L_septop_reference_xml():
     with resources.as_file(resources.files("openfe.tests.data.openmm_septop")) as d:
         f = str(d / "system.xml.bz2")

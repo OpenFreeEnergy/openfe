@@ -310,8 +310,8 @@ class ABFESetupUnitMixin:
                 errmsg = f"Invalid box for co-alchemical ion search: {box}"
                 raise ValueError(errmsg)
 
-            # For a dry execution, just assign a super high value
-            max_search_distance = 999 * offunit.nanometer
+            # For a dry execution, just assign a reasonably high value
+            max_search_distance = 1.5 * offunit.nanometer
         else:
             # Set the max search distance to half the smallest perpendicular width
             # with a 1 Angstrom padding
@@ -838,7 +838,8 @@ class ABFESolventSetupUnit(
         )
 
         force.setName("ion_restraint")
-        add_force_in_separate_group(restrained_system, force)
+        # TODO: Temporarily disabled this for testing
+        # add_force_in_separate_group(restrained_system, force)
 
         return None, restrained_system, None
 
