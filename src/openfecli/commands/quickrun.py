@@ -2,13 +2,12 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import hashlib
-import json
 import pathlib
-import warnings
 
 import click
 
 from openfecli import OFECommandPlugin
+from openfecli.quickrun_result import _QuickrunResult
 from openfecli.utils import configure_logger, print_duration, write
 
 
@@ -175,17 +174,14 @@ def quickrun(transformation, work_dir, output, resume):
     else:
         estimate = uncertainty = None  # for output file
 
-    out_dict = {
-        "estimate": estimate,
-        "uncertainty": uncertainty,
-        "protocol_result": prot_result.to_dict(),
-        "unit_results": {
-            unit.key: unit.to_keyed_dict() for unit in dagresult.protocol_unit_results
-        },
-    }
+    quickrun_result = _QuickrunResult(
+        estimate=estimate,
+        uncertainty=uncertainty,
+        protocol_result=prot_result.to_dict(),
+        unit_results={unit.key: unit.to_keyed_dict() for unit in dagresult.protocol_unit_results},
+    )
 
-    with open(output, mode="w") as outf:
-        json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
+    quickrun_result.to_json(output)
 
     # remove the cached dag since the job has completed
     os.remove(cached_dag_path)

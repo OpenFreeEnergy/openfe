@@ -12,9 +12,9 @@ from openfecli.clicktypes import HyphenAwareChoice
 from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
-    load_json,
     rich_print_to_stdout,
 )
+from openfecli.quickrun_result import _QuickrunResult
 
 
 def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
@@ -42,19 +42,19 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
 
     # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
     # for now though, it's not the bottleneck on performance
-    result = load_json(fpath)
+    result = _QuickrunResult.from_json(fpath)
     try:
         names = _get_names(result)
     except (ValueError, IndexError):
         click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.",err=True, fg="yellow")  # fmt: skip
         return None, None
-    if result["estimate"] is None:
+    if result.estimate is None:
         click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return names, None
-    if result["uncertainty"] is None:
+    if result.uncertainty is None:
         click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return names, None
-    if all("exception" in u for u in result["unit_results"].values()):
+    if all("exception" in u for u in result.unit_results.values()):
         click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return names, None
     return names, result
@@ -91,10 +91,10 @@ def _get_legs_from_result_jsons(
         if names is None:  # this means it couldn't find names and/or simtype
             continue
 
-        ddgs[names]["overall"].append([result["estimate"], result["uncertainty"]])
+        ddgs[names]["overall"].append([result.estimate, result.uncertainty])
         proto_key = [
             k
-            for k in result["unit_results"].keys()
+            for k in result.unit_results.keys()
             if k.startswith("ProtocolUnitResult")
         ]  # fmt: skip
 
@@ -103,27 +103,27 @@ def _get_legs_from_result_jsons(
         # we check if there are any analysis units. If so,
         # we set a flag and later exclude Setup and Run.
         has_analysis_units = any(
-            ["Analysis" in result["unit_results"][p]["source_key"] for p in proto_key]
+            ["Analysis" in result.unit_results[p]["source_key"] for p in proto_key]
         )
 
         for p in proto_key:
             # Skip non-analysis units if we have any
             if has_analysis_units and (
-                "Setup" in result["unit_results"][p]["source_key"]
-                or "Run" in result["unit_results"][p]["source_key"]
+                "Setup" in result.unit_results[p]["source_key"]
+                or "Run" in result.unit_results[p]["source_key"]
             ):
                 continue
 
-            if "unit_estimate" in result["unit_results"][p]["outputs"]:
-                simtype = result["unit_results"][p]["outputs"]["simtype"]
-                dg = result["unit_results"][p]["outputs"]["unit_estimate"]
-                dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
+            if "unit_estimate" in result.unit_results[p]["outputs"]:
+                simtype = result.unit_results[p]["outputs"]["simtype"]
+                dg = result.unit_results[p]["outputs"]["unit_estimate"]
+                dg_error = result.unit_results[p]["outputs"]["unit_estimate_error"]
 
                 ddgs[names][simtype].append([dg, dg_error])
 
-            if "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
-                corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
-                corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
+            if "standard_state_correction_A" in result.unit_results[p]["outputs"]:
+                corr_A = result.unit_results[p]["outputs"]["standard_state_correction_A"]
+                corr_B = result.unit_results[p]["outputs"]["standard_state_correction_B"]
                 ddgs[names]["standard_state_correction_A"].append(
                     [corr_A, 0 * unit.kilocalorie_per_mole]
                 )
@@ -134,7 +134,7 @@ def _get_legs_from_result_jsons(
     return ddgs
 
 
-def _get_names(result: dict) -> tuple[str, str]:
+def _get_names(result: _QuickrunResult) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
 
     Parameters
@@ -148,7 +148,7 @@ def _get_names(result: dict) -> tuple[str, str]:
         Ligand names corresponding to the results.
     """
 
-    solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
+    solvent_data = list(result.protocol_result["data"]["solvent"].values())[0][0]
 
     try:
         setup_data = solvent_data["inputs"]["setup"]["inputs"]
