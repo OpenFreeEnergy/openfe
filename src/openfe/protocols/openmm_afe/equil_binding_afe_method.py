@@ -43,10 +43,10 @@ from openff.units import unit as offunit
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
+    ABFEBoreschRestraintSettings,
     ABFEPreEquilOutputSettings,
     AbsoluteBindingSettings,
     AlchemicalSettings,
-    BoreschRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
     MDSimulationSettings,
@@ -174,7 +174,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             engine_settings=OpenMMEngineSettings(),
             solvent_integrator_settings=IntegratorSettings(),
             complex_integrator_settings=IntegratorSettings(),
-            restraint_settings=BoreschRestraintSettings(),
+            restraint_settings=ABFEBoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
                 equilibration_length=0.2 * offunit.nanosecond,
@@ -278,8 +278,12 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If the alchemical species is charged.
         """
         if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
-            errmsg = "No ProteinComponent found"
-            raise ValueError(errmsg)
+            # Check if there is a suitable SmallMoleculeComponent that could
+            # be the host molecule instead.
+            smcs = stateA.get_components_of_type(SmallMoleculeComponent)
+            if all(smc in stateA.component_diff(stateB)[0] for smc in smcs):
+                errmsg = "No suitable host molecule found"
+                raise ValueError(errmsg)
 
         if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
             errmsg = "No SolventComponent found"
