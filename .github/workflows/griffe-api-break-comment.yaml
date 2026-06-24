@@ -1,0 +1,102 @@
+name: "API break check comment"
+
+on:
+  workflow_run:
+    workflows:
+      - "API break check"
+    types:
+      - completed
+
+permissions:
+  actions: read
+  issues: write
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Griffe result
+        uses: actions/download-artifact@v4
+        with:
+          name: api-break-result
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: api-break-result
+
+      - name: Update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+
+            const prs = context.payload.workflow_run.pull_requests;
+            if (!prs || prs.length === 0) {
+              core.info("No PR found for this workflow_run.");
+              return;
+            }
+
+            const prNumber = prs[0].number;
+            const identifier = "<!-- api-break-check -->";
+            const runUrl = context.payload.workflow_run.html_url;
+            const conclusion = context.payload.workflow_run.conclusion;
+
+            let log = "";
+            try {
+              log = fs.readFileSync("api-break-result/griffe.log", "utf8");
+            } catch (err) {
+              log = "Could not read Griffe log artifact.";
+            }
+
+            // Treat artifact contents as untrusted display text.
+            log = log.replaceAll("```", "`\u200b``");
+
+            // Truncate if log is really long
+            const maxLogChars = 60000;
+            if (log.length > maxLogChars) {
+              log = log.slice(0, maxLogChars) + "\n\n[truncated]";
+            }
+
+            const statusLine =
+              conclusion === "success"
+                ? "No API break detected ✅"
+                : "🚨 API breaking changes detected! 🚨";
+
+            const body = `${identifier}
+            ${statusLine}
+
+            [View workflow run](${runUrl})
+
+            <details>
+            <summary>Griffe output</summary>
+
+            \`\`\`text
+            ${log}
+            \`\`\`
+
+            </details>
+            `;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            for (const comment of comments) {
+              if (comment.body && comment.body.includes(identifier)) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id,
+                });
+              }
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
