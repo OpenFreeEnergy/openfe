@@ -390,7 +390,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         charge_difference: int,
         system_mappings: dict[str, dict[int, int]],
         distance_cutoff: Quantity,
-        solvent_component: SolventComponent | None,
+        forcefield: openmm.app.ForceField,
     ) -> None:
         """
         Handle system net charge by adding an alchemical water.
@@ -404,7 +404,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         charge_difference : int
         system_mappings : dict[str, dict[int, int]]
         distance_cutoff : Quantity
-        solvent_component : SolventComponent | None
+        forcefield: openmm.app.ForceField
         """
         # Base case, return if no net charge
         if charge_difference == 0:
@@ -425,7 +425,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             system=stateB_system,
             system_mapping=system_mappings,
             charge_difference=charge_difference,
-            solvent_component=solvent_component,
+            forcefield=forcefield,
         )
 
     def _get_omm_objects(
@@ -545,6 +545,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # Net charge: add alchemical water if needed
         # Must be done here as we in-place modify the particles of state B.
         if settings["alchemical_settings"].explicit_charge_correction:
+            forcefield = states_inputs["A"]["generator"].forcefield
             self._handle_net_charge(
                 stateA_topology=stateA_topology,
                 stateA_positions=stateA_positions,
@@ -553,7 +554,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
                 charge_difference=mapping.get_alchemical_charge_difference(),
                 system_mappings=system_mappings,
                 distance_cutoff=settings["alchemical_settings"].explicit_charge_correction_cutoff,
-                solvent_component=solvent_component,
+                forcefield=forcefield,
             )
 
         # Finally get the state B positions

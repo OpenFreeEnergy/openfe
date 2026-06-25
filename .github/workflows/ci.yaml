@@ -5,8 +5,8 @@ on:
    # - docs: documentation changes don't need code validation
    # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
     paths-ignore:
-      - "docs/*"
-      - "news/*"
+      - "docs/**"
+      - "news/**"
       - ".readthedocs.yaml"
       - ".github/workflows/cpu-long-tests.yaml"
       - ".github/workflows/gpu-integration-tests.yaml"

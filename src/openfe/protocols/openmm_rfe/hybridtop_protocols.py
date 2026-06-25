@@ -28,6 +28,7 @@ from gufe import (
     ProteinComponent,
     ProteinMembraneComponent,
     SmallMoleculeComponent,
+    SolvatedPDBComponent,
     SolventComponent,
     settings,
 )
@@ -39,6 +40,7 @@ from ..openmm_utils import (
     settings_validation,
     system_validation,
 )
+from . import _rfe_utils
 from .equil_rfe_settings import (
     AlchemicalSettings,
     IntegratorSettings,
@@ -272,8 +274,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         ValueError
           * If there are more than one mapping or mapping is None
           * If the mapping components are not in the alchemical components.
-        UserWarning
-          * Mappings which involve element changes in core atoms
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
@@ -293,26 +293,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                         f"Mapping component{state} {comp} not "
                         f"in alchemical components of state{state}"
                     )
-
-        # TODO: remove - this is now the default behaviour?
-        # Check for element changes in mappings
-        for m in mapping:
-            molA = m.componentA.to_rdkit()
-            molB = m.componentB.to_rdkit()
-            for i, j in m.componentA_to_componentB.items():
-                atomA = molA.GetAtomWithIdx(i)
-                atomB = molB.GetAtomWithIdx(j)
-                if atomA.GetAtomicNum() != atomB.GetAtomicNum():
-                    wmsg = (
-                        f"Element change in mapping between atoms "
-                        f"Ligand A: {i} (element {atomA.GetAtomicNum()}) and "
-                        f"Ligand B: {j} (element {atomB.GetAtomicNum()})\n"
-                        "No mass scaling is attempted in the hybrid topology, "
-                        "the average mass of the two atoms will be used in the "
-                        "simulation"
-                    )
-                    logger.warning(wmsg)
-                    warnings.warn(wmsg)
 
     @staticmethod
     def _validate_smcs(
@@ -372,7 +352,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         mapping: LigandAtomMapping,
         nonbonded_method: str,
         explicit_charge_correction: bool,
-        solvent_component: SolventComponent | None,
+        solvent_component: SolventComponent | SolvatedPDBComponent | None,
     ):
         """
         Validates the net charge difference between the two states.
@@ -435,12 +415,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             )
             raise ValueError(errmsg)
 
-        ion = {-1: solvent_component.positive_ion, 1: solvent_component.negative_ion}[difference]
-
         wmsg = (
             f"A charge difference of {difference} is observed "
             "between the end states. This will be addressed by "
-            f"transforming a water into a {ion} ion"
+            "transforming a water into an ion of the same charge."
         )
         logger.info(wmsg)
 
@@ -560,6 +538,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Note: validation depends on the mapping & solvent component checks
         if stateA.contains(SolventComponent):
             solv_comp = stateA.get_components_of_type(SolventComponent)[0]
+        elif stateA.contains(SolvatedPDBComponent):
+            solv_comp = stateA.get_components_of_type(SolvatedPDBComponent)[0]
         else:
             solv_comp = None
 
