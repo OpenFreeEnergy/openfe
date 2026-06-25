@@ -434,11 +434,12 @@ Then activate the openfe environment with::
 
 Finally, create the editable installation::
 
-  $ python -m pip install --no-deps -e .
+  $ python -m pip install -e . --no-deps 
 
 Note the ``.`` at the end of that command, which indicates the current
 directory.
 
+.. See our contribution guide for details on installation for multi-project development
 
 .. _testing:
 
