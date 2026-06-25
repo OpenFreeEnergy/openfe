@@ -49,6 +49,7 @@ import openfe
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
+from openfe.protocols.openmm_utils.molecule_utils import _get_offmol_resname, _set_offmol_resname
 
 from ...analysis import plotting
 from ...utils import log_system_probe, without_oechem_backend
@@ -752,6 +753,17 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         mapping = self._inputs["ligandmapping"]
         alchem_comps = self._inputs["alchemical_components"]
         solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
+
+        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
+        cofactors = [smc for smc in small_mols if smc not in alchemical]
+
+        for smc, offmol in small_mols.items():
+            if _get_offmol_resname(offmol) is not None:
+                continue
+            if smc in alchemical:
+                _set_offmol_resname(offmol, "LIG")
+            else:
+                _set_offmol_resname(offmol, f"CF{cofactors.index(smc) + 1}")
 
         # Assign partial charges now to avoid any discrepancies later
         self._assign_partial_charges(settings["charge_settings"], small_mols)
@@ -1535,7 +1547,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         from openfe_analysis import rmsd
 
         try:
-            data = rmsd.gather_rms_data(pdb_file, trj_file)
+            data = rmsd.gather_rms_data(pdb_file, trj_file, ligand_selection="resname LIG")
         # TODO: eventually change this to more specific exception types
         except Exception as e:
             return {"structural_analysis_error": str(e)}

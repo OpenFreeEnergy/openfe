@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 import gufe
+import MDAnalysis as mda
 import mdtraj as mdt
 import numpy as np
 import openmm
@@ -2401,3 +2402,33 @@ def test_dry_run_vacuum_write_frequency(
         assert reporter.velocity_interval == velocities_write_frequency.m
     else:
         assert reporter.velocity_interval == 0
+
+
+@pytest.fixture
+def eg5_vac_inputs(eg5_ligands, eg5_cofactor):
+    ligA, ligB = eg5_ligands[0], eg5_ligands[1]
+    mapper = openfe.LomapAtomMapper()
+    mapping = next(mapper.suggest_mappings(ligA, ligB))
+    stateA = openfe.ChemicalSystem({"ligand": ligA, "cofactor": eg5_cofactor})
+    stateB = openfe.ChemicalSystem({"ligand": ligB, "cofactor": eg5_cofactor})
+    return stateA, stateB, mapping
+
+
+def _run_setup_dry(stateA, stateB, mapping, settings, tmp_path):
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=mapping)
+    setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    return setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+
+
+def test_ligand_separable_from_cofactor(eg5_vac_inputs, vac_settings, tmp_path):
+    vac_settings.output_settings.output_indices = "all"
+    stateA, stateB, mapping = eg5_vac_inputs
+    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
+
+    u = mda.Universe(out["pdb_structure"])
+    lig = u.select_atoms("resname LIG")
+    cof = u.select_atoms("resname CF1")
+    assert lig.n_atoms > 0
+    assert cof.n_atoms > 0
+    assert set(lig.indices).isdisjoint(cof.indices)
