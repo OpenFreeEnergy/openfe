@@ -284,34 +284,41 @@ class MultistateEquilFEAnalysis:
 
     def _get_fraction_free_energy(
         self,
-        u_ln: npt.NDArray,
+        u_kln: npt.NDArray,
         N_l: npt.NDArray,
-        samples: int,
+        chunk: int,
         fraction: float,
     ) -> tuple[tuple[Quantity, Quantity], tuple[Quantity, Quantity]]:
         """
         Helper method to estimate the forward and reverse free energies for a
         fraction of the uncorrelated samples.
 
-        Used by :meth:`get_forward_and_reverse_analysis` for each chunk. MBAR
-        can fail to converge at low fractions of uncorrelated samples. While
-        such a failure is directly caused by the estimator, it is more broadly
-        caused by too few (effective) data points at that fraction, so it is
-        not reasonable to trust either direction. Therefore, if MBAR fails for
-        *either* the forward or reverse estimate, NaN is recorded for *both*
+        Used by :meth:`get_forward_and_reverse_analysis` for each chunk. The
+        forward estimate uses the first ``chunk`` iterations of every replica
+        and the reverse estimate the last ``chunk`` iterations. Because the
+        replicas occupy the states as a permutation at every iteration, each of
+        these slices contains exactly ``chunk`` samples drawn from each state,
+        which matches the uniform ``N_l`` passed to MBAR.
+
+        MBAR can fail to converge at low fractions of uncorrelated samples.
+        While such a failure is directly caused by the estimator, it is more
+        broadly caused by too few (effective) data points at that fraction, so
+        it is not reasonable to trust either direction. Therefore, if MBAR fails
+        for *either* the forward or reverse estimate, NaN is recorded for *both*
         directions (and a warning raised) and the analysis continues, so that
         estimates at higher fractions are still reported.
 
         Parameters
         ----------
-        u_ln : npt.NDArray
-          The full sub-sampled energy matrix. The forward estimate uses the
-          first ``samples`` columns and the reverse estimate the last
-          ``samples`` columns.
+        u_kln : npt.NDArray
+          The full sub-sampled energy matrix reshaped to
+          ``(n_states, n_replicas, n_samples_per_state)`` so that the iteration
+          (time) axis can be sliced independently of the replica axis.
         N_l : npt.NDArray
           An array containing the number of samples drawn from each state.
-        samples : int
-          The number of samples (columns of ``u_ln``) to use for each estimate.
+        chunk : int
+          The number of iterations per replica to use for each estimate, equal
+          to the number of samples drawn from each state.
         fraction : float
           The fraction of uncorrelated samples this corresponds to. Only used
           for the warning message.
@@ -329,17 +336,26 @@ class MultistateEquilFEAnalysis:
         # import it right when we need it
         from pymbar.utils import ParameterError
 
+        n_samples_per_state = u_kln.shape[2]
+        # Slice the iteration (time) axis so each estimate spans a fraction of
+        # simulation time across all replicas, then flatten the replica and
+        # iteration axes back into the (n_states, n_samples) shape MBAR expects.
+        forward_u_ln = u_kln[:, :, :chunk].reshape(u_kln.shape[0], -1)
+        reverse_u_ln = u_kln[:, :, n_samples_per_state - chunk:].reshape(
+            u_kln.shape[0], -1
+        )
+
         try:
             forward = self._get_free_energy(
                 self.analyzer,
-                u_ln[:, :samples],
+                forward_u_ln,
                 N_l,
                 0,
                 self.units,
             )
             reverse = self._get_free_energy(
                 self.analyzer,
-                u_ln[:, -samples:],
+                reverse_u_ln,
                 N_l,
                 0,
                 self.units,
@@ -403,6 +419,17 @@ class MultistateEquilFEAnalysis:
             errmsg = f"The number of samples is not equivalent across all states {N_l}"
             raise ValueError(errmsg)
 
+        # The columns of u_ln are laid out replica-major: each replica's full
+        # trajectory is a contiguous block, with
+        # column = replica * n_samples_per_state + iteration. Reshape to
+        # (n_states, n_replicas, n_samples_per_state) so the iteration (time)
+        # axis can be sliced on its own. Slicing the flat column axis directly
+        # would instead select whole replicas, whose per-state sample counts do
+        # not match the uniform N_l handed to MBAR.
+        n_samples_per_state = N_l[0]
+        n_replicas = u_ln.shape[1] // n_samples_per_state
+        u_kln = u_ln.reshape(u_ln.shape[0], n_replicas, n_samples_per_state)
+
         # Get the chunks of N_l going from 10% to ~ 100%
         # Note: you always lose out a few data points but it's fine
         chunks = [max(int(N_l[0] / num_samples * i), 1) for i in range(1, num_samples + 1)]
@@ -414,15 +441,17 @@ class MultistateEquilFEAnalysis:
         fractions = []
 
         for chunk in chunks:
+            # Each iteration contributes exactly one sample to every state, so
+            # the first (or last) ``chunk`` iterations of every replica give
+            # exactly ``chunk`` samples per state.
             new_N_l = np.array([chunk for _ in range(n_states)])
-            samples = chunk * n_states
             fraction = chunk / N_l[0]
 
             # If MBAR fails for either the forward or reverse estimate, both
             # are recorded as NaN (too few effective samples at this
             # fraction to trust either direction).
             (forward_DG, forward_dDG), (reverse_DG, reverse_dDG) = self._get_fraction_free_energy(
-                u_ln, new_N_l, samples, fraction
+                u_kln, new_N_l, chunk, fraction
             )
             forward_DGs.append(forward_DG)
             forward_dDGs.append(forward_dDG)
