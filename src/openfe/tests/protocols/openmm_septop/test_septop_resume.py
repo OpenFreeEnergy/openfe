@@ -8,10 +8,10 @@ import pathlib
 import shutil
 
 import gufe
+import numpy as np
 import openmm
 import pytest
 from gufe.protocols.errors import ProtocolUnitExecutionError
-import numpy as np
 from numpy.testing import assert_allclose
 from openfe_analysis.utils.multistate import _determine_position_indices
 from openff.units import unit as offunit
