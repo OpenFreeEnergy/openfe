@@ -350,7 +350,7 @@ class MultistateEquilFEAnalysis:
                 f"{fraction:.2f} of the uncorrelated samples; recording NaN "
                 "for both the forward and reverse estimates."
             )
-            warnings.warn(wmsg)
+            warnings.warn(wmsg, stacklevel=2)
             forward = reverse = (np.nan * self.units, np.nan * self.units)  # type: ignore
 
         return forward, reverse
