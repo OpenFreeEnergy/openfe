@@ -53,9 +53,9 @@ from openfe.protocols.openmm_utils.charge_generation import (
 )
 from openfe.protocols.openmm_utils.molecule_utils import (
     _get_offmol_metadata,
+    _get_offmol_resname,
     _set_offmol_metadata,
     _set_offmol_resname,
-    _get_offmol_resname,
 )
 
 
