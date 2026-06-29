@@ -503,7 +503,7 @@ Optional dependencies
 
 Certain functionalities are only available if you also install optional packages.
 
-* **OpenEye tools**: To use functionality that uses the OpenEye, you must additionally install OpenEye, and you need a valid OpenEye license. To install, use::
+* **OpenEye tools**: To use functionality requiring OpenEye, you must install ``openeye-toolkits`` and hold a valid OpenEye license. To install, use::
 
     $ mamba install -c openeye openeye-toolkits
 
