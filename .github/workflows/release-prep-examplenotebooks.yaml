@@ -35,6 +35,7 @@ jobs:
           create-args: >-
             python=3.12
             nbval
+            nglview
           init-shell: bash
 
       - name: Install OpenFE
