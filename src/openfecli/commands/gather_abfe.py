@@ -150,9 +150,12 @@ def _get_legs_from_result_jsons(
 
 def _error_std(r):
     """
-    Calculate the error of the estimate as the std of the repeats
+    Calculate the error of the estimate as the unbiased std of the repeats
     """
-    return np.std([v[0].m for v in r["overall"]])
+    std = np.std([v[0].m for v in r["overall"]], ddof=1)
+    if np.isnan(std):
+        std = 0.0
+    return std
 
 
 def _error_mbar(r):
