@@ -18,13 +18,13 @@ This release incorporates changes made to the OpenFE Ecosystem with the followin
 
 * Added CLI reference documentation for ``openfe test`` and ``openfe view-ligand-network`` (`PR #2017 <https://github.com/OpenFreeEnergy/openfe/pull/2017>`_).
 * Added structural analysis to the SepTop protocol. Results are saved as NPZ files and plots are generated automatically.
-  Analysis settings are configurable via ``MultiStateAnalysisSettings`` (`PR #1982 <https://github.com/OpenFreeEnergy/openfe/pull/1982>`_).
+  Analysis settings for SepTop are configurable via ``MultiStateAnalysisSettings`` (`PR #1982 <https://github.com/OpenFreeEnergy/openfe/pull/1982>`_).
 
 **Changed:**
 
 * AFE Protocols (``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol``) now assign a single uuid for all ``ProtocolUnits`` in a repeat rather than separating the uuid by legs of the transformation (`PR #1948 <https://github.com/OpenFreeEnergy/openfe/pull/1948>`_).
 * Absolute free energy predictions generated using the gather CLI command are now sorted by ligand name (`PR #1989 <https://github.com/OpenFreeEnergy/openfe/pull/1989>`_).
-* Improved alchemical charge correction to support explicitly solvated systems (``SolvatedPDBComponent``) by determining ion parameters from the forcefield if not present in the topology (`PR #1978 <https://github.com/OpenFreeEnergy/openfe/pull/1978>`_).
+* Improved alchemical charge correction to support explicitly solvated systems (``SolvatedPDBComponent`` and ``ProteinMembraneComponent``) by determining ion parameters from the forcefield if not present in the topology (`PR #1978 <https://github.com/OpenFreeEnergy/openfe/pull/1978>`_).
 * A warning is no longer raised by Hybrid Topology Protocols for mappings with element changes in core atoms (`Issue #1961 <https://github.com/OpenFreeEnergy/openfe/issues/1961>`_).
 * The ``RelativeHybridTopologyProtocol`` and ``SepTopProtocol`` now return an unbiased estimate of the standard deviation via the ``get_uncertainty`` method, reported uncertainties are expected to be larger than before (`PR #2000 <https://github.com/OpenFreeEnergy/openfe/pull/2000>`_).
 
