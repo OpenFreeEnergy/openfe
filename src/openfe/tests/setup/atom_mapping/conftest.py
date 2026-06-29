@@ -11,36 +11,3 @@ from rdkit import Chem
 from openfe import LigandAtomMapping
 
 from ...conftest import mol_from_smiles
-
-
-def _translate_lomap_mapping(atom_mapping_str: str) -> Dict[int, int]:
-    mapped_atom_tuples = map(lambda x: tuple(map(int, x.split(":"))), atom_mapping_str.split(","))
-    return {i: j for i, j in mapped_atom_tuples}
-
-
-def _get_atom_mapping_dict(lomap_atom_mappings) -> Dict[Tuple[int, int], Dict[int, int]]:
-    return {
-        mol_pair: _translate_lomap_mapping(atom_mapping_str)
-        for mol_pair, atom_mapping_str in lomap_atom_mappings.mcs_map_store.items()
-    }
-
-
-@pytest.fixture()
-def gufe_atom_mapping_matrix(
-    lomap_basic_test_files_dir, atom_mapping_basic_test_files
-) -> Dict[Tuple[int, int], LigandAtomMapping]:
-    dbmols = lomap.DBMolecules(lomap_basic_test_files_dir, verbose="off")
-    _, _ = dbmols.build_matrices()
-    molecule_pair_atom_mappings = _get_atom_mapping_dict(dbmols)
-
-    ligand_atom_mappings = {}
-    for (i, j), val in molecule_pair_atom_mappings.items():
-        nm1 = dbmols[i].getName()[:-5]
-        nm2 = dbmols[j].getName()[:-5]
-        ligand_atom_mappings[(i, j)] = LigandAtomMapping(
-            componentA=atom_mapping_basic_test_files[nm1],
-            componentB=atom_mapping_basic_test_files[nm2],
-            componentA_to_componentB=val,
-        )
-
-    return ligand_atom_mappings
