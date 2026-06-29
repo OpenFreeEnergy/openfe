@@ -7,6 +7,13 @@ Changelog
 v1.12.0
 ====================
 
+This release incorporates changes made to the OpenFE Ecosystem with the following releases:
+  * `cinnabar v0.6.0 <https://cinnabar.openfree.energy/en/latest/CHANGELOG.html#v0-6-0>`_
+  * `konnektor v0.4.0 <https://konnektor.openfree.energy/en/latest/CHANGELOG.html#v0-4-0>`_
+  * `kartograf v2.0 <https://kartograf.openfree.energy/en/latest/CHANGELOG.html#v2-0>`_
+  * `Lomap v3.3.0 <https://lomap.openfree.energy/en/latest/CHANGELOG.html#v3-3-0>`_
+  * `openfe_analysis v0.5.0 <https://openfe-analysis.readthedocs.io/en/latest/CHANGELOG.html#v0-5-0>`_
+
 **Added:**
 
 * Added CLI reference documentation for ``openfe test`` and ``openfe view-ligand-network`` (`PR #2017 <https://github.com/OpenFreeEnergy/openfe/pull/2017>`_).
