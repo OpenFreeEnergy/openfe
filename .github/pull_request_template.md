@@ -21,6 +21,10 @@ Manual Tests: these are slow so don't need to be run every commit, only before m
 * [ ] [example notebook testing](https://github.com/OpenFreeEnergy/openfe/actions/workflows/release-prep-examplenotebooks.yaml)
 * [ ] [packaging tests](https://github.com/OpenFreeEnergy/openfe/actions/workflows/cron-package-test.yaml): run this for any large feature PRs or PRs that add test data.
 
+## LLM / AI generated code disclosure
+<!-- Please update this disclosure to reflect if you did or did not use LLMs / AI to generate code -->
+LLMs or other AI-powered tools (beyond simple IDE use cases) were used in this contribution: yes / no
+If yes, please provide details here:
 
 ## Developers certificate of origin
 - [ ] I certify that this contribution is covered by the MIT License [here](https://github.com/OpenFreeEnergy/openfe/blob/main/LICENSE) and the **Developer Certificate of Origin** at <https://developercertificate.org/>.
