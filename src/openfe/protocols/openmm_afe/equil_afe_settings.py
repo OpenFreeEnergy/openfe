@@ -22,6 +22,10 @@ from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
 )
+from gufe.settings.typing import (
+    NanometerQuantity,
+)
+from openff.units import unit as offunit
 from pydantic import field_validator
 
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -38,6 +42,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
     BoreschRestraintSettings,
+    SpringConstantLinearQuantity,
 )
 
 
@@ -84,6 +89,27 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     Scaling constant ``c`` in
     Eq. 13 from Pham and Shirts, J. Chem. Phys. 135, 034114 (2011).
+    """
+
+
+class ABFEAlchemicalSettings(AlchemicalSettings):
+    # Dev note: we make a separate class for ABFEs so that SepTop and AHFE can
+    # use the parent class without having ABFE-specific net charge settings
+    explicit_charge_correction: bool = True
+    """
+    Whether or not to use explicit charge correction using
+    a co-alchemical ion.
+    """
+    alchemical_ion_min_distance: NanometerQuantity = 1.0 * offunit.nanometer
+    """
+    The minimum distance to search for a co-alchemical ion.
+    """
+    alchemical_ion_solvent_spring_constant: SpringConstantLinearQuantity = (
+        1000.0 * offunit.kilojoule_per_mole / offunit.nm**2
+    )
+    """
+    The spring constant holding the ion away from the alchemical solute
+    in the solvent leg.
     """
 
 
@@ -210,6 +236,29 @@ class ABFEPreEquilOutputSettings(MDOutputSettings):
         if v != "all":
             msg = "output_indices must be all for ABFE pre-equilibration simulations"
             raise ValueError(msg)
+        return v
+
+
+class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
+    host_restraint_ids: tuple[int, int, int] | None = None
+    """
+    The indices of the host component atoms to restrain.
+    The entries define the H0, H1, and H2 atoms in order.
+    If defined, these will override any automatic selection.
+    """
+    guest_restraint_ids: tuple[int, int, int] | None = None
+    """
+    The indices of the guest component atoms to restraint.
+    The entries define the G0, G1, and G2 atoms in order.
+    If defined, these will override any automatic selection.
+    """
+
+    @field_validator("guest_restraint_ids", "host_restraint_ids")
+    def positive_idxs_three_tuple(cls, v):
+        if v is not None:
+            if any([i < 0 for i in v]):
+                errmsg = "``guest_atoms`` and ``host_atoms`` cannot have negative indices."
+                raise ValueError(errmsg)
         return v
 
 
@@ -360,10 +409,21 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """Settings for solvating the system in the complex."""
 
     # Alchemical settings
-    alchemical_settings: AlchemicalSettings
+    alchemical_settings: ABFEAlchemicalSettings
     """
     Alchemical protocol settings.
     """
+
+    @field_validator("alchemical_settings", mode="before")
+    @classmethod
+    def coerce_alchemical_settings(cls, v):
+        """
+        Migration from previous default to the new one
+        """
+        if isinstance(v, AlchemicalSettings) and not isinstance(v, ABFEAlchemicalSettings):
+            return ABFEAlchemicalSettings(**v.model_dump())
+        return v
+
     complex_lambda_settings: LambdaSettings
     """
     Settings for controlling the complex transformation leg

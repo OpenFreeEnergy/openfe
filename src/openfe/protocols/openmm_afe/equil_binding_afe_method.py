@@ -43,10 +43,10 @@ from openff.units import unit as offunit
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
+    ABFEAlchemicalSettings,
+    ABFEBoreschRestraintSettings,
     ABFEPreEquilOutputSettings,
     AbsoluteBindingSettings,
-    AlchemicalSettings,
-    BoreschRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
     MDSimulationSettings,
@@ -134,7 +134,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 temperature=298.15 * offunit.kelvin,
                 pressure=1 * offunit.bar,
             ),
-            alchemical_settings=AlchemicalSettings(),
+            alchemical_settings=ABFEAlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
                 lambda_elec=[
                     0.0, 0.25, 0.5, 0.75, 1.0,
@@ -174,7 +174,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             engine_settings=OpenMMEngineSettings(),
             solvent_integrator_settings=IntegratorSettings(),
             complex_integrator_settings=IntegratorSettings(),
-            restraint_settings=BoreschRestraintSettings(),
+            restraint_settings=ABFEBoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
                 equilibration_length=0.2 * offunit.nanosecond,
@@ -254,6 +254,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
     def _validate_endstates(
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
+        charge_correction: bool,
     ) -> None:
         """
         A binding transformation is defined (in terms of gufe components)
@@ -266,6 +267,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           The chemical system of end state A
         stateB : ChemicalSystem
           The chemical system of end state B
+        charge_correction : bool
+          If we are using a charge correction scheme.
 
         Raises
         ------
@@ -275,11 +278,18 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If stateA has more than one unique Component.
           If the stateA unique Component is not a SmallMoleculeComponent.
           If stateB contains any unique Components.
-          If the alchemical species is charged.
+          If the alchemical species is has greater than one unit charge.
+        UserWarning
+          If the alchemical species has a net charge but ``charge_correction``
+          is ``False``.
         """
         if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
-            errmsg = "No ProteinComponent found"
-            raise ValueError(errmsg)
+            # Check if there is a suitable SmallMoleculeComponent that could
+            # be the host molecule instead.
+            smcs = stateA.get_components_of_type(SmallMoleculeComponent)
+            if all(smc in stateA.component_diff(stateB)[0] for smc in smcs):
+                errmsg = "No suitable host molecule found"
+                raise ValueError(errmsg)
 
         if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
             errmsg = "No SolventComponent found"
@@ -302,14 +312,25 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             )
             raise ValueError(errmsg)
 
-        # Check that the state A unique isn't charged
+        # Check that the state A unique total charge
         if diff[0][0].total_charge != 0:
-            errmsg = (
-                "Charged alchemical molecules are not currently "
-                "supported for solvation free energies. "
-                f"Molecule total charge: {diff[0][0].total_charge}."
-            )
-            raise ValueError(errmsg)
+            # Error if the total charge is greater than 1
+            if abs(diff[0][0].total_charge) > 1:
+                errmsg = (
+                    "Alchemical molecules with a formal charge of greater than 1 "
+                    "are not currently supported in binding free energy calculations. "
+                    f"Molecule total charge: {diff[0][0].total_charge}."
+                )
+                raise ValueError(errmsg)
+
+            # Warn if we aren't using a charge correction
+            if not charge_correction:
+                wmsg = (
+                    "Ligand has a net charge but no charge correction scheme has been requested. "
+                    "Please note that you will need to apply your own correction scheme "
+                    "to account for finite-size effects."
+                )
+                warnings.warn(wmsg)
 
         # If there are any alchemical Components in state B
         if len(diff[1]) > 0:
@@ -401,7 +422,11 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Validate the end states & alchemical components
         system_validation.validate_chemical_system(stateA)
         system_validation.validate_chemical_system(stateB)
-        self._validate_endstates(stateA, stateB)
+        self._validate_endstates(
+            stateA,
+            stateB,
+            self.settings.alchemical_settings.explicit_charge_correction,
+        )
 
         # Validate the complex lambda schedule
         self._validate_lambda_schedule(
