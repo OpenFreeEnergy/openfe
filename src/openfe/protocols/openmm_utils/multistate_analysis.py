@@ -342,7 +342,7 @@ class MultistateEquilFEAnalysis:
         from pymbar.utils import ParameterError
 
         n_states = len(N_l)
-        n_iterations = u_ln.shape[1] // n_states
+        n_iterations = u_ln.shape[1] // n_states # number_of_uncorrelated_samples
         chunk = samples // n_states
         # Reshape the flat column axis back into (replica, iteration) so the
         # iteration axis -- which represents simulation *time* -- can be sliced
