@@ -10,5 +10,5 @@ dependencies:
   - py3dmol
   - pytest
   - pytest-xdist
-  - python==3.12.*
+  - python==3.13.*
   - rdkit>=2025.09.1  # https://github.com/OpenFreeEnergy/gufe/pull/665
