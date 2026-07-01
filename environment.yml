@@ -7,7 +7,7 @@ dependencies:
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
   - duecredit<0.10
-  - kartograf>=1.2.0
+  - kartograf>=2.0.0
   - konnektor~=0.4.0
   - lomap2>=3.2.1
   - networkx
@@ -24,7 +24,6 @@ dependencies:
   - packaging
   - pandas
   - parmed >=4.3.1  # fix to support numpy >=2.3: https://github.com/ParmEd/ParmEd/pull/1387
-  - perses>=0.10.3
   - plugcli
   - pint>=0.24.0
   - pip
