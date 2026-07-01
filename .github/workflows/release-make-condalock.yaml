@@ -13,7 +13,7 @@ jobs:
     
     steps:  
     - name: Install conda-lock with Micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: conda-lock
         create-args: >-
