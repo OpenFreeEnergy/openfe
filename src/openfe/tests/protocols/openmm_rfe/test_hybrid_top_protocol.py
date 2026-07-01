@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 import gufe
+import MDAnalysis as mda
 import mdtraj as mdt
 import numpy as np
 import openmm
@@ -49,6 +50,12 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
     HAS_OPENEYE,
+)
+from openfe.protocols.openmm_utils.molecule_utils import (
+    _get_offmol_metadata,
+    _get_offmol_resname,
+    _set_offmol_metadata,
+    _set_offmol_resname,
 )
 
 
@@ -507,7 +514,7 @@ def test_dry_run_ligand(
 ):
     # this might be a bit time consuming
     solv_settings.simulation_settings.sampler_method = method
-    solv_settings.output_settings.output_indices = "resname UNK"
+    solv_settings.output_settings.output_indices = "resname LIG"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=solv_settings,
@@ -1091,7 +1098,7 @@ def test_dry_run_complex(
 ):
     # this will be very time consuming
     solv_settings.simulation_settings.sampler_method = method
-    solv_settings.output_settings.output_indices = "protein or resname  UNK"
+    solv_settings.output_settings.output_indices = "protein or resname  LIG"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=solv_settings,
@@ -2401,3 +2408,74 @@ def test_dry_run_vacuum_write_frequency(
         assert reporter.velocity_interval == velocities_write_frequency.m
     else:
         assert reporter.velocity_interval == 0
+
+
+@pytest.fixture
+def eg5_vac_inputs(eg5_ligands, eg5_cofactor):
+    ligA, ligB = eg5_ligands[0], eg5_ligands[1]
+    mapper = openfe.LomapAtomMapper()
+    mapping = next(mapper.suggest_mappings(ligA, ligB))
+    stateA = openfe.ChemicalSystem({"ligand": ligA, "cofactor": eg5_cofactor})
+    stateB = openfe.ChemicalSystem({"ligand": ligB, "cofactor": eg5_cofactor})
+    return stateA, stateB, mapping
+
+
+def _run_setup_dry(stateA, stateB, mapping, settings, tmp_path):
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=mapping)
+    setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    return setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+
+
+def test_ligand_separable_from_cofactor(eg5_vac_inputs, vac_settings, tmp_path):
+    vac_settings.output_settings.output_indices = "all"
+    stateA, stateB, mapping = eg5_vac_inputs
+    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
+
+    u = mda.Universe(out["pdb_structure"])
+    lig = u.select_atoms("resname LIG")
+    cof = u.select_atoms("resname CF1")
+    assert lig.n_atoms > 0
+    assert cof.n_atoms > 0
+    assert set(lig.indices).isdisjoint(cof.indices)
+
+
+def test_get_metadata_inconsistent_warns(caplog):
+    mol = Molecule.from_smiles("CC")
+    _set_offmol_metadata(mol, "residue_name", "LIG")
+    mol.atoms[0].metadata["residue_name"] = "COF"
+
+    with caplog.at_level(logging.WARNING):
+        result = _get_offmol_metadata(mol, "residue_name")
+
+    assert result is None
+    assert "Inconsistent metadata" in caplog.text
+
+
+def test_set_metadata_none_clears():
+    mol = Molecule.from_smiles("CC")
+    _set_offmol_metadata(mol, "residue_name", "LIG")
+    _set_offmol_metadata(mol, "residue_name", None)
+    assert all("residue_name" not in a.metadata for a in mol.atoms)
+
+
+def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
+    vac_settings.output_settings.output_indices = "all"
+
+    ligA, ligB = eg5_ligands[0], eg5_ligands[1]
+    off = eg5_cofactor.to_openff()
+    _set_offmol_resname(off, "MYC")
+    cof = openfe.SmallMoleculeComponent.from_openff(off)
+
+    mapper = openfe.setup.KartografAtomMapper()
+    mapping = next(mapper.suggest_mappings(ligA, ligB))
+    stateA = openfe.ChemicalSystem({"ligand": ligA, "cofactor": cof})
+    stateB = openfe.ChemicalSystem({"ligand": ligB, "cofactor": cof})
+
+    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
+
+    u = mda.Universe(out["pdb_structure"])
+    resnames = {r.resname for r in u.residues}
+    assert "MYC" in resnames
+    assert "CF1" not in resnames
+    assert "LIG" in resnames
