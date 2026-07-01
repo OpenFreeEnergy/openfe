@@ -369,8 +369,8 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["forward_DGs"].m,
             np.array(
                 [
-                    -48.057326, -48.038367, -48.033994, -48.0228, -48.028532,
-                    -48.025258, -48.006349, -47.986304, -47.972138, -47.960623,
+                    -47.823889, -47.905875, -47.935716, -47.951184, -47.971532,
+                    -47.949007, -47.938932, -47.936925, -47.951239, -47.960623,
                 ]
             ),
             rtol=1e-04,
@@ -390,8 +390,8 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["reverse_DGs"].m,
             np.array(
                 [
-                    -47.823839, -47.833107, -47.845866, -47.858173, -47.883887,
-                    -47.915963, -47.93319, -47.939125, -47.949016, -47.960623,
+                    -48.001800, -48.008230, -48.012272, -47.974658, -47.960170,
+                    -47.961262, -47.971833, -47.971134, -47.971301, -47.960623,
                 ]
             ),
             rtol=1e-04,
@@ -407,6 +407,63 @@ class TestFEAnalysis:
             ),
             rtol=5e-01,
         )  # fmt: skip
+
+    def test_fraction_free_energy_slices_by_time(self):
+        """
+        ``_get_fraction_free_energy`` must build each estimate from the first
+        (forward) / last (reverse) ``chunk`` *iterations* of every replica -- a
+        slice in simulation time -- rather than the first / last
+        ``chunk * n_states`` contiguous columns of the replica-major ``u_ln``
+        (which would select whole replicas and hand MBAR per-state counts that
+        do not match ``N_l``). Regression test for the replica-major vs
+        time-ordered slicing bug.
+        """
+        n_states = n_replicas = 4
+        n_iterations = 6  # decorrelated samples per replica, i.e the time axis, M
+        n_cols = n_replicas * n_iterations
+
+        # Replica-major u_ln (column = replica * M + iteration). Tag every column
+        # with its flat index (identical across rows) so we can recover exactly
+        # which columns each slice selected from the matrix handed to MBAR.
+        u_ln = np.tile(np.arange(n_cols, dtype=float), (n_states, 1))
+
+        analyzer = multistate_analysis.MultistateEquilFEAnalysis.__new__(
+            multistate_analysis.MultistateEquilFEAnalysis
+        )
+        analyzer.units = unit.kilocalorie_per_mole
+        analyzer.analyzer = None
+
+        captured = []
+
+        def capture_get_free_energy(analyzer_arg, sliced_u_ln, N_l, bootstraps, return_units):
+            captured.append(sliced_u_ln[0].astype(int).copy())
+            return (0.0 * unit.kilocalorie_per_mole, 0.0 * unit.kilocalorie_per_mole)
+
+        chunk = 2
+        new_N_l = np.array([chunk] * n_states)
+        samples = chunk * n_states
+        with mock.patch.object(analyzer, "_get_free_energy", capture_get_free_energy):
+            analyzer._get_fraction_free_energy(u_ln, new_N_l, samples, fraction=0.5)
+
+        forward_cols, reverse_cols = captured
+
+        # First / last ``chunk`` iterations of every replica.
+        expected_forward = np.concatenate(
+            [np.arange(r * n_iterations, r * n_iterations + chunk) for r in range(n_replicas)]
+        )
+        expected_reverse = np.concatenate(
+            [
+                np.arange((r + 1) * n_iterations - chunk, (r + 1) * n_iterations)
+                for r in range(n_replicas)
+            ]
+        )
+        assert_equal(forward_cols, expected_forward)
+        assert_equal(reverse_cols, expected_reverse)
+
+        # Guard against a regression to the old contiguous-column slicing, which
+        # selected the first / last ``samples`` columns (i.e. whole replicas).
+        assert not np.array_equal(forward_cols, np.arange(samples))
+        assert not np.array_equal(reverse_cols, np.arange(n_cols - samples, n_cols))
 
     @pytest.mark.parametrize("fail_on_call", [1, 2], ids=["forward_fails", "reverse_fails"])
     def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer, fail_on_call):
