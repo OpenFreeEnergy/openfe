@@ -282,6 +282,107 @@ class MultistateEquilFEAnalysis:
 
         return DG, dDG
 
+    def _get_fraction_free_energy(
+        self,
+        u_ln: npt.NDArray,
+        N_l: npt.NDArray,
+        samples: int,
+        fraction: float,
+    ) -> tuple[tuple[Quantity, Quantity], tuple[Quantity, Quantity]]:
+        """
+        Helper method to estimate the forward and reverse free energies for a
+        fraction of the uncorrelated samples.
+
+        Used by :meth:`get_forward_and_reverse_analysis` for each chunk. The
+        columns of ``u_ln`` are laid out replica-major (each replica's full
+        trajectory is a contiguous block, ``column = replica * M + iteration``,
+        with ``M`` decorrelated samples per replica). This helper reshapes
+        ``u_ln`` to ``(n_states, n_replicas, M)`` so the iteration (time) axis
+        can be sliced independently of the replica axis: the forward estimate
+        uses the first ``chunk`` iterations of every replica and the reverse
+        estimate the last ``chunk`` (``chunk = samples // n_states``). Because
+        the replicas occupy the states as a permutation at every iteration, each
+        slice contains exactly ``chunk`` samples drawn from each state, matching
+        the uniform ``N_l`` passed to MBAR.
+
+        MBAR can fail to converge at low fractions of uncorrelated samples.
+        While such a failure is directly caused by the estimator, it is more
+        broadly caused by too few (effective) data points at that fraction, so
+        it is not reasonable to trust either direction. Therefore, if MBAR fails
+        for *either* the forward or reverse estimate, NaN is recorded for *both*
+        directions (and a warning raised) and the analysis continues, so that
+        estimates at higher fractions are still reported.
+
+        Parameters
+        ----------
+        u_ln : npt.NDArray
+          The full sub-sampled energy matrix of shape
+          ``(n_states, n_replicas * M)`` with replica-major columns.
+        N_l : npt.NDArray
+          An array containing the number of samples drawn from each state.
+        samples : int
+          The total number of samples across all states for this fraction
+          (``chunk * n_states``); ``chunk = samples // n_states`` is the number
+          of iterations per replica included in each slice.
+        fraction : float
+          The fraction of uncorrelated samples this corresponds to. Only used
+          for the warning message.
+
+        Returns
+        -------
+        forward : tuple[openff.units.Quantity, openff.units.Quantity]
+          The forward free energy difference and its MBAR error estimate, or
+          NaN for both if MBAR failed to obtain an estimate.
+        reverse : tuple[openff.units.Quantity, openff.units.Quantity]
+          The reverse free energy difference and its MBAR error estimate, or
+          NaN for both if MBAR failed to obtain an estimate.
+        """
+        # pymbar has some side effects from being imported, so we only want to
+        # import it right when we need it
+        from pymbar.utils import ParameterError
+
+        n_states = len(N_l)
+        n_iterations = u_ln.shape[1] // n_states  # number_of_uncorrelated_samples
+        chunk = samples // n_states
+        # Reshape the flat column axis back into (replica, iteration) so the
+        # iteration axis -- which represents simulation *time* -- can be sliced
+        # independently of the replica axis.
+        #   u_kln axes: (n_states, n_replicas, n_iterations)   <- axis 2 is time
+        u_kln = u_ln.reshape(u_ln.shape[0], n_states, n_iterations)
+        # Slice along the iteration (time) axis: forward keeps the first
+        # ``chunk`` iterations of every replica (earliest time), reverse the last
+        # ``chunk`` (latest time). Each iteration contributes one sample per
+        # state, so each slice holds exactly ``chunk`` samples per state,
+        # consistent with N_l.
+        forward_u_ln = u_kln[:, :, :chunk].reshape(u_ln.shape[0], -1)
+        reverse_u_ln = u_kln[:, :, n_iterations - chunk :].reshape(u_ln.shape[0], -1)
+
+        try:
+            forward = self._get_free_energy(
+                self.analyzer,
+                forward_u_ln,
+                N_l,
+                0,
+                self.units,
+            )
+            reverse = self._get_free_energy(
+                self.analyzer,
+                reverse_u_ln,
+                N_l,
+                0,
+                self.units,
+            )
+        except ParameterError:
+            wmsg = (
+                f"Could not obtain a free energy estimate at fraction "
+                f"{fraction:.2f} of the uncorrelated samples; recording NaN "
+                "for both the forward and reverse estimates."
+            )
+            warnings.warn(wmsg, stacklevel=2)
+            forward = reverse = (np.nan * self.units, np.nan * self.units)  # type: ignore
+
+        return forward, reverse
+
     def get_forward_and_reverse_analysis(
         self, num_samples: int = 10
     ) -> Optional[dict[str, Union[npt.NDArray, Quantity]]]:
@@ -311,60 +412,52 @@ class MultistateEquilFEAnalysis:
         * This method does not currently use bootstrap uncertainties due to
           issues with the solver when using low amounts of data points. All
           uncertainties are MBAR analytical errors.
+        * If MBAR fails to obtain an estimate for a given sample fraction (a
+          ``ParameterError``, typically at low fractions of uncorrelated
+          samples), a NaN is recorded for that fraction in both the forward
+          and reverse directions and the analysis continues, so that estimates
+          at higher fractions are still returned.
+        * The exception is the final fraction (1.0, the full set of
+          uncorrelated samples): if MBAR fails there, the whole analysis is
+          discarded and None is returned, since that estimate is the reported
+          free energy and anchors the convergence plot.
         """
-        # pymbar has some side effects from being imported, so we only want to import
-        # it right when we need it
-        from pymbar.utils import ParameterError
+        u_ln = self.analyzer._unbiased_decorrelated_u_ln
+        N_l = self.analyzer._unbiased_decorrelated_N_l
+        n_states = len(N_l)
 
-        try:
-            u_ln = self.analyzer._unbiased_decorrelated_u_ln
-            N_l = self.analyzer._unbiased_decorrelated_N_l
-            n_states = len(N_l)
+        # Check that the N_l is the same across all states
+        if not np.all(N_l == N_l[0]):
+            errmsg = f"The number of samples is not equivalent across all states {N_l}"
+            raise ValueError(errmsg)
 
-            # Check that the N_l is the same across all states
-            if not np.all(N_l == N_l[0]):
-                errmsg = f"The number of samples is not equivalent across all states {N_l}"
-                raise ValueError(errmsg)
+        # Get the chunks of N_l going from 10% to ~ 100%
+        # Note: you always lose out a few data points but it's fine
+        chunks = [max(int(N_l[0] / num_samples * i), 1) for i in range(1, num_samples + 1)]
 
-            # Get the chunks of N_l going from 10% to ~ 100%
-            # Note: you always lose out a few data points but it's fine
-            chunks = [max(int(N_l[0] / num_samples * i), 1) for i in range(1, num_samples + 1)]
+        forward_DGs = []
+        forward_dDGs = []
+        reverse_DGs = []
+        reverse_dDGs = []
+        fractions = []
 
-            forward_DGs = []
-            forward_dDGs = []
-            reverse_DGs = []
-            reverse_dDGs = []
-            fractions = []
+        for chunk in chunks:
+            new_N_l = np.array([chunk for _ in range(n_states)])
+            samples = chunk * n_states
+            fraction = chunk / N_l[0]
 
-            for chunk in chunks:
-                new_N_l = np.array([chunk for _ in range(n_states)])
-                samples = chunk * n_states
+            # If MBAR fails for either the forward or reverse estimate, both
+            # are recorded as NaN (too few effective samples at this
+            # fraction to trust either direction).
+            (forward_DG, forward_dDG), (reverse_DG, reverse_dDG) = self._get_fraction_free_energy(
+                u_ln, new_N_l, samples, fraction
+            )
+            forward_DGs.append(forward_DG)
+            forward_dDGs.append(forward_dDG)
+            reverse_DGs.append(reverse_DG)
+            reverse_dDGs.append(reverse_dDG)
 
-                # Forward
-                DG, dDG = self._get_free_energy(
-                    self.analyzer,
-                    u_ln[:, :samples],
-                    new_N_l,
-                    0,
-                    self.units,
-                )
-                forward_DGs.append(DG)
-                forward_dDGs.append(dDG)
-
-                # Reverse
-                DG, dDG = self._get_free_energy(
-                    self.analyzer,
-                    u_ln[:, -samples:],
-                    new_N_l,
-                    0,
-                    self.units,
-                )
-                reverse_DGs.append(DG)
-                reverse_dDGs.append(dDG)
-
-                fractions.append(chunk / N_l[0])
-        except ParameterError:
-            return None
+            fractions.append(fraction)
 
         forward_reverse = {
             "fractions": np.array(fractions),
@@ -373,6 +466,22 @@ class MultistateEquilFEAnalysis:
             "reverse_DGs": Quantity.from_list(reverse_DGs),  # type: ignore
             "reverse_dDGs": Quantity.from_list(reverse_dDGs),  # type: ignore
         }
+
+        # The final fraction (1.0) uses the full set of uncorrelated samples.
+        # Its estimate is the reported free energy and anchors the error band in
+        # the convergence plot, so if MBAR failed for it (NaN) the whole
+        # analysis is not meaningful and we discard it by returning None.
+        final_forward = forward_reverse["forward_DGs"][-1].m
+        final_reverse = forward_reverse["reverse_DGs"][-1].m
+        if np.isnan(final_forward) or np.isnan(final_reverse):
+            wmsg = (
+                "MBAR could not obtain a free energy estimate using the full set "
+                "of uncorrelated samples (fraction 1.0); discarding the forward "
+                "and reverse convergence analysis."
+            )
+            warnings.warn(wmsg, stacklevel=2)
+            return None
+
         return forward_reverse
 
     def get_overlap_matrix(self) -> dict[str, npt.NDArray]:

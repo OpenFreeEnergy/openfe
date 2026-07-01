@@ -369,8 +369,8 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["forward_DGs"].m,
             np.array(
                 [
-                    -48.057326, -48.038367, -48.033994, -48.0228, -48.028532,
-                    -48.025258, -48.006349, -47.986304, -47.972138, -47.960623,
+                    -47.823889, -47.905875, -47.935716, -47.951184, -47.971532,
+                    -47.949007, -47.938932, -47.936925, -47.951239, -47.960623,
                 ]
             ),
             rtol=1e-04,
@@ -390,8 +390,8 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["reverse_DGs"].m,
             np.array(
                 [
-                    -47.823839, -47.833107, -47.845866, -47.858173, -47.883887,
-                    -47.915963, -47.93319, -47.939125, -47.949016, -47.960623,
+                    -48.001800, -48.008230, -48.012272, -47.974658, -47.960170,
+                    -47.961262, -47.971833, -47.971134, -47.971301, -47.960623,
                 ]
             ),
             rtol=1e-04,
@@ -407,6 +407,134 @@ class TestFEAnalysis:
             ),
             rtol=5e-01,
         )  # fmt: skip
+
+    def test_fraction_free_energy_slices_by_time(self):
+        """
+        ``_get_fraction_free_energy`` must build each estimate from the first
+        (forward) / last (reverse) ``chunk`` *iterations* of every replica -- a
+        slice in simulation time -- rather than the first / last
+        ``chunk * n_states`` contiguous columns of the replica-major ``u_ln``
+        (which would select whole replicas and hand MBAR per-state counts that
+        do not match ``N_l``). Regression test for the replica-major vs
+        time-ordered slicing bug.
+        """
+        n_states = n_replicas = 4
+        n_iterations = 6  # decorrelated samples per replica, i.e the time axis, M
+        n_cols = n_replicas * n_iterations
+
+        # Replica-major u_ln (column = replica * M + iteration). Tag every column
+        # with its flat index (identical across rows) so we can recover exactly
+        # which columns each slice selected from the matrix handed to MBAR.
+        u_ln = np.tile(np.arange(n_cols, dtype=float), (n_states, 1))
+
+        analyzer = multistate_analysis.MultistateEquilFEAnalysis.__new__(
+            multistate_analysis.MultistateEquilFEAnalysis
+        )
+        analyzer.units = unit.kilocalorie_per_mole
+        analyzer.analyzer = None
+
+        captured = []
+
+        def capture_get_free_energy(analyzer_arg, sliced_u_ln, N_l, bootstraps, return_units):
+            captured.append(sliced_u_ln[0].astype(int).copy())
+            return (0.0 * unit.kilocalorie_per_mole, 0.0 * unit.kilocalorie_per_mole)
+
+        chunk = 2
+        new_N_l = np.array([chunk] * n_states)
+        samples = chunk * n_states
+        with mock.patch.object(analyzer, "_get_free_energy", capture_get_free_energy):
+            analyzer._get_fraction_free_energy(u_ln, new_N_l, samples, fraction=0.5)
+
+        forward_cols, reverse_cols = captured
+
+        # First / last ``chunk`` iterations of every replica.
+        expected_forward = np.concatenate(
+            [np.arange(r * n_iterations, r * n_iterations + chunk) for r in range(n_replicas)]
+        )
+        expected_reverse = np.concatenate(
+            [
+                np.arange((r + 1) * n_iterations - chunk, (r + 1) * n_iterations)
+                for r in range(n_replicas)
+            ]
+        )
+        assert_equal(forward_cols, expected_forward)
+        assert_equal(reverse_cols, expected_reverse)
+
+        # Guard against a regression to the old contiguous-column slicing, which
+        # selected the first / last ``samples`` columns (i.e. whole replicas).
+        assert not np.array_equal(forward_cols, np.arange(samples))
+        assert not np.array_equal(reverse_cols, np.arange(n_cols - samples, n_cols))
+
+    @pytest.mark.parametrize("fail_on_call", [1, 2], ids=["forward_fails", "reverse_fails"])
+    def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer, fail_on_call):
+        """
+        If MBAR fails for *either* the forward or reverse estimate of a given
+        fraction of the uncorrelated samples, NaN is recorded for *both*
+        directions at that fraction (too few effective samples to trust either)
+        and the rest of the analysis is still returned, rather than discarding
+        everything by returning ``None``.
+
+        The two parametrizations inject the failure into the lowest fraction's
+        forward estimate (call 1) and reverse estimate (call 2) respectively.
+        """
+        original = type(analyzer)._get_free_energy
+        state = {"calls": 0}
+
+        def flaky_get_free_energy(analyzer_arg, u_ln, N_l, bootstraps, return_units):
+            state["calls"] += 1
+            # Fail the forward (call 1) or reverse (call 2) estimate of the
+            # lowest fraction, mimicking an MBAR convergence failure on sparse
+            # data in one of the two directions.
+            if state["calls"] == fail_on_call:
+                raise ParameterError("forced low-fraction MBAR failure")
+            return original(analyzer_arg, u_ln, N_l, bootstraps, return_units)
+
+        with mock.patch.object(analyzer, "_get_free_energy", flaky_get_free_energy):
+            with pytest.warns(UserWarning, match="Could not obtain a free energy estimate"):
+                ret = analyzer.get_forward_and_reverse_analysis(num_samples=10)
+
+        # The analysis is still returned rather than being discarded.
+        assert ret is not None
+
+        forward_DGs = ret["forward_DGs"].m
+        forward_dDGs = ret["forward_dDGs"].m
+        reverse_DGs = ret["reverse_DGs"].m
+        reverse_dDGs = ret["reverse_dDGs"].m
+
+        # A failure in either direction -> NaN for both directions (value and
+        # error) at the lowest fraction.
+        assert np.isnan(forward_DGs[0])
+        assert np.isnan(forward_dDGs[0])
+        assert np.isnan(reverse_DGs[0])
+        assert np.isnan(reverse_dDGs[0])
+        # Every higher fraction is finite in both directions.
+        assert np.all(np.isfinite(forward_DGs[1:]))
+        assert np.all(np.isfinite(reverse_DGs[1:]))
+        # The fractions axis is preserved at the full requested length.
+        assert len(ret["fractions"]) == 10
+
+    def test_forward_and_reverse_none_on_final_fraction_failure(self, analyzer):
+        """
+        If MBAR fails for the final fraction (1.0, the full set of uncorrelated
+        samples), the whole analysis is discarded (returns ``None``), since that
+        estimate is the reported free energy and anchors the convergence plot.
+        """
+        # The final fraction uses every column of the decorrelated energy
+        # matrix, so its forward/reverse slices span the full width. Failing on
+        # that width targets the fraction-1.0 estimate regardless of num_samples.
+        full_width = analyzer.analyzer._unbiased_decorrelated_u_ln.shape[1]
+        original = type(analyzer)._get_free_energy
+
+        def flaky_get_free_energy(analyzer_arg, u_ln, N_l, bootstraps, return_units):
+            if u_ln.shape[1] == full_width:
+                raise ParameterError("forced full-data MBAR failure")
+            return original(analyzer_arg, u_ln, N_l, bootstraps, return_units)
+
+        with mock.patch.object(analyzer, "_get_free_energy", flaky_get_free_energy):
+            with pytest.warns(UserWarning, match="full set of uncorrelated samples"):
+                ret = analyzer.get_forward_and_reverse_analysis(num_samples=10)
+
+        assert ret is None
 
     def test_plots(self, analyzer, tmp_path):
         analyzer.plot(filepath=Path(tmp_path), filename_prefix="")
