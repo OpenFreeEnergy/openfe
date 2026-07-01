@@ -2,7 +2,7 @@ name: openfe_env
 channels:
   - conda-forge
 dependencies:
-  # - cudatoolkit >=11.8
+  - cudatoolkit >=11.8
   - jupyterlab
   - notebook
   - openfe
