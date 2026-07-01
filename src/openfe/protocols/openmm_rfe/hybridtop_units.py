@@ -49,6 +49,7 @@ import openfe
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
+from openfe.protocols.openmm_rfe._rfe_utils.dummy_corrections import CorrectionData
 
 from ...analysis import plotting
 from ...utils import log_system_probe, without_oechem_backend
@@ -445,6 +446,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         openmm.app.Topology,
         openmm.unit.Quantity,
         dict[str, dict[int, int]],
+        None | dict[str, CorrectionData]
     ]:
         """
         Get OpenMM objects for both end states A and B.
@@ -460,7 +462,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         settings : dict[str, SettingsBaseModel]
           Settings for the transformation.
         protein_component : ProteinComponent | None
-          The common ProteinComponent between the end states, if there is is one.
+          The common ProteinComponent between the end states, if there is one.
         solvent_component : SolventComponent | None
           The common SolventComponent between the end states, if there is one.
         small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
@@ -483,6 +485,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         system_mapping : dict[str, dict[int, int]]
           Dictionary of mappings defining the correspondence between
           the two state Systems.
+        corrections : None | dict[str, CorrectionData]
+          Dictionary of corrections for dummy atom junctions, if requested else None.
         """
         if self.verbose:
             self.logger.info("Parameterizing systems")
@@ -557,6 +561,23 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
                 forcefield=forcefield,
             )
 
+        # Remap corrections from isolated-molecule indices to full-system indices
+        # so they match the atom indices used by the HTF (which may include
+        # protein or solvent atoms before the ligand).
+        if settings["alchemical_settings"].remove_redundant_dummy_atom_connections:
+            # derive the corrections
+            from openfe.protocols.openmm_rfe._rfe_utils.dummy_corrections import _derive_dummy_junction_corrections, _remap_corrections_to_system_indices
+            smc_ff = settings["forcefield_settings"].small_molecule_forcefield + ".offxml"
+            corrections = _derive_dummy_junction_corrections(mapping=mapping, force_field=smc_ff)
+            # remap if we have a solvent and or protein in the system
+            corrections = _remap_corrections_to_system_indices(
+                corrections,
+                old_mol_offset=system_mappings["old_mol_indices"][0],
+                new_mol_offset=system_mappings["new_mol_indices"][0],
+            )
+        else:
+            corrections = None
+
         # Finally get the state B positions
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
             system_mappings,
@@ -576,6 +597,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             stateB_topology,
             stateB_positions,
             system_mappings,
+            corrections
         )
 
     @staticmethod
@@ -588,6 +610,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         stateB_topology: openmm.app.Topology,
         system_mappings: dict[str, dict[int, int]],
         alchemical_settings: AlchemicalSettings,
+        corrections: None | dict[str, CorrectionData] = None,
     ):
         """
         Get the hybrid topology alchemical system.
@@ -638,6 +661,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             softcore_LJ_v2=softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchemical_settings.softcore_alpha,
             interpolate_old_and_new_14s=alchemical_settings.turn_off_core_unique_exceptions,
+            valence_correction_terms=corrections,
         )
 
         return hybrid_factory, hybrid_factory.hybrid_system
@@ -764,6 +788,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             stateB_topology,
             stateB_positions,
             system_mappings,
+            corrections
         ) = self._get_omm_objects(
             stateA=stateA,
             stateB=stateB,
@@ -784,6 +809,8 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             stateB_topology=stateB_topology,
             system_mappings=system_mappings,
             alchemical_settings=settings["alchemical_settings"],
+            corrections=corrections
+
         )
 
         # Subselect system based on user inputs & write initial PDB

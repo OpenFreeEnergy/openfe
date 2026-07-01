@@ -100,6 +100,10 @@ class AlchemicalSettings(SettingsBaseModel):
     The minimum distance from the system solutes from which an
     alchemical water can be chosen. Default 0.8 * unit.nanometer.
     """
+    remove_redundant_dummy_atom_connections: bool = False
+    """
+    If redundant valence terms between dummy and core atoms should be pruned following the best practices of Fleck et al.
+    """
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):
