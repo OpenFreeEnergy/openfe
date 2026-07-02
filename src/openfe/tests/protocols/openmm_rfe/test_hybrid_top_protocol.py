@@ -2475,7 +2475,6 @@ def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp
     out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
 
     u = mda.Universe(out["pdb_structure"])
-    resnames = {r.resname for r in u.residues}
-    assert "MYC" in resnames
-    assert "CF1" not in resnames
-    assert "LIG" in resnames
+    assert "MYC" in u.residues.resnames
+    assert "CF1" not in u.residues.resnames
+    assert "LIG" in u.residues.resnames
