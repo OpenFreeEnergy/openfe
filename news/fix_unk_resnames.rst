@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* Small molecules in RelativeHybridTopology topologies (including the output PDB) are now named LIG (alchemical ligand) and CF1, CF2… (cofactors) instead of UNK.
+* Small molecules in RelativeHybridTopology topologies (including the output PDB) are now named LIG (alchemical ligand) and CF1, CF2… (cofactors) instead of UNK. If a residue name was already assigned, the assigned one is kept.
 
 **Deprecated:**
 

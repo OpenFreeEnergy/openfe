@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
 import gzip
+import logging
 import os
 import sys
 from importlib import resources
@@ -9,9 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 import numpy as np
-import pooch
 import pytest
-from gufe import BaseSolventComponent
 from gufe.components.errors import ComponentValidationError
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
@@ -43,6 +42,11 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
     HAS_OPENEYE,
+)
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_metadata,
+    _set_offmol_metadata,
+    _set_offmol_resname,
 )
 
 from ..conftest import HAS_INTERNET
@@ -1189,3 +1193,22 @@ def test_forward_backwards_failure(simulation_nc):
         ret = ana.get_forward_and_reverse_analysis()
 
     assert ret is None
+
+
+def test_get_metadata_inconsistent_warns(caplog):
+    mol = OFFMol.from_smiles("CC")
+    _set_offmol_metadata(mol, "residue_name", "LIG")
+    mol.atoms[0].metadata["residue_name"] = "COF"
+
+    with caplog.at_level(logging.WARNING):
+        result = _get_offmol_metadata(mol, "residue_name")
+
+    assert result is None
+    assert "Inconsistent metadata" in caplog.text
+
+
+def test_set_metadata_none_clears():
+    mol = OFFMol.from_smiles("CC")
+    _set_offmol_metadata(mol, "residue_name", "LIG")
+    _set_offmol_metadata(mol, "residue_name", None)
+    assert all("residue_name" not in a.metadata for a in mol.atoms)

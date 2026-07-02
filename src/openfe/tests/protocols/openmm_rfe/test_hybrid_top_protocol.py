@@ -51,7 +51,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
-from openfe.protocols.openmm_utils.molecule_utils import (
+from openfe.protocols.openmm_utils.offmolecule_utils import (
     _get_offmol_metadata,
     _get_offmol_resname,
     _set_offmol_metadata,
@@ -2440,25 +2440,6 @@ def test_ligand_separable_from_cofactor(eg5_vac_inputs, vac_settings, tmp_path):
     assert set(lig.indices).isdisjoint(cof.indices)
 
 
-def test_get_metadata_inconsistent_warns(caplog):
-    mol = Molecule.from_smiles("CC")
-    _set_offmol_metadata(mol, "residue_name", "LIG")
-    mol.atoms[0].metadata["residue_name"] = "COF"
-
-    with caplog.at_level(logging.WARNING):
-        result = _get_offmol_metadata(mol, "residue_name")
-
-    assert result is None
-    assert "Inconsistent metadata" in caplog.text
-
-
-def test_set_metadata_none_clears():
-    mol = Molecule.from_smiles("CC")
-    _set_offmol_metadata(mol, "residue_name", "LIG")
-    _set_offmol_metadata(mol, "residue_name", None)
-    assert all("residue_name" not in a.metadata for a in mol.atoms)
-
-
 def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
     vac_settings.output_settings.output_indices = "all"
 
@@ -2478,3 +2459,62 @@ def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp
     assert "MYC" in u.residues.resnames
     assert "CF1" not in u.residues.resnames
     assert "LIG" in u.residues.resnames
+
+
+def test_hybrid_ligand_takes_componentA_resname(
+    eg5_ligands, eg5_cofactor, vac_settings, tmp_path
+):
+    vac_settings.output_settings.output_indices = "all"
+
+    ligA, ligB = eg5_ligands[0], eg5_ligands[1]
+    offA, offB = ligA.to_openff(), ligB.to_openff()
+    _set_offmol_resname(offA, "LGA")
+    _set_offmol_resname(offB, "LGB")
+    ligA_named = openfe.SmallMoleculeComponent.from_openff(offA)
+    ligB_named = openfe.SmallMoleculeComponent.from_openff(offB)
+
+    mapper = openfe.setup.KartografAtomMapper()
+    mapping = next(mapper.suggest_mappings(ligA_named, ligB_named))
+    stateA = openfe.ChemicalSystem({"ligand": ligA_named, "cofactor": eg5_cofactor})
+    stateB = openfe.ChemicalSystem({"ligand": ligB_named, "cofactor": eg5_cofactor})
+
+    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
+
+    u = mda.Universe(out["pdb_structure"])
+    lig = u.select_atoms("resname LGA")
+    cof = u.select_atoms("resname CF1")
+
+    # the setup unit records componentA's resname for the analysis unit
+    assert out["alchemical_resname"] == "LGA"
+
+    # the whole hybrid ligand is under componentA's resname
+    assert lig.n_atoms > 0
+    assert u.select_atoms("resname LGB").n_atoms == 0
+    # user-set names are kept, not overwritten with the LIG default
+    assert u.select_atoms("resname LIG").n_atoms == 0
+    assert "UNK" not in {r.resname for r in u.residues}
+    # cofactor stays separate
+    assert cof.n_atoms > 0
+    assert set(lig.indices).isdisjoint(cof.indices)
+
+
+def test_structural_analysis_uses_ligand_resname():
+    captured = {}
+
+    def fake_gather(pdb, trj, ligand_selection="resname UNK"):
+        captured["ligand_selection"] = ligand_selection
+        return {
+            "protein_RMSD": [], "ligand_RMSD": [], "ligand_wander": [],
+            "protein_2D_RMSD": [], "time(ps)": [],
+        }
+
+    with mock.patch("openfe_analysis.rmsd.gather_rms_data", side_effect=fake_gather):
+        HybridTopologyMultiStateAnalysisUnit._structural_analysis(
+            pdb_file=Path("dummy.pdb"),
+            trj_file=Path("dummy.nc"),
+            output_directory=Path("."),
+            dry=True,
+            ligand_resname="LGA",
+        )
+
+    assert captured["ligand_selection"] == "resname LGA"
