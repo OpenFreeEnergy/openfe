@@ -2461,9 +2461,7 @@ def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp
     assert "LIG" in u.residues.resnames
 
 
-def test_hybrid_ligand_takes_componentA_resname(
-    eg5_ligands, eg5_cofactor, vac_settings, tmp_path
-):
+def test_hybrid_ligand_takes_componentA_resname(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
     vac_settings.output_settings.output_indices = "all"
 
     ligA, ligB = eg5_ligands[0], eg5_ligands[1]
@@ -2504,8 +2502,11 @@ def test_structural_analysis_uses_ligand_resname():
     def fake_gather(pdb, trj, ligand_selection="resname UNK"):
         captured["ligand_selection"] = ligand_selection
         return {
-            "protein_RMSD": [], "ligand_RMSD": [], "ligand_wander": [],
-            "protein_2D_RMSD": [], "time(ps)": [],
+            "protein_RMSD": [],
+            "ligand_RMSD": [],
+            "ligand_wander": [],
+            "protein_2D_RMSD": [],
+            "time(ps)": [],
         }
 
     with mock.patch("openfe_analysis.rmsd.gather_rms_data", side_effect=fake_gather):

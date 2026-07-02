@@ -1554,7 +1554,9 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         from openfe_analysis import rmsd
 
         try:
-            data = rmsd.gather_rms_data(pdb_file, trj_file, ligand_selection=f"resname {ligand_resname}")
+            data = rmsd.gather_rms_data(
+                pdb_file, trj_file, ligand_selection=f"resname {ligand_resname}"
+            )
         # TODO: eventually change this to more specific exception types
         except Exception as e:
             return {"structural_analysis_error": str(e)}
@@ -1692,8 +1694,9 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             pdb_file=pdb_file,
             trajectory=trajectory,
             checkpoint=checkpoint,
-            ligand_resname=setup_results.outputs.get("alchemical_resname",
-                                                     "LIG"), # Adding this for backward compatibility
+            ligand_resname=setup_results.outputs.get(
+                "alchemical_resname", "LIG"
+            ),  # Adding this for backward compatibility
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
