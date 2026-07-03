@@ -2516,9 +2516,9 @@ def test_cofactor_ligand_name_clash(eg5_ligands, eg5_cofactor, vac_settings, tmp
 
     u = mda.Universe(out["pdb_structure"])
     resnames = list(u.residues.resnames)
-    assert len(resnames) == len(set(resnames))          # all residues distinct
+    assert len(resnames) == len(set(resnames))  # all residues distinct
     # pre-named cofactor keeps LIG; ligand bumps
-    assert u.select_atoms("resname LIG").n_atoms > 0     # the cofactor
+    assert u.select_atoms("resname LIG").n_atoms > 0  # the cofactor
     ligand_names = out["alchemical_resnames"]
     assert "LIG" not in ligand_names
     lig = u.select_atoms("resname " + " ".join(ligand_names))
@@ -2532,8 +2532,11 @@ def test_structural_analysis_uses_ligand_resnames():
     def fake_gather(*args, ligand_selection="resname UNK"):
         captured["ligand_selection"] = ligand_selection
         return {
-            "protein_RMSD": [], "ligand_RMSD": [], "ligand_wander": [],
-            "protein_2D_RMSD": [], "time(ps)": [],
+            "protein_RMSD": [],
+            "ligand_RMSD": [],
+            "ligand_wander": [],
+            "protein_2D_RMSD": [],
+            "time(ps)": [],
         }
 
     with mock.patch("openfe_analysis.rmsd.gather_rms_data", side_effect=fake_gather):
