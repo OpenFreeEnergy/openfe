@@ -791,10 +791,12 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             used.add(name)
 
         # Record the resnames of the ligands
-        alchem_resnames = sorted({
-            _get_offmol_resname(small_mols[comp])
-            for comp in (mapping.componentA, mapping.componentB)
-        })
+        names = set()
+        for comp in (mapping.componentA, mapping.componentB):
+            name = _get_offmol_resname(small_mols[comp])
+            assert name is not None, "alchemical ligand has no resname"
+            names.add(name)
+        alchem_resnames = sorted(names)
 
         # Assign partial charges now to avoid any discrepancies later
         self._assign_partial_charges(settings["charge_settings"], small_mols)
