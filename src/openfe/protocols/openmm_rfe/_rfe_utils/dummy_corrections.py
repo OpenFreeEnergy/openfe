@@ -601,7 +601,8 @@ def _derive_triple_corrections(
             has_other_core = other_core_atoms.intersection(dihedral)
 
             # if the dihedral originates from the physical and terminates in the dummy junction we need to remove
-            if has_dummy and has_physical and has_junction and has_other_core:
+            # len(has_physical) == 2 is a special case where the tiple junction is on a cyclopropane group
+            if has_dummy and has_physical and has_junction and (has_other_core or len(has_physical) == 2):
                 corrections.removed_dihedrals.add(frozenset(dihedral))
             # if the dihedral originates from the dummy group and terminates in the physical atom we need to collect for
             # anchor corrections
@@ -747,13 +748,13 @@ def _check_dummy_junction(
             dihedral = frozenset(dihedral)
             junction_in_dihedral = junction_atom in dihedral
             dummy_in_dihedral = dummy_atom in dihedral
-            physical_in_dihedral = len(physical_atoms.intersection(dihedral)) == 1
-            other_core_in_dihedral = len(other_core_atoms.intersection(dihedral)) == 1
+            physical_in_dihedral = physical_atoms.intersection(dihedral)
+            other_core_in_dihedral = other_core_atoms.intersection(dihedral)
             if (
                 junction_in_dihedral
                 and dummy_in_dihedral
                 and physical_in_dihedral
-                and other_core_in_dihedral
+                and (other_core_in_dihedral or len(physical_in_dihedral) == 2)
             ):
                 if dihedral not in corrections.removed_dihedrals:
                     valence_terms["dihedrals"].add(dihedral)
