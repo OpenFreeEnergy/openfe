@@ -1,4 +1,5 @@
 import copy
+import re
 
 import openmm
 import pytest
@@ -1859,3 +1860,112 @@ def test_system_energy_pme_dummy(htf_chlorobenzene_benzene):
         # make sure the energy is non-zero to avoid false positives
         assert 0.0 != pytest.approx(hybrid_energy)
         assert hybrid_energy == pytest.approx(ref_energy, rel=1e-5)
+
+
+def test_system_multiple_bonds():
+    """An error should be raised when making a hybrid system with a harmonic bond force with multiple bonds
+    between the same atoms.
+    """
+    import numpy as np
+    system = openmm.System()
+
+    # add atoms for the force
+    for i in range(2):
+        system.addParticle(12.0)
+
+    # add fake harmonic bond force
+    b_force = openmm.HarmonicBondForce()
+    for i in range(2):
+        b_force.addBond(0, 1, (1.2 + i) * unit.angstrom, 100 * unit.kilocalorie_per_mole / unit.angstrom ** 2)
+
+    # add forces needed by the hybrid factory
+    for force in [
+        openmm.HarmonicAngleForce,
+        openmm.PeriodicTorsionForce,
+        openmm.NonbondedForce,
+    ]:
+        system.addForce(force())
+    system.addForce(b_force)
+
+    topology = openmm.app.Topology()
+    chain = topology.addChain()
+    res = topology.addResidue("RES", chain)
+    atoms = []
+    for i in range(2):
+        atom = topology.addAtom(f"C{i + 1}", app.element.carbon, res)
+        atoms.append(atom)
+        if i > 0:
+            topology.addBond(atoms[i - 1], atoms[i])
+    # build a fake set of positions
+    positions = openmm.unit.Quantity(np.zeros((2, 3)), unit.nanometer)
+
+    with pytest.raises(RuntimeError, match=re.escape("Multiple bonds found for atom pair: (0, 1) this is not supported.")):
+        _ = HybridTopologyFactory(
+            old_system=system,
+            old_topology=topology,
+            old_positions=positions,
+            new_system=system,
+            new_topology=topology,
+            new_positions=positions,
+            # map all atoms so they end up in the environment
+            old_to_new_atom_map={
+                0: 0,
+                1: 1,
+            },
+            old_to_new_core_atom_map={},
+        )
+
+
+def test_system_multiple_angles():
+    """An error should be raised when making a hybrid system with a harmonic angle force with multiple angles
+    between the same atoms.
+    """
+    import numpy as np
+    system = openmm.System()
+
+    # add atoms for the force
+    for i in range(3):
+        system.addParticle(12.0)
+
+    # add fake harmonic angle force
+    a_force = openmm.HarmonicAngleForce()
+    for i in range(3):
+        a_force.addAngle(0, 1, 2, (120 + i) * unit.degree, 100 * unit.kilocalorie_per_mole / unit.degrees ** 2)
+
+    # add forces needed by the hybrid factory
+    for force in [
+        openmm.HarmonicBondForce,
+        openmm.PeriodicTorsionForce,
+        openmm.NonbondedForce,
+    ]:
+        system.addForce(force())
+    system.addForce(a_force)
+
+    topology = openmm.app.Topology()
+    chain = topology.addChain()
+    res = topology.addResidue("RES", chain)
+    atoms = []
+    for i in range(3):
+        atom = topology.addAtom(f"C{i + 1}", app.element.carbon, res)
+        atoms.append(atom)
+        if i > 0:
+            topology.addBond(atoms[i - 1], atoms[i])
+    # build a fake set of positions
+    positions = openmm.unit.Quantity(np.zeros((3, 3)), unit.nanometer)
+
+    with pytest.raises(RuntimeError, match=re.escape("Multiple angles found for atom triplet: (0, 1, 2) this is not supported.")):
+        _ = HybridTopologyFactory(
+            old_system=system,
+            old_topology=topology,
+            old_positions=positions,
+            new_system=system,
+            new_topology=topology,
+            new_positions=positions,
+            # map all atoms so they end up in the environment
+            old_to_new_atom_map={
+                0: 0,
+                1: 1,
+                2:2,
+            },
+            old_to_new_core_atom_map={},
+        )
