@@ -25,7 +25,7 @@ dependencies:
   - pandas
   - parmed >=4.3.1  # fix to support numpy >=2.3: https://github.com/ParmEd/ParmEd/pull/1387
   - plugcli
-  - pint>=0.24.0
+  - pint==0.25
   - pip
   - pooch >= 1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
   - py3dmol
