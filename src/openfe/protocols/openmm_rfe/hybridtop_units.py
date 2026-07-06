@@ -693,9 +693,14 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         bfactors[np.isin(selection_indices, list(atom_classes["unique_new_atoms"]))] = 0.75
 
         if len(selection_indices) > 0:
+            sub_top = hybrid_topology.subset(selection_indices)
+            # Renumber sequentially so same-named residues (e.g. two COF cofactors,
+            # both resSeq=0) don't merge into one residue on PDB write/read.
+            for i, res in enumerate(sub_top.residues, start=1):
+                res.resSeq = i
             traj = mdt.Trajectory(
                 hybrid_positions[selection_indices, :],
-                hybrid_topology.subset(selection_indices),
+                sub_top,
             ).save_pdb(
                 self.shared_basepath / output_filename,
                 bfactors=bfactors,
@@ -755,46 +760,43 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
 
         alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
+        stateA_comps = set(alchem_comps["stateA"])
 
-        # Store user-provided resnames, so auto-assigned names can't clash with them.
+        def _unique(used: set[str]) -> str:
+            """Next free 'LG{n}' name (n = 1..9) for the alchemical ligands."""
+            for i in range(1, 10):
+                candidate = f"LG{i}"
+                if candidate not in used:
+                    return candidate
+            raise ValueError(
+                "Could not assign a unique ligand residue name; too many "
+                "colliding 'LG#' names."
+            )
+
+        # Seed with user-provided resnames so auto-assigned names avoid them.
         used: set[str] = set()
         for offmol in small_mols.values():
             name = _get_offmol_resname(offmol)
             if name is not None:
                 used.add(name)
 
-        def _unique(base: str) -> str:
-            # If the requested name is already in use, append a numeric suffix (e.g.
-            # CF1 -> CF11) until a unique name is found.
-            if base not in used:
-                return base
-            i = 1
-            candidate = f"{base}{i}"
-            while candidate in used:
-                i += 1
-                candidate = f"{base}{i}"
-            return candidate
-
-        cof_counter = 1
+        # ligands take LG1 (endstate A) and LG2 (endstate B) by default, only
+        # bumping to LG3+ if a user pre-named something LG1/LG2. All cofactors
+        # share "COF" and are distinguished by residue index, not name.
         for smc, offmol in small_mols.items():
             if _get_offmol_resname(offmol) is not None:
                 continue
-
             if smc in alchemical:
-                base = "LIG"
+                base = "LG1" if smc in stateA_comps else "LG2"
+                name = base if base not in used else _unique(used)
+                used.add(name)
             else:
-                base = f"CF{cof_counter}"
-                cof_counter += 1
-
-            name = _unique(base)
+                name = "COF"
             _set_offmol_resname(offmol, name)
-            used.add(name)
 
-        # Record the resnames of the ligands
         names = set()
         for comp in (mapping.componentA, mapping.componentB):
             name = _get_offmol_resname(small_mols[comp])
-            assert name is not None, "alchemical ligand has no resname"
             names.add(name)
         alchem_resnames = sorted(names)
 
@@ -1551,7 +1553,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         trj_file: pathlib.Path,
         output_directory: pathlib.Path,
         dry: bool,
-        ligand_resnames: list[str],
+        ligand_resnames: list[str] | None = None,
     ) -> dict[str, str | pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
@@ -1585,7 +1587,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
 
         try:
             data = rmsd.gather_rms_data(
-                pdb_file, trj_file, ligand_selection=f"resname {ligand_resnames}"
+                pdb_file, trj_file, ligand_selection="resname " + " ".join(ligand_resnames)
             )
         # TODO: eventually change this to more specific exception types
         except Exception as e:
@@ -1624,7 +1626,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         pdb_file: pathlib.Path,
         trajectory: pathlib.Path,
         checkpoint: pathlib.Path,
-        ligand_resnames: list[str] = ["LIG"],
+        ligand_resnames: list[str] = ["LG1", "LG2"],
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
@@ -1641,7 +1643,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         checkpoint : pathlib.Path
           Path to the checkpoint file generated by MultiStateReporter.
         ligand_resnames: list[str]
-          The residue names of the ligands. Default: ["LIG"]
+          The residue names of the ligands. Default: ["LG1", "LG2"]
         dry : bool
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
@@ -1725,8 +1727,8 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             trajectory=trajectory,
             checkpoint=checkpoint,
             ligand_resnames=setup_results.outputs.get(
-                "alchemical_resnames", ["LIG"]
-            ),  # Adding "LIG" for backward compatibility
+                "alchemical_resnames", ["LG1", "LG2"]
+            ),
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )

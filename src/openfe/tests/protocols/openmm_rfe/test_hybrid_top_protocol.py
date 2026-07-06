@@ -512,7 +512,7 @@ def test_dry_run_ligand(
 ):
     # this might be a bit time consuming
     solv_settings.simulation_settings.sampler_method = method
-    solv_settings.output_settings.output_indices = "resname LIG"
+    solv_settings.output_settings.output_indices = "resname LG1 LG2"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=solv_settings,
@@ -1096,7 +1096,7 @@ def test_dry_run_complex(
 ):
     # this will be very time consuming
     solv_settings.simulation_settings.sampler_method = method
-    solv_settings.output_settings.output_indices = "protein or resname  LIG"
+    solv_settings.output_settings.output_indices = "protein or resname  LG1 or resname LG2"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=solv_settings,
@@ -2426,38 +2426,59 @@ def _run_setup_dry(stateA, stateB, mapping, settings, tmp_path):
 
 
 def _named_smc(smc, resname):
-    off = smc.to_openff()
+    off = copy.deepcopy(smc.to_openff())
     _set_offmol_resname(off, resname)
     result = openfe.SmallMoleculeComponent.from_openff(off)
     assert _get_offmol_resname(result.to_openff()) == resname
     return result
 
 
-def test_ligand_separable_from_cofactor(eg5_vac_inputs, vac_settings, tmp_path):
+def test_default_resnames(eg5_vac_inputs, vac_settings, tmp_path):
+    """Unnamed ligands -> LG1/LG2 stored; cofactor -> COF; all separable."""
     vac_settings.output_settings.output_indices = "all"
     stateA, stateB, mapping = eg5_vac_inputs
     out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
 
+    assert out["alchemical_resnames"] == ["LG1", "LG2"]
+
     u = mda.Universe(out["pdb_structure"])
-    lig = u.select_atoms("resname LIG")
-    cof = u.select_atoms("resname CF1")
+    lig = u.select_atoms("resname " + " ".join(out["alchemical_resnames"]))
+    cof = u.select_atoms("resname COF")
     assert lig.n_atoms > 0
     assert cof.n_atoms > 0
     assert set(lig.indices).isdisjoint(cof.indices)
 
 
-def test_default_resnames_stored(eg5_vac_inputs, vac_settings, tmp_path):
-    vac_settings.output_settings.output_indices = "all"
-    stateA, stateB, mapping = eg5_vac_inputs
-    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
-    assert out["alchemical_resnames"] == ["LIG"]
-
-
-def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
+def test_cofactors_share_cof_distinct_resindices(
+    eg5_ligands, eg5_cofactor, benzene_modifications, vac_settings, tmp_path
+):
+    """Two cofactors share the name COF but are separate residues."""
     vac_settings.output_settings.output_indices = "all"
     ligA, ligB = eg5_ligands[0], eg5_ligands[1]
-    cof = _named_smc(eg5_cofactor, "MYC")
+    cof2 = benzene_modifications["toluene"]  # stand-in second cofactor
+    mapper = openfe.setup.KartografAtomMapper()
+    mapping = next(mapper.suggest_mappings(ligA, ligB))
+    stateA = openfe.ChemicalSystem(
+        {"ligand": ligA, "cofactor": eg5_cofactor, "cofactor2": cof2}
+    )
+    stateB = openfe.ChemicalSystem(
+        {"ligand": ligB, "cofactor": eg5_cofactor, "cofactor2": cof2}
+    )
 
+    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
+
+    u = mda.Universe(out["pdb_structure"])
+    cof = u.select_atoms("resname COF")
+    assert cof.n_atoms > 0
+    assert cof.residues.n_residues == 2
+    assert len(set(cof.residues.resindices)) == 2
+
+
+def test_cofactor_clash_worked_around(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
+    """A cofactor pre-named LG1 doesn't give an error; the ligand names work around it."""
+    vac_settings.output_settings.output_indices = "all"
+    ligA, ligB = eg5_ligands[0], eg5_ligands[1]
+    cof = _named_smc(eg5_cofactor, "LG1")   # deliberately clashes with a ligand default
     mapper = openfe.setup.KartografAtomMapper()
     mapping = next(mapper.suggest_mappings(ligA, ligB))
     stateA = openfe.ChemicalSystem({"ligand": ligA, "cofactor": cof})
@@ -2465,87 +2486,55 @@ def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp
 
     out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
 
-    u = mda.Universe(out["pdb_structure"])
-    assert "MYC" in u.residues.resnames
-    assert "CF1" not in u.residues.resnames
-    assert "LIG" in u.residues.resnames
-
-
-def test_distinct_endstate_resnames(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
-    vac_settings.output_settings.output_indices = "all"
-    ligA_named = _named_smc(eg5_ligands[0], "LGA")
-    ligB_named = _named_smc(eg5_ligands[1], "LGB")
-
-    mapper = openfe.setup.KartografAtomMapper()
-    mapping = next(mapper.suggest_mappings(ligA_named, ligB_named))
-    stateA = openfe.ChemicalSystem({"ligand": ligA_named, "cofactor": eg5_cofactor})
-    stateB = openfe.ChemicalSystem({"ligand": ligB_named, "cofactor": eg5_cofactor})
-
-    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
-
-    # both endstate names stored
-    assert out["alchemical_resnames"] == ["LGA", "LGB"]
-
-    u = mda.Universe(out["pdb_structure"])
-    lig = u.select_atoms("resname LGA")
-    cof = u.select_atoms("resname CF1")
-    # hybrid ligand carries componentA's name; LGB never reaches the hybrid
-    assert lig.n_atoms > 0
-    assert u.select_atoms("resname LGB").n_atoms == 0
-    assert u.select_atoms("resname LIG").n_atoms == 0
-    assert "UNK" not in set(u.residues.resnames)
-    assert cof.n_atoms > 0
-    assert set(lig.indices).isdisjoint(cof.indices)
-    # the stored union recovers the full ligand
-    sel = u.select_atoms("resname " + " ".join(out["alchemical_resnames"]))
-    assert set(sel.indices) == set(lig.indices)
-
-
-def test_cofactor_ligand_name_clash(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
-    """A cofactor pre-named LIG must not collide with the ligand."""
-    vac_settings.output_settings.output_indices = "all"
-    ligA, ligB = eg5_ligands[0], eg5_ligands[1]
-    cof = _named_smc(eg5_cofactor, "LIG")
-
-    mapper = openfe.setup.KartografAtomMapper()
-    mapping = next(mapper.suggest_mappings(ligA, ligB))
-    stateA = openfe.ChemicalSystem({"ligand": ligA, "cofactor": cof})
-    stateB = openfe.ChemicalSystem({"ligand": ligB, "cofactor": cof})
-
-    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
+    # ligands avoid LG1 (taken by the cofactor)
+    assert out["alchemical_resnames"] == ["LG2", "LG3"]
 
     u = mda.Universe(out["pdb_structure"])
     resnames = list(u.residues.resnames)
-    assert len(resnames) == len(set(resnames))  # all residues distinct
-    # pre-named cofactor keeps LIG; ligand bumps
-    assert u.select_atoms("resname LIG").n_atoms > 0  # the cofactor
-    ligand_names = out["alchemical_resnames"]
-    assert "LIG" not in ligand_names
-    lig = u.select_atoms("resname " + " ".join(ligand_names))
-    cof = u.select_atoms("resname LIG")
-    assert set(lig.indices).isdisjoint(cof.indices)
+    assert len(resnames) == len(set(resnames))   # all residues distinct-named
+    assert "LG1" in resnames                      # the cofactor kept its name
+    lig = u.select_atoms("resname " + " ".join(out["alchemical_resnames"]))
+    cof_sel = u.select_atoms("resname LG1")
+    assert lig.n_atoms > 0
+    assert set(lig.indices).isdisjoint(cof_sel.indices)
+
+    
+def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
+    """A pre-set cofactor name survives, not overwritten with COF."""
+    vac_settings.output_settings.output_indices = "all"
+    ligA, ligB = eg5_ligands[0], eg5_ligands[1]
+    cof = _named_smc(eg5_cofactor, "MYC")
+    mapper = openfe.setup.KartografAtomMapper()
+    mapping = next(mapper.suggest_mappings(ligA, ligB))
+    stateA = openfe.ChemicalSystem({"ligand": ligA, "cofactor": cof})
+    stateB = openfe.ChemicalSystem({"ligand": ligB, "cofactor": cof})
+
+    out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
+
+    resnames = set(mda.Universe(out["pdb_structure"]).residues.resnames)
+    assert "MYC" in resnames        # preserved
+    assert "COF" not in resnames    # not auto-assigned over the user's name
+    assert out["alchemical_resnames"] == ["LG1", "LG2"]
 
 
-def test_structural_analysis_uses_ligand_resnames():
+def test_structural_analysis_uses_ligand_resnames(tmp_path):
+    """The analysis builds a union selection from the stored resname list."""
     captured = {}
 
     def fake_gather(*args, ligand_selection="resname UNK"):
         captured["ligand_selection"] = ligand_selection
         return {
-            "protein_RMSD": [],
-            "ligand_RMSD": [],
-            "ligand_wander": [],
-            "protein_2D_RMSD": [],
-            "time(ps)": [],
+            "protein_RMSD": [], "ligand_RMSD": [], "ligand_wander": [],
+            "protein_2D_RMSD": [], "time(ps)": [],
         }
 
     with mock.patch("openfe_analysis.rmsd.gather_rms_data", side_effect=fake_gather):
         HybridTopologyMultiStateAnalysisUnit._structural_analysis(
             pdb_file=Path("dummy.pdb"),
             trj_file=Path("dummy.nc"),
-            output_directory=Path("."),
+            output_directory=tmp_path,
             dry=True,
-            ligand_resnames=["LGA", "LGB"],
+            ligand_resnames=["LG1", "LG2"],
         )
 
-    assert captured["ligand_selection"] == "resname LGA LGB"
+    assert captured["ligand_selection"] == "resname LG1 LG2"
