@@ -769,8 +769,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
                 if candidate not in used:
                     return candidate
             raise ValueError(
-                "Could not assign a unique ligand residue name; too many "
-                "colliding 'LG#' names."
+                "Could not assign a unique ligand residue name; too many colliding 'LG#' names."
             )
 
         # Seed with user-provided resnames so auto-assigned names avoid them.
@@ -1726,9 +1725,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             pdb_file=pdb_file,
             trajectory=trajectory,
             checkpoint=checkpoint,
-            ligand_resnames=setup_results.outputs.get(
-                "alchemical_resnames", ["LG1", "LG2"]
-            ),
+            ligand_resnames=setup_results.outputs.get("alchemical_resnames", ["LG1", "LG2"]),
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
