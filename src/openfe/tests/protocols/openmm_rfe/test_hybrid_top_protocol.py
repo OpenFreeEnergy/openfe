@@ -2340,6 +2340,7 @@ def test_structural_analysis_error(tmp_path):
         Path(tmp_path),
         Path(tmp_path),
         True,
+        ["LG1", "LG2"],
     )
 
     assert "structural_analysis_error" in ret
@@ -2498,7 +2499,7 @@ def test_cofactor_clash_worked_around(eg5_ligands, eg5_cofactor, vac_settings, t
     assert lig.n_atoms > 0
     assert set(lig.indices).isdisjoint(cof_sel.indices)
 
-    
+
 def test_existing_resname_preserved(eg5_ligands, eg5_cofactor, vac_settings, tmp_path):
     """A pre-set cofactor name survives, not overwritten with COF."""
     vac_settings.output_settings.output_indices = "all"

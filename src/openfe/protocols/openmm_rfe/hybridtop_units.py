@@ -794,9 +794,10 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
                 name = "COF"
             _set_offmol_resname(offmol, name)
 
-        names = set()
+        names: set[str] = set()
         for comp in (mapping.componentA, mapping.componentB):
             name = _get_offmol_resname(small_mols[comp])
+            assert name is not None # for typing reasons, cannot be None
             names.add(name)
         alchem_resnames = sorted(names)
 
@@ -1553,7 +1554,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         trj_file: pathlib.Path,
         output_directory: pathlib.Path,
         dry: bool,
-        ligand_resnames: list[str] | None = None,
+        ligand_resnames: list[str],
     ) -> dict[str, str | pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
