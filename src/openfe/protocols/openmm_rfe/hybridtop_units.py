@@ -796,7 +796,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         names: set[str] = set()
         for comp in (mapping.componentA, mapping.componentB):
             name = _get_offmol_resname(small_mols[comp])
-            assert name is not None # for typing reasons, cannot be None
+            assert name is not None  # for typing reasons, cannot be None
             names.add(name)
         alchem_resnames = sorted(names)
 
