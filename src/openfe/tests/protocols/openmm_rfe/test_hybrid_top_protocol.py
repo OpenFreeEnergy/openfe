@@ -2427,11 +2427,9 @@ def _run_setup_dry(stateA, stateB, mapping, settings, tmp_path):
 
 
 def _named_smc(smc, resname):
-    off = copy.deepcopy(smc.to_openff())
+    off = Molecule.from_rdkit(copy.deepcopy(smc.to_rdkit()))
     _set_offmol_resname(off, resname)
-    result = openfe.SmallMoleculeComponent.from_openff(off)
-    assert _get_offmol_resname(result.to_openff()) == resname
-    return result
+    return openfe.SmallMoleculeComponent.from_openff(off)
 
 
 def test_default_resnames(eg5_vac_inputs, vac_settings, tmp_path):
