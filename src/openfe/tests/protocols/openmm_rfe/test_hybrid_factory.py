@@ -1867,6 +1867,7 @@ def test_system_multiple_bonds():
     between the same atoms.
     """
     import numpy as np
+
     system = openmm.System()
 
     # add atoms for the force
@@ -1876,7 +1877,9 @@ def test_system_multiple_bonds():
     # add fake harmonic bond force
     b_force = openmm.HarmonicBondForce()
     for i in range(2):
-        b_force.addBond(0, 1, (1.2 + i) * unit.angstrom, 100 * unit.kilocalorie_per_mole / unit.angstrom ** 2)
+        b_force.addBond(
+            0, 1, (1.2 + i) * unit.angstrom, 100 * unit.kilocalorie_per_mole / unit.angstrom**2
+        )
 
     # add forces needed by the hybrid factory
     for force in [
@@ -1899,7 +1902,10 @@ def test_system_multiple_bonds():
     # build a fake set of positions
     positions = openmm.unit.Quantity(np.zeros((2, 3)), unit.nanometer)
 
-    with pytest.raises(RuntimeError, match=re.escape("Multiple bonds found for atom pair: (0, 1) this is not supported.")):
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape("Multiple bonds found for atom pair: (0, 1) this is not supported."),
+    ):
         _ = HybridTopologyFactory(
             old_system=system,
             old_topology=topology,
@@ -1921,6 +1927,7 @@ def test_system_multiple_angles():
     between the same atoms.
     """
     import numpy as np
+
     system = openmm.System()
 
     # add atoms for the force
@@ -1930,7 +1937,9 @@ def test_system_multiple_angles():
     # add fake harmonic angle force
     a_force = openmm.HarmonicAngleForce()
     for i in range(3):
-        a_force.addAngle(0, 1, 2, (120 + i) * unit.degree, 100 * unit.kilocalorie_per_mole / unit.degrees ** 2)
+        a_force.addAngle(
+            0, 1, 2, (120 + i) * unit.degree, 100 * unit.kilocalorie_per_mole / unit.degrees**2
+        )
 
     # add forces needed by the hybrid factory
     for force in [
@@ -1953,7 +1962,10 @@ def test_system_multiple_angles():
     # build a fake set of positions
     positions = openmm.unit.Quantity(np.zeros((3, 3)), unit.nanometer)
 
-    with pytest.raises(RuntimeError, match=re.escape("Multiple angles found for atom triplet: (0, 1, 2) this is not supported.")):
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape("Multiple angles found for atom triplet: (0, 1, 2) this is not supported."),
+    ):
         _ = HybridTopologyFactory(
             old_system=system,
             old_topology=topology,
@@ -1965,7 +1977,7 @@ def test_system_multiple_angles():
             old_to_new_atom_map={
                 0: 0,
                 1: 1,
-                2:2,
+                2: 2,
             },
             old_to_new_core_atom_map={},
         )
