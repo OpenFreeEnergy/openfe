@@ -7,6 +7,7 @@ from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
     AbsoluteBindingSettings,
 )
+from openfe.protocols.openmm_afe.equil_afe_settings import ABFEBoreschRestraintSettings
 
 
 @pytest.fixture()
@@ -68,6 +69,15 @@ def test_monotonic_lambda_windows(val, default_settings):
         lambda_settings.lambda_elec = val["elec"]
         lambda_settings.lambda_vdw = val["vdw"]
         lambda_settings.lambda_restraints = val["restraints"]
+
+
+@pytest.mark.parametrize("parameter", ["host_restraint_ids", "guest_restraint_ids"])
+def test_boresch_restraints_restraint_negative_ids(parameter):
+    setting = ABFEBoreschRestraintSettings()
+
+    errmsg = "``guest_atoms`` and ``host_atoms`` cannot have negative indices."
+    with pytest.raises(ValueError, match=errmsg):
+        setattr(setting, parameter, [1, 2, -3])
 
 
 def test_equil_not_all_complex(default_settings):
