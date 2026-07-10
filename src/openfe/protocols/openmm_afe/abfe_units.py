@@ -279,11 +279,11 @@ class ABFESetupUnitMixin:
             errmsg = "Cannot handle net charge correction on charges greater than one"
             raise ValueError(errmsg)
 
-        # Get the indices of the most common ion type that can act as a counterion
-        ion_indices = _find_most_common_ions(openmm_topology, openmm_system, -total_charge)
+        # Get the indices of the most common ion type that can act as a co-alchemical ion
+        ion_indices = _find_most_common_ions(openmm_topology, openmm_system, total_charge)
 
         if ion_indices is None:
-            errmsg = "No suitable ions could be found to act as counterion in the system"
+            errmsg = "No suitable ions could be found to act as co-alchemical ion in the system"
             raise ValueError(errmsg)
 
         univ = _get_mda_universe(
@@ -295,7 +295,7 @@ class ABFESetupUnitMixin:
         # get an atomgroup of the possible alchemical ions
         ions_atomgroup = univ.atoms[ion_indices]
 
-        # get the alchemical atoms
+        # get the co-alchemical atoms
         residxs = np.concatenate([comp_resids[key] for key in alchemical_components["stateA"]])
         alchem_idxs = _get_idxs_from_residxs(topology=openmm_topology, residxs=residxs)
         alchem_atomgroup = univ.atoms[alchem_idxs]
@@ -330,7 +330,7 @@ class ABFESetupUnitMixin:
         atom_finder.run(frames=[-1])
 
         if len(atom_finder.results.host_idxs) == 0:
-            errmsg = "No suitable alchemical ion was found"
+            errmsg = "No suitable co-alchemical ion was found"
             raise ValueError(errmsg)
 
         # Just use the first one that comes back ok

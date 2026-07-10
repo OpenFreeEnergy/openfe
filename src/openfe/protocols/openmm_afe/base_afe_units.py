@@ -17,7 +17,6 @@ TODO
 
 import abc
 import copy
-from itertools import combinations
 import logging
 import os
 import pathlib
@@ -657,9 +656,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         alchemical_system = alchemical_factory.create_alchemical_system(
             reference_system=system,
             alchemical_regions=alchemical_regions,
-            # Ensure all regions see each other, as we are calculating
-            # an absolute value
-            alchemical_regions_interactions=set(combinations(range(len(alchemical_regions)), 2)),
         )
 
         return alchemical_factory, alchemical_system, alchemical_indices
@@ -1033,9 +1029,13 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         # Get the thermodynamic parameter protocol
         # We populate the protocol from lambdas based on the number of regions
         # we have.
-        def _add_lambdas_to_protocol(protocol, lambdas, region_name):
+        def _add_lambdas_to_protocol(protocol, lambdas, region_name, reverse=False):
             for key in ["lambda_electrostatics", "lambda_sterics"]:
-                protocol[f"{key}_{region_name}"] = copy.deepcopy(lambdas[key])
+                if reverse:
+                    lambda_cntrl = [1 - x for x in lambdas[key]]
+                else:
+                    lambda_cntrl = copy.deepcopy(lambdas[key])
+                protocol[f"{key}_{region_name}"] = lambda_cntrl
 
         param_protocol: dict[str, list[float]] = {}
         # Always add for the first region
@@ -1043,7 +1043,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
 
         # If we have two regions (i.e. an alchemical ion) add
         if len(alchemical_indices) == 2:
-            _add_lambdas_to_protocol(param_protocol, lambdas, "B")
+            _add_lambdas_to_protocol(param_protocol, lambdas, "B", reverse=True)
 
         # Only the first region (ligand) can be restrained
         if alchemically_restrained:
