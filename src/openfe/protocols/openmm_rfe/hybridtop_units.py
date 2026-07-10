@@ -566,9 +566,12 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # protein or solvent atoms before the ligand).
         if settings["alchemical_settings"].remove_redundant_dummy_atom_connections:
             # derive the corrections
-            from openfe.protocols.openmm_rfe._rfe_utils.dummy_corrections import _derive_dummy_junction_corrections, _remap_corrections_to_system_indices
+            from openfe.protocols.openmm_rfe._rfe_utils.dummy_corrections import _derive_dummy_junction_corrections, _remap_corrections_to_system_indices, _derive_uniform_valence_pruning
             smc_ff = settings["forcefield_settings"].small_molecule_forcefield + ".offxml"
-            corrections = _derive_dummy_junction_corrections(mapping=mapping, force_field=smc_ff)
+            if settings["alchemical_settings"].use_tm_correction_scheme:
+                corrections = _derive_uniform_valence_pruning(mapping=mapping, force_field=smc_ff)
+            else:
+                corrections = _derive_dummy_junction_corrections(mapping=mapping, force_field=smc_ff)
             # remap if we have a solvent and or protein in the system
             corrections = _remap_corrections_to_system_indices(
                 corrections,

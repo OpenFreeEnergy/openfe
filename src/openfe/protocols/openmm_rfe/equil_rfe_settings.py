@@ -104,6 +104,10 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     If redundant valence terms between dummy and core atoms should be pruned following the best practices of Fleck et al.
     """
+    use_tm_correction_scheme: bool = False
+    """
+    If the internal tm valence correction scheme should be used to remove the redundant internal corrections.
+    """
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):
