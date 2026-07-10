@@ -17,6 +17,7 @@ TODO
 
 import abc
 import copy
+from itertools import combination
 import logging
 import os
 import pathlib
@@ -652,9 +653,13 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             disable_alchemical_dispersion_correction=alchemical_settings.disable_alchemical_dispersion_correction,
             split_alchemical_forces=True,
         )
+
         alchemical_system = alchemical_factory.create_alchemical_system(
             reference_system=system,
             alchemical_regions=alchemical_regions,
+            # Ensure all regions see each other, as we are calculating
+            # an absolute value
+            alchemical_regions_interactions=set(combinations(range(len(alchemical_regions)), 2)),
         )
 
         return alchemical_factory, alchemical_system, alchemical_indices
