@@ -17,7 +17,7 @@ TODO
 
 import abc
 import copy
-from itertools import combination
+from itertools import combinations
 import logging
 import os
 import pathlib
