@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
 import json
+import logging
 import sys
 import xml.etree.ElementTree as ET
 from importlib import resources
@@ -1215,6 +1216,21 @@ def test_dry_run_membrane_complex(
         )
 
 
+def test_validate_charge_difference_membrane_system(
+    a2a_protein_membrane_component,
+    benzene_to_aniline_mapping,
+):
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+    protocol._validate_charge_difference(
+        mapping=benzene_to_aniline_mapping,
+        nonbonded_method=settings.forcefield_settings.nonbonded_method,
+        explicit_charge_correction=True,
+        solvent_component=a2a_protein_membrane_component,
+    )
+
+
 def test_lambda_schedule_default():
     lambdas = openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(functions="default")
     assert len(lambdas.lambda_schedule) == 10
@@ -1744,6 +1760,18 @@ class TestProtocolResult:
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
+    def test_get_uncertainty_single_result(self, protocolresult):
+        """Make sure this is 0.0 and not nan when we have a single result"""
+        res = protocolresult.to_dict()
+        keys = list(res["data"].keys())
+        for key in keys[1:]:
+            res["data"].pop(key)
+        single_pr = openfe.ProtocolResult.from_dict(res)
+        est = single_pr.get_uncertainty()
+        assert est.m == 0.0
+        assert isinstance(est, unit.Quantity)
+        assert est.is_compatible_with(unit.kilojoule_per_mole)
+
     def test_get_uncertainty(self, protocolresult):
         est = protocolresult.get_uncertainty()
 
@@ -1860,7 +1888,7 @@ def benzene_solvent_openmm_system(benzene_modifications):
     positions = to_openmm(from_openmm(modeller.getPositions()))
     system = system_generator.create_system(topology, molecules=[offmol])
 
-    return system, topology, positions
+    return system, topology, positions, system_generator.forcefield
 
 
 @pytest.fixture(scope="session")
@@ -1910,7 +1938,7 @@ def benzene_self_system_mapping(benzene_solvent_openmm_system):
     alchemical transformation (this technically doesn't work in practice
     because the RFE protocol expects an alchemical component).
     """
-    system, topology, positions = benzene_solvent_openmm_system
+    system, topology, positions, forcefield = benzene_solvent_openmm_system
 
     res = [r for r in topology.residues()]
     benzene_res = [r for r in res if r.name == "UNK"][0]
@@ -1933,27 +1961,65 @@ def benzene_self_system_mapping(benzene_solvent_openmm_system):
 
 
 @pytest.mark.parametrize(
-    "ion, water",
+    "charge_difference,expected_charge",
     [
-        ["NA", "SOL"],
-        ["NX", "WAT"],
+        (1, 1.0),  # positive charge difference -> Na+ fallback
+        (-1, -1.0),  # negative charge difference -> Cl- fallback
     ],
 )
-def test_get_ion_water_parameters_unknownresname(ion, water, benzene_solvent_openmm_system):
-    system, topology, positions = benzene_solvent_openmm_system
+def test_get_ion_parameters_fallback_to_forcefield(
+    benzene_modifications,
+    charge_difference,
+    expected_charge,
+    caplog,
+):
+    """
+    Check that when no matching ion is found in the topology,
+    parameters are obtained from the forcefield.
+    """
+    smc = benzene_modifications["benzene"]
+    offmol = smc.to_openff()
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
 
-    errmsg = "Error encountered when attempting to explicitly handle"
+    system_generator = system_creation.get_system_generator(
+        forcefield_settings=settings.forcefield_settings,
+        integrator_settings=settings.integrator_settings,
+        thermo_settings=settings.thermo_settings,
+        cache=None,
+        has_solvent=True,
+    )
+    system_generator.create_system(
+        offmol.to_topology().to_openmm(),
+        molecules=[offmol],
+    )
 
-    with pytest.raises(ValueError, match=errmsg):
-        topologyhelpers._get_ion_and_water_parameters(
-            topology, system, ion_resname=ion, water_resname=water
+    modeller, _ = system_creation.get_omm_modeller(
+        protein_comp=None,
+        solvent_comp=openfe.SolventComponent(ion_concentration=0 * unit.molar),
+        small_mols={smc: offmol},
+        omm_forcefield=system_generator.forcefield,
+        solvent_settings=settings.solvation_settings,
+    )
+
+    topology = modeller.getTopology()
+    system = system_generator.create_system(topology, molecules=[offmol])
+
+    with caplog.at_level(logging.WARNING):
+        ion_charge, ion_sigma, ion_epsilon = topologyhelpers._get_ion_parameters(
+            topology,
+            system,
+            charge_difference=charge_difference,
+            forcefield=system_generator.forcefield,
         )
+
+    assert "No monovalent ion" in caplog.text
+    assert ion_charge.value_in_unit(omm_unit.elementary_charge) == pytest.approx(expected_charge)
 
 
 def test_get_alchemical_waters_no_waters(
     benzene_solvent_openmm_system,
 ):
-    system, topology, positions = benzene_solvent_openmm_system
+    system, topology, positions, forcefield = benzene_solvent_openmm_system
 
     errmsg = "There are no waters"
 
@@ -1969,7 +2035,7 @@ def test_handle_alchemwats_incorrect_count(
     """
     Check that an error is thrown when charge_difference != len(water_resids)
     """
-    system, topology, positions = benzene_solvent_openmm_system
+    system, topology, positions, forcefield = benzene_solvent_openmm_system
 
     errmsg = "There should be as many alchemical water residues:"
 
@@ -1980,7 +2046,7 @@ def test_handle_alchemwats_incorrect_count(
             system=system,
             system_mapping={},
             charge_difference=1,
-            solvent_component=openfe.SolventComponent(),
+            forcefield=forcefield,
         )
 
 
@@ -1990,7 +2056,7 @@ def test_handle_alchemwats_too_many_nbf(
     """
     Check that an error is thrown when there are multiple NonbondedForces
     """
-    system, topology, positions = benzene_solvent_openmm_system
+    system, topology, positions, forcefield = benzene_solvent_openmm_system
 
     new_system = copy.deepcopy(system)
     new_system.addForce(NonbondedForce())
@@ -2004,7 +2070,7 @@ def test_handle_alchemwats_too_many_nbf(
             system=new_system,
             system_mapping={},
             charge_difference=1,
-            solvent_component=openfe.SolventComponent(),
+            forcefield=forcefield,
         )
 
 
@@ -2026,7 +2092,7 @@ def test_handle_alchemwats_vsite_water(
             system=system,
             system_mapping={},
             charge_difference=1,
-            solvent_component=openfe.SolventComponent(),
+            forcefield=app.ForceField(),
         )
 
 
@@ -2037,7 +2103,7 @@ def test_handle_alchemwats_incorrect_atom(
     """
     Check that an error is thrown when charge_difference != len(water_resids)
     """
-    system, topology, positions = benzene_solvent_openmm_system
+    system, topology, positions, forcefield = benzene_solvent_openmm_system
 
     # modify the charge of hydrogen atom 25
     new_system = copy.deepcopy(system)  # protect the session scoped object
@@ -2054,15 +2120,25 @@ def test_handle_alchemwats_incorrect_atom(
             system=new_system,
             system_mapping=benzene_self_system_mapping,
             charge_difference=1,
-            solvent_component=openfe.SolventComponent(),
+            forcefield=forcefield,
         )
 
 
+@pytest.mark.parametrize(
+    "charge_difference,expected_charge",
+    [
+        (1, 1.0),  # positive charge difference -> water becomes Na+
+        (-1, -1.0),  # negative charge difference -> water becomes Cl-
+    ],
+)
 def test_handle_alchemical_wats(
     benzene_solvent_openmm_system,
     benzene_self_system_mapping,
+    charge_difference,
+    expected_charge,
 ):
-    system, topology, positions = benzene_solvent_openmm_system
+    system, topology, positions, forcefield = benzene_solvent_openmm_system
+    system = copy.deepcopy(system)
 
     n_env = len(benzene_self_system_mapping["old_to_new_env_atom_map"])
     n_core = len(benzene_self_system_mapping["old_to_new_core_atom_map"])
@@ -2072,8 +2148,8 @@ def test_handle_alchemical_wats(
         topology=topology,
         system=system,
         system_mapping=benzene_self_system_mapping,
-        charge_difference=1,
-        solvent_component=openfe.SolventComponent(),
+        charge_difference=charge_difference,
+        forcefield=forcefield,
     )
 
     # check the mappings
@@ -2086,15 +2162,18 @@ def test_handle_alchemical_wats(
     expected_old_new_core = {i: i for i in range(12)} | {24: 24, 25: 25, 26: 26}
     assert old_new_core == expected_old_new_core
 
-    # system parameters checks
+    # check ion parameters were correctly applied
     nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
-    # check the oxygen parameters
-    i_chg, i_sig, i_eps, o_chg, h_chg = topologyhelpers._get_ion_and_water_parameters(
-        topology, system, "NA", "HOH"
+    i_chg, i_sig, i_eps = topologyhelpers._get_ion_parameters(
+        topology,
+        system,
+        charge_difference=charge_difference,
+        forcefield=forcefield,
     )
 
     charge, sigma, epsilon = nbf.getParticleParameters(24)
-    assert charge == 1.0 * omm_unit.elementary_charge == i_chg
+    assert charge.value_in_unit(omm_unit.elementary_charge) == pytest.approx(expected_charge)
+    assert charge == i_chg
     assert sigma == i_sig
     assert epsilon == i_eps
 

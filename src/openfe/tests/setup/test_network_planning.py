@@ -280,11 +280,15 @@ class TestRadialNetworkGenerator:
         toluene, others = toluene_vs_others
         mappers = [BadMapper(), lomap_old_mapper]
 
-        network = openfe.setup.ligand_network_planning.generate_radial_network(
-            ligands=others,
-            central_ligand=toluene,
-            mappers=mappers,
-        )
+        with pytest.warns(
+            UserWarning,
+            match="Multiple mappers were provided, but no scorer. Only the first valid mapper will be used",
+        ):
+            network = openfe.setup.ligand_network_planning.generate_radial_network(
+                ligands=others,
+                central_ligand=toluene,
+                mappers=mappers,
+            )
 
         expected_names = set([c.name for c in others] + ["toluene"])
 
@@ -327,6 +331,7 @@ def test_generate_maximal_network(
     extra_mapper,
     lomap_old_mapper,
     simple_scorer,
+    recwarn,
 ):
     toluene, others = toluene_vs_others
 
@@ -343,6 +348,14 @@ def test_generate_maximal_network(
         scorer=scorer,
         progress=with_progress,
     )
+
+    if extra_mapper and scorer is None:
+        assert len(recwarn) == 1
+        w = recwarn.pop(UserWarning)
+        assert issubclass(w.category, UserWarning)
+        assert "Only the first valid mapper will be used: <LomapAtomMapper" in str(w.message)
+    else:
+        assert len(recwarn) == 0
 
     expected_names = set([c.name for c in others] + ["toluene"])
 
@@ -576,12 +589,13 @@ class TestGenerateNetworkFromNames:
             ("toluene", "2-naftanol"),
             ("2-methylnaphthalene", "2-naftanol"),
         ]
-
-        network = openfe.setup.ligand_network_planning.generate_network_from_names(
-            ligands=ligands,
-            names=requested_names,
-            mapper=lomap_old_mapper,
-        )
+        # we're only adding two edges, so there will be lone nodes
+        with pytest.warns(UserWarning, match="is not connected as a single network"):
+            network = openfe.setup.ligand_network_planning.generate_network_from_names(
+                ligands=ligands,
+                names=requested_names,
+                mapper=lomap_old_mapper,
+            )
 
         assert len(network.nodes) == len(ligands)
         assert len(network.edges) == 2
@@ -636,11 +650,13 @@ class TestNetworkFromIndices:
 
         requested = [(0, 1), (2, 3)]
 
-        network = openfe.setup.ligand_network_planning.generate_network_from_indices(
-            ligands=ligands,
-            indices=requested,
-            mapper=lomap_old_mapper,
-        )
+        # we're only adding two edges, so there will be lone nodes
+        with pytest.warns(UserWarning, match="is not connected as a single network"):
+            network = openfe.setup.ligand_network_planning.generate_network_from_indices(
+                ligands=ligands,
+                indices=requested,
+                mapper=lomap_old_mapper,
+            )
 
         assert len(network.nodes) == len(ligands)
         assert len(network.edges) == 2
