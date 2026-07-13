@@ -500,10 +500,10 @@ def _derive_dual_corrections(
             corrections.removed_dihedrals.add(frozenset(dihedral))
         # we need to stiffen the dihedral if we want to keep the dummy group in plane with the rest of the molecule
         # or if we have to anchor using a free rotor
-        elif heaviest_terminal_atom in dihedral and (
-            heaviest_terminal_atom in rotor_atoms
-        ):
-            # elif heaviest_terminal_atom in dihedral and (heaviest_terminal_atom in rotor_atoms or junction_is_planar): # disable dihedral stiffening for now
+        # elif heaviest_terminal_atom in dihedral and (
+        #     heaviest_terminal_atom in rotor_atoms
+        # ):
+        elif heaviest_terminal_atom in dihedral and (heaviest_terminal_atom in rotor_atoms or junction_is_planar): # disable dihedral stiffening for now
             corrections.stiffened_dihedrals.add(frozenset(dihedral))
 
     # check that we don't have multiple path dihedrals left in the system which can happen in 4 membered rings
