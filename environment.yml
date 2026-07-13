@@ -1,7 +1,9 @@
 name: openfe_env
 channels:
+  - mmh/label/amber26
   - conda-forge
 dependencies:
+  - ambertools >= 26
   - cinnabar >=0.6.0  # min pin for some API breaks and behavior changes in 0.6.0
   - click >=8.2.0
   - coverage
