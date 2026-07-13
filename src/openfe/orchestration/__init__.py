@@ -214,7 +214,7 @@ class Worker:
             return None
         db, taskid, unit = task
         # 2. Construct the context
-        # NOTE: On changes to context, this can easily be replaced with external storage objects
+        # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
         # However, to satisfy the current work, we will use this implementation where we
         # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
         shared_store = self.warehouse.stores["shared"]
