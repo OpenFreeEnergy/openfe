@@ -2,7 +2,7 @@ name: openfe_env
 channels:
   - conda-forge
 dependencies:
-  - cudatoolkit >=11.8
+  - cudatoolkit==11.8
   - jupyterlab
   - notebook
   - openfe
@@ -10,5 +10,5 @@ dependencies:
   - py3dmol
   - pytest
   - pytest-xdist
-  - python >=3.12
-  - rdkit ~=2025.09.1  # https://github.com/OpenFreeEnergy/gufe/pull/665, https://github.com/OpenFreeEnergy/openfe/pull/2068
+  - python==3.12.*
+  - rdkit~=2025.09.1  # https://github.com/OpenFreeEnergy/gufe/pull/665, https://github.com/OpenFreeEnergy/openfe/pull/2068
