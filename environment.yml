@@ -37,7 +37,7 @@ dependencies:
   - pytest-regressions
   - pytest-rerunfailures
   - pyyaml
-  - rdkit <2026
+  - rdkit <2026  # https://github.com/OpenFreeEnergy/openfe/issues/2067
   - rich
   - tqdm
   - typing-extensions
