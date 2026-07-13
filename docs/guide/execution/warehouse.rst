@@ -1,12 +1,11 @@
 Storage with ``openfe.Warehouse``
 =================================
 
-openfe's Warehouse is a Python object that defines the necessary interface for an execution engine to store and access data during execution.
+openfe's Warehouse is a Python object that defines the interface for an execution engine to store and access data during execution.
 
+A Warehouse is simply any derived class of the abstract ``WarehouseBaseClass``, meaning that *where* the data is stored is decided by the author, but *how* the data is accessed is defined by ``WarehouseBaseClass``.
 
-Importantly, a Warehouse is simply any derived class of the abstract ``WarehouseBaseClass``, meaning that *where* the data is stored is completely up to the author, but *how* the data is accessed is defined by the `WarehouseBaseClass`.
-
-You can think of the WarehouseBaseClass as a set of specifications that must be met by a Warehouse implementation, such that any openfe Protocol can then interact appropriately with its data.
+You can think of the ``WarehouseBaseClass`` as a set of specifications that must be met by a Warehouse implementation (subclass), such that any openfe Protocol can then interact appropriately with its data.
 
 For example, openfe Protocols require several types of storage - **scratch**, **setup**, and **result**. 
 
