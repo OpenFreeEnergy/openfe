@@ -14,18 +14,19 @@ First, we build a graph of tasks to be executed from the ``AlchemicalNetwork``:
 .. code:: bash
 
     from openfe.orchestration import build_task_db_from_alchemical_network
+    from openfe.storage import warehouse
 
-    alchemical_network = openfe.AlchemicalNetwork(...)
+    alchemical_network = openfe.AlchemicalNetwork.from_json("alchemicalNetwork.json")
 
     # create a Warehouse to define where simulation data is stored
-    warehouse = FileSystemWarehouse()
+    my_warehouse = FileSystemWarehouse()
 
     # store the AlchemicalNetwork in the Warehouse
-    warehouse.store_setup_tokenizable(alchemical_network)
+    my_warehouse.store_setup_tokenizable(alchemical_network)
 
     # build a database of tasks from the AlchemicalNetwork
     db_path = Path(warehouse.root_dir) / "tasks.db"
-    task_db = build_task_db_from_alchemical_network(alchemical_network, warehouse, db_path)
+    task_db = build_task_db_from_alchemical_network(alchemical_network, my_warehouse, db_path)
 
 
 Next, we call ``worker.execute_unit()`` to execute the next available task in the warehouse:
@@ -34,25 +35,9 @@ Next, we call ``worker.execute_unit()`` to execute the next available task in th
     # execution: build the worker
     from openfe.orchestration import Worker
 
-    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+    worker = Worker(warehouse=my_warehouse, task_db_path=db_path)
 
-    try:
-        execution = worker.execute_unit(scratch=pathlib.Path("path/to/local/scratch"))
-
-    except Exception as exc:
-        raise click.ClickException(f"Task execution failed: {exc}") from exc
-
-    if execution is None:
-        write("No available task in task graph.")
-        return None
-
-    taskid, result = execution
-    if not result.ok():
-        _write_failure_result_details(taskid, result)
-        raise click.ClickException(f"Task '{taskid}' returned a failure result.")
-
-    write(f"Completed task: {taskid}")
-    return result
+    execution = worker.execute_unit(scratch=pathlib.Path("path/to/local/scratch"))
 
 
 Each time ``worker.execute_unit`` is called, the worker will pick up the next valid task in the AlchemicalNetwork's task graph.
