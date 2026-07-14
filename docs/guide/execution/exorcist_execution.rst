@@ -3,10 +3,65 @@
 Execution with Exorcist Workers
 ===============================
 
+Using the API to execute an Alchemical Network
+----------------------------------------------
+
+You can execute the network of simulation units defined by an ``AlchemicalNetwork`` (see :any:`create_alchemical_network`) using ``openfe.orchestration``:
+
+
+First, we build a graph of tasks to be executed from the ``AlchemicalNetwork``:
+
+.. code:: bash
+
+    from openfe.orchestration import build_task_db_from_alchemical_network
+
+    alchemical_network = openfe.AlchemicalNetwork(...)
+
+    # create a Warehouse to define where simulation data is stored
+    warehouse = FileSystemWarehouse()
+
+    # store the AlchemicalNetwork in the Warehouse
+    warehouse.store_setup_tokenizable(alchemical_network)
+
+    # build a database of tasks from the AlchemicalNetwork
+    db_path = Path(warehouse.root_dir) / "tasks.db"
+    task_db = build_task_db_from_alchemical_network(alchemical_network, warehouse, db_path)
+
+
+Next, we call ``worker.execute_unit()`` to execute the next available task in the warehouse:
+
+.. code:: bash
+    # execution: build the worker
+    from openfe.orchestration import Worker
+
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+
+    try:
+        execution = worker.execute_unit(scratch=pathlib.Path("path/to/local/scratch"))
+
+    except Exception as exc:
+        raise click.ClickException(f"Task execution failed: {exc}") from exc
+
+    if execution is None:
+        write("No available task in task graph.")
+        return None
+
+    taskid, result = execution
+    if not result.ok():
+        _write_failure_result_details(taskid, result)
+        raise click.ClickException(f"Task '{taskid}' returned a failure result.")
+
+    write(f"Completed task: {taskid}")
+    return result
+
+
+Each time ``worker.execute_unit`` is called, the worker will pick up the next valid task in the AlchemicalNetwork's task graph.
+
+
 Using the CLI
 -------------
 
-Note: this is a proof-of-concept for use with RBFEs, tbd if we want to expose this right now.
+.. Note: this is a proof-of-concept for use with RBFEs, tbd if we want to expose this right now.
 
 .. code:: bash
     openfe plan-rbfe-network ... --warehouse
@@ -59,5 +114,3 @@ The following is an example script that runs up to 4 workers at a time, with eac
     pids+=("$!")
     done
 
-Using the API
--------------
