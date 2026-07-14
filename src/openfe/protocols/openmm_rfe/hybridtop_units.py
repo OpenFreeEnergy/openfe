@@ -795,7 +795,12 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
                 name = "COF"
             _set_offmol_resname(offmol, name)
 
-        alchem_resnames = sorted({_get_offmol_resname(small_mols[comp]) for comp in alchemical})
+        names: set[str] = set()
+        for comp in alchemical:
+            name = _get_offmol_resname(small_mols[comp])
+            assert name is not None  # every alchemical ligand was named above
+            names.add(name)
+        alchem_resnames = sorted(names)
 
         # Assign partial charges now to avoid any discrepancies later
         self._assign_partial_charges(settings["charge_settings"], small_mols)
@@ -1550,7 +1555,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         trj_file: pathlib.Path,
         output_directory: pathlib.Path,
         dry: bool,
-        ligand_resnames: list[str],
+        ligand_resnames: Sequence[str],
     ) -> dict[str, str | pathlib.Path]:
         """
         Run structural analysis using ``openfe-analysis``.
