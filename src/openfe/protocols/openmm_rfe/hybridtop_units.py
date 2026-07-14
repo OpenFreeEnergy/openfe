@@ -781,9 +781,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             if name is not None:
                 used.add(name)
 
-        # ligands take LG1 (endstate A) and LG2 (endstate B) by default, only
-        # bumping to LG3+ if a user pre-named something LG1/LG2. All cofactors
-        # share "COF" and are distinguished by residue index, not name.
+        # ligands take LG1 (endstate A) and LG2 (endstate B) by default
+        # if a user pre-named something LG1/LG2 (e.g. cofactors) these become LG3,...
+        # All cofactors are assigned "COF" and differ by residue index.
         for smc, offmol in small_mols.items():
             if _get_offmol_resname(offmol) is not None:
                 continue
