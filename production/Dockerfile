@@ -1,4 +1,4 @@
-FROM mambaorg/micromamba:1.4.1
+FROM mambaorg/micromamba:2.4
 
 LABEL org.opencontainers.image.source=https://github.com/OpenFreeEnergy/openfe
 LABEL org.opencontainers.image.description="A Python package for executing alchemical free energy calculations."
