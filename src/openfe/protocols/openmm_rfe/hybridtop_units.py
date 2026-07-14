@@ -798,7 +798,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         names: set[str] = set()
         for comp in alchemical:
             name = _get_offmol_resname(small_mols[comp])
-            assert name is not None  # every alchemical ligand was named above
+            assert name is not None
             names.add(name)
         alchem_resnames = sorted(names)
 
