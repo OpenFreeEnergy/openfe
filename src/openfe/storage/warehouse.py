@@ -1,6 +1,5 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/gufe
-import abc
 import json
 import re
 from typing import Literal, TypedDict
@@ -217,7 +216,7 @@ class WarehouseBaseClass:
         Uses depth-first search to rebuild object hierarchy and ensure
         proper deduplication in memory.
         """
-        registry = {}
+        registry: dict[GufeKey, GufeTokenizable] = {}
 
         def recursive_build_object_cache(key: GufeKey) -> GufeTokenizable:
             """DFS to rebuild object hierarchy.
