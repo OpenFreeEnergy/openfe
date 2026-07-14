@@ -3,9 +3,10 @@
 Execution with Quickrun
 =======================
 
-The planning and preparation of a campaign of alchemical simulations using ``openfe`` is intended to be achievable on a local workstation in a matter of minutes.
-The *execution* of these simulations however requires a large amount of computational power, and beyond running single calculations locally, is intended to be distributed across a HPC environment.
-Doing this requires storing and sending the details of the simulation from the local workstation to a HPC environment, which can be done via the :func:`.Transformation.to_json` function which :ref:`creates a saved JSON version of the data<dumping_transformations>`.
+``openfe quickrun`` is the simplest way to execute simulations on a per-Transformation basis.
+
+The :func:`.Transformation.to_json` function :ref:`creates a saved JSON version of the data<dumping_transformations>`.
+
 These serialized JSON files are the currency of executing a campaign of simulations and contain all the information required to execute a single simulation.
 
 To read the ``Transformation`` information and execute the simulation, the command line interface provides the ``openfe quickrun`` command, the full details of which are given in :ref:`the CLI reference section<cli_quickrun>`.
