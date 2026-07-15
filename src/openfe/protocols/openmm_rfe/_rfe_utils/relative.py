@@ -1626,7 +1626,7 @@ class HybridTopologyFactory:
         # checks. The full-precision values are still used when adding forces.
         torsion_hash_round_ndigits = 12
 
-        def _rounded_term_key(hybrid_indices: tuple[int, int, int, int], periodicity: int, phase_val: float, k_val: float):
+        def _rounded_term_key(hybrid_indices: tuple[int, ...], periodicity: int, phase_val: float, k_val: float):
             """Generate a key for this torsion using rounded precision to avoid issues in direct floating point comparisons."""
             return (
                 hybrid_indices[0], hybrid_indices[1], hybrid_indices[2], hybrid_indices[3],
