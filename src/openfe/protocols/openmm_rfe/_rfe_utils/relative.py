@@ -1614,103 +1614,130 @@ class HybridTopologyFactory:
         # local variables for speed while doing many lookups
         unique_old_atoms = self._atom_classes["unique_old_atoms"]
         unique_new_atoms = self._atom_classes["unique_new_atoms"]
+        old_to_hybrid_map = self._old_to_hybrid_map
+        new_to_hybrid_map = self._new_to_hybrid_map
 
-        # use sets to keep membership checks quick as systems have many torsions
-        auxiliary_custom_torsion_force = set()
-        shared_core_torsions = set()
+        unique_torsion_force = self._hybrid_system_forces['unique_atom_torsion_force']
+        unique_torsion_add = unique_torsion_force.addTorsion
+        custom_torsion_force = self._hybrid_system_forces['custom_torsion_force']
+        custom_torsion_add = custom_torsion_force.addTorsion
 
-        # We need to keep track of what torsions we added so that we do not
-        # double count
-        # added_torsions = []
-        # TODO: Commented out since this actually isn't being done anywhere?
-        #       Is it necessary? Should we add this logic back in?
-        for torsion_index in range(old_system_torsion_force.getNumTorsions()):
+        # Use rounded values only for hash keys to avoid unstable float equality
+        # checks. The full-precision values are still used when adding forces.
+        torsion_hash_round_ndigits = 12
 
-            torsion_parameters = old_system_torsion_force.getTorsionParameters(
-                                     torsion_index)
+        def _rounded_term_key(hybrid_indices: tuple[int, int, int, int], periodicity: int, phase_val: float, k_val: float):
+            """Generate a key for this torsion using rounded precision to avoid issues in direct floating point comparisons."""
+            return (
+                hybrid_indices[0], hybrid_indices[1], hybrid_indices[2], hybrid_indices[3],
+                int(periodicity),
+                round(phase_val, torsion_hash_round_ndigits),
+                round(k_val, torsion_hash_round_ndigits),
+            )
 
-            # Get the indices in the hybrid system
-            hybrid_index_list = [
-                self._old_to_hybrid_map[old_index] for old_index in torsion_parameters[:4]
-            ]
-            hybrid_index_set = set(hybrid_index_list)
+        def _classify_torsions(torsion_force: openmm.PeriodicTorsionForce, atom_map: dict[int, int], unique_atoms: set[int]) -> tuple[list, dict]:
+            """For each torsion in the given torsion force classify them as unique terms to that end state or as shared terms in the
+            core atom group.
 
-            # If all atoms are in the core, we'll need to find the
-            # corresponding parameters in the old system and interpolate
-            if hybrid_index_set.intersection(unique_old_atoms):
-                # Then it goes to a standard force...
-                self._hybrid_system_forces['unique_atom_torsion_force'].addTorsion(
-                    hybrid_index_list[0], hybrid_index_list[1],
-                    hybrid_index_list[2], hybrid_index_list[3],
-                    torsion_parameters[4], torsion_parameters[5],
-                    torsion_parameters[6]
+            Parameters
+            ----------
+            torsion_force : openmm.PeriodicTorsionForce
+                The torsion force for the end state we want to classify
+            atom_map : dict[int, int]
+                A mapping from the atom indices in the torsion force to the hybrid system atom indices
+            unique_atoms : set[int]
+                The set of hybrid system atom indices that are unique to this end state
+
+            Returns
+            -------
+            unique_terms: list[tuple[int, int, int, int, int, Quantity, Quantity]]
+                A list of torsion terms that are unique to this end state. Each term is a tuple of (hybrid_indices, periodicity, phase_value, k_value)
+            interpolated_terms: dict[tuple[int, int, int, int, int, float, float], tuple[int, int, int, int, int, Quantity, Quantity]]
+                A dictionary of torsion terms that are shared between the two end states. The keys are tuples using the rounded
+                keys while the values are the same at full precision. Each value is a tuple of (hybrid_indices, periodicity, phase_value, k_value)
+            """
+            unique_terms = []
+            interpolated_terms = {}
+            get_torsion_parameters = torsion_force.getTorsionParameters
+            for torsion_index in range(torsion_force.getNumTorsions()):
+                torsion_parameters = get_torsion_parameters(torsion_index)
+                hybrid_indices = tuple(
+                    atom_map[atom_index] for atom_index in torsion_parameters[:4]
                 )
-            else:
-                # It is a core-only term, an environment-only term, or a
-                # core/env term; in any case, it goes to the core torsion_force
-                # TODO - why are we even adding the 0.0, 0.0, 0.0 section?
-                hybrid_force_parameters = [
-                    torsion_parameters[4], torsion_parameters[5].value_in_unit(unit.radian),
-                    torsion_parameters[6].value_in_unit(unit.kilojoule_per_mole), 0.0, 0.0, 0.0
-                ]
-                auxiliary_custom_torsion_force.add(
-                    (hybrid_index_list[0], hybrid_index_list[1],
-                     hybrid_index_list[2], hybrid_index_list[3],
-                     *hybrid_force_parameters[:3])
-                )
-
-        for torsion_index in range(new_system_torsion_force.getNumTorsions()):
-            torsion_parameters = new_system_torsion_force.getTorsionParameters(torsion_index)
-
-            # Get the indices in the hybrid system:
-            hybrid_index_list = [
-                self._new_to_hybrid_map[new_index] for new_index in torsion_parameters[:4]]
-            hybrid_index_set = set(hybrid_index_list)
-
-            if hybrid_index_set.intersection(unique_new_atoms):
-                # Then it goes to the custom torsion force (scaled to zero)
-                self._hybrid_system_forces['unique_atom_torsion_force'].addTorsion(
-                    hybrid_index_list[0], hybrid_index_list[1],
-                    hybrid_index_list[2], hybrid_index_list[3],
-                    torsion_parameters[4], torsion_parameters[5],
-                    torsion_parameters[6]
-                )
-            else:
-                hybrid_force_parameters = [
-                    0.0, 0.0, 0.0, torsion_parameters[4],
-                    torsion_parameters[5].value_in_unit(unit.radian), torsion_parameters[6].value_in_unit(unit.kilojoule_per_mole)]
-
-                # Check to see if this term is in the olds...
-                term = (hybrid_index_list[0], hybrid_index_list[1],
-                        hybrid_index_list[2], hybrid_index_list[3],
-                        *hybrid_force_parameters[3:])
-                if term in auxiliary_custom_torsion_force:
-                    # Then this terms has to go to standard and be deleted...
-                    shared_core_torsions.add(term)
-                    self._hybrid_system_forces['unique_atom_torsion_force'].addTorsion(
-                        hybrid_index_list[0], hybrid_index_list[1],
-                        hybrid_index_list[2], hybrid_index_list[3],
-                        torsion_parameters[4], torsion_parameters[5],
-                        torsion_parameters[6]
+                if any(hybrid_index in unique_atoms for hybrid_index in hybrid_indices):
+                    unique_terms.append(
+                        (
+                            hybrid_indices,
+                            torsion_parameters[4],
+                            torsion_parameters[5],
+                            torsion_parameters[6],
+                        )
                     )
-                else:
-                    # Then this term has to go to the core force...
-                    self._hybrid_system_forces['custom_torsion_force'].addTorsion(
-                        hybrid_index_list[0], hybrid_index_list[1],
-                        hybrid_index_list[2], hybrid_index_list[3],
-                        hybrid_force_parameters
-                    )
+                    continue
 
-        # Now we have to loop through the aux custom torsion force
-        for term in auxiliary_custom_torsion_force:
-            if term not in shared_core_torsions:
-                hybrid_index_list = term[:4]
-                hybrid_force_parameters = term[4:] + (0., 0., 0.)
-                self._hybrid_system_forces['custom_torsion_force'].addTorsion(
-                    hybrid_index_list[0], hybrid_index_list[1],
-                    hybrid_index_list[2], hybrid_index_list[3],
-                    hybrid_force_parameters
+                periodicity = torsion_parameters[4]
+                phase_value = torsion_parameters[5].value_in_unit(unit.radian)
+                k_value = torsion_parameters[6].value_in_unit(unit.kilojoule_per_mole)
+                term_key = _rounded_term_key(hybrid_indices, periodicity, phase_value, k_value)
+                interpolated_terms[term_key] = (
+                    hybrid_indices,
+                    periodicity,
+                    phase_value,
+                    k_value,
                 )
+            return unique_terms, interpolated_terms
+
+        old_unique_terms, old_interpolated = _classify_torsions(
+            old_system_torsion_force, old_to_hybrid_map, unique_old_atoms
+        )
+        new_unique_terms, new_interpolated = _classify_torsions(
+            new_system_torsion_force, new_to_hybrid_map, unique_new_atoms
+        )
+
+        # store the unique terms to the end states in the hybrid system periodic torsion force
+        for hybrid_indices, periodicity, phase, k in old_unique_terms:
+            unique_torsion_add(
+                hybrid_indices[0], hybrid_indices[1], hybrid_indices[2], hybrid_indices[3],
+                periodicity, phase, k
+            )
+        for hybrid_indices, periodicity, phase, k in new_unique_terms:
+            unique_torsion_add(
+                hybrid_indices[0], hybrid_indices[1], hybrid_indices[2], hybrid_indices[3],
+                periodicity, phase, k
+            )
+
+        # workout which keys are shared between the systems using the rounded precision comparisons
+        old_term_keys = set(old_interpolated.keys())
+        new_term_keys = set(new_interpolated.keys())
+        shared_term_keys = old_term_keys & new_term_keys
+        old_only_keys = old_term_keys - shared_term_keys
+        new_only_keys = new_term_keys - shared_term_keys
+
+        # for terms which are shared between the end states add them to the hybrid system periodic torsion force
+        for term_key in shared_term_keys:
+            hybrid_indices, periodicity, phase_value, k_value = new_interpolated[term_key]
+            unique_torsion_add(
+                hybrid_indices[0], hybrid_indices[1], hybrid_indices[2], hybrid_indices[3],
+                periodicity, phase_value * unit.radian,
+                k_value * unit.kilojoule_per_mole,
+            )
+
+        # for terms unique to the old system add them to the hybrid system custom periodic torsion force and interpolate them off
+        for term_key in old_only_keys:
+            hybrid_indices, periodicity, phase_value, k_value = old_interpolated[term_key]
+            custom_torsion_add(
+                hybrid_indices[0], hybrid_indices[1], hybrid_indices[2], hybrid_indices[3],
+                [periodicity, phase_value, k_value, 0.0, 0.0, 0.0],
+            )
+
+        # for terms unique to the new system add them to the hybrid system custom periodic torsion force and interpolate them on
+        for term_key in new_only_keys:
+            hybrid_indices, periodicity, phase_value, k_value = new_interpolated[term_key]
+            custom_torsion_add(
+                hybrid_indices[0], hybrid_indices[1], hybrid_indices[2], hybrid_indices[3],
+                [0.0, 0.0, 0.0, periodicity, phase_value, k_value],
+            )
+
 
     def _handle_nonbonded(self):
         """
