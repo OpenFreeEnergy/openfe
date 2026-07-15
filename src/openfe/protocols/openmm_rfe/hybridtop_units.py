@@ -81,6 +81,7 @@ from .equil_rfe_settings import (
 
 logger = logging.getLogger(__name__)
 
+
 class HybridTopologyUnitMixin:
     def _prepare(
         self,
@@ -1725,9 +1726,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             pdb_file=pdb_file,
             trajectory=trajectory,
             checkpoint=checkpoint,
-            ligand_resnames=setup_results.outputs.get(
-                "alchemical_resnames", ['LG1', 'LG2']
-            ),
+            ligand_resnames=setup_results.outputs.get("alchemical_resnames", ["LG1", "LG2"]),
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
