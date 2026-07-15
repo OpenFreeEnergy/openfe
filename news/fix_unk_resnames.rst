@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* Small molecules in RelativeHybridTopology topologies (including the output PDB) are now named LG1 amd LG2 (alchemical ligand) and COF (cofactors) instead of UNK. If a residue name was already assigned, the assigned one is kept.
+* Small molecules in RelativeHybridTopologyProtocol topologies (including the output PDB) are now named LG1 amd LG2 (alchemical ligand) and COF (cofactors) instead of UNK. If a residue name was already assigned, the assigned one is kept.
 
 **Deprecated:**
 
