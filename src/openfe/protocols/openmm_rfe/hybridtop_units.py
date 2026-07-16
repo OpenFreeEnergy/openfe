@@ -81,6 +81,7 @@ from .equil_rfe_settings import (
 
 logger = logging.getLogger(__name__)
 
+
 class HybridTopologyUnitMixin:
     def _prepare(
         self,
