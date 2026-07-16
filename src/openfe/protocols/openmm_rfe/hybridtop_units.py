@@ -46,7 +46,11 @@ from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
 
 import openfe
-from openfe.protocols.openmm_utils.offmolecule_utils import _get_offmol_resname, _set_offmol_resname, _set_offmol_metadata
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_resname,
+    _set_offmol_metadata,
+    _set_offmol_resname,
+)
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
