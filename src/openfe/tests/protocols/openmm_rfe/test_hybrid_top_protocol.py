@@ -1096,7 +1096,7 @@ def test_dry_run_complex(
 ):
     # this will be very time consuming
     solv_settings.simulation_settings.sampler_method = method
-    solv_settings.output_settings.output_indices = "protein or resname  LG1"
+    solv_settings.output_settings.output_indices = "protein or resname  LIG"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=solv_settings,
@@ -2457,12 +2457,8 @@ def test_cofactors_share_cof_distinct_resindices(
     cof2 = benzene_modifications["toluene"]  # a distinct second cofactor
     mapper = openfe.setup.KartografAtomMapper()
     mapping = next(mapper.suggest_mappings(ligA, ligB))
-    stateA = openfe.ChemicalSystem(
-        {"ligand": ligA, "cofactor": eg5_cofactor, "cofactor2": cof2}
-    )
-    stateB = openfe.ChemicalSystem(
-        {"ligand": ligB, "cofactor": eg5_cofactor, "cofactor2": cof2}
-    )
+    stateA = openfe.ChemicalSystem({"ligand": ligA, "cofactor": eg5_cofactor, "cofactor2": cof2})
+    stateB = openfe.ChemicalSystem({"ligand": ligB, "cofactor": eg5_cofactor, "cofactor2": cof2})
 
     out = _run_setup_dry(stateA, stateB, mapping, vac_settings, tmp_path)
 
