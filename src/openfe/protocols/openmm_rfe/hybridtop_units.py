@@ -46,7 +46,7 @@ from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
 
 import openfe
-from openfe.protocols.openmm_utils.offmolecule_utils import _get_offmol_resname, _set_offmol_resname
+from openfe.protocols.openmm_utils.offmolecule_utils import _get_offmol_resname, _set_offmol_resname, _set_offmol_metadata
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
@@ -692,14 +692,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         bfactors[np.isin(selection_indices, list(atom_classes["unique_new_atoms"]))] = 0.75
 
         if len(selection_indices) > 0:
-            sub_top = hybrid_topology.subset(selection_indices)
-            # Renumber sequentially so same-named residues (e.g. two COF cofactors,
-            # both resSeq=0) don't merge into one residue on PDB write/read.
-            for i, res in enumerate(sub_top.residues, start=1):
-                res.resSeq = i
-            traj = mdt.Trajectory(
+            mdt.Trajectory(
                 hybrid_positions[selection_indices, :],
-                sub_top,
+                hybrid_topology.subset(selection_indices),
             ).save_pdb(
                 self.shared_basepath / output_filename,
                 bfactors=bfactors,
@@ -759,16 +754,15 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
 
         alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
-        stateA_comps = set(alchem_comps["stateA"])
 
-        def _unique(used: set[str]) -> str:
-            """Next free 'LG{n}' name (n = 1..9) for the alchemical ligands."""
+        def _unique(stem: str, used: set[str]) -> str:
             for i in range(1, 10):
-                candidate = f"LG{i}"
+                candidate = f"{stem}{i}"
                 if candidate not in used:
                     return candidate
             raise ValueError(
-                "Could not assign a unique ligand residue name; too many colliding 'LG#' names."
+                f"Could not assign a unique residue name with stem {stem!r}; "
+                "too many colliding names."
             )
 
         # Seed with user-provided resnames so auto-assigned names avoid them.
@@ -778,19 +772,19 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             if name is not None:
                 used.add(name)
 
-        # ligands take LG1 (endstate A) and LG2 (endstate B) by default
-        # if a user pre-named something LG1/LG2 (e.g. cofactors) these become LG3,...
-        # All cofactors are assigned "COF" and differ by residue index.
+        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
+
+        resnum = 1
         for smc, offmol in small_mols.items():
             if _get_offmol_resname(offmol) is not None:
                 continue
             if smc in alchemical:
-                base = "LG1" if smc in stateA_comps else "LG2"
-                name = base if base not in used else _unique(used)
-                used.add(name)
+                name = lig_name
             else:
-                name = "COF"
+                name = "COF" if "COF" not in used else _unique("CO", used)
             _set_offmol_resname(offmol, name)
+            _set_offmol_metadata(offmol, "residue_number", resnum)
+            resnum += 1
 
         names: set[str] = set()
         for comp in alchemical:
@@ -1725,9 +1719,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             pdb_file=pdb_file,
             trajectory=trajectory,
             checkpoint=checkpoint,
-            ligand_resnames=setup_results.outputs.get(
-                "alchemical_resnames", ['LG1', 'LG2']
-            ),
+            ligand_resnames=setup_results.outputs.get("alchemical_resnames"),
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
