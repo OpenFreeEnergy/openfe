@@ -1715,12 +1715,13 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         selection_indices = setup_results.outputs["selection_indices"]
         trajectory = simulation_results.outputs["nc"]
         checkpoint = simulation_results.outputs["checkpoint"]
+        ligand_resnames = setup_results.outputs["alchemical_resnames"]
 
         outputs = self.run(
             pdb_file=pdb_file,
             trajectory=trajectory,
             checkpoint=checkpoint,
-            ligand_resnames=setup_results.outputs.get("alchemical_resnames"),
+            ligand_resnames=ligand_resnames,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
