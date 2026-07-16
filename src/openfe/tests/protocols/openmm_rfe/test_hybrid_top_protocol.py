@@ -1096,7 +1096,7 @@ def test_dry_run_complex(
 ):
     # this will be very time consuming
     solv_settings.simulation_settings.sampler_method = method
-    solv_settings.output_settings.output_indices = "protein or resname  LG1"
+    solv_settings.output_settings.output_indices = "protein or resname  LIG"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=solv_settings,
