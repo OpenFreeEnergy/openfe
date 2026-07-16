@@ -693,7 +693,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         bfactors[np.isin(selection_indices, list(atom_classes["unique_new_atoms"]))] = 0.75
 
         if len(selection_indices) > 0:
-            mdt.Trajectory(
+            traj = mdt.Trajectory(
                 hybrid_positions[selection_indices, :],
                 hybrid_topology.subset(selection_indices),
             ).save_pdb(

@@ -2340,7 +2340,7 @@ def test_structural_analysis_error(tmp_path):
         Path(tmp_path),
         Path(tmp_path),
         True,
-        ["LG1", "LG1"],
+        ["LG1"],
     )
 
     assert "structural_analysis_error" in ret
