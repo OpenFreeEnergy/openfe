@@ -1027,27 +1027,22 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             constants["pressure"] = ensure_quantity(pressure, "openmm")
 
         # Get the thermodynamic parameter protocol
-        # We populate the protocol from lambdas based on the number of regions
-        # we have.
-        def _add_lambdas_to_protocol(protocol, lambdas, region_name, reverse=False):
-            for key in ["lambda_electrostatics", "lambda_sterics"]:
-                if reverse:
-                    lambda_cntrl = [1 - x for x in lambdas[key]]
-                else:
-                    lambda_cntrl = copy.deepcopy(lambdas[key])
-                protocol[f"{key}_{region_name}"] = lambda_cntrl
-
+        # We populate the protocol from lambdas as necessary
         param_protocol: dict[str, list[float]] = {}
-        # Always add for the first region
-        _add_lambdas_to_protocol(param_protocol, lambdas, "A")
 
-        # If we have two regions (i.e. an alchemical ion) add
-        if len(alchemical_indices) == 2:
-            _add_lambdas_to_protocol(param_protocol, lambdas, "B", reverse=True)
+        # Main alchemical ligand (region A)
+        for key in ["lambda_electrostatics", "lambda_sterics"]:
+            param_protocol[f"{key}_A"] = copy.deepcopy(lambdas[key])
 
         # Only the first region (ligand) can be restrained
         if alchemically_restrained:
             param_protocol["lambda_restraints_A"] = copy.deepcopy(lambdas["lambda_restraints"])
+
+        # If we have a second region (i.e. an alchemical ion)
+        # scale the electrostatics but nothing else.
+        if len(alchemical_indices) == 2:
+            reverse_schedule = [1 - x for x in lambdas["lambda_electrostatics"]]
+            param_protocol["lambda_electrostatics_B"] = reverse_schedule
 
         cmp_states = create_thermodynamic_state_protocol(
             alchemical_system,
