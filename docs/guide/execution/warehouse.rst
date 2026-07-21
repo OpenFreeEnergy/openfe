@@ -3,26 +3,22 @@ Data Handling with Warehouse
 
 **openfe**'s ``Warehouse`` defines the interface for an execution engine to store and access data during execution.
 
-A Warehouse is simply any derived class of the abstract ``WarehouseBaseClass``, meaning that *where* the data is stored is decided by the author, but *how* the data is accessed is defined by ``WarehouseBaseClass``.
+A Warehouse is any instance of a derived class of the abstract ``WarehouseBaseClass``. In other words, *where* the data is stored is decided by the derived class, but *how* the data is accessed is defined by ``WarehouseBaseClass``.
 
 You can think of the ``WarehouseBaseClass`` as a set of specifications that must be met by a Warehouse implementation (subclass), such that any openfe Protocol can then interact appropriately with its data.
 
-For example, openfe Protocols require several types of storage - **scratch**, **setup**, and **result**. 
+For example, **openfe** Protocols require several types of storage - scratch, setup, and result.
 
-Naively, we could require that all three of these storage types be directories that can be accessed locally by the Protocol, but this significantly limits the ways in which the Protocol can be executed, e.g. a Protocol could not store **result** data on a remote machine or cloud storage.
+Naively, we could require that all three of these storage types be filesystem directories that can be accessed locally by the Protocol, but this significantly limits the ways in which the Protocol can be executed, e.g. a Protocol could not store **result** data on a remote machine or cloud storage.
 
-Where a Warehouse stores its data is defined by a ``WarehouseStores`` object, which is a small TypedDict that containing ``'setup'`` and ``'result'`` keys that correspond to gufe ``ExternalStorage`` objects. 
+Where a Warehouse stores its data is defined by a ``WarehouseStores`` object, which is a small TypedDict that containing ``'setup'`` and ``'result'`` keys (note that ``scratch`` is not a key, *must* be locally-accessible file storage) that correspond to gufe ``ExternalStorage`` objects.
 The type of ``ExternalStorage`` objects used by a Warehouse implementation are where the the code author has flexibility to choose *where* data is stored.
-
-
-.. note ::
-    ``scratch`` is not a key in WarehouseStores, since `scratch` *must* be locally-accessible file storage.
 
 .. TODO: add :ref: links here
 
-Take the example implementation, ``FileSystemWarehouse``, which inherits from ``WarehouseBaseClass``, but makes it easy to construct a Warehouse given a root directory, which is uses to create ``WarehouseStores``.
+The below example implementation, ``FileSystemWarehouse``, is a derived class that inherits from ``WarehouseBaseClass``. This is a simple example of how to construct a Warehouse given a root directory, which is uses to create ``WarehouseStores``.
 
-.. code-block ::
+.. code-block::
 
     class FileSystemWarehouse(WarehouseBaseClass):
         """Warehouse implementation using local filesystem storage.
@@ -53,7 +49,8 @@ Using this new ``FileSystemWarehouse``, we can now access the data cleanly and r
 
 without Warehouse, using only the filesystem:
 
-.. code-block ::
+.. code-block::
+
     root_dir = os.Path("my_warehouse")
     setup = root / "setup"
     result = root / "result"
@@ -61,7 +58,8 @@ without Warehouse, using only the filesystem:
 
 with Warehouse:
 
-.. code-block ::
+.. code-block::
+
     from openfe.storage import FileSystemWarehouse
     my_warehouse = FileSystemWarehouse(root_dir="my_warehouse")
 
