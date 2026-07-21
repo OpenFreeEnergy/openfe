@@ -1,12 +1,17 @@
 import copy
+import re
+from itertools import chain
 
 import openmm
 import pytest
 from openff.units import unit as offunit
+from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import app, unit
+from openmmforcefields.generators import SystemGenerator
 
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol, _rfe_utils
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
+from openfe.protocols.openmm_utils import system_creation
 from openfe.tests.protocols.openmm_rfe.helpers import _make_system_with_cmap, make_htf
 
 
@@ -1859,3 +1864,246 @@ def test_system_energy_pme_dummy(htf_chlorobenzene_benzene):
         # make sure the energy is non-zero to avoid false positives
         assert 0.0 != pytest.approx(hybrid_energy)
         assert hybrid_energy == pytest.approx(ref_energy, rel=1e-5)
+
+
+def test_system_multiple_bonds():
+    """An error should be raised when making a hybrid system with a harmonic bond force with multiple bonds
+    between the same atoms.
+    """
+    import numpy as np
+
+    system = openmm.System()
+
+    # add atoms for the force
+    for i in range(2):
+        system.addParticle(12.0)
+
+    # add fake harmonic bond force
+    b_force = openmm.HarmonicBondForce()
+    for i in range(2):
+        b_force.addBond(
+            0, 1, (1.2 + i) * unit.angstrom, 100 * unit.kilocalorie_per_mole / unit.angstrom**2
+        )
+
+    # add forces needed by the hybrid factory
+    for force in [
+        openmm.HarmonicAngleForce,
+        openmm.PeriodicTorsionForce,
+        openmm.NonbondedForce,
+    ]:
+        system.addForce(force())
+    system.addForce(b_force)
+
+    topology = openmm.app.Topology()
+    chain = topology.addChain()
+    res = topology.addResidue("RES", chain)
+    atoms = []
+    for i in range(2):
+        atom = topology.addAtom(f"C{i + 1}", app.element.carbon, res)
+        atoms.append(atom)
+        if i > 0:
+            topology.addBond(atoms[i - 1], atoms[i])
+    # build a fake set of positions
+    positions = openmm.unit.Quantity(np.zeros((2, 3)), unit.nanometer)
+
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape("Multiple bonds found for atom pair: (0, 1) this is not supported."),
+    ):
+        _ = HybridTopologyFactory(
+            old_system=system,
+            old_topology=topology,
+            old_positions=positions,
+            new_system=system,
+            new_topology=topology,
+            new_positions=positions,
+            # map all atoms so they end up in the environment
+            old_to_new_atom_map={
+                0: 0,
+                1: 1,
+            },
+            old_to_new_core_atom_map={},
+        )
+
+
+def test_system_multiple_angles():
+    """An error should be raised when making a hybrid system with a harmonic angle force with multiple angles
+    between the same atoms.
+    """
+    import numpy as np
+
+    system = openmm.System()
+
+    # add atoms for the force
+    for i in range(3):
+        system.addParticle(12.0)
+
+    # add fake harmonic angle force
+    a_force = openmm.HarmonicAngleForce()
+    for i in range(3):
+        a_force.addAngle(
+            0, 1, 2, (120 + i) * unit.degree, 100 * unit.kilocalorie_per_mole / unit.degrees**2
+        )
+
+    # add forces needed by the hybrid factory
+    for force in [
+        openmm.HarmonicBondForce,
+        openmm.PeriodicTorsionForce,
+        openmm.NonbondedForce,
+    ]:
+        system.addForce(force())
+    system.addForce(a_force)
+
+    topology = openmm.app.Topology()
+    chain = topology.addChain()
+    res = topology.addResidue("RES", chain)
+    atoms = []
+    for i in range(3):
+        atom = topology.addAtom(f"C{i + 1}", app.element.carbon, res)
+        atoms.append(atom)
+        if i > 0:
+            topology.addBond(atoms[i - 1], atoms[i])
+    # build a fake set of positions
+    positions = openmm.unit.Quantity(np.zeros((3, 3)), unit.nanometer)
+
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape("Multiple angles found for atom triplet: (0, 1, 2) this is not supported."),
+    ):
+        _ = HybridTopologyFactory(
+            old_system=system,
+            old_topology=topology,
+            old_positions=positions,
+            new_system=system,
+            new_topology=topology,
+            new_positions=positions,
+            # map all atoms so they end up in the environment
+            old_to_new_atom_map={
+                0: 0,
+                1: 1,
+                2: 2,
+            },
+            old_to_new_core_atom_map={},
+        )
+
+
+def test_reference_systems_not_changed(chlorobenzene, benzene, chlorobenzene_to_benzene_mapping):
+    """Make sure the input old and new systems are not edited as we do not use copies when creating the hybrid topology."""
+    settings = RelativeHybridTopologyProtocol.default_settings()
+    mapping = chlorobenzene_to_benzene_mapping
+    # code copied from the make_htf helper function
+    system_generator = SystemGenerator(
+        forcefields=settings.forcefield_settings.forcefields,
+        small_molecule_forcefield=settings.forcefield_settings.small_molecule_forcefield,
+        forcefield_kwargs={
+            "constraints": app.HBonds,
+            "rigidWater": True,
+            "hydrogenMass": settings.forcefield_settings.hydrogen_mass * unit.amu,
+            "removeCMMotion": settings.integrator_settings.remove_com,
+        },
+        periodic_forcefield_kwargs={
+            "nonbondedMethod": app.PME,
+            "nonbondedCutoff": 0.9 * unit.nanometers,
+        },
+        barostat=openmm.MonteCarloBarostat(
+            ensure_quantity(settings.thermo_settings.pressure, "openmm"),
+            ensure_quantity(settings.thermo_settings.temperature, "openmm"),
+            settings.integrator_settings.barostat_frequency.m,
+        ),
+        cache=None,
+    )
+    small_mols = [mapping.componentA, mapping.componentB]
+    # copy a lot of code from the RHT protocol
+    off_small_mols = {
+        "stateA": [(mapping.componentA, mapping.componentA.to_openff())],
+        "stateB": [(mapping.componentB, mapping.componentB.to_openff())],
+        "both": [
+            (m, m.to_openff())
+            for m in small_mols
+            if (m != mapping.componentA and m != mapping.componentB)
+        ],
+    }
+
+    # c. force the creation of parameters
+    # This is necessary because we need to have the FF templates
+    # registered ahead of solvating the system.
+    for smc, mol in chain(
+        off_small_mols["stateA"], off_small_mols["stateB"], off_small_mols["both"]
+    ):
+        system_generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
+
+    # c. get OpenMM Modeller + a dictionary of resids for each component
+    stateA_modeller, comp_resids = system_creation.get_omm_modeller(
+        # add the protein if passed
+        protein_comp=None,
+        # add the solvent if passed
+        solvent_comp=None,
+        small_mols=dict(chain(off_small_mols["stateA"], off_small_mols["both"])),
+        omm_forcefield=system_generator.forcefield,
+        solvent_settings=settings.solvation_settings,
+    )
+    # d. get topology & positions
+    # Note: roundtrip positions to remove vec3 issues
+    stateA_topology = stateA_modeller.getTopology()
+    stateA_positions = to_openmm(from_openmm(stateA_modeller.getPositions()))
+
+    # e. create the stateA System
+    stateA_system = system_generator.create_system(
+        stateA_modeller.topology,
+        molecules=[m for _, m in chain(off_small_mols["stateA"], off_small_mols["both"])],
+    )
+
+    # 2. Get stateB system
+    # a. get the topology
+    stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
+        stateA_topology,
+        # zeroth item (there's only one) then get the OFF representation
+        off_small_mols["stateB"][0][1].to_topology().to_openmm(),
+        exclude_resids=comp_resids[mapping.componentA],
+    )
+
+    # b. get a list of small molecules for stateB
+    stateB_system = system_generator.create_system(
+        stateB_topology,
+        molecules=[m for _, m in chain(off_small_mols["stateB"], off_small_mols["both"])],
+    )
+
+    #  c. Define correspondence mappings between the two systems
+    ligand_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
+        mapping.componentA_to_componentB,
+        stateA_system,
+        stateA_topology,
+        comp_resids[mapping.componentA],
+        stateB_system,
+        stateB_topology,
+        stateB_alchem_resids,
+        # These are non-optional settings for this method
+        fix_constraints=True,
+    )
+
+    #  e. Finally get the positions
+    stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
+        ligand_mappings,
+        stateA_topology,
+        stateB_topology,
+        old_positions=ensure_quantity(stateA_positions, "openmm"),
+        insert_positions=ensure_quantity(off_small_mols["stateB"][0][1].conformers[0], "openmm"),
+    )
+    htf = HybridTopologyFactory(
+        old_system=stateA_system,
+        old_positions=stateA_positions,
+        old_topology=stateA_topology,
+        new_system=stateB_system,
+        new_positions=stateB_positions,
+        new_topology=stateB_topology,
+        old_to_new_atom_map=ligand_mappings["old_to_new_atom_map"],
+        old_to_new_core_atom_map=ligand_mappings["old_to_new_core_atom_map"],
+        use_dispersion_correction=settings.alchemical_settings.use_dispersion_correction,
+        softcore_alpha=settings.alchemical_settings.softcore_alpha,
+        softcore_LJ_v2=True,
+        softcore_LJ_v2_alpha=settings.alchemical_settings.softcore_alpha,
+        interpolate_old_and_new_14s=settings.alchemical_settings.turn_off_core_unique_exceptions,
+    )
+    # make sure the input systems have not been edited
+    assert stateA_system == htf._old_system
+    assert stateB_system == htf._new_system
