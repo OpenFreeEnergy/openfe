@@ -1,13 +1,18 @@
 import copy
+from itertools import chain
 import re
 
 import openmm
 import pytest
+
 from openff.units import unit as offunit
+from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import app, unit
+from openmmforcefields.generators import SystemGenerator
 
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol, _rfe_utils
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
+from openfe.protocols.openmm_utils import system_creation
 from openfe.tests.protocols.openmm_rfe.helpers import _make_system_with_cmap, make_htf
 
 
@@ -1981,3 +1986,126 @@ def test_system_multiple_angles():
             },
             old_to_new_core_atom_map={},
         )
+
+
+def test_reference_systems_not_changed(chlorobenzene, benzene, chlorobenzene_to_benzene_mapping):
+    """Make sure the input old and new systems are not edited as we do not use copies when creating the hybrid topology."""
+    settings = RelativeHybridTopologyProtocol.default_settings()
+    mapping = chlorobenzene_to_benzene_mapping
+    # code copied from the make_htf helper function
+    system_generator = SystemGenerator(
+        forcefields=settings.forcefield_settings.forcefields,
+        small_molecule_forcefield=settings.forcefield_settings.small_molecule_forcefield,
+        forcefield_kwargs={
+            "constraints": app.HBonds,
+            "rigidWater": True,
+            "hydrogenMass": settings.forcefield_settings.hydrogen_mass * unit.amu,
+            "removeCMMotion": settings.integrator_settings.remove_com,
+        },
+        periodic_forcefield_kwargs={
+            "nonbondedMethod": app.PME,
+            "nonbondedCutoff": 0.9 * unit.nanometers,
+        },
+        barostat=openmm.MonteCarloBarostat(
+            ensure_quantity(settings.thermo_settings.pressure, "openmm"),
+            ensure_quantity(settings.thermo_settings.temperature, "openmm"),
+            settings.integrator_settings.barostat_frequency.m,
+        ),
+        cache=None,
+    )
+    small_mols = [mapping.componentA, mapping.componentB]
+    # copy a lot of code from the RHT protocol
+    off_small_mols = {
+        "stateA": [(mapping.componentA, mapping.componentA.to_openff())],
+        "stateB": [(mapping.componentB, mapping.componentB.to_openff())],
+        "both": [
+            (m, m.to_openff())
+            for m in small_mols
+            if (m != mapping.componentA and m != mapping.componentB)
+        ],
+    }
+
+    # c. force the creation of parameters
+    # This is necessary because we need to have the FF templates
+    # registered ahead of solvating the system.
+    for smc, mol in chain(
+            off_small_mols["stateA"], off_small_mols["stateB"], off_small_mols["both"]
+    ):
+        system_generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
+
+    # c. get OpenMM Modeller + a dictionary of resids for each component
+    stateA_modeller, comp_resids = system_creation.get_omm_modeller(
+        # add the protein if passed
+        protein_comp=None,
+        # add the solvent if passed
+        solvent_comp=None,
+        small_mols=dict(chain(off_small_mols["stateA"], off_small_mols["both"])),
+        omm_forcefield=system_generator.forcefield,
+        solvent_settings=settings.solvation_settings,
+    )
+    # d. get topology & positions
+    # Note: roundtrip positions to remove vec3 issues
+    stateA_topology = stateA_modeller.getTopology()
+    stateA_positions = to_openmm(from_openmm(stateA_modeller.getPositions()))
+
+    # e. create the stateA System
+    stateA_system = system_generator.create_system(
+        stateA_modeller.topology,
+        molecules=[m for _, m in chain(off_small_mols["stateA"], off_small_mols["both"])],
+    )
+
+    # 2. Get stateB system
+    # a. get the topology
+    stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
+        stateA_topology,
+        # zeroth item (there's only one) then get the OFF representation
+        off_small_mols["stateB"][0][1].to_topology().to_openmm(),
+        exclude_resids=comp_resids[mapping.componentA],
+    )
+
+    # b. get a list of small molecules for stateB
+    stateB_system = system_generator.create_system(
+        stateB_topology,
+        molecules=[m for _, m in chain(off_small_mols["stateB"], off_small_mols["both"])],
+    )
+
+    #  c. Define correspondence mappings between the two systems
+    ligand_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
+        mapping.componentA_to_componentB,
+        stateA_system,
+        stateA_topology,
+        comp_resids[mapping.componentA],
+        stateB_system,
+        stateB_topology,
+        stateB_alchem_resids,
+        # These are non-optional settings for this method
+        fix_constraints=True,
+    )
+
+    #  e. Finally get the positions
+    stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
+        ligand_mappings,
+        stateA_topology,
+        stateB_topology,
+        old_positions=ensure_quantity(stateA_positions, "openmm"),
+        insert_positions=ensure_quantity(off_small_mols["stateB"][0][1].conformers[0], "openmm"),
+    )
+    htf =  HybridTopologyFactory(
+        old_system=stateA_system,
+        old_positions=stateA_positions,
+        old_topology=stateA_topology,
+        new_system=stateB_system,
+        new_positions=stateB_positions,
+        new_topology=stateB_topology,
+        old_to_new_atom_map=ligand_mappings["old_to_new_atom_map"],
+        old_to_new_core_atom_map=ligand_mappings["old_to_new_core_atom_map"],
+        use_dispersion_correction=settings.alchemical_settings.use_dispersion_correction,
+        softcore_alpha=settings.alchemical_settings.softcore_alpha,
+        softcore_LJ_v2=True,
+        softcore_LJ_v2_alpha=settings.alchemical_settings.softcore_alpha,
+        interpolate_old_and_new_14s=settings.alchemical_settings.turn_off_core_unique_exceptions,
+    )
+    # make sure the input systems have not been edited
+    assert stateA_system == htf._old_system
+    assert stateB_system == htf._new_system
+

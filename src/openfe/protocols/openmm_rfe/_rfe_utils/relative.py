@@ -132,10 +132,10 @@ class HybridTopologyFactory:
 
         # Assign system positions and force
         # IA - Are deep copies really needed here?
-        self._old_system = copy.deepcopy(old_system)
+        self._old_system = old_system
         self._old_positions = old_positions
         self._old_topology = old_topology
-        self._new_system = copy.deepcopy(new_system)
+        self._new_system = new_system
         self._new_positions = new_positions
         self._new_topology = new_topology
         self._hybrid_system_forces = dict()
@@ -1658,6 +1658,7 @@ class HybridTopologyFactory:
             """
             unique_terms = []
             interpolated_terms = {}
+            # assign to a local variable for speed
             get_torsion_parameters = torsion_force.getTorsionParameters
             for torsion_index in range(torsion_force.getNumTorsions()):
                 torsion_parameters = get_torsion_parameters(torsion_index)
@@ -1755,8 +1756,6 @@ class HybridTopologyFactory:
                           "system")
                 raise ValueError(errmsg)
 
-        old_system_nonbonded_force = self._old_system_forces['NonbondedForce']
-        new_system_nonbonded_force = self._new_system_forces['NonbondedForce']
         hybrid_to_old_map = self._hybrid_to_old_map
         hybrid_to_new_map = self._hybrid_to_new_map
         old_nonbonded_terms = self._old_nonbonded_terms
@@ -1958,10 +1957,6 @@ class HybridTopologyFactory:
         Instead of excluding interactions that shouldn't occur, we provide
         exceptions for interactions that were zeroed out but should occur.
         """
-        # TODO - are these actually used anywhere? Flake8 says no
-        old_system_nonbonded_force = self._old_system_forces['NonbondedForce']
-        new_system_nonbonded_force = self._new_system_forces['NonbondedForce']
-
         # Prepare the atom classes
         unique_old_atoms = self._atom_classes['unique_old_atoms']
         unique_new_atoms = self._atom_classes['unique_new_atoms']
@@ -2044,10 +2039,6 @@ class HybridTopologyFactory:
         This method ensures that exceptions present in the original systems are
         present in the hybrid appropriately.
         """
-        # Get what we need to find the exceptions from the new and old systems:
-        old_system_nonbonded_force = self._old_system_forces['NonbondedForce']
-        new_system_nonbonded_force = self._new_system_forces['NonbondedForce']
-        hybrid_to_old_map = self._hybrid_to_old_map
         hybrid_to_new_map = self._hybrid_to_new_map
         old_nonbonded_terms = self._old_nonbonded_terms
         new_nonbonded_terms = self._new_nonbonded_terms
@@ -2300,13 +2291,6 @@ class HybridTopologyFactory:
         for parameter in ['chargeProd','sigmaA', 'epsilonA', 'sigmaB',
                           'epsilonB', 'unique_old', 'unique_new']:
             nonbonded_exceptions_force.addPerBondParameter(parameter)
-
-        # Prepare for exceptions loop by grabbing nonbonded forces,
-        # hybrid_to_old/new maps
-        old_system_nonbonded_force = self._old_system_forces['NonbondedForce']
-        new_system_nonbonded_force = self._new_system_forces['NonbondedForce']
-        hybrid_to_old_map = self._hybrid_to_old_map
-        hybrid_to_new_map = self._hybrid_to_new_map
 
         # First, loop through the old system's exceptions and add them to the
         # hybrid appropriately:
