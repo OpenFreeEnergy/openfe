@@ -1,10 +1,9 @@
 import copy
-from itertools import chain
 import re
+from itertools import chain
 
 import openmm
 import pytest
-
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import app, unit
@@ -2029,7 +2028,7 @@ def test_reference_systems_not_changed(chlorobenzene, benzene, chlorobenzene_to_
     # This is necessary because we need to have the FF templates
     # registered ahead of solvating the system.
     for smc, mol in chain(
-            off_small_mols["stateA"], off_small_mols["stateB"], off_small_mols["both"]
+        off_small_mols["stateA"], off_small_mols["stateB"], off_small_mols["both"]
     ):
         system_generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
 
@@ -2090,7 +2089,7 @@ def test_reference_systems_not_changed(chlorobenzene, benzene, chlorobenzene_to_
         old_positions=ensure_quantity(stateA_positions, "openmm"),
         insert_positions=ensure_quantity(off_small_mols["stateB"][0][1].conformers[0], "openmm"),
     )
-    htf =  HybridTopologyFactory(
+    htf = HybridTopologyFactory(
         old_system=stateA_system,
         old_positions=stateA_positions,
         old_topology=stateA_topology,
@@ -2108,4 +2107,3 @@ def test_reference_systems_not_changed(chlorobenzene, benzene, chlorobenzene_to_
     # make sure the input systems have not been edited
     assert stateA_system == htf._old_system
     assert stateB_system == htf._new_system
-
