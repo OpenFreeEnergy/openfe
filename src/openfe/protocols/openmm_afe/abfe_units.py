@@ -314,8 +314,9 @@ class ABFESetupUnitMixin:
             max_search_distance = 1.5 * offunit.nanometer
         else:
             # Set the max search distance to half the smallest perpendicular width
-            # with a 1 Angstrom padding
-            max_search_distance = (_get_minimum_image_distance(box) * 0.5) - 1 * offunit.angstrom  # type: ignore[operator]
+            # with a 20% padding to allow for box fluctuation.
+            max_half_distance = (_get_minimum_image_distance(box) * 0.5)
+            max_search_distance = max_half_distance * 0.8 * offunit.angstrom  # type: ignore[operator]
 
         # Re-using a utility from the restraints utilities
         # TODO: rename this class!
@@ -619,13 +620,57 @@ class ABFEComplexSetupUnit(
             rest_geom,
         )
 
-        return (
-            correction,
-            # Remove the thermostat, otherwise you'll get an
-            # Andersen thermostat by default!
-            thermodynamic_state.get_system(remove_thermostat=True),
-            rest_geom,
-        )
+        if alchemical_ions is not None:
+            # alchemical ion atom atomgroup
+            alchem_ion_ag = univ.atoms[alchemical_ions]
+
+            # get the alchemical ligand atoms
+            ligand_rdmol = alchem_comps["stateA"][0].to_rdkit()
+            residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
+            ligand_alchem_idxs = _get_idxs_from_residxs(topology=topology, residxs=residxs)
+            ligand_central_atom = ligand_alchem_idxs[get_central_atom_idx(ligand_rdmol)]
+            ligand_central_atom_ag = univ.atoms[ligand_central_atom]
+
+            # Get the ligand-ion distance based on the final frame
+            univ.trajectory[-1]
+
+            distance = float(
+                calc_bonds(
+                    alchem_ion_ag.atoms[0].position,
+                    ligand_central_atom_ag.position,
+                    box=universe.dimensions,
+                )
+            )
+
+            spring_constant = to_openmm(
+                settings["alchemical_settings"].alchemical_ion_solvent_spring_constant
+            )
+
+            force = HarmonicBondForce()
+            force.addBond(
+                ligand_central_atom,
+                alchemical_ions[0],
+                distance * ommunit.angstrom,
+                spring_constant,
+            )
+            force.setName("ion_restraint")
+
+            restrained_system = thermodynamic_state.get_system(remove_thermostat=True)
+            add_force_in_separate_group(restrained_system, force)
+
+            return (
+                correction,
+                restrained_system,
+                rest_geom,
+            )
+        else:
+            return (
+                correction,
+                # Remove the thermostat, otherwise you'll get an
+                # Andersen thermostat by default!
+                thermodynamic_state.get_system(remove_thermostat=True),
+                rest_geom,
+            )
 
 
 class ABFEComplexSimUnit(
@@ -838,8 +883,7 @@ class ABFESolventSetupUnit(
         )
 
         force.setName("ion_restraint")
-        # TODO: Temporarily disabled this for testing
-        # add_force_in_separate_group(restrained_system, force)
+        add_force_in_separate_group(restrained_system, force)
 
         return None, restrained_system, None
 
