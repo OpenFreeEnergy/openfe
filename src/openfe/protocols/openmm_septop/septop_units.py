@@ -17,6 +17,7 @@ from typing import Any
 
 import MDAnalysis as mda
 import mdtraj as md
+import netCDF4 as nc
 import numpy as np
 import openmm
 import openmm.unit
@@ -33,6 +34,11 @@ from openff.units import Quantity
 from openff.units.openmm import from_openmm, to_openmm
 from openmmtools.states import ThermodynamicState
 from rdkit import Chem
+from openfe_analysis.rmsd import (
+    LigandCOMDrift,
+    Protein2DRMSD,
+    SymmetryCorrectedLigandRMSD,
+)
 
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.serialization import serialize
@@ -1237,6 +1243,74 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
 
     simtype = "solvent"
 
+   @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        pdb_file: pathlib.Path,
+        skip: int,
+        ligand_A_indices: list[int],
+        ligand_B_indices: list[int],
+        rdmol_A: Chem.Mol,
+        rdmol_B: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run trjectory analysis for the solvent phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        pdb_file : pathlib.Path
+          Path to the subsampled PDB file.
+        skip : int
+          Frame stride for analysis.
+        ligand_A_indices : list[int]
+          Atom indices of ligand A in the subsampled system.
+        ligand_B_indices : list[int]
+          Atom indices of ligand B in the subsampled system.
+        rdmol_A : Chem.Mol
+          RDKit molecule for ligand A, used for symmetry-corrected RMSD.
+        rdmol_B : Chem.Mol
+          RDKit molecule for ligand B, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations.
+
+        Returns
+        -------
+        per_state_data : dict[str, list[np.ndarray]]
+          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        per_state_data: dict[str, list[np.ndarray]] = {
+            "ligand_A_RMSD": [],
+            "ligand_B_RMSD": [],
+        }
+        time_ps: np.ndarray | None = None
+        # Read the PDB topology once and reuse across all lambda states.
+        # Passing u_top._topology to create_universe_single_state avoids
+        # reading the PDB file from disk for every lambda.
+        u_top = mda.Universe(pdb_file)
+        for state_idx in range(n_lambda):
+            for label, indices, rdmol in [
+                ("ligand_A", ligand_A_indices, rdmol_A),
+                ("ligand_B", ligand_B_indices, rdmol_B),
+            ]:
+                universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+                lig = universe.atoms[indices]
+                apply_ligand_alignment_transformations(universe, ligand=lig)
+
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+                per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+
+                if time_ps is None:
+                    time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
+        return per_state_data, time_ps
+
 
 class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
     """
@@ -1244,3 +1318,85 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
     """
 
     simtype = "complex"
+
+    @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        pdb_file: pathlib.Path,
+        skip: int,
+        ligand_A_indices: list[int],
+        ligand_B_indices: list[int],
+        rdmol_A: Chem.Mol,
+        rdmol_B: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run trjectory analysis for the complex phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        pdb_file : pathlib.Path
+          Path to the subsampled PDB file.
+        skip : int
+          Frame stride for analysis.
+        ligand_A_indices : list[int]
+          Atom indices of ligand A in the subsampled system.
+        ligand_B_indices : list[int]
+          Atom indices of ligand B in the subsampled system.
+        rdmol_A : Chem.Mol
+          RDKit molecule for ligand A, used for symmetry-corrected RMSD.
+        rdmol_B : Chem.Mol
+          RDKit molecule for ligand B, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations.
+
+        Returns
+        -------
+        per_state_data : dict[str, list[np.ndarray]]
+          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``,
+          ``ligand_A_COM_drift``, ``ligand_B_COM_drift``, and ``protein_2D_RMSD``.`.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        per_state_data: dict[str, list[np.ndarray]] = {
+            "ligand_A_RMSD": [],
+            "ligand_B_RMSD": [],
+            "ligand_A_COM_drift": [],
+            "ligand_B_COM_drift": [],
+            "protein_2D_RMSD": [],
+        }
+        time_ps: np.ndarray | None = None
+        # Read the PDB topology once and reuse across all lambda states.
+        # Passing u_top._topology to create_universe_single_state avoids
+        # reading the PDB file from disk for every lambda.
+        u_top = mda.Universe(pdb_file)
+        prot_indices = u_top.select_atoms(protein_selection).indices
+        for state_idx in range(n_lambda):
+            universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+            prot = universe.atoms[prot_indices]
+            lig_A = universe.atoms[ligand_A_indices]
+            lig_B = universe.atoms[ligand_B_indices]
+            apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig_A, lig_B])
+
+            if prot:
+                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
+                per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+
+            for label, lig, rdmol in [
+                ("ligand_A", lig_A, rdmol_A),
+                ("ligand_B", lig_B, rdmol_B),
+            ]:
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+                per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+
+                lig_drift = LigandCOMDrift(lig).run(step=skip)
+                per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
+
+            if time_ps is None:
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+        return per_state_data, time_ps
+
