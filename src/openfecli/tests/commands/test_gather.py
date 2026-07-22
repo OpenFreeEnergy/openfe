@@ -447,11 +447,10 @@ class TestRBFEGatherFailedEdges:
 
     def test_missing_leg_allow_partial_disconnected(self, results_paths_serial_missing_legs: str):
         runner = CliRunner()
-        with pytest.warns():
-            args = ["--report", "dg", "--allow-partial"]
-            result = runner.invoke(gather, results_paths_serial_missing_legs + args + ["--tsv"])
-            assert result.exit_code == 1
-            assert "The results network is disconnected" in str(result.stderr)
+        args = ["--report", "dg", "--allow-partial"]
+        result = runner.invoke(gather, results_paths_serial_missing_legs + args + ["--tsv"])
+        assert result.exit_code == 1
+        assert "The results network is disconnected" in str(result.stderr)
 
     def test_allow_partial_msg_not_printed(self, results_paths_serial_missing_legs: str):
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
@@ -515,13 +514,6 @@ class TestGatherABFE:
 def septop_result_dir(tmp_path_factory) -> pathlib.Path:
     ZENODO_SEPTOP_DATA.fetch("septop_results.zip", processor=pooch.Unzip())
     result_dir = pathlib.Path(POOCH_CACHE) / "septop_results.zip.unzip/septop_results/"
-
-    for gz_file in result_dir.rglob("*.json.gz"):
-        json_file = gz_file.with_suffix("")  # removes .gz, leaving .json
-        with gzip.open(gz_file, "rb") as f_in:
-            with open(json_file, "wb") as f_out:
-                f_out.write(f_in.read())
-        gz_file.unlink()  # remove the .gz file
 
     return result_dir
 
