@@ -7,17 +7,17 @@ dependencies:
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
   - duecredit<0.10
-  - kartograf>=2.0.0
+  # - kartograf>=2.0.0
   - konnektor~=0.4.0
   - lomap2>=3.2.1
   - networkx
   - numpy
   - openfe-analysis>=0.5.0
-  - openff-interchange-base >=0.5.0,!= 0.5.1  # https://github.com/openforcefield/openff-interchange/issues/1450 and https://github.com/OpenFreeEnergy/openfe/pull/1901
+  - openff-interchange-base >=0.5.4
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
   - openff-toolkit-base >=0.16.2
-  - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
+  - openff-units >=0.4.0
   - openmm ~=8.4.0  # omit 8.3.0 and 8.3.1 due to https://github.com/openmm/openmm/pull/5069
   - openmmforcefields >=0.15.1  # min needed for https://github.com/openmm/openmmforcefields/pull/414
   - openmmtools >=0.26  # fix to support membrane barostat: https://github.com/choderalab/openmmtools/pull/798
@@ -29,7 +29,7 @@ dependencies:
   - pip
   - pooch >= 1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
   - py3dmol
-  # - pydantic >= 2.0.0, <2.12.0  # https://github.com/openforcefield/openff-interchange/issues/1346
+  - pydantic ==2.13.*
   - pygraphviz
   - pytest
   - pytest-xdist
@@ -51,11 +51,11 @@ dependencies:
   - sphinx-toolbox
   # Control blas/openmp threads
   - threadpoolctl
+  # temporary
+  - dill
   - pip:
+    - git+https://github.com/OpenFreeEnergy/kartograf@main
     - git+https://github.com/OpenFreeEnergy/gufe@maint/pydantic_3.13
-    - git+https://github.com/openforcefield/openff-units/@define-pydantic-schema
-    - git+https://github.com/openforcefield/openff-interchange/@fix-pydantic
-    - pydantic==2.13.*
 
 
   - run_constrained:
