@@ -13,9 +13,11 @@ Executing Simulations
 
 .. autosummary::
     :nosignatures:
+    :recursive:
     :toctree: generated/
 
     execute_DAG
+    storage
 
 General classes
 ---------------
