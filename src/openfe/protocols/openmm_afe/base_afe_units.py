@@ -46,7 +46,6 @@ from openmmtools import multistate
 from openmmtools.alchemy import (
     AbsoluteAlchemicalFactory,
     AlchemicalRegion,
-    AlchemicalState,
 )
 from openmmtools.states import (
     GlobalParameterState,
@@ -84,6 +83,10 @@ from openfe.protocols.openmm_utils.serialization import (
     deserialize,
     make_vec3_box,
     serialize,
+)
+from openfe.protocols.openmm_utils.states import (
+    DualRegionAlchemicalState,
+    SingleRegionAlchemicalState,
 )
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
@@ -534,6 +537,25 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
 
         return topology, system, positions, comp_resids
 
+    def _get_alchemical_ions(
+        self,
+        alchemical_components: dict[str, list[Component]],
+        comp_resids: dict[Component, npt.NDArray],
+        openmm_topology: app.Topology,
+        openmm_system: openmm.System,
+        positions: openmm.unit.Quantity,
+        settings: dict[str, SettingsBaseModel],
+        dry: bool,
+    ) -> list[int] | None:
+        """
+        Placeholder method for finding alchemical ions.
+
+        Returns
+        -------
+        None
+        """
+        return None
+
     def _add_restraints(
         self,
         system: openmm.System,
@@ -542,9 +564,10 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
+        alchemical_ions: list[int] | None,
     ) -> tuple[
         Quantity | None,
-        openmm.System | None,
+        openmm.System,
         geometry.BaseRestraintGeometry | None,
     ]:
         """
@@ -557,9 +580,10 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         topology: app.Topology,
         system: openmm.System,
         comp_resids: dict[Component, npt.NDArray],
-        alchem_comps: dict[str, list[Component]],
+        alchemical_components: dict[str, list[Component]],
+        alchemical_ions: list[int] | None,
         alchemical_settings: AlchemicalSettings,
-    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[int]]:
+    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, dict[str, list[int]]]:
         """
         Get an alchemically modified system and its associated factory
 
@@ -571,8 +595,10 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
           System to alchemically modify.
         comp_resids : dict[str, npt.NDArray]
           A dictionary of residues for each component in the System.
-        alchem_comps : dict[str, list[Component]]
+        alchemical_components : dict[str, list[Component]]
           A dictionary of alchemical components for each end state.
+        alchemical_ions : list[int] | None
+          List of indices for any alchemical ions, there are any.
         alchemical_settings : AlchemicalSettings
           Settings controlling how the alchemical system is built.
 
@@ -582,29 +608,41 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
           Factory for creating an alchemically modified system.
         alchemical_system : openmm.System
           Alchemically modified system
-        alchemical_indices : list[int]
-          A list of atom indices for the alchemically modified
-          species in the system.
+        alchemical_indices : dict[str, list[int]]
+          A dictionary containing a list of atom indices
+          for each independent alchemically modified species in the system.
 
         TODO
         ----
         * Add support for all alchemical factory options
         """
-        alchemical_indices = self._get_alchemical_indices(topology, comp_resids, alchem_comps)
+        # first region is the alchemically changing species
+        alchemical_indices = {
+            "A": self._get_alchemical_indices(topology, comp_resids, alchemical_components)
+        }
+        # second region is any alchemical ions
+        if alchemical_ions is not None:
+            alchemical_indices["B"] = alchemical_ions
 
-        alchemical_region = AlchemicalRegion(
-            alchemical_atoms=alchemical_indices,
-            softcore_alpha=alchemical_settings.softcore_alpha,
-            annihilate_electrostatics=True,
-            annihilate_sterics=alchemical_settings.annihilate_sterics,
-            softcore_a=alchemical_settings.softcore_a,
-            softcore_b=alchemical_settings.softcore_b,
-            softcore_c=alchemical_settings.softcore_c,
-            softcore_beta=0.0,
-            softcore_d=1.0,
-            softcore_e=1.0,
-            softcore_f=2.0,
-        )
+        alchemical_regions = []
+
+        for region in alchemical_indices:
+            alchemical_regions.append(
+                AlchemicalRegion(
+                    alchemical_atoms=alchemical_indices[region],
+                    name=region,
+                    softcore_alpha=alchemical_settings.softcore_alpha,
+                    annihilate_electrostatics=True,
+                    annihilate_sterics=alchemical_settings.annihilate_sterics,
+                    softcore_a=alchemical_settings.softcore_a,
+                    softcore_b=alchemical_settings.softcore_b,
+                    softcore_c=alchemical_settings.softcore_c,
+                    softcore_beta=0.0,
+                    softcore_d=1.0,
+                    softcore_e=1.0,
+                    softcore_f=2.0,
+                )
+            )
 
         alchemical_factory = AbsoluteAlchemicalFactory(
             consistent_exceptions=False,
@@ -614,7 +652,11 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             disable_alchemical_dispersion_correction=alchemical_settings.disable_alchemical_dispersion_correction,
             split_alchemical_forces=True,
         )
-        alchemical_system = alchemical_factory.create_alchemical_system(system, alchemical_region)
+
+        alchemical_system = alchemical_factory.create_alchemical_system(
+            reference_system=system,
+            alchemical_regions=alchemical_regions,
+        )
 
         return alchemical_factory, alchemical_system, alchemical_indices
 
@@ -715,6 +757,17 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             omm_system, omm_topology, positions, settings, dry
         )
 
+        # Get alchemical ions, if needed / allowed
+        alchem_ions = self._get_alchemical_ions(
+            alchemical_components=alchem_comps,
+            comp_resids=comp_resids,
+            openmm_topology=omm_topology,
+            openmm_system=omm_system,
+            positions=positions,
+            settings=settings,
+            dry=dry,
+        )
+
         # Add restraints
         # Note: when no restraint is applied, restrained_omm_system == omm_system
         (
@@ -728,6 +781,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             alchem_comps,
             comp_resids,
             settings,
+            alchem_ions,
         )
 
         # Get alchemical system
@@ -735,7 +789,8 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             topology=omm_topology,
             system=restrained_omm_system,
             comp_resids=comp_resids,
-            alchem_comps=alchem_comps,
+            alchemical_components=alchem_comps,
+            alchemical_ions=alchem_ions,
             alchemical_settings=settings["alchemical_settings"],
         )
 
@@ -767,6 +822,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             "pdb_structure": pdb_structure,
             "selection_indices": selection_indices,
             "box_vectors": from_openmm(box_vectors),
+            "alchemical_indices": alchem_indices,
         }
 
         if standard_state_corr is not None:
@@ -786,7 +842,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
                 "standard_system": omm_system,
                 "restrained_system": restrained_omm_system,
                 "alchem_system": alchem_system,
-                "alchem_indices": alchem_indices,
                 "alchem_factory": alchem_factory,
                 "debug_positions": positions,
             }
@@ -919,6 +974,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         lambdas: dict[str, list[float]],
         solvent_component: BaseSolventComponent | None,
         alchemically_restrained: bool,
+        alchemical_indices: dict[str, list[int]],
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
         Get a list of sampler and thermodynmic states from an
@@ -941,6 +997,9 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         alchemically_restrained : bool
           Whether or not the system requires a control parameter
           for any alchemical restraints.
+        alchemical_indices : dict[str, list[int]]
+          Dictionary of alchemical indices for each alchemical
+          region in the system.
 
         Returns
         -------
@@ -950,7 +1009,13 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
           A list of ThermodynamicState for each replica in the system.
         """
         # Fetch an alchemical state
-        alchemical_state = AlchemicalState.from_system(alchemical_system)
+        if len(alchemical_indices) == 1:
+            alchemical_state = SingleRegionAlchemicalState.from_system(alchemical_system)
+        elif len(alchemical_indices) == 2:
+            alchemical_state = DualRegionAlchemicalState.from_system(alchemical_system)
+        else:
+            errmsg = "More than two alchemical regions are not supported"
+            raise ValueError(errmsg)
 
         # Set up the system constants
         temperature = thermodynamic_settings.temperature
@@ -962,24 +1027,28 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             constants["pressure"] = ensure_quantity(pressure, "openmm")
 
         # Get the thermodynamic parameter protocol
-        param_protocol = copy.deepcopy(lambdas)
+        # We populate the protocol from lambdas as necessary
+        param_protocol: dict[str, list[float]] = {}
 
-        # Get the composable states
+        # Main alchemical ligand (region A)
+        for key in ["lambda_electrostatics", "lambda_sterics"]:
+            param_protocol[f"{key}_A"] = copy.deepcopy(lambdas[key])
+
+        # Only the first region (ligand) can be restrained
         if alchemically_restrained:
-            restraint_state = omm_restraints.RestraintParameterState(lambda_restraints=1.0)
-            composable_states = [alchemical_state, restraint_state]
-        else:
-            composable_states = [alchemical_state]
+            param_protocol["lambda_restraints_A"] = copy.deepcopy(lambdas["lambda_restraints"])
 
-            # In this case we also don't have a restraint being controlled
-            # so we drop it from the protocol
-            param_protocol.pop("lambda_restraints", None)
+        # If we have a second region (i.e. an alchemical ion)
+        # scale the electrostatics but nothing else.
+        if len(alchemical_indices) == 2:
+            reverse_schedule = [1 - x for x in lambdas["lambda_electrostatics"]]
+            param_protocol["lambda_electrostatics_B"] = reverse_schedule
 
         cmp_states = create_thermodynamic_state_protocol(
             alchemical_system,
             protocol=param_protocol,
             constants=constants,
-            composable_states=composable_states,
+            composable_states=[alchemical_state],
         )
 
         sampler_state = SamplerState(positions=positions)
@@ -1355,6 +1424,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         positions: openmm.unit.Quantity,
         box_vectors: Quantity,
         selection_indices: npt.NDArray,
+        alchemical_indices: dict[str, list[int]],
         alchemical_restraints: bool,
         dry: bool = False,
         verbose: bool = True,
@@ -1374,6 +1444,8 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
           The box vectors of the System.
         selection_indices : npt.NDArray
           Indices of the System particles to write to file.
+        alchemical_indices : dict[str, list[int]]
+          Dictionary of alchemical indices for each alchemical region.
         alchemical_restraints: bool,
           Whether or not the system has alchemical restraints.
         dry: bool
@@ -1434,6 +1506,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             lambdas=lambdas,
             solvent_component=solv_comp,
             alchemically_restrained=alchemical_restraints,
+            alchemical_indices=alchemical_indices,
         )
 
         # Get the integrator
@@ -1528,6 +1601,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
         system = deserialize(setup_results.outputs["system"])
         positions = to_openmm(np.load(setup_results.outputs["positions"]) * offunit.nanometer)
         selection_indices = setup_results.outputs["selection_indices"]
+        alchemical_indices = setup_results.outputs["alchemical_indices"]
         box_vectors = setup_results.outputs["box_vectors"]
 
         if setup_results.outputs["restraint_geometry"] is not None:
@@ -1540,6 +1614,7 @@ class BaseAbsoluteMultiStateSimulationUnit(gufe.ProtocolUnit, AbsoluteUnitMixin)
             positions=positions,
             box_vectors=box_vectors,
             selection_indices=selection_indices,
+            alchemical_indices=alchemical_indices,
             alchemical_restraints=alchemical_restraints,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
