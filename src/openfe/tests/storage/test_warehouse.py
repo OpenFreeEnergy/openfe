@@ -19,10 +19,19 @@ class TestWarehouseBaseClass:
     def test_store_protocol_dag_result(self):
         pytest.skip("Not implemented yet")
 
+    def test_invalid_warehouse_store(self):
+        """This demonstrates current behavior, but we may want to add up-front validation."""
+        result_store = MemoryStorage()
+        stores = WarehouseStores(result=result_store)
+        warehouse = WarehouseBaseClass(stores)
+        assert warehouse.result_store == result_store
+        with pytest.raises(KeyError, match="setup"):
+            warehouse.setup_store
+
     @staticmethod
     def _test_store_load_same_process(
         obj, store_func_name, load_func_name, store_name: Literal["setup", "result"]
-    ):
+    ) -> tuple[GufeTokenizable, WarehouseBaseClass]:
         setup_store = MemoryStorage()
         result_store = MemoryStorage()
         stores = WarehouseStores(setup=setup_store, result=result_store)
@@ -44,7 +53,7 @@ class TestWarehouseBaseClass:
         store_func_name,
         load_func_name,
         store_name: Literal["setup", "result"],
-    ):
+    ) -> None:
         setup_store = MemoryStorage()
         result_store = MemoryStorage()
         stores = WarehouseStores(setup=setup_store, result=result_store)
@@ -89,7 +98,6 @@ class TestWarehouseBaseClass:
             transformation, store_func_name, load_func_name, store
         )
 
-    #
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
     @pytest.mark.parametrize("store", ["setup", "result"])
     def test_store_load_network_same_process(self, request, fixture, store):
