@@ -334,8 +334,15 @@ class ABFESetupUnitMixin:
             errmsg = "No suitable co-alchemical ion was found"
             raise ValueError(errmsg)
 
+        # Now sort the atoms
+        atom_sorter = CentroidDistanceSort(
+            sortable_atoms=univ.atoms[atom_finder.results.host_idxs],
+            reference_atoms=alchem_atomgroup,
+        )
+        atom_sorter.run(frames=[-1])
+
         # Just use the first one that comes back ok
-        return [atom_finder.results.host_idxs[0]]
+        return [atom_sorter.results.sorted_atomgroup[-1].ix]
 
 
 class ComplexComponentsMixin:
