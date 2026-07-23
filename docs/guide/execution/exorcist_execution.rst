@@ -6,7 +6,7 @@ Execution with Exorcist Workers
 Using the API to execute an Alchemical Network
 ----------------------------------------------
 
-You can execute the network of simulation units defined by an ``AlchemicalNetwork`` (see :any:`create_alchemical_network`) using ``openfe.orchestration``:
+You can execute the network of simulation units defined by an ``AlchemicalNetwork`` (see `create_alchemical_network`) using ``openfe.orchestration``:
 
 
 First, we build a graph of tasks to be executed from the ``AlchemicalNetwork``:
@@ -32,6 +32,7 @@ First, we build a graph of tasks to be executed from the ``AlchemicalNetwork``:
 Next, we call ``worker.execute_unit()`` to execute the next available task in the warehouse:
 
 .. code:: bash
+
     # execution: build the worker
     from openfe.orchestration import Worker
 
@@ -49,10 +50,12 @@ Using the CLI
 .. Note: this is a proof-of-concept for use with RBFEs, tbd if we want to expose this right now.
 
 .. code:: bash
+
     openfe plan-rbfe-network ... --warehouse
 
 
 .. code:: bash
+
     openfe worker warehouse/
 
 To run a single task to completion.
@@ -61,6 +64,7 @@ To take full advantage of the worker model, you can run multiple ``openfe worker
 The following is an example script that runs up to 4 workers at a time, with each automatically picking up the next valid unit to be executed.
 
 .. code:: bash
+
     #!/usr/bin/env bash
     set -euo pipefail
 
