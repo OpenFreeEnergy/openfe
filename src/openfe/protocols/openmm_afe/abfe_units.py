@@ -39,7 +39,11 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
-from openfe.protocols.restraint_utils.geometry.utils import FindHostAtoms, get_central_atom_idx
+from openfe.protocols.restraint_utils.geometry.utils import (
+    CentroidDistanceSort,
+    FindHostAtoms,
+    get_central_atom_idx,
+)
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_forces import add_force_in_separate_group
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
@@ -316,7 +320,7 @@ class ABFESetupUnitMixin:
             # Set the max search distance to half the smallest perpendicular width
             # with a 20% padding to allow for box fluctuation.
             max_half_distance = (_get_minimum_image_distance(box) * 0.5)
-            max_search_distance = max_half_distance * 0.8 * offunit.angstrom  # type: ignore[operator]
+            max_search_distance = max_half_distance * 0.8
 
         # Re-using a utility from the restraints utilities
         # TODO: rename this class!
