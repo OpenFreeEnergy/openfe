@@ -33,6 +33,7 @@ dependencies:
   - git+https://github.com/OpenFreeEnergy/kartograf@main
   - git+https://github.com/OpenFreeEnergy/konnektor@main
   - git+https://github.com/OpenFreeEnergy/lomap@main
+  - git+https://github.com/OpenFreeEnergy/exorcist@main
 
 # These are added automatically by RTD, so we include them here
 # for a consistent environment.
