@@ -3,7 +3,7 @@ Data Handling with Warehouse
 
 **openfe**'s ``Warehouse`` defines the interface for an execution engine to store and access data during execution.
 
-A Warehouse is any instance of a derived class of the abstract ``WarehouseBaseClass``. In other words, *where* the data is stored is decided by the derived class, but *how* the data is accessed is defined by ``WarehouseBaseClass``.
+A Warehouse is any instance of a derived class of the abstract :class:`.WarehouseBaseClass`. In other words, *where* the data is stored is decided by the derived class, but *how* the data is accessed is defined by ``WarehouseBaseClass``.
 
 You can think of the ``WarehouseBaseClass`` as a set of specifications that must be met by a Warehouse implementation (subclass), such that any openfe Protocol can then interact appropriately with its data.
 
@@ -11,12 +11,14 @@ For example, **openfe** Protocols require several types of storage - scratch, se
 
 Naively, we could require that all three of these storage types be filesystem directories that can be accessed locally by the Protocol, but this significantly limits the ways in which the Protocol can be executed, e.g. a Protocol could not store **result** data on a remote machine or cloud storage.
 
-Where a Warehouse stores its data is defined by a ``WarehouseStores`` object, which is a small TypedDict that containing ``'setup'`` and ``'result'`` keys (note that ``scratch`` is not a key, *must* be locally-accessible file storage) that correspond to gufe ``ExternalStorage`` objects.
-The type of ``ExternalStorage`` objects used by a Warehouse implementation are where the the code author has flexibility to choose *where* data is stored.
+Where a Warehouse stores its data is defined by a :class:`.WarehouseStores` object, which is a small `TypedDict <https://typing.python.org/en/latest/spec/typeddict.html>`_ containing ``'setup'`` and ``'result'`` keys (note that ``scratch`` is not a key, *must* be locally-accessible file storage) that correspond to gufe ``ExternalStorage`` objects.
+The type of :class:`.ExternalStorage` objects used by a Warehouse implementation are where the the code author has flexibility to choose *where* data is stored.
 
-.. TODO: add :ref: links here
 
-The below example implementation, ``FileSystemWarehouse``, is a derived class that inherits from ``WarehouseBaseClass``. This is a simple example of how to construct a Warehouse given a root directory, which is uses to create ``WarehouseStores``.
+The below example implementation, :class:`.FileSystemWarehouse`, is a derived class that inherits from ``WarehouseBaseClass``.
+This is a simple example of how to construct a Warehouse given a root directory, which is uses to create ``WarehouseStores``.
+
+.. TODO: reference FileStorage gufe docs
 
 .. code-block::
 
