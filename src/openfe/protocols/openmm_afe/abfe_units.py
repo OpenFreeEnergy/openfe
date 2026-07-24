@@ -171,11 +171,11 @@ def _get_minimum_image_distance(box_dimensions: npt.NDArray) -> Quantity:
     return perp_widths.min() * offunit.angstrom
 
 
-def _find_most_common_ions(
+def _get_ion_parameters(
     openmm_topology: omm_topology,
     openmm_system: System,
     target_charge: int,
-) -> list[int] | None:
+) -> tuple[float, float, float] | None:
     """
     Get the most common ions of a given net charge in a system.
 
@@ -190,8 +190,9 @@ def _find_most_common_ions(
 
     Returns
     -------
-    list[int] | None
-      If present, the list of indices matching the most common ion.
+    tuple[float, float, float] | None
+      Tuple of three floats containing the charge,
+      sigma and epsilon parameters of the ion atom.
 
     Notes
     -----
@@ -221,7 +222,7 @@ def _find_most_common_ions(
 
     if ion_counts:
         best_resname = ion_counts.most_common(1)[0][0]
-        return ion_atom_indices[best_resname]
+        return nbf.getParticleParameters(ion_atom_indices[best_resname])
     else:
         return None
 
@@ -231,7 +232,7 @@ class ABFESetupUnitMixin:
     Mixin for common class methods between Units
     """
 
-    def _get_alchemical_ions(
+    def _handle_alchemical_ions(
         self,
         alchemical_components: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
@@ -240,9 +241,9 @@ class ABFESetupUnitMixin:
         positions: ommunit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool,
-    ) -> list[int] | None:
+    ) -> list[list[int]] | None:
         """
-        Find a suitable alchemical ion for a net charge transformation.
+        Add an alchemical ion for a net charge transformation.
 
         Parameters
         ----------
@@ -267,8 +268,8 @@ class ABFESetupUnitMixin:
 
         Returns
         -------
-        list[int]
-          The indices of the alchemical ions.
+        list[list[int]]
+          The atom indices of the alchemical ions.
 
         """
         total_charge = alchemical_components["stateA"][0].total_charge
@@ -284,9 +285,9 @@ class ABFESetupUnitMixin:
             raise ValueError(errmsg)
 
         # Get the indices of the most common ion type that can act as a co-alchemical ion
-        ion_indices = _find_most_common_ions(openmm_topology, openmm_system, total_charge)
+        ion_parameters = _get_ion_parameters(openmm_topology, openmm_system, total_charge)
 
-        if ion_indices is None:
+        if ion_parameters is None:
             errmsg = "No suitable ions could be found to act as co-alchemical ion in the system"
             raise ValueError(errmsg)
 
@@ -296,8 +297,9 @@ class ABFESetupUnitMixin:
             self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,  # type: ignore[attr-defined]
         )
 
-        # get an atomgroup of the possible alchemical ions
-        ions_atomgroup = univ.atoms[ion_indices]
+        # get an atomgroup of all the water oxygens
+        water_atomgroup = univ.select_atoms("water and element O")
+        ## ions_atomgroup = univ.atoms[ion_indices]
 
         # get the co-alchemical atoms
         residxs = np.concatenate([comp_resids[key] for key in alchemical_components["stateA"]])
@@ -325,7 +327,7 @@ class ABFESetupUnitMixin:
         # Re-using a utility from the restraints utilities
         # TODO: rename this class!
         atom_finder = FindHostAtoms(
-            host_atoms=ions_atomgroup,
+            host_atoms=water_atomgroup,
             guest_atoms=alchem_atomgroup,
             min_search_distance=settings["alchemical_settings"].alchemical_ion_min_distance,
             max_search_distance=max_search_distance,
@@ -345,8 +347,37 @@ class ABFESetupUnitMixin:
         )
         atom_sorter.run(frames=[-1])
 
-        # Just use the first one that comes back ok
-        return [atom_sorter.results.sorted_atomgroup[-1].ix]
+        # Get the indices of the atoms we will be modifying
+        oxygen_ix = atom_sorter.results.sorted_atomgroup[-1].ix
+        hydrogen_ixs = univ.atoms[oxygen_ix].bonded_atoms.ix
+        water_ixs = univ.atoms[oxygen_ix].fragment.ix
+
+        # If we have more than 3 particles, there's likely something wrong
+        if len(water_ixs) > 3:
+            errmsg = "More than 3 particles found in water, only 3-site waters are supported")
+            raise ValueError(errmsg)
+
+        # Get the force we will be modifying
+        nbf = [
+            i for i in openmm_system.getFoces()
+            if isinstance(i, NonbondedForce)
+        ][0]
+
+        # Set the oxygen parameters to that of the ion
+        nbf.setParticleParameters(
+            oxygen_ix, ion_parameters[0], ion_parameters[1], ion_parameters[2]
+        )
+
+        # Now set the hydrogen parameters so 0 (sigma at 1 to avoid crashes)
+        for h_ix in hydrogen_ixs:
+            nbf.setParticleParameters(
+                h_ix, 0, 1, 0
+            )
+
+        # Return indices with the first index being the oxygen
+        return [
+            [int(oxygen_ix)] + [int(i) for i in hydrogen_idxs]
+        ]
 
 
 class ComplexComponentsMixin:
@@ -508,7 +539,7 @@ class ABFEComplexSetupUnit(
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
-        alchemical_ions: list[int] | None,
+        alchemical_ions: list[list[int]] | None,
     ) -> tuple[
         Quantity,
         System,
@@ -540,7 +571,7 @@ class ABFEComplexSetupUnit(
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings that defines how to find and set
           the restraint.
-        alchemical_ions : list[int] | None
+        alchemical_ions : list[list[int]] | None
           The alchemical ion indices, if they exist.
 
         Returns
@@ -633,7 +664,7 @@ class ABFEComplexSetupUnit(
 
         if alchemical_ions is not None:
             # alchemical ion atom atomgroup
-            alchem_ion_ag = univ.atoms[alchemical_ions]
+            alchem_ion_ag = univ.atoms[alchemical_ions[0]]
 
             # get the alchemical ligand atoms
             ligand_rdmol = alchem_comps["stateA"][0].to_rdkit()
@@ -660,7 +691,7 @@ class ABFEComplexSetupUnit(
             force = HarmonicBondForce()
             force.addBond(
                 ligand_central_atom,
-                alchemical_ions[0],
+                alchemical_ions[0][0],
                 distance * ommunit.angstrom,
                 spring_constant,
             )
@@ -793,7 +824,7 @@ class ABFESolventSetupUnit(
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
-        alchemical_ions: list[int] | None,
+        alchemical_ions: list[list[int]] | None,
     ) -> tuple[
         Quantity | None,
         System,
@@ -825,7 +856,7 @@ class ABFESolventSetupUnit(
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings that defines how to find and set
           the restraint.
-        alchemical_ions : list[int] | None
+        alchemical_ions : list[list[int]] | None
           The alchemical ion indices, if they exist.
 
         Returns
@@ -860,7 +891,7 @@ class ABFESolventSetupUnit(
         )
 
         # alchemical ion atom atomgroup
-        alchem_ion_ag = universe.atoms[alchemical_ions]
+        alchem_ion_ag = universe.atoms[alchemical_ions[0]]
 
         # get the alchemical ligand atoms
         ligand_rdmol = alchem_comps["stateA"][0].to_rdkit()
@@ -888,7 +919,7 @@ class ABFESolventSetupUnit(
 
         force.addBond(
             ligand_central_atom,
-            alchemical_ions[0],
+            alchemical_ions[0][0],
             distance * ommunit.angstrom,
             spring_constant,
         )

@@ -537,7 +537,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
 
         return topology, system, positions, comp_resids
 
-    def _get_alchemical_ions(
+    def _handle_alchemical_ions(
         self,
         alchemical_components: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
@@ -546,9 +546,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         positions: openmm.unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool,
-    ) -> list[int] | None:
+    ) -> list[list[int]] | None:
         """
-        Placeholder method for finding alchemical ions.
+        Placeholder method adding finding alchemical ions.
 
         Returns
         -------
@@ -564,7 +564,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
-        alchemical_ions: list[int] | None,
+        alchemical_ions: list[list[int]] | None,
     ) -> tuple[
         Quantity | None,
         openmm.System,
@@ -581,7 +581,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         system: openmm.System,
         comp_resids: dict[Component, npt.NDArray],
         alchemical_components: dict[str, list[Component]],
-        alchemical_ions: list[int] | None,
+        alchemical_ions: list[list[int]] | None,
         alchemical_settings: AlchemicalSettings,
     ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, dict[str, list[int]]]:
         """
@@ -622,7 +622,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         }
         # second region is any alchemical ions
         if alchemical_ions is not None:
-            alchemical_indices["B"] = alchemical_ions
+            alchemical_indices["B"] = sum(alchemical_ions, [])
 
         alchemical_regions = []
 
@@ -758,7 +758,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         )
 
         # Get alchemical ions, if needed / allowed
-        alchem_ions = self._get_alchemical_ions(
+        alchem_ions = self._handle_alchemical_ions(
             alchemical_components=alchem_comps,
             comp_resids=comp_resids,
             openmm_topology=omm_topology,
