@@ -81,6 +81,75 @@ due.cite(
     cite_module=True,
 )
 
+class RBFEHybridTopProtocol(gufe.Protocol):
+    """
+    Relative Binding Free Energy calculations using a hybrid topology scheme
+    using OpenMM and OpenMMTools.
+
+    Base on `Perses <https://github.com/choderalab/perses>`_
+
+    See Also
+    --------
+    :mod:`openfe.protocols`
+    # TODO - add more see alsos
+    """
+    results_cls = RBFEHybridTopProtocolResult
+    _settings_cls = RBFEHybridTopProtocolSettings
+    _settings: RBFEHybridTopProtocolSettings
+
+    @classmethod
+    def _default_settings(cls):
+        """A dictionary of initial settings for this creating this Protocol
+
+        These settings are intended as a suitable starting point for creating
+        an instance of this protocol.  It is recommended, however that care is
+        taken to inspect and customize these before performing a Protocol.
+
+        Returns
+        -------
+        Settings
+          a set of default settings
+        """
+        return RBFEHybridTopProtocolSettings(
+            protocol_repeats=3,
+            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
+            thermo_settings=settings.ThermoSettings(
+                temperature=298.15 * offunit.kelvin,
+                pressure=1 * offunit.bar,
+            ),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
+            solvent_solvation_settings=OpenMMSolvationSettings(),
+            complex_solvation_settings=OpenMMSolvationSettings(
+                solvent_padding=1.0 * offunit.nanometer,
+            ),
+            alchemical_settings=AlchemicalSettings(softcore_LJ="gapsys"),
+            complex_lambda_settings=LambdaSettings(),
+            solvent_lambda_settings=LambdaSettings(),
+            solvent_simulation_settings=MultiStateSimulationSettings(
+                n_replicas=11,
+                equilibration_length=1.0 * offunit.nanosecond,
+                production_length=5.0 * offunit.nanosecond,
+            ),
+            complex_simulation_settings=MultiStateSimulationSettings(
+                n_replicas=11,
+                equilibration_length=1.0 * offunit.nanosecond,
+                production_length=5.0 * offunit.nanosecond,
+            ),
+            engine_settings=OpenMMEngineSettings(),
+            solvent_integrator_settings=IntegratorSettings(),
+            complex_integrator_settings=IntegratorSettings(),
+            solvent_output_settings=MultiStateOutputSettings(
+                output_structure="alchemical_system.pdb",
+                output_filename="solvent.nc",
+                checkpoint_storage_filename="solvent_checkpoint.nc",
+            ),
+            complex_output_settings=MultiStateOutputSettings(
+                output_structure="alchemical_system.pdb",
+                output_filename="complex.nc",
+                checkpoint_storage_filename="complex_checkpoint.nc",
+            ),
+        )  # fmt: skip
+
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
     """
