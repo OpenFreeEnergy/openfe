@@ -156,3 +156,185 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """
     Simulation output control settings.
     """
+
+
+class RBFEHybridTopProtocolSettings(Settings):
+    """
+    Configuration object for ``RBFEHybridTopProtocol``.
+
+    See Also
+    --------
+    openfe.protocols.openmm_rfe.RBFEHybridTopProtocol
+    """
+
+    protocol_repeats: int
+    """
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of FE
+    difference, while the variance between repeats is used as the uncertainty.
+    """
+
+    @field_validator("protocol_repeats")
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
+
+    # Inherited things
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
+    """Parameters to set up the force field with OpenMM Force Fields."""
+    thermo_settings: ThermoSettings
+    """Settings for thermodynamic parameters."""
+    partial_charge_settings: OpenFFPartialChargeSettings
+    """Settings for assigning partial charges to small molecules."""
+
+    # Alchemical settings
+    alchemical_settings: AlchemicalSettings
+    """
+    Alchemical protocol settings including soft core scaling.
+    """
+
+    # Things for creating the systems
+    solvent_solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the solvent leg system."""
+    complex_solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the complex leg system."""
+
+    # Lambda schedule settings
+    solvent_lambda_settings: LambdaSettings
+    """
+    Lambda protocol settings including lambda windows and lambda functions
+    for the solvent leg.
+    """
+    complex_lambda_settings: LambdaSettings
+    """
+    Lambda protocol settings including lambda windows and lambda functions
+    for the complex leg.
+    """
+
+    # Simulation settings
+    solvent_simulation_settings: MultiStateSimulationSettings
+    """
+    Settings for the solvent leg alchemical sampler.
+    """
+    complex_simulation_settings: MultiStateSimulationSettings
+    """
+    Settings for the complex leg alchemical sampler.
+    """
+
+    # MD Engine things
+    engine_settings: OpenMMEngineSettings
+    """Settings specific to the OpenMM engine such as the compute platform."""
+
+    # Sampling State defining things
+    solvent_integrator_settings: IntegratorSettings
+    """Settings for the solvent leg integrator such as timestep and barostat settings."""
+    complex_integrator_settings: IntegratorSettings
+    """Settings for the complex leg integrator such as timestep and barostat settings."""
+
+    solvent_output_settings: MultiStateOutputSettings
+    """
+    Solvent leg simulation output control settings.
+    """
+    complex_output_settings: MultiStateOutputSettings
+    """
+    Complex leg simulation output control settings.
+    """
+
+
+class RHFEHybridTopProtocolSettings(SettingsBaseModel):
+    """
+    Configuration object for ``RHFEHybridTopProtocol``.
+
+    Note
+    ----
+    This subclasses ``SettingsBaseModel`` rather than ``Settings`` since the
+    solvent and vacuum legs require different ``forcefield_settings``
+    (the vacuum leg must use a ``nocutoff`` nonbonded method), so there is no
+    single shared ``forcefield_settings`` field to satisfy ``Settings``.
+
+    See Also
+    --------
+    openfe.protocols.openmm_rfe.RHFEHybridTopProtocol
+    """
+
+    protocol_repeats: int
+    """
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of FE
+    difference, while the variance between repeats is used as the uncertainty.
+    """
+
+    @field_validator("protocol_repeats")
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
+
+    # Inherited things
+    solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
+    """Parameters to set up the force field with OpenMM Force Fields for the solvent leg."""
+    vacuum_forcefield_settings: OpenMMSystemGeneratorFFSettings
+    """
+    Parameters to set up the force field with OpenMM Force Fields for the
+    vacuum leg. Must use a ``nonbonded_method`` of ``nocutoff``.
+    """
+    thermo_settings: ThermoSettings
+    """Settings for thermodynamic parameters."""
+    partial_charge_settings: OpenFFPartialChargeSettings
+    """Settings for assigning partial charges to small molecules."""
+
+    # Alchemical settings
+    alchemical_settings: AlchemicalSettings
+    """
+    Alchemical protocol settings including soft core scaling.
+    """
+
+    # Things for creating the systems
+    solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the solvent leg system. Ignored by the vacuum leg."""
+
+    # Lambda schedule settings
+    solvent_lambda_settings: LambdaSettings
+    """
+    Lambda protocol settings including lambda windows and lambda functions
+    for the solvent leg.
+    """
+    vacuum_lambda_settings: LambdaSettings
+    """
+    Lambda protocol settings including lambda windows and lambda functions
+    for the vacuum leg.
+    """
+
+    # Simulation settings
+    solvent_simulation_settings: MultiStateSimulationSettings
+    """
+    Settings for the solvent leg alchemical sampler.
+    """
+    vacuum_simulation_settings: MultiStateSimulationSettings
+    """
+    Settings for the vacuum leg alchemical sampler.
+    """
+
+    # MD Engine things
+    solvent_engine_settings: OpenMMEngineSettings
+    """Settings specific to the OpenMM engine for the solvent leg, such as the compute platform."""
+    vacuum_engine_settings: OpenMMEngineSettings
+    """Settings specific to the OpenMM engine for the vacuum leg, such as the compute platform."""
+
+    # Sampling State defining things
+    solvent_integrator_settings: IntegratorSettings
+    """Settings for the solvent leg integrator such as timestep and barostat settings."""
+    vacuum_integrator_settings: IntegratorSettings
+    """Settings for the vacuum leg integrator such as timestep settings."""
+
+    solvent_output_settings: MultiStateOutputSettings
+    """
+    Solvent leg simulation output control settings.
+    """
+    vacuum_output_settings: MultiStateOutputSettings
+    """
+    Vacuum leg simulation output control settings.
+    """
