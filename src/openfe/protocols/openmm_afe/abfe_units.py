@@ -354,7 +354,7 @@ class ABFESetupUnitMixin:
 
         # If we have more than 3 particles, there's likely something wrong
         if len(water_ixs) > 3:
-            errmsg = "More than 3 particles found in water, only 3-site waters are supported")
+            errmsg = "More than 3 particles found in water, only 3-site waters are supported"
             raise ValueError(errmsg)
 
         # Get the force we will be modifying
