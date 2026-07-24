@@ -158,13 +158,13 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """
 
 
-class RBFEHybridTopProtocolSettings(Settings):
+class RBFEHTopProtocolSettings(Settings):
     """
-    Configuration object for ``RBFEHybridTopProtocol``.
+    Configuration object for ``RBFEHTopProtocol``.
 
     See Also
     --------
-    openfe.protocols.openmm_rfe.RBFEHybridTopProtocol
+    openfe.protocols.openmm_rfe.RBFEHTopProtocol
     """
 
     protocol_repeats: int
@@ -243,9 +243,9 @@ class RBFEHybridTopProtocolSettings(Settings):
     """
 
 
-class RHFEHybridTopProtocolSettings(SettingsBaseModel):
+class RHFEHTopProtocolSettings(SettingsBaseModel):
     """
-    Configuration object for ``RHFEHybridTopProtocol``.
+    Configuration object for ``RHFEHTopProtocol``.
 
     Note
     ----
@@ -256,7 +256,7 @@ class RHFEHybridTopProtocolSettings(SettingsBaseModel):
 
     See Also
     --------
-    openfe.protocols.openmm_rfe.RHFEHybridTopProtocol
+    openfe.protocols.openmm_rfe.RHFEHTopProtocol
     """
 
     protocol_repeats: int

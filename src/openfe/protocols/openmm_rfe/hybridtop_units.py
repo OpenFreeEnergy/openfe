@@ -1729,7 +1729,7 @@ class HybridTopologyComplexComponentsMixin:
     small molecules) present in the ``stateA``/``stateB`` inputs, with no
     leg-specific stripping. Used both by the single-leg
     ``RelativeHybridTopologyProtocol`` units and by the complex leg of
-    ``RBFEHybridTopProtocol``.
+    ``RBFEHTopProtocol``.
     """
 
     def _get_components(
@@ -1744,9 +1744,9 @@ class HybridTopologySolventComponentsMixin:
     """
     Components mixin for the solvent leg of a multi-leg Protocol: reuses
     the full components, but always nulls out any protein component (be it
-    absent from the input already, as for ``RHFEHybridTopProtocol``, or
+    absent from the input already, as for ``RHFEHTopProtocol``, or
     present and stripped, as for the solvent leg derived from
-    ``RBFEHybridTopProtocol``'s complex-shaped ChemicalSystem inputs).
+    ``RBFEHTopProtocol``'s complex-shaped ChemicalSystem inputs).
     """
 
     def _get_components(
@@ -1758,7 +1758,7 @@ class HybridTopologySolventComponentsMixin:
 
 class HybridTopologyVacuumComponentsMixin:
     """
-    Components mixin for the vacuum leg of ``RHFEHybridTopProtocol``: reuses
+    Components mixin for the vacuum leg of ``RHFEHTopProtocol``: reuses
     the full components, but always nulls out the solvent component.
     """
 
@@ -1789,7 +1789,7 @@ class HybridTopologyMultiStateAnalysisUnit(BaseHybridTopologyMultiStateAnalysisU
 
 
 class RBFEComplexSettingsMixin:
-    """Settings mixin for the complex leg of ``RBFEHybridTopProtocol``."""
+    """Settings mixin for the complex leg of ``RBFEHTopProtocol``."""
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
@@ -1809,7 +1809,7 @@ class RBFEComplexSettingsMixin:
 
 
 class RBFESolventSettingsMixin:
-    """Settings mixin for the solvent leg of ``RBFEHybridTopProtocol``."""
+    """Settings mixin for the solvent leg of ``RBFEHTopProtocol``."""
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         settings = self._inputs["protocol"].settings
@@ -1828,56 +1828,56 @@ class RBFESolventSettingsMixin:
         }
 
 
-class RBFEHybridTopComplexSetupUnit(
+class RBFEHTopComplexSetupUnit(
     HybridTopologyComplexComponentsMixin, RBFEComplexSettingsMixin, BaseHybridTopologySetupUnit
 ):
-    """Setup unit for the complex leg of ``RBFEHybridTopProtocol``."""
+    """Setup unit for the complex leg of ``RBFEHTopProtocol``."""
 
     simtype = "complex"
 
 
-class RBFEHybridTopComplexSimulationUnit(
+class RBFEHTopComplexSimulationUnit(
     RBFEComplexSettingsMixin, BaseHybridTopologyMultiStateSimulationUnit
 ):
-    """Multi-state simulation unit for the complex leg of ``RBFEHybridTopProtocol``."""
+    """Multi-state simulation unit for the complex leg of ``RBFEHTopProtocol``."""
 
     simtype = "complex"
 
 
-class RBFEHybridTopComplexAnalysisUnit(
+class RBFEHTopComplexAnalysisUnit(
     RBFEComplexSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit
 ):
-    """Analysis unit for the complex leg of ``RBFEHybridTopProtocol``."""
+    """Analysis unit for the complex leg of ``RBFEHTopProtocol``."""
 
     simtype = "complex"
 
 
-class RBFEHybridTopSolventSetupUnit(
+class RBFEHTopSolventSetupUnit(
     HybridTopologySolventComponentsMixin, RBFESolventSettingsMixin, BaseHybridTopologySetupUnit
 ):
-    """Setup unit for the solvent leg of ``RBFEHybridTopProtocol``."""
+    """Setup unit for the solvent leg of ``RBFEHTopProtocol``."""
 
     simtype = "solvent"
 
 
-class RBFEHybridTopSolventSimulationUnit(
+class RBFEHTopSolventSimulationUnit(
     RBFESolventSettingsMixin, BaseHybridTopologyMultiStateSimulationUnit
 ):
-    """Multi-state simulation unit for the solvent leg of ``RBFEHybridTopProtocol``."""
+    """Multi-state simulation unit for the solvent leg of ``RBFEHTopProtocol``."""
 
     simtype = "solvent"
 
 
-class RBFEHybridTopSolventAnalysisUnit(
+class RBFEHTopSolventAnalysisUnit(
     RBFESolventSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit
 ):
-    """Analysis unit for the solvent leg of ``RBFEHybridTopProtocol``."""
+    """Analysis unit for the solvent leg of ``RBFEHTopProtocol``."""
 
     simtype = "solvent"
 
 
 class RHFESolventSettingsMixin:
-    """Settings mixin for the solvent leg of ``RHFEHybridTopProtocol``."""
+    """Settings mixin for the solvent leg of ``RHFEHTopProtocol``."""
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         settings = self._inputs["protocol"].settings
@@ -1897,7 +1897,7 @@ class RHFESolventSettingsMixin:
 
 
 class RHFEVacuumSettingsMixin:
-    """Settings mixin for the vacuum leg of ``RHFEHybridTopProtocol``."""
+    """Settings mixin for the vacuum leg of ``RHFEHTopProtocol``."""
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
         settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
@@ -1918,49 +1918,49 @@ class RHFEVacuumSettingsMixin:
         }
 
 
-class RHFEHybridTopSolventSetupUnit(
+class RHFEHTopSolventSetupUnit(
     HybridTopologySolventComponentsMixin, RHFESolventSettingsMixin, BaseHybridTopologySetupUnit
 ):
-    """Setup unit for the solvent leg of ``RHFEHybridTopProtocol``."""
+    """Setup unit for the solvent leg of ``RHFEHTopProtocol``."""
 
     simtype = "solvent"
 
 
-class RHFEHybridTopSolventSimulationUnit(
+class RHFEHTopSolventSimulationUnit(
     RHFESolventSettingsMixin, BaseHybridTopologyMultiStateSimulationUnit
 ):
-    """Multi-state simulation unit for the solvent leg of ``RHFEHybridTopProtocol``."""
+    """Multi-state simulation unit for the solvent leg of ``RHFEHTopProtocol``."""
 
     simtype = "solvent"
 
 
-class RHFEHybridTopSolventAnalysisUnit(
+class RHFEHTopSolventAnalysisUnit(
     RHFESolventSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit
 ):
-    """Analysis unit for the solvent leg of ``RHFEHybridTopProtocol``."""
+    """Analysis unit for the solvent leg of ``RHFEHTopProtocol``."""
 
     simtype = "solvent"
 
 
-class RHFEHybridTopVacuumSetupUnit(
+class RHFEHTopVacuumSetupUnit(
     HybridTopologyVacuumComponentsMixin, RHFEVacuumSettingsMixin, BaseHybridTopologySetupUnit
 ):
-    """Setup unit for the vacuum leg of ``RHFEHybridTopProtocol``."""
+    """Setup unit for the vacuum leg of ``RHFEHTopProtocol``."""
 
     simtype = "vacuum"
 
 
-class RHFEHybridTopVacuumSimulationUnit(
+class RHFEHTopVacuumSimulationUnit(
     RHFEVacuumSettingsMixin, BaseHybridTopologyMultiStateSimulationUnit
 ):
-    """Multi-state simulation unit for the vacuum leg of ``RHFEHybridTopProtocol``."""
+    """Multi-state simulation unit for the vacuum leg of ``RHFEHTopProtocol``."""
 
     simtype = "vacuum"
 
 
-class RHFEHybridTopVacuumAnalysisUnit(
+class RHFEHTopVacuumAnalysisUnit(
     RHFEVacuumSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit
 ):
-    """Analysis unit for the vacuum leg of ``RHFEHybridTopProtocol``."""
+    """Analysis unit for the vacuum leg of ``RHFEHTopProtocol``."""
 
     simtype = "vacuum"

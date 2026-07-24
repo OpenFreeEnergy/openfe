@@ -50,31 +50,31 @@ from .equil_rfe_settings import (
     OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
-    RBFEHybridTopProtocolSettings,
+    RBFEHTopProtocolSettings,
     RelativeHybridTopologyProtocolSettings,
-    RHFEHybridTopProtocolSettings,
+    RHFEHTopProtocolSettings,
 )
 from .hybridtop_protocol_results import (
-    RBFEHybridTopProtocolResult,
+    RBFEHTopProtocolResult,
     RelativeHybridTopologyProtocolResult,
-    RHFEHybridTopProtocolResult,
+    RHFEHTopProtocolResult,
 )
 from .hybridtop_units import (
     HybridTopologyMultiStateAnalysisUnit,
     HybridTopologyMultiStateSimulationUnit,
     HybridTopologySetupUnit,
-    RBFEHybridTopComplexAnalysisUnit,
-    RBFEHybridTopComplexSetupUnit,
-    RBFEHybridTopComplexSimulationUnit,
-    RBFEHybridTopSolventAnalysisUnit,
-    RBFEHybridTopSolventSetupUnit,
-    RBFEHybridTopSolventSimulationUnit,
-    RHFEHybridTopSolventAnalysisUnit,
-    RHFEHybridTopSolventSetupUnit,
-    RHFEHybridTopSolventSimulationUnit,
-    RHFEHybridTopVacuumAnalysisUnit,
-    RHFEHybridTopVacuumSetupUnit,
-    RHFEHybridTopVacuumSimulationUnit,
+    RBFEHTopComplexAnalysisUnit,
+    RBFEHTopComplexSetupUnit,
+    RBFEHTopComplexSimulationUnit,
+    RBFEHTopSolventAnalysisUnit,
+    RBFEHTopSolventSetupUnit,
+    RBFEHTopSolventSimulationUnit,
+    RHFEHTopSolventAnalysisUnit,
+    RHFEHTopSolventSetupUnit,
+    RHFEHTopSolventSimulationUnit,
+    RHFEHTopVacuumAnalysisUnit,
+    RHFEHTopVacuumSetupUnit,
+    RHFEHTopVacuumSimulationUnit,
 )
 
 logger = logging.getLogger(__name__)
@@ -105,8 +105,8 @@ due.cite(
 class BaseHybridTopologyProtocol(gufe.Protocol):
     """
     Shared validation and DAG-construction logic for the hybrid topology
-    Protocols (``RelativeHybridTopologyProtocol``, ``RBFEHybridTopProtocol``,
-    ``RHFEHybridTopProtocol``).
+    Protocols (``RelativeHybridTopologyProtocol``, ``RBFEHTopProtocol``,
+    ``RHFEHTopProtocol``).
     """
 
     @staticmethod
@@ -523,7 +523,7 @@ class BaseHybridTopologyProtocol(gufe.Protocol):
         return repeats
 
 
-class RBFEHybridTopProtocol(BaseHybridTopologyProtocol):
+class RBFEHTopProtocol(BaseHybridTopologyProtocol):
     """
     Relative Binding Free Energy calculations using a hybrid topology scheme
     using OpenMM and OpenMMTools.
@@ -536,9 +536,9 @@ class RBFEHybridTopProtocol(BaseHybridTopologyProtocol):
     # TODO - add more see alsos
     """
 
-    result_cls = RBFEHybridTopProtocolResult
-    _settings_cls = RBFEHybridTopProtocolSettings
-    _settings: RBFEHybridTopProtocolSettings
+    result_cls = RBFEHTopProtocolResult
+    _settings_cls = RBFEHTopProtocolSettings
+    _settings: RBFEHTopProtocolSettings
 
     @classmethod
     def _default_settings(cls):
@@ -553,7 +553,7 @@ class RBFEHybridTopProtocol(BaseHybridTopologyProtocol):
         Settings
           a set of default settings
         """
-        return RBFEHybridTopProtocolSettings(
+        return RBFEHTopProtocolSettings(
             protocol_repeats=3,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
@@ -599,8 +599,8 @@ class RBFEHybridTopProtocol(BaseHybridTopologyProtocol):
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
         mapping: gufe.LigandAtomMapping | list[gufe.LigandAtomMapping],
-        initial_settings: None | RBFEHybridTopProtocolSettings = None,
-    ) -> RBFEHybridTopProtocolSettings:
+        initial_settings: None | RBFEHTopProtocolSettings = None,
+    ) -> RBFEHTopProtocolSettings:
         """
         Get the recommended OpenFE settings for this protocol based on the input states involved in the
         transformation.
@@ -616,12 +616,12 @@ class RBFEHybridTopProtocol(BaseHybridTopologyProtocol):
             The final state of the transformation.
         mapping : LigandAtomMapping | list[LigandAtomMapping]
             The mapping(s) between transforming components in stateA and stateB.
-        initial_settings : None | RBFEHybridTopProtocolSettings, optional
+        initial_settings : None | RBFEHTopProtocolSettings, optional
             Initial settings to base the adaptive settings on. If None, default settings are used.
 
         Returns
         -------
-        RBFEHybridTopProtocolSettings
+        RBFEHTopProtocolSettings
             The recommended settings for this protocol based on the input states.
 
         Notes
@@ -821,14 +821,14 @@ class RBFEHybridTopProtocol(BaseHybridTopologyProtocol):
 
         unit_classes: dict[str, dict[str, type[gufe.ProtocolUnit]]] = {
             "solvent": {
-                "setup": RBFEHybridTopSolventSetupUnit,
-                "simulation": RBFEHybridTopSolventSimulationUnit,
-                "analysis": RBFEHybridTopSolventAnalysisUnit,
+                "setup": RBFEHTopSolventSetupUnit,
+                "simulation": RBFEHTopSolventSimulationUnit,
+                "analysis": RBFEHTopSolventAnalysisUnit,
             },
             "complex": {
-                "setup": RBFEHybridTopComplexSetupUnit,
-                "simulation": RBFEHybridTopComplexSimulationUnit,
-                "analysis": RBFEHybridTopComplexAnalysisUnit,
+                "setup": RBFEHTopComplexSetupUnit,
+                "simulation": RBFEHTopComplexSimulationUnit,
+                "analysis": RBFEHTopComplexAnalysisUnit,
             },
         }
 
@@ -1165,7 +1165,7 @@ class RelativeHybridTopologyProtocol(BaseHybridTopologyProtocol):
         return repeats
 
 
-class RHFEHybridTopProtocol(BaseHybridTopologyProtocol):
+class RHFEHTopProtocol(BaseHybridTopologyProtocol):
     """
     Relative Hydration Free Energy calculations using a hybrid topology
     scheme using OpenMM and OpenMMTools.
@@ -1177,9 +1177,9 @@ class RHFEHybridTopProtocol(BaseHybridTopologyProtocol):
     :mod:`openfe.protocols`
     """
 
-    result_cls = RHFEHybridTopProtocolResult
-    _settings_cls = RHFEHybridTopProtocolSettings
-    _settings: RHFEHybridTopProtocolSettings
+    result_cls = RHFEHTopProtocolResult
+    _settings_cls = RHFEHTopProtocolSettings
+    _settings: RHFEHTopProtocolSettings
 
     @classmethod
     def _default_settings(cls):
@@ -1194,7 +1194,7 @@ class RHFEHybridTopProtocol(BaseHybridTopologyProtocol):
         Settings
           a set of default settings
         """
-        return RHFEHybridTopProtocolSettings(
+        return RHFEHTopProtocolSettings(
             protocol_repeats=3,
             solvent_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             vacuum_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
@@ -1241,9 +1241,9 @@ class RHFEHybridTopProtocol(BaseHybridTopologyProtocol):
         Validates that there is no net charge difference between the end
         states.
 
-        RHFEHybridTopProtocol's vacuum leg has no solvent to draw an
+        RHFEHTopProtocol's vacuum leg has no solvent to draw an
         alchemical water from, so (unlike RelativeHybridTopologyProtocol and
-        RBFEHybridTopProtocol) it cannot support an explicit charge
+        RBFEHTopProtocol) it cannot support an explicit charge
         correction. Net charge changing transformations are therefore not
         supported at all by this Protocol.
 
@@ -1262,7 +1262,7 @@ class RHFEHybridTopProtocol(BaseHybridTopologyProtocol):
         if abs(difference) != 0:
             errmsg = (
                 f"A charge difference of {difference} is observed "
-                "between the end states. RHFEHybridTopProtocol does not "
+                "between the end states. RHFEHTopProtocol does not "
                 "support net charge changing transformations."
             )
             raise ValueError(errmsg)
@@ -1295,7 +1295,7 @@ class RHFEHybridTopProtocol(BaseHybridTopologyProtocol):
           If there are any alchemical components that are not SmallMoleculeComponents.
         """
         if stateA.contains(ProteinComponent) or stateB.contains(ProteinComponent):
-            errmsg = "Protein components are not allowed for RHFEHybridTopProtocol."
+            errmsg = "Protein components are not allowed for RHFEHTopProtocol."
             raise ValueError(errmsg)
 
         if not stateA.contains(BaseSolventComponent):
@@ -1395,14 +1395,14 @@ class RHFEHybridTopProtocol(BaseHybridTopologyProtocol):
 
         unit_classes: dict[str, dict[str, type[gufe.ProtocolUnit]]] = {
             "solvent": {
-                "setup": RHFEHybridTopSolventSetupUnit,
-                "simulation": RHFEHybridTopSolventSimulationUnit,
-                "analysis": RHFEHybridTopSolventAnalysisUnit,
+                "setup": RHFEHTopSolventSetupUnit,
+                "simulation": RHFEHTopSolventSimulationUnit,
+                "analysis": RHFEHTopSolventAnalysisUnit,
             },
             "vacuum": {
-                "setup": RHFEHybridTopVacuumSetupUnit,
-                "simulation": RHFEHybridTopVacuumSimulationUnit,
-                "analysis": RHFEHybridTopVacuumAnalysisUnit,
+                "setup": RHFEHTopVacuumSetupUnit,
+                "simulation": RHFEHTopVacuumSimulationUnit,
+                "analysis": RHFEHTopVacuumAnalysisUnit,
             },
         }
 

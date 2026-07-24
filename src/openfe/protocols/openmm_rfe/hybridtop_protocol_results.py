@@ -247,10 +247,10 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         return production_lengths
 
 
-class HybridTopProtocolResultMixin:
+class HTopProtocolResultMixin:
     """
     Mixin providing the shared getters for two-leg hybrid topology Protocol
-    results (``RBFEHybridTopProtocolResult``, ``RHFEHybridTopProtocolResult``).
+    results (``RBFEHTopProtocolResult``, ``RHFEHTopProtocolResult``).
 
     Subclasses must define the class attributes ``env_state`` and
     ``ref_state``, naming the two legs of the thermodynamic cycle stored in
@@ -489,9 +489,9 @@ class HybridTopProtocolResultMixin:
         return indices
 
 
-class RBFEHybridTopProtocolResult(gufe.ProtocolResult, HybridTopProtocolResultMixin):
+class RBFEHTopProtocolResult(gufe.ProtocolResult, HTopProtocolResultMixin):
     """
-    Protocol results with the output of a ``RBFEHybridTopProtocol``.
+    Protocol results with the output of a ``RBFEHTopProtocol``.
     """
 
     env_state = "complex"
@@ -567,9 +567,9 @@ class RBFEHybridTopProtocolResult(gufe.ProtocolResult, HybridTopProtocolResultMi
         return np.sqrt(complex_err**2 + solv_err**2)
 
 
-class RHFEHybridTopProtocolResult(gufe.ProtocolResult, HybridTopProtocolResultMixin):
+class RHFEHTopProtocolResult(gufe.ProtocolResult, HTopProtocolResultMixin):
     """
-    Protocol results with the output of a ``RHFEHybridTopProtocol``.
+    Protocol results with the output of a ``RHFEHTopProtocol``.
     """
 
     env_state = "solvent"
