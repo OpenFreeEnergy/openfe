@@ -419,9 +419,7 @@ class HybridTopProtocolResultMixin:
                 reporter = multistate.MultiStateReporter(
                     storage=nc, checkpoint_storage=chk, open_mode="r"
                 )
-                replica_states[key].append(
-                    np.asarray(reporter.read_replica_thermodynamic_states())
-                )
+                replica_states[key].append(np.asarray(reporter.read_replica_thermodynamic_states()))
                 reporter.close()
 
         return replica_states
@@ -478,9 +476,7 @@ class HybridTopProtocolResultMixin:
         indices: dict[str, list[Optional[npt.NDArray]]] = {}
 
         for key in [self.env_state, self.ref_state]:
-            indices[key] = [
-                pus[0].outputs["selection_indices"] for pus in self.data[key].values()
-            ]
+            indices[key] = [pus[0].outputs["selection_indices"] for pus in self.data[key].values()]
 
         return indices
 

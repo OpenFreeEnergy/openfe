@@ -444,7 +444,9 @@ class BaseHybridTopologyProtocol(gufe.Protocol):
                     alchemical_components=alchem_comps,
                     generation=0,
                     repeat_id=repeat_id,
-                    name=(f"{label} Setup: {Anames} to {Bnames} {phase} leg: repeat {i} generation 0"),
+                    name=(
+                        f"{label} Setup: {Anames} to {Bnames} {phase} leg: repeat {i} generation 0"
+                    ),
                 )
 
                 simulation = unit_classes[phase]["simulation"](
@@ -511,7 +513,9 @@ class BaseHybridTopologyProtocol(gufe.Protocol):
                 phase = pu.outputs["simtype"]
                 unsorted_repeats[phase][pu.outputs["repeat_id"]].append(pu)
 
-        repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {phase: {} for phase in phases}
+        repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {
+            phase: {} for phase in phases
+        }
         for phase in phases:
             for k, v in unsorted_repeats[phase].items():
                 repeats[phase][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
@@ -531,6 +535,7 @@ class RBFEHybridTopProtocol(BaseHybridTopologyProtocol):
     :mod:`openfe.protocols`
     # TODO - add more see alsos
     """
+
     result_cls = RBFEHybridTopProtocolResult
     _settings_cls = RBFEHybridTopProtocolSettings
     _settings: RBFEHybridTopProtocolSettings
@@ -748,11 +753,17 @@ class RBFEHybridTopProtocol(BaseHybridTopologyProtocol):
             raise ValueError(errmsg)
 
         # Validate solvation settings
-        settings_validation.validate_openmm_solvation_settings(self.settings.solvent_solvation_settings)
-        settings_validation.validate_openmm_solvation_settings(self.settings.complex_solvation_settings)
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvent_solvation_settings
+        )
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.complex_solvation_settings
+        )
 
         # Validate the barostat used in combination with the protein component
-        system_validation.validate_barostat(stateA, self.settings.complex_integrator_settings.barostat)
+        system_validation.validate_barostat(
+            stateA, self.settings.complex_integrator_settings.barostat
+        )
 
         # Validate charge difference
         # Note: validation depends on the mapping & solvent component checks
@@ -1321,9 +1332,7 @@ class RHFEHybridTopProtocol(BaseHybridTopologyProtocol):
         self._validate_smcs(stateA, stateB)
 
         # Validate that there is no net charge change (unsupported here)
-        self._validate_no_charge_difference(
-            mapping[0] if isinstance(mapping, list) else mapping
-        )
+        self._validate_no_charge_difference(mapping[0] if isinstance(mapping, list) else mapping)
 
         # Validate solvent & vacuum nonbonded method compatibility
         solvent_nonbonded_method = self.settings.solvent_forcefield_settings.nonbonded_method

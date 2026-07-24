@@ -152,7 +152,9 @@ class HybridTopologyUnitMixin:
 
     def _get_base_components(
         self,
-    ) -> tuple[SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]]:
+    ) -> tuple[
+        SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]
+    ]:
         """
         Get the solvent, protein and small molecule components directly from
         the ``stateA``/``stateB`` inputs, with no leg-specific stripping.
@@ -213,7 +215,9 @@ class BaseHybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
     def _get_components(
         self,
-    ) -> tuple[SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]]:
+    ) -> tuple[
+        SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]
+    ]:
         """
         Get the components from the ChemicalSystem inputs.
 
@@ -1733,7 +1737,9 @@ class HybridTopologyComplexComponentsMixin:
 
     def _get_components(
         self,
-    ) -> tuple[SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]]:
+    ) -> tuple[
+        SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]
+    ]:
         return self._get_base_components()
 
 
