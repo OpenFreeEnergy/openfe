@@ -525,51 +525,31 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
         If ``True``, no error will be thrown for incomplete or invalid results,
         and DGs will be reported for whatever valid results are found.
     """
-    import networkx as nx
-    import numpy as np
-    from cinnabar.stats import mle
+    from cinnabar import FEMap
+    from openff.units import unit
 
     _check_legs_have_sufficient_repeats(legs)
 
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
-    expected_ligs = []
+    expected_ligs = set()
 
-    # perform MLE
-    g = nx.DiGraph()
-    nm_to_idx = {}
-    DDGbind_count = 0
+    # perform MLE via cinnabar
+    femap = FEMap()
     for _, row in DDGs.iterrows():
         ligA, ligB, DDGbind, bind_unc, _, _ = row.to_list()
-        for lig in (ligA, ligB):
-            if lig not in expected_ligs:
-                expected_ligs.append(lig)
+        if not pd.isna(DDGbind) or DDGbind == FAIL_STR:
+            femap.add_relative_calculation(
+                labelA=ligA,
+                labelB=ligB,
+                value=DDGbind * unit.kilocalories_per_mole,
+                uncertainty=bind_unc * unit.kilocalories_per_mole,
+            )
+            for lig in [ligA, ligB]:
+                expected_ligs.add(lig)
 
-        if pd.isna(DDGbind) or DDGbind == FAIL_STR:
-            continue
-        DDGbind_count += 1
-
-        # tl;dr this is super paranoid, but safer for now:
-        # cinnabar seems to rely on the ordering of values within the graph
-        # to correspond to the matrix that comes out from mle()
-        # internally they also convert the ligand names to ints, which I think
-        # has a side effect of giving the graph nodes a predictable order.
-        # fwiw this code didn't affect ordering locally
-        try:
-            idA = nm_to_idx[ligA]
-        except KeyError:
-            idA = len(nm_to_idx)
-            nm_to_idx[ligA] = idA
-        try:
-            idB = nm_to_idx[ligB]
-        except KeyError:
-            idB = len(nm_to_idx)
-            nm_to_idx[ligB] = idB
-
-        g.add_edge(idA, idB, calc_DDG=DDGbind, calc_dDDG=bind_unc)
-
-    if DDGbind_count > 2:
-        if not nx.is_weakly_connected(g):
+    if femap.n_edges > 2:
+        if not femap.check_weakly_connected():
             # TODO: dump the network for debugging?
             # TODO: use largest connected component when possible
             msg = (
@@ -580,32 +560,43 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
             )
             click.secho(msg, err=True, fg="red")
             sys.exit(1)
-        idx_to_nm = {v: k for k, v in nm_to_idx.items()}
-        f_i, df_i = mle(g, factor="calc_DDG")
-        df_i = np.diagonal(df_i) ** 0.5
 
-        for node, f, df in zip(g.nodes, f_i, df_i):
-            ligname = idx_to_nm[node]
-            MLEs.append((ligname, f, df))
+        # run MLE
+        femap.generate_absolute_values()
+
     else:
         click.secho(
-            f"The results network has {DDGbind_count} edge(s), but 3 or more edges are required to calculate DG values.",
+            f"The results network has {femap.n_edges} edge(s), but 3 or more edges are required to calculate DG values.",
             err=True,
             fg="red",
         )
         sys.exit(1)
 
-    data = []
-    for ligA, DG, unc_DG in MLEs:
-        data.append({"ligand": ligA, "DG(MLE) (kcal/mol)": DG, "uncertainty (kcal/mol)": unc_DG})
-        expected_ligs.remove(ligA)
+    df = femap.get_absolute_dataframe()
+    # drop the computational and source columns
+    df = df.drop(columns=["source", "computational"])
+    # reformat to match the expected result
+    df.rename(
+        {"label": "ligand", "DG (kcal/mol)": "DG(MLE) (kcal/mol)"}, axis="columns", inplace=True
+    )
 
-    for ligA in expected_ligs:
-        data.append({"ligand": ligA, "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})  # fmt: skip
+    # check if we have any missing entries add generic error info for these ligands
+    missing_ligands = expected_ligs - set(df["ligand"].unique())
+    if missing_ligands:
+        missing_data = []
+        for ligand in missing_ligands:
+            # add the data to the dataframe
+            missing_data.append(
+                {
+                    "ligand": ligand,
+                    "DG(MLE) (kcal/mol)": FAIL_STR,
+                    "uncertainty (kcal/mol)": FAIL_STR,
+                }
+            )
 
-    df = pd.DataFrame(data)
+        df = pd.concat([df, pd.DataFrame(missing_data)])
+
     df_out = format_df_with_precision(df, "DG(MLE) (kcal/mol)", "uncertainty (kcal/mol)")
-
     return df_out
 
 

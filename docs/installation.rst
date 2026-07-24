@@ -434,11 +434,12 @@ Then activate the openfe environment with::
 
 Finally, create the editable installation::
 
-  $ python -m pip install --no-deps -e .
+  $ python -m pip install -e . --no-deps 
 
 Note the ``.`` at the end of that command, which indicates the current
 directory.
 
+.. See our contribution guide for details on installation for multi-project development
 
 .. _testing:
 
@@ -500,13 +501,11 @@ See :ref:`installation:mamba_hpc` for more details.
 Optional dependencies
 ---------------------
 
-Certain functionalities are only available if you also install other,
-optional packages.
+Certain functionalities are only available if you also install optional packages.
 
-* **perses tools**: To use perses, you need to install perses and OpenEye,
-  and you need a valid OpenEye license. To install both packages, use::
+* **OpenEye tools**: To use functionality requiring OpenEye, you must install ``openeye-toolkits`` and hold a valid OpenEye license. To install, use::
 
-    $ mamba install -c openeye perses openeye-toolkits
+    $ mamba install -c openeye openeye-toolkits
 
 Supported Hardware
 ------------------

@@ -76,6 +76,8 @@ def patcher():
                     ]
                 ),
                 "subsampled_pdb_structure": "subsampled.pdb",
+                "ligand_A_indices": [0],
+                "ligand_B_indices": [0],
             },
         ),
         mock.patch(
@@ -90,6 +92,8 @@ def patcher():
                     ]
                 ),
                 "subsampled_pdb_structure": "subsampled.pdb",
+                "ligand_A_indices": [0],
+                "ligand_B_indices": [0],
             },
         ),
         mock.patch(

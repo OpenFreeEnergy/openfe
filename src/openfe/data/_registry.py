@@ -27,6 +27,11 @@ zenodo_md_resume_data = dict(
     fname="checkpoint.xml",
     known_hash="md5:0f3957c263b5def8de727c5c419b31b5",
 )
+zenodo_septop_structural = dict(
+    base_url="doi:10.5281/zenodo.20507106",
+    fname="septop_structural_results.zip",
+    known_hash="md5:cffc193dacb5ad8d26c5467ae05b1a00",
+)
 
 zenodo_data_registry = [
     zenodo_rfe_simulation_nc,
@@ -34,4 +39,5 @@ zenodo_data_registry = [
     zenodo_industry_benchmark_systems,
     zenodo_resume_data,
     zenodo_md_resume_data,
+    zenodo_septop_structural,
 ]

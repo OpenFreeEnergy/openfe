@@ -208,9 +208,10 @@ def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tm
     runner = CliRunner()
 
     with runner.isolated_filesystem():
-        result = runner.invoke(plan_rhfe_network, args)
+        with pytest.warns(UserWarning, match="for redundancy iteration 2"):
+            result = runner.invoke(plan_rhfe_network, args)
 
-        assert result.exit_code == 0
+            assert result.exit_code == 0
 
 
 @pytest.mark.parametrize(

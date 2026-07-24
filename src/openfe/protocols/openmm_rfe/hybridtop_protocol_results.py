@@ -59,11 +59,15 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
         vals = np.asarray([dG.to(u).m for dG in dGs])
-
-        return np.std(vals) * u
+        # use the unbiased sample standard deviation (ddof=1) as the repeats are sampled from the
+        # (inaccessible) population of possible repeats.
+        std = np.std(vals, ddof=1)
+        if np.isnan(std):
+            std = 0.0
+        return std * u
 
     def get_uncertainty(self) -> Quantity:
-        """The uncertainty/error in the dG value: The std of the estimates of
+        """The uncertainty/error in the dG value: The unbiased sample std of the estimates of
         each independent repeat
         """
 
@@ -100,12 +104,14 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         'forward_dDGs', 'reverse_dDGs' - for each estimate, the uncertainty
 
         The 'fractions' values are a numpy array, while the other arrays are
-        Quantity arrays, with units attached.
+        Quantity arrays, with units attached. A fraction at which MBAR failed
+        to converge is recorded as ``NaN`` in both directions.
 
-        If the list entry is ``None`` instead of a dictionary, this indicates
-        that the analysis could not be carried out for that repeat. This
-        is most likely caused by MBAR convergence issues when attempting to
-        calculate free energies from too few samples.
+        A list entry is ``None`` only when MBAR could not obtain an estimate
+        from the full set of uncorrelated samples (the fraction 1.0 estimate,
+        i.e. the reported free energy) for that repeat. If MBAR fails only at a
+        lower fraction, that fraction is recorded as ``NaN`` and the remaining
+        fractions are retained, so the entry is still a dictionary.
 
 
         Returns
@@ -125,10 +131,9 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         if None in forward_reverse:
             wmsg = (
                 "One or more ``None`` entries were found in the list of "
-                "forward and reverse analyses. This is likely caused by "
-                "an MBAR convergence failure caused by too few independent "
-                "samples when calculating the free energies of the 10% "
-                "timeseries slice."
+                "forward and reverse analyses. This indicates that MBAR could "
+                "not obtain a free energy estimate from the full set of "
+                "uncorrelated samples for that repeat."
             )
             warnings.warn(wmsg)
 

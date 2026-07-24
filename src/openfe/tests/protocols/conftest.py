@@ -23,6 +23,7 @@ from openfe.data._registry import (
     zenodo_md_resume_data,
     zenodo_resume_data,
     zenodo_rfe_simulation_nc,
+    zenodo_septop_structural,
     zenodo_t4_lysozyme_traj,
 )
 
@@ -418,6 +419,21 @@ pooch_md_resume_data = pooch.create(
 def plain_md_checkpoint_path():
     pooch_md_resume_data.fetch("checkpoint.xml")
     return pathlib.Path(pooch.os_cache("openfe") / "checkpoint.xml")
+
+
+pooch_septop_structural = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_septop_structural["base_url"],
+    registry={zenodo_septop_structural["fname"]: zenodo_septop_structural["known_hash"]},
+)
+
+
+@pytest.fixture(scope="session")
+def septop_structural_results_dir():
+    pooch_septop_structural.fetch("septop_structural_results.zip", processor=pooch.Unzip())
+    return pathlib.Path(
+        POOCH_CACHE / "septop_structural_results.zip.unzip/septop_structural_results"
+    )
 
 
 @pytest.fixture(scope="session")

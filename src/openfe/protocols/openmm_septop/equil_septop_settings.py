@@ -21,13 +21,14 @@ from gufe.settings import (
 )
 from gufe.settings.typing import PicosecondQuantity
 from openff.units import unit as offunit
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from openfe.protocols.openmm_afe.equil_afe_settings import AlchemicalSettings
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     MDOutputSettings,
     MDSimulationSettings,
+    MultiStateAnalysisSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
@@ -360,4 +361,10 @@ class SepTopSettings(SettingsBaseModel):
     complex_restraint_settings: BaseRestraintSettings
     """
     Settings for the Boresch restraints in the complex
+    """
+    analysis_settings: MultiStateAnalysisSettings = Field(
+        default_factory=MultiStateAnalysisSettings
+    )
+    """
+    Settings for the structural analysis of the multistate trajectories
     """

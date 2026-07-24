@@ -20,6 +20,10 @@ import pathlib
 from typing import Any, Literal, Optional
 
 import gufe
+import matplotlib.pyplot as plt
+import MDAnalysis as mda
+import netCDF4 as nc
+import numpy as np
 import numpy.typing as npt
 import openmm
 import openmmtools
@@ -31,6 +35,17 @@ from gufe import (
 )
 from gufe.components import Component
 from gufe.protocols.errors import ProtocolUnitExecutionError
+from openfe_analysis.rmsd import (
+    LigandCOMDrift,
+    Protein2DRMSD,
+    SymmetryCorrectedLigandRMSD,
+)
+from openfe_analysis.utils import plotting
+from openfe_analysis.utils.apply_transformations import (
+    apply_complex_alignment_transformations,
+    apply_ligand_alignment_transformations,
+)
+from openfe_analysis.utils.universe_utils import create_universe_single_state
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
@@ -43,6 +58,7 @@ from openmmtools.states import (
     ThermodynamicState,
     create_thermodynamic_state_protocol,
 )
+from rdkit import Chem
 
 import openfe
 from openfe.protocols.openmm_afe.equil_afe_settings import (
@@ -58,7 +74,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import omm_compute
-from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
+from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings, SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import log_system_probe, without_oechem_backend
 
@@ -1503,11 +1519,290 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         reporter.close()
         return analyzer.unit_results_dict
 
+    @staticmethod
+    def _run_complex_analysis(
+        ds,
+        pdb_file: pathlib.Path,
+        skip: int,
+        ligand_A_indices: list[int],
+        ligand_B_indices: list[int],
+        rdmol_A: Chem.Mol,
+        rdmol_B: Chem.Mol,
+        protein_selection: str,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run structural analysis for the complex phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        pdb_file : pathlib.Path
+          Path to the subsampled PDB file.
+        skip : int
+          Frame stride for analysis.
+        ligand_A_indices : list[int]
+          Atom indices of ligand A in the subsampled system.
+        ligand_B_indices : list[int]
+          Atom indices of ligand B in the subsampled system.
+        rdmol_A : Chem.Mol
+          RDKit molecule for ligand A, used for symmetry-corrected RMSD.
+        rdmol_B : Chem.Mol
+          RDKit molecule for ligand B, used for symmetry-corrected RMSD.
+        protein_selection : str
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations.
+
+        Returns
+        -------
+        per_state_data : dict[str, list[np.ndarray]]
+          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``,
+          ``ligand_A_COM_drift``, ``ligand_B_COM_drift``, and ``protein_2D_RMSD``.`.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        per_state_data: dict[str, list[np.ndarray]] = {
+            "ligand_A_RMSD": [],
+            "ligand_B_RMSD": [],
+            "ligand_A_COM_drift": [],
+            "ligand_B_COM_drift": [],
+            "protein_2D_RMSD": [],
+        }
+        time_ps: np.ndarray | None = None
+        # Read the PDB topology once and reuse across all lambda states.
+        # Passing u_top._topology to create_universe_single_state avoids
+        # reading the PDB file from disk for every lambda.
+        u_top = mda.Universe(pdb_file)
+        prot_indices = u_top.select_atoms(protein_selection).indices
+        for state_idx in range(n_lambda):
+            universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+            prot = universe.atoms[prot_indices]
+            lig_A = universe.atoms[ligand_A_indices]
+            lig_B = universe.atoms[ligand_B_indices]
+            apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig_A, lig_B])
+
+            if prot:
+                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
+                per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+
+            for label, lig, rdmol in [
+                ("ligand_A", lig_A, rdmol_A),
+                ("ligand_B", lig_B, rdmol_B),
+            ]:
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+                per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+
+                lig_drift = LigandCOMDrift(lig).run(step=skip)
+                per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
+
+            if time_ps is None:
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+        return per_state_data, time_ps
+
+    @staticmethod
+    def _run_solvent_analysis(
+        ds,
+        pdb_file: pathlib.Path,
+        skip: int,
+        ligand_A_indices: list[int],
+        ligand_B_indices: list[int],
+        rdmol_A: Chem.Mol,
+        rdmol_B: Chem.Mol,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run structural analysis for the solvent phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        pdb_file : pathlib.Path
+          Path to the subsampled PDB file.
+        skip : int
+          Frame stride for analysis.
+        ligand_A_indices : list[int]
+          Atom indices of ligand A in the subsampled system.
+        ligand_B_indices : list[int]
+          Atom indices of ligand B in the subsampled system.
+        rdmol_A : Chem.Mol
+          RDKit molecule for ligand A, used for symmetry-corrected RMSD.
+        rdmol_B : Chem.Mol
+          RDKit molecule for ligand B, used for symmetry-corrected RMSD.
+
+        Returns
+        -------
+        per_state_data : dict[str, list[np.ndarray]]
+          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        per_state_data: dict[str, list[np.ndarray]] = {
+            "ligand_A_RMSD": [],
+            "ligand_B_RMSD": [],
+        }
+        time_ps: np.ndarray | None = None
+        # Read the PDB topology once and reuse across all lambda states.
+        # Passing u_top._topology to create_universe_single_state avoids
+        # reading the PDB file from disk for every lambda.
+        u_top = mda.Universe(pdb_file)
+        for state_idx in range(n_lambda):
+            for label, indices, rdmol in [
+                ("ligand_A", ligand_A_indices, rdmol_A),
+                ("ligand_B", ligand_B_indices, rdmol_B),
+            ]:
+                universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+                lig = universe.atoms[indices]
+                apply_ligand_alignment_transformations(universe, ligand=lig)
+
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+                per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+
+                if time_ps is None:
+                    time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
+        return per_state_data, time_ps
+
+    @staticmethod
+    def _structural_analysis(
+        pdb_file: pathlib.Path,
+        trj_file: pathlib.Path,
+        output_directory: pathlib.Path,
+        simtype: Literal["complex", "solvent"],
+        ligand_A_indices: list[int],
+        ligand_B_indices: list[int],
+        rdmol_A: Chem.Mol,
+        rdmol_B: Chem.Mol,
+        protein_selection: str,
+        skip: int | None,
+        dry: bool,
+    ) -> dict[str, str | pathlib.Path]:
+        """
+        Run structural analysis using ``openfe-analysis``.
+
+        Parameters
+        ----------
+        pdb_file : pathlib.Path
+            Path to the PDB file.
+        trj_file : pathlib.Path
+            Path to the trajectory NetCDF file.
+        output_directory : pathlib.Path
+            The output directory where plots and the data NPZ file
+            will be stored.
+        simtype : Literal["complex", "solvent"]
+            Either ``"complex"`` or ``"solvent"``. Controls whether protein
+            analyses are run and how alignment is applied.
+        ligand_A_indices : list[int]
+            Atom indices of ligand A in the subsampled system.
+        ligand_B_indices : list[int]
+            Atom indices of ligand B in the subsampled system.
+        rdmol_A : Chem.Mol
+            RDKit molecule for ligand A, used for symmetry-corrected RMSD.
+        rdmol_B : Chem.Mol
+            RDKit molecule for ligand B, used for symmetry-corrected RMSD.
+        protein_selection : str
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations in the complex phase.
+          Ignored for the solvent phase.
+        skip : int | None
+          Frame stride for structural analysis. If ``None``, a stride is
+          chosen such that approximately (max.) 500 frames are analyzed per state.
+          Set to 1 to analyze every frame.
+        dry : bool
+            Whether or not we are running a dry run.
+
+        Returns
+        -------
+        dict[str, str | pathlib.Path]
+            Dictionary containing either the path to the NPZ file with the
+            structural data, or the analysis error.
+        """
+        if len(ligand_A_indices) == 0 or len(ligand_B_indices) == 0:
+            errmsg = (
+                "No ligand atoms found in the subsampled trajectory. "
+                "This likely means the output_indices selection does not include "
+                "the ligands. Check the output_indices setting in your protocol "
+                "settings to ensure ligand atoms are included in the trajectory output."
+            )
+            logger.warning(errmsg)
+            return {"structural_analysis_error": errmsg}
+
+        try:
+            with nc.Dataset(trj_file) as ds:
+                if hasattr(ds, "PositionInterval"):
+                    n_frames = len(range(0, ds.dimensions["iteration"].size, ds.PositionInterval))
+                else:
+                    n_frames = ds.dimensions["iteration"].size
+
+                if skip is None:
+                    # find skip that would give ~500 frames of output
+                    # max against 1 to avoid skip=0 case
+                    skip = max(n_frames // 500, 1)
+
+                if simtype == "complex":
+                    data, time_ps = BaseSepTopAnalysisUnit._run_complex_analysis(
+                        ds=ds,
+                        pdb_file=pdb_file,
+                        skip=skip,
+                        ligand_A_indices=ligand_A_indices,
+                        ligand_B_indices=ligand_B_indices,
+                        rdmol_A=rdmol_A,
+                        rdmol_B=rdmol_B,
+                        protein_selection=protein_selection,
+                    )
+
+                else:
+                    data, time_ps = BaseSepTopAnalysisUnit._run_solvent_analysis(
+                        ds=ds,
+                        pdb_file=pdb_file,
+                        skip=skip,
+                        ligand_A_indices=ligand_A_indices,
+                        ligand_B_indices=ligand_B_indices,
+                        rdmol_A=rdmol_A,
+                        rdmol_B=rdmol_B,
+                    )
+            npz_data = {k: np.asarray(v, dtype=np.float32) for k, v in data.items()}
+            npz_data["time_ps"] = np.asarray(time_ps, dtype=np.float32)
+
+        # TODO: eventually change this to more specific exception types
+        except Exception as e:
+            return {"structural_analysis_error": str(e)}
+
+        # Generate relevant plots if not a dry run
+        if not dry:
+            if data.get("protein_2D_RMSD"):
+                fig = plotting.plot_2D_rmsd(data["protein_2D_RMSD"])
+                fig.savefig(output_directory / "protein_2D_RMSD.png")
+                plt.close(fig)
+
+            for label in ["ligand_A", "ligand_B"]:
+                if data.get(f"{label}_RMSD"):
+                    fig = plotting.plot_ligand_RMSD(time_ps, data[f"{label}_RMSD"])
+                    fig.savefig(output_directory / f"{label}_RMSD.png")
+                    plt.close(fig)
+
+                if data.get(f"{label}_COM_drift"):
+                    fig = plotting.plot_ligand_COM_drift(time_ps, data[f"{label}_COM_drift"])
+                    fig.savefig(output_directory / f"{label}_COM_drift.png")
+                    plt.close(fig)
+
+        # Write out an NPZ with all the relevant analysis data
+        npz_file = output_directory / "structural_analysis.npz"
+        np.savez_compressed(npz_file, **npz_data)  # type: ignore[arg-type]
+
+        return {"structural_analysis": npz_file}
+
     def run(
         self,
         *,
         trajectory: pathlib.Path,
         checkpoint: pathlib.Path,
+        pdb_file: pathlib.Path,
+        ligand_A_indices: list[int],
+        ligand_B_indices: list[int],
+        smc_A: SmallMoleculeComponent,
+        smc_B: SmallMoleculeComponent,
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
@@ -1521,6 +1816,16 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           Path to the MultiStateReporter generated NetCDF file.
         checkpoint : pathlib.Path
           Path to the checkpoint file generated by MultiStateReporter.
+        pdb_file : pathlib.Path
+          Path to the subsampled PDB file.
+        ligand_A_indices : list[int]
+          Atom indices of ligand A in the subsampled system.
+        ligand_B_indices : list[int]
+          Atom indices of ligand B in the subsampled system.
+        smc_A : SmallMoleculeComponent
+          SmallMoleculeComponent for ligand A.
+        smc_B : SmallMoleculeComponent
+          SmallMoleculeComponent for ligand B.
         dry : bool
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
@@ -1549,7 +1854,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         settings = self._get_settings()
 
         # Energies analysis
-        if verbose:
+        if self.verbose:
             self.logger.info("Analyzing energies")
 
         energy_analysis = self._analyze_multistate_energies(
@@ -1560,7 +1865,25 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             dry=dry,
         )
 
-        return energy_analysis
+        if self.verbose:
+            self.logger.info("Analyzing structural outputs")
+
+        analysis_settings = settings["analysis_settings"]
+        structural_analysis = self._structural_analysis(
+            pdb_file=pdb_file,
+            trj_file=trajectory,
+            output_directory=self.shared_basepath,
+            simtype=self.simtype,
+            ligand_A_indices=ligand_A_indices,
+            ligand_B_indices=ligand_B_indices,
+            rdmol_A=smc_A.to_rdkit(),
+            rdmol_B=smc_B.to_rdkit(),
+            protein_selection=analysis_settings.protein_selection,
+            skip=analysis_settings.skip,
+            dry=dry,
+        )
+
+        return energy_analysis | structural_analysis
 
     def _execute(
         self,
@@ -1578,10 +1901,29 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         # Get the relevant inputs for running the unit
         trajectory = simulation.outputs["trajectory"]
         checkpoint = simulation.outputs["checkpoint"]
+        alchem_comps = self._inputs["alchemical_components"]
+        smc_A = alchem_comps["stateA"][0]
+        smc_B = alchem_comps["stateB"][0]
+
+        # Remap ligand indices from full system to subsampled system
+        # selection_indices maps: position in subsampled system to index in full system
+        selection_indices = np.array(setup.outputs["selection_indices"])
+        ligand_A_full_indices = np.array(setup.outputs["ligand_A_indices"])
+        ligand_B_full_indices = np.array(setup.outputs["ligand_B_indices"])
+
+        # Find where the full-system ligand indices appear in the subsampled system
+        # np.isin returns a boolean mask, np.where converts to positional indices
+        ligand_A_indices = np.where(np.isin(selection_indices, ligand_A_full_indices))[0].tolist()
+        ligand_B_indices = np.where(np.isin(selection_indices, ligand_B_full_indices))[0].tolist()
 
         outputs = self.run(
             trajectory=trajectory,
             checkpoint=checkpoint,
+            pdb_file=setup.outputs["subsampled_pdb_structure"],
+            ligand_A_indices=ligand_A_indices,
+            ligand_B_indices=ligand_B_indices,
+            smc_A=smc_A,
+            smc_B=smc_B,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )

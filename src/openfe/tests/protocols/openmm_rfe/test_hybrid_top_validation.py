@@ -6,7 +6,6 @@ import pytest
 from openff.units import unit as offunit
 
 import openfe
-from openfe import setup
 from openfe.protocols import openmm_rfe
 
 
@@ -356,28 +355,6 @@ def test_too_many_prot_comps_error(
         )
 
 
-def test_element_change_warning(atom_mapping_basic_test_files):
-    # check a mapping with element change gets rejected early
-    l1 = atom_mapping_basic_test_files["2-methylnaphthalene"]
-    l2 = atom_mapping_basic_test_files["2-naftanol"]
-
-    # We use the 'old' lomap defaults because the
-    # basic test files inputs we use aren't fully aligned
-    mapper = setup.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
-    )
-
-    mapping = next(mapper.suggest_mappings(l1, l2))
-
-    alchem_comps = {"stateA": [l1], "stateB": [l2]}
-
-    with pytest.warns(UserWarning, match="Element change"):
-        openmm_rfe.RelativeHybridTopologyProtocol._validate_mapping(
-            [mapping],
-            alchem_comps,
-        )
-
-
 def test_charge_difference_no_corr(benzene_to_benzoic_mapping):
     wmsg = (
         "A charge difference of 1 is observed between the end states. "
@@ -441,11 +418,10 @@ def test_get_charge_difference(mapping_name, result, request, caplog):
     mapping = request.getfixturevalue(mapping_name)
     caplog.set_level(logging.INFO)
 
-    ion = r"Na+" if result == -1 else r"Cl-"
     msg = (
         f"A charge difference of {result} is observed "
         "between the end states. This will be addressed by "
-        f"transforming a water into a {ion} ion"
+        f"transforming a water into an ion of the same charge"
     )
 
     openmm_rfe.RelativeHybridTopologyProtocol._validate_charge_difference(
