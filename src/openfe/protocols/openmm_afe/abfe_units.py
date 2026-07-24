@@ -222,7 +222,7 @@ def _get_ion_parameters(
 
     if ion_counts:
         best_resname = ion_counts.most_common(1)[0][0]
-        return nbf.getParticleParameters(ion_atom_indices[best_resname])
+        return nbf.getParticleParameters(ion_atom_indices[best_resname][0])
     else:
         return None
 
@@ -359,7 +359,7 @@ class ABFESetupUnitMixin:
 
         # Get the force we will be modifying
         nbf = [
-            i for i in openmm_system.getFoces()
+            i for i in openmm_system.getForces()
             if isinstance(i, NonbondedForce)
         ][0]
 
@@ -376,7 +376,7 @@ class ABFESetupUnitMixin:
 
         # Return indices with the first index being the oxygen
         return [
-            [int(oxygen_ix)] + [int(i) for i in hydrogen_idxs]
+            [int(oxygen_ix)] + [int(i) for i in hydrogen_ixs]
         ]
 
 
@@ -620,7 +620,7 @@ class ABFEComplexSetupUnit(
         # We try to pass the equilibration production file path through
         # In some cases (debugging / dry runs) this won't be available
         # so we'll default to using input positions.
-        univ = _get_mda_universe(
+        universe = _get_mda_universe(
             topology,
             positions,
             self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
@@ -628,7 +628,7 @@ class ABFEComplexSetupUnit(
 
         if isinstance(settings["restraint_settings"], ABFEBoreschRestraintSettings):
             rest_geom, restraint = self._get_boresch_restraint(
-                univ,
+                universe,
                 guest_rdmol,
                 guest_atom_ids,
                 host_atom_ids,
@@ -664,17 +664,17 @@ class ABFEComplexSetupUnit(
 
         if alchemical_ions is not None:
             # alchemical ion atom atomgroup
-            alchem_ion_ag = univ.atoms[alchemical_ions[0]]
+            alchem_ion_ag = universe.atoms[alchemical_ions[0]]
 
             # get the alchemical ligand atoms
             ligand_rdmol = alchem_comps["stateA"][0].to_rdkit()
             residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
             ligand_alchem_idxs = _get_idxs_from_residxs(topology=topology, residxs=residxs)
             ligand_central_atom = ligand_alchem_idxs[get_central_atom_idx(ligand_rdmol)]
-            ligand_central_atom_ag = univ.atoms[ligand_central_atom]
+            ligand_central_atom_ag = universe.atoms[ligand_central_atom]
 
             # Get the ligand-ion distance based on the final frame
-            univ.trajectory[-1]
+            universe.trajectory[-1]
 
             distance = float(
                 calc_bonds(
