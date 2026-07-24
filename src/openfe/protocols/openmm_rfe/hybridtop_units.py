@@ -135,7 +135,7 @@ class HybridTopologyUnitMixin:
         This default implementation reads the flat, single-leg settings used
         by ``RelativeHybridTopologyProtocol``.
         """
-        settings = self._inputs["protocol"].settings
+        settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         return {
             "forcefield_settings": settings.forcefield_settings,
@@ -169,8 +169,8 @@ class HybridTopologyUnitMixin:
             Dictionary of small molecule components paired with their
             OpenFF Molecule.
         """
-        stateA = self._inputs["stateA"]
-        stateB = self._inputs["stateB"]
+        stateA = self._inputs["stateA"]  # type: ignore[attr-defined]
+        stateB = self._inputs["stateB"]  # type: ignore[attr-defined]
 
         solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
         _, _, smcs_B = system_validation.get_components(stateB)
@@ -1723,9 +1723,6 @@ class BaseHybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopology
         }
 
 
-# -----------------------------------------------------------------------
-# Single-leg (RelativeHybridTopologyProtocol) concrete units
-# -----------------------------------------------------------------------
 class HybridTopologyComplexComponentsMixin:
     """
     Components mixin returning the full set of components (protein, solvent,
@@ -1755,7 +1752,7 @@ class HybridTopologySolventComponentsMixin:
     def _get_components(
         self,
     ) -> tuple[SolventComponent | None, None, dict[SmallMoleculeComponent, OFFMolecule]]:
-        solvent_comp, _protein_comp, small_mols = self._get_base_components()
+        solvent_comp, _protein_comp, small_mols = self._get_base_components()  # type: ignore[attr-defined]
         return solvent_comp, None, small_mols
 
 
@@ -1768,7 +1765,7 @@ class HybridTopologyVacuumComponentsMixin:
     def _get_components(
         self,
     ) -> tuple[None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]]:
-        _solvent_comp, protein_comp, small_mols = self._get_base_components()
+        _solvent_comp, protein_comp, small_mols = self._get_base_components()  # type: ignore[attr-defined]
         return None, protein_comp, small_mols
 
 
@@ -1791,14 +1788,11 @@ class HybridTopologyMultiStateAnalysisUnit(BaseHybridTopologyMultiStateAnalysisU
     """
 
 
-# -----------------------------------------------------------------------
-# RBFEHybridTopProtocol (solvent + complex legs) settings mixins & units
-# -----------------------------------------------------------------------
 class RBFEComplexSettingsMixin:
     """Settings mixin for the complex leg of ``RBFEHybridTopProtocol``."""
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
-        settings = self._inputs["protocol"].settings
+        settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         return {
             "forcefield_settings": settings.forcefield_settings,
@@ -1882,9 +1876,6 @@ class RBFEHybridTopSolventAnalysisUnit(
     simtype = "solvent"
 
 
-# -----------------------------------------------------------------------
-# RHFEHybridTopProtocol (solvent + vacuum legs) settings mixins & units
-# -----------------------------------------------------------------------
 class RHFESolventSettingsMixin:
     """Settings mixin for the solvent leg of ``RHFEHybridTopProtocol``."""
 
@@ -1909,7 +1900,7 @@ class RHFEVacuumSettingsMixin:
     """Settings mixin for the vacuum leg of ``RHFEHybridTopProtocol``."""
 
     def _get_settings(self) -> dict[str, SettingsBaseModel]:
-        settings = self._inputs["protocol"].settings
+        settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
         return {
             "forcefield_settings": settings.vacuum_forcefield_settings,

@@ -314,7 +314,8 @@ class HybridTopProtocolResultMixin:
 
         for key in [self.env_state, self.ref_state]:
             forward_reverse[key] = [
-                pus[0].outputs["forward_and_reverse_energies"] for pus in self.data[key].values()
+                pus[0].outputs["forward_and_reverse_energies"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
             if None in forward_reverse[key]:
@@ -351,7 +352,8 @@ class HybridTopProtocolResultMixin:
 
         for key in [self.env_state, self.ref_state]:
             overlap_stats[key] = [
-                pus[0].outputs["unit_mbar_overlap"] for pus in self.data[key].values()
+                pus[0].outputs["unit_mbar_overlap"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
         return overlap_stats
@@ -383,7 +385,8 @@ class HybridTopProtocolResultMixin:
         try:
             for key in [self.env_state, self.ref_state]:
                 repex_stats[key] = [
-                    pus[0].outputs["replica_exchange_statistics"] for pus in self.data[key].values()
+                    pus[0].outputs["replica_exchange_statistics"]
+                    for pus in self.data[key].values()  # type: ignore[attr-defined]
                 ]
         except KeyError:
             errmsg = "Replica exchange statistics were not found, did you run a repex calculation?"
@@ -412,7 +415,7 @@ class HybridTopProtocolResultMixin:
         replica_states: dict[str, list[npt.NDArray]] = {self.env_state: [], self.ref_state: []}
 
         for key in [self.env_state, self.ref_state]:
-            for pus in self.data[key].values():
+            for pus in self.data[key].values():  # type: ignore[attr-defined]
                 nc = is_file(pus[0].outputs["trajectory"])
                 dir_path = nc.parents[0]
                 chk = is_file(pus[0].outputs["checkpoint"]).name
@@ -437,7 +440,8 @@ class HybridTopProtocolResultMixin:
 
         for key in [self.env_state, self.ref_state]:
             equilibration_lengths[key] = [
-                pus[0].outputs["equilibration_iterations"] for pus in self.data[key].values()
+                pus[0].outputs["equilibration_iterations"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
         return equilibration_lengths
@@ -455,7 +459,8 @@ class HybridTopProtocolResultMixin:
 
         for key in [self.env_state, self.ref_state]:
             production_lengths[key] = [
-                pus[0].outputs["production_iterations"] for pus in self.data[key].values()
+                pus[0].outputs["production_iterations"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
             ]
 
         return production_lengths
@@ -476,7 +481,10 @@ class HybridTopProtocolResultMixin:
         indices: dict[str, list[Optional[npt.NDArray]]] = {}
 
         for key in [self.env_state, self.ref_state]:
-            indices[key] = [pus[0].outputs["selection_indices"] for pus in self.data[key].values()]
+            indices[key] = [
+                pus[0].outputs["selection_indices"]
+                for pus in self.data[key].values()  # type: ignore[attr-defined]
+            ]
 
         return indices
 
