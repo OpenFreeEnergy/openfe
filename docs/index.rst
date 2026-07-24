@@ -101,3 +101,8 @@ Community-Developed Projects:
 -----------------------------
 
 * `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution, developed by `Datryllic <https://datryllic.com/>`_.
+
+Ecosystem Rules and Guidelines:
+-------------------------------
+* `Code of Conduct <https://github.com/OpenFreeEnergy/openfe/?tab=coc-ov-file>`_
+* `Contributing Guide <https://github.com/OpenFreeEnergy/openfe/?tab=contributing-ov-file>`_
