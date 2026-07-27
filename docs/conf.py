@@ -148,6 +148,7 @@ html_theme_options = {
     ],
     "accent_color": "cantina-purple",
     "navigation_with_keys": False,
+    "announcement": "The OpenFE team is conducting user interviews! <a href='https://openfree.energy/news/'>Click here </a> to schedule an interview or send us feedback.",
 }
 html_logo = "_static/OFE-color-icon.svg"
 html_favicon = "_static/OFE-color-icon.svg"
