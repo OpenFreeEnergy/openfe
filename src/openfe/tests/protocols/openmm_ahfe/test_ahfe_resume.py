@@ -228,6 +228,7 @@ class TestCheckpointResuming:
             selection_indices=setup_results["selection_indices"],
             box_vectors=setup_results["box_vectors"],
             alchemical_restraints=False,
+            alchemical_indices=setup_results["alchemical_indices"],
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,
         )
@@ -303,6 +304,7 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
+                alchemical_indices=setup_results["alchemical_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
@@ -345,6 +347,7 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
+                alchemical_indices=setup_results["alchemical_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
@@ -385,6 +388,7 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
+                alchemical_indices=setup_results["alchemical_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
@@ -441,6 +445,7 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
+                alchemical_indices=setup_results["alchemical_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )
@@ -486,7 +491,7 @@ class TestCheckpointResuming:
         # Now add a fake force
         new_force = openmm.NonbondedForce()
         new_force.setNonbondedMethod(openmm.NonbondedForce.PME)
-        new_force.addGlobalParameter("lambda_electrostatics", 1.0)
+        new_force.addGlobalParameter("lambda_electrostatics_A", 1.0)
 
         fake_system.addForce(new_force)
 
@@ -500,6 +505,7 @@ class TestCheckpointResuming:
             selection_indices=setup_results["selection_indices"],
             box_vectors=setup_results["box_vectors"],
             alchemical_restraints=False,
+            alchemical_indices=setup_results["alchemical_indices"],
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,
             dry=True,
@@ -546,6 +552,7 @@ class TestCheckpointResuming:
                 selection_indices=setup_results["selection_indices"],
                 box_vectors=setup_results["box_vectors"],
                 alchemical_restraints=False,
+                alchemical_indices=setup_results["alchemical_indices"],
                 scratch_basepath=tmp_path,
                 shared_basepath=tmp_path,
             )

@@ -13,7 +13,6 @@ from openmm import unit as ommunit
 from openmmtools.alchemy import (
     AbsoluteAlchemicalFactory,
     AlchemicalRegion,
-    AlchemicalState,
 )
 
 from openfe.protocols import openmm_afe
@@ -22,17 +21,7 @@ from openfe.protocols.openmm_afe.abfe_units import (
 )
 from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 from openfe.protocols.openmm_utils.serialization import deserialize
-
-
-class AlchemStateRest(AlchemicalState):
-    """
-    A modified AlchemicalState for testing.
-
-    Note: we don't need this in the main protocol since we use composable
-    thermodynamic states.
-    """
-
-    lambda_restraints = AlchemicalState._LambdaParameter("lambda_restraints")
+from openfe.protocols.openmm_utils.states import SingleRegionAlchemicalState
 
 
 def get_alchemical_energy_components(alchemical_system, alchemical_state, positions, platform):
@@ -166,13 +155,11 @@ class TestT4EnergiesRegression:
         platform = Platform.getPlatformByName("Reference")
         alchemical_region = AlchemicalRegion(alchemical_atoms=indices)
 
-        alchemical_state = AlchemStateRest.from_system(
-            system, parameters_name_suffix=alchemical_region.name
-        )
+        alchemical_state = SingleRegionAlchemicalState.from_system(system)
 
-        alchemical_state.lambda_sterics = lambda_sterics
-        alchemical_state.lambda_electrostatics = lambda_electrostatics
-        alchemical_state.lambda_restraints = lambda_restraints
+        alchemical_state.lambda_sterics_A = lambda_sterics
+        alchemical_state.lambda_electrostatics_A = lambda_electrostatics
+        alchemical_state.lambda_restraints_A = lambda_restraints
 
         return get_alchemical_energy_components(
             system, alchemical_state, positions, platform=platform
@@ -182,7 +169,7 @@ class TestT4EnergiesRegression:
     def test_energies_regression(self, lambda_val, t4_reference_system, t4_validation_data):
         energies_ref = self.get_energy_components(
             t4_reference_system,
-            t4_validation_data["alchem_indices"],
+            t4_validation_data["alchemical_indices"],
             t4_validation_data["debug_positions"],
             lambda_val,
             lambda_val,
@@ -191,7 +178,7 @@ class TestT4EnergiesRegression:
 
         energies_val = self.get_energy_components(
             t4_validation_data["alchem_system"],
-            t4_validation_data["alchem_indices"],
+            t4_validation_data["alchemical_indices"],
             t4_validation_data["debug_positions"],
             lambda_val,
             lambda_val,
@@ -223,7 +210,7 @@ class TestT4EnergiesRegression:
         # lambda 1 on all
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],
-            t4_validation_data["alchem_indices"],
+            t4_validation_data["alchemical_indices"],
             t4_validation_data["debug_positions"],
             lambda_sterics=1.0,
             lambda_electrostatics=1.0,
@@ -236,7 +223,7 @@ class TestT4EnergiesRegression:
 
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],
-            t4_validation_data["alchem_indices"],
+            t4_validation_data["alchemical_indices"],
             t4_validation_data["debug_positions"],
             lambda_sterics=1.0,
             lambda_electrostatics=1.0,
@@ -249,7 +236,7 @@ class TestT4EnergiesRegression:
 
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],
-            t4_validation_data["alchem_indices"],
+            t4_validation_data["alchemical_indices"],
             t4_validation_data["debug_positions"],
             lambda_sterics=1.0,
             lambda_electrostatics=0.0,
@@ -261,16 +248,16 @@ class TestT4EnergiesRegression:
 
         # turn off sterics
         expected = copy.deepcopy(energies)
-        expected["alchemically modified NonbondedForce for non-alchemical/alchemical sterics"] = (
-            0 * ommunit.kilojoule_per_mole
-        )
         expected[
-            "alchemically modified BondForce for non-alchemical/alchemical sterics exceptions"
+            "alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region A"
+        ] = 0 * ommunit.kilojoule_per_mole
+        expected[
+            "alchemically modified BondForce for non-alchemical/alchemical sterics exceptions for region A"
         ] = 0 * ommunit.kilojoule_per_mole
 
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],
-            t4_validation_data["alchem_indices"],
+            t4_validation_data["alchemical_indices"],
             t4_validation_data["debug_positions"],
             lambda_sterics=0.0,
             lambda_electrostatics=0.0,

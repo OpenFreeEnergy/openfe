@@ -18,7 +18,7 @@ from openfe.protocols.openmm_septop import (
     SepTopProtocol,
     SepTopSolventSetupUnit,
 )
-from openfe.protocols.openmm_septop.utils import SepTopParameterState
+from openfe.protocols.openmm_utils.states import DualRegionAlchemicalState
 from openfe.protocols.openmm_utils.serialization import deserialize
 
 
@@ -30,7 +30,7 @@ def default_settings():
 
 
 def compare_energies(alchemical_system, positions):
-    alchemical_state = SepTopParameterState.from_system(alchemical_system)
+    alchemical_state = DualRegionAlchemicalState.from_system(alchemical_system)
 
     from openmmtools.alchemy import AbsoluteAlchemicalFactory
 
