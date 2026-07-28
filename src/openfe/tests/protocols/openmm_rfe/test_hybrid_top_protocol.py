@@ -1311,6 +1311,7 @@ def unit_mock_patcher():
                 "positions": Path("positions.npy"),
                 "pdb_structure": Path("hybrid_system.pdb"),
                 "selection_indices": np.zeros(100),
+                "alchemical_resnames": ["LIG"],
                 "gufe_version": gufe.__version__,
                 "openfe_version": openfe.__version__,
                 "openmm_version": openmm.__version__,
