@@ -698,7 +698,7 @@ class ABFEComplexSetupUnit(
             force.setName("ion_restraint")
 
             restrained_system = thermodynamic_state.get_system(remove_thermostat=True)
-            add_force_in_separate_group(restrained_system, force)
+            # add_force_in_separate_group(restrained_system, force)
 
             return (
                 correction,
@@ -925,7 +925,7 @@ class ABFESolventSetupUnit(
         )
 
         force.setName("ion_restraint")
-        add_force_in_separate_group(restrained_system, force)
+        # add_force_in_separate_group(restrained_system, force)
 
         return None, restrained_system, None
 
