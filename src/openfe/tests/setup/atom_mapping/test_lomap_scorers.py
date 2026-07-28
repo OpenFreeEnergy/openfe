@@ -14,7 +14,7 @@ from rdkit.Chem.AllChem import Compute2DCoords  # type: ignore[attr-defined]
 import openfe
 from openfe.setup import LigandAtomMapping, lomap_scorers
 
-from .conftest import mol_from_smiles
+from ...conftest import mol_from_smiles
 
 
 @pytest.fixture()

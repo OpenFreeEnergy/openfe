@@ -254,9 +254,9 @@ class EventHandler:
         """Connect our methods to events in the matplotlib canvas"""
         self.connections.extend(
             [
-                canvas.mpl_connect("button_press_event", self.on_mousedown),  # type: ignore
-                canvas.mpl_connect("motion_notify_event", self.on_drag),  # type: ignore
-                canvas.mpl_connect("button_release_event", self.on_mouseup),  # type: ignore
+                canvas.mpl_connect("button_press_event", self.on_mousedown),
+                canvas.mpl_connect("motion_notify_event", self.on_drag),
+                canvas.mpl_connect("button_release_event", self.on_mouseup),
             ]
         )
 

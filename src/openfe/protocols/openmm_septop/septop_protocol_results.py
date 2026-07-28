@@ -274,15 +274,19 @@ class SepTopProtocolResult(gufe.ProtocolResult):
               - `fractions`: npt.NDArray
                   The fractions of data used for the estimates
               - `forward_DDGs`, `reverse_DDGs`: unit.Quantity
-                  The forward and reverse estimates for each fraction of data
+                  The forward and reverse estimates for each fraction of data.
+                  A fraction at which MBAR failed to converge is recorded as
+                  ``NaN`` in both directions.
               - `forward_dDDGs`, `reverse_dDDGs`: unit.Quantity
                   The forward and reverse estimate uncertainty for each
-                  fraction of data.
+                  fraction of data (``NaN`` wherever the estimate is ``NaN``).
 
-            If one of the cycle leg list entries is ``None``, this indicates
-            that the analysis could not be carried out for that repeat. This
-            is most likely caused by MBAR convergence issues when attempting to
-            calculate free energies from too few samples.
+            A cycle leg list entry is ``None`` only when MBAR could not obtain
+            an estimate from the *full* set of uncorrelated samples (the
+            fraction 1.0 estimate, i.e. the reported free energy). If MBAR
+            fails only at a lower fraction, that fraction is recorded as ``NaN``
+            (see ``forward_DDGs`` above) and the remaining fractions are
+            retained, so the entry is still a dictionary.
 
         Raises
         ------
@@ -302,9 +306,9 @@ class SepTopProtocolResult(gufe.ProtocolResult):
                 wmsg = (
                     "One or more ``None`` entries were found in the forward "
                     f"and reverse dictionaries of the repeats of the {key} "
-                    "calculations. This is likely caused by an MBAR convergence "
-                    "failure caused by too few independent samples when "
-                    "calculating the free energies of the 10% timeseries slice."
+                    "calculations. This indicates that MBAR could not obtain a "
+                    "free energy estimate from the full set of uncorrelated "
+                    "samples for that repeat."
                 )
                 warnings.warn(wmsg)
 

@@ -13,7 +13,7 @@ jobs:
     
     steps:  
     - name: Install conda-lock with Micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: conda-lock
         create-args: >-
@@ -48,7 +48,7 @@ jobs:
 
     - name: Generate lock files
       run: | 
-        conda lock --with-cuda 11.8 -f environment-to-lock.yaml --lockfile openfe-conda-lock.yml 
+        conda-lock --with-cuda 11.8 -f environment-to-lock.yaml --lockfile openfe-conda-lock.yml
         cp openfe-conda-lock.yml openfe-${{ steps.latest-version.outputs.VERSION }}-conda-lock.yml
 
     - name: Test lock file (linux)
@@ -58,7 +58,7 @@ jobs:
         openfe test
 
     - name: Upload file as artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: conda-lock-files
         path: "*conda-lock.yml"
@@ -68,7 +68,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Download artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: conda-lock-files
 

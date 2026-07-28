@@ -447,11 +447,10 @@ class TestRBFEGatherFailedEdges:
 
     def test_missing_leg_allow_partial_disconnected(self, results_paths_serial_missing_legs: str):
         runner = CliRunner()
-        with pytest.warns():
-            args = ["--report", "dg", "--allow-partial"]
-            result = runner.invoke(gather, results_paths_serial_missing_legs + args + ["--tsv"])
-            assert result.exit_code == 1
-            assert "The results network is disconnected" in str(result.stderr)
+        args = ["--report", "dg", "--allow-partial"]
+        result = runner.invoke(gather, results_paths_serial_missing_legs + args + ["--tsv"])
+        assert result.exit_code == 1
+        assert "The results network is disconnected" in str(result.stderr)
 
     def test_allow_partial_msg_not_printed(self, results_paths_serial_missing_legs: str):
         # we *dont* want the suggestion to use --allow-partial if the user already used it!

@@ -8,7 +8,7 @@ from rdkit.Chem import AllChem
 import openfe
 from openfe.setup.atom_mapping import LomapAtomMapper
 
-from .conftest import mol_from_smiles
+from ...conftest import mol_from_smiles
 
 
 def test_simple(atom_mapping_basic_test_files, lomap_old_mapper):
