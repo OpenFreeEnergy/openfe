@@ -22,7 +22,7 @@ from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
 )
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 
 from openfe.protocols.openmm_utils.omm_settings import (
     BaseSolvationSettings,
@@ -280,6 +280,15 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
                 errmsg = "``guest_atoms`` and ``host_atoms`` cannot have negative indices."
                 raise ValueError(errmsg)
         return v
+
+    @model_validator(mode='after')
+    def check_restraint_ids_defined(self):
+        if (self.host_restraint_ids is None) ^ (self.guest_restraint_ids is None):
+            errmsg = (
+                "`guest_restraint_ids` and `host_restraint_ids` must both "
+                "either be defined or undefined"
+            )
+            raise ValueError(errmsg)
 
 
 # This subclasses from SettingsBaseModel as it has vacuum_forcefield and
