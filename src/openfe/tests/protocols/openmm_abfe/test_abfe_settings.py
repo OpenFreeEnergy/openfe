@@ -88,11 +88,13 @@ def test_boresch_restraints_too_many_ids(parameter):
     with pytest.raises(ValueError, match=errmsg):
         setattr(setting, parameter, [1, 2, 3, 4])
 
+
 def test_boresch_restraint_partially_defined_ids():
     setting = ABFEBoreschRestraintSettings()
 
     with pytest.raises(ValueError, match="must both either be defined or undefined"):
         setting.host_restraint_ids = [1, 2, 3]
+
 
 def test_equil_not_all_complex(default_settings):
     with pytest.raises(ValueError, match="output_indices must be all"):

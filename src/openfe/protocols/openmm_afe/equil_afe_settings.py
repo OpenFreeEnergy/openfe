@@ -172,6 +172,7 @@ class ABFEPreEquilOutputSettings(MDOutputSettings):
     """
     Settings controlling the pre-alchemical equilibration MD simulations.
     """
+
     output_indices: str = "all"
     """
     Selection string for which part of the system to write coordinates for.
@@ -225,7 +226,7 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
 
       H2                         G2
        ⧹                         ⧸
-        ⧹                       ⧸ 
+        ⧹                       ⧸
          H1 ——— H0 ——— G0 ——— G1
 
     Where HX represents the X index of ``host_atoms``
@@ -248,6 +249,7 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
     [3] Alibay, Irfan, et al. "Evaluating the use of absolute binding
         free energy in the fragment optimisation process" (2022).
     """
+
     host_restraint_ids: tuple[int, int, int] | None = None
     """
     The indices of the host component atoms to restrain.
@@ -281,7 +283,7 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
                 raise ValueError(errmsg)
         return v
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_restraint_ids_defined(self):
         if (self.host_restraint_ids is None) ^ (self.guest_restraint_ids is None):
             errmsg = (
