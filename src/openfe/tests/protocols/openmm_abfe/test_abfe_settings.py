@@ -80,6 +80,15 @@ def test_boresch_restraints_restraint_negative_ids(parameter):
         setattr(setting, parameter, [1, 2, -3])
 
 
+@pytest.mark.parametrize("parameter", ["host_restraint_ids", "guest_restraint_ids"])
+def test_boresch_restraints_too_many_ids(parameter):
+    setting = ABFEBoreschRestraintSettings()
+
+    errmsg = "Tuple should have at most 3 items after validation, not 4"
+    with pytest.raises(ValueError, match=errmsg):
+        setattr(setting, parameter, [1, 2, 3, 4])
+
+
 def test_equil_not_all_complex(default_settings):
     with pytest.raises(ValueError, match="output_indices must be all"):
         default_settings.complex_equil_output_settings.output_indices = "not water"
