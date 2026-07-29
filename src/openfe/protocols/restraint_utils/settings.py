@@ -94,12 +94,12 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Settings to define a Boresch-style restraint between
     two groups of atoms named ``host`` and ``guest``.
 
-    The restraint is defined in the following manner:
+    The restraint is defined in the following manner::
 
       H2                         G2
-       -                        -
-        -                      -
-         H1 - - H0 -- G0 - - G1
+       ⧹                         ⧸
+        ⧹                       ⧸
+         H1 ——— H0 ——— G0 ——— G1
 
     Where HX represents the X index of ``host_atoms``
     and GX the X indexx of ``guest_atoms``.
