@@ -169,6 +169,9 @@ class LambdaSettings(SettingsBaseModel):
 
 
 class ABFEPreEquilOutputSettings(MDOutputSettings):
+    """
+    Settings controlling the pre-alchemical equilibration MD simulations.
+    """
     output_indices: str = "all"
     """
     Selection string for which part of the system to write coordinates for.
@@ -214,6 +217,35 @@ class ABFEPreEquilOutputSettings(MDOutputSettings):
 
 
 class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
+    """
+    Settings to define a Boresch-style restraint between
+    two groups of atoms named ``host`` and ``guest``.
+
+    The restraint is defined in the following manner:
+
+      H2                         G2
+       -                        -
+        -                      -
+         H1 - - H0 -- G0 - - G1
+
+    Where HX represents the X index of ``host_atoms``
+    and GX the X indexx of ``guest_atoms``.
+
+    By default, the Boresch-like restraint will be
+    obtained using a modified version of the
+    search algorithm implemented by Baumann et al. [1].
+
+    If ``guest_atoms`` and ``host_atoms`` are defined,
+    these indices will be used instead.
+
+    References
+    ----------
+    [1] Baumann, Hannah M., et al. "Broadening the scope of binding free
+        energy calculations using a Separated Topologies approach." (2023).
+    [2] Wu, Zhiyi, et al. "Optimizing Absolute Binding Free Energy
+        Calculations for Production Usage."
+        (2025; DOI 10.26434/chemrxiv-2025-q08ld-v2)
+    """
     host_restraint_ids: tuple[int, int, int] | None = None
     """
     The indices of the host component atoms to restrain.
