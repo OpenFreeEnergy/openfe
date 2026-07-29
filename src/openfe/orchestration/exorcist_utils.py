@@ -138,3 +138,11 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
 
     """
     return pd.read_sql_table("dependencies", task_db.engine)
+
+
+def build_protocol_dag_result_from_task_db():
+    pass
+
+    # identify transformations & their protocol dags
+    # query the status of the units of the dags
+    # collect results and return an iterable of transformations and their protocoldagresults
