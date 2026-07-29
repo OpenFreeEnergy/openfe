@@ -66,7 +66,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
-   :inherited-members: MDOutputSettings
+   :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
    :member-order: bysource
 
@@ -78,7 +78,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
-   :inherited-members: BoreschRestraintSettings
+   :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
    :member-order: bysource
 
