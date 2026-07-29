@@ -25,13 +25,13 @@ First, we build a graph of tasks to be executed from the ``AlchemicalNetwork``:
     my_warehouse.store_setup_tokenizable(alchemical_network)
 
     # build a database of tasks from the AlchemicalNetwork
-    db_path = Path(warehouse.root_dir) / "tasks.db"
+    db_path = Path(my_warehouse.root_dir) / "tasks.db"
     task_db = build_task_db_from_alchemical_network(alchemical_network, my_warehouse, db_path)
 
 
 Next, we call ``worker.execute_unit()`` to execute the next available task in the warehouse:
 
-.. code:: bash
+.. code:: python
 
     # execution: build the worker
     from openfe.orchestration import Worker
