@@ -219,12 +219,24 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
     The indices of the host component atoms to restrain.
     The entries define the H0, H1, and H2 atoms in order.
     If defined, these will override any automatic selection.
+
+    Notes
+    -----
+    These indices refer to the atom index in the host component
+    (e.g. the PDB file defining the host) and not the final
+    index of the fully solvated complex which will be simulated.
     """
     guest_restraint_ids: tuple[int, int, int] | None = None
     """
     The indices of the guest component atoms to restraint.
     The entries define the G0, G1, and G2 atoms in order.
     If defined, these will override any automatic selection.
+
+    Notes
+    -----
+    These indices refer to the atom index in the SmallMoleculeComponent
+    defining the guest (e.g. in the input SDF file) and not the final
+    index of the fully sollvated complex which will be simulated.
     """
 
     @field_validator("guest_restraint_ids", "host_restraint_ids")
