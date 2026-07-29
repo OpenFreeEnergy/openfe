@@ -221,7 +221,7 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
     Settings to define a Boresch-style restraint between
     two groups of atoms named ``host`` and ``guest``.
 
-    The restraint is defined in the following manner:
+    The restraint is defined in the following manner::
 
       H2                         G2
        ⧹                         ⧸
