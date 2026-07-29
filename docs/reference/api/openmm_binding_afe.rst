@@ -46,7 +46,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :exclude-members: get_defaults
    :member-order: bysource
 
-.. autopydantic_model:: LambdaSettings
+.. autopydantic_model:: openfe.protocols.openmm_afe.equil_afe_settings.LambdaSettings
    :model-show-json: False
    :model-show-field-summary: False
    :model-show-config-member: False
