@@ -619,9 +619,11 @@ def test_user_restraint(benzene_modifications_am1bcc, T4_protein_component, tmp_
     s = openmm_afe.AbsoluteBindingProtocol.default_settings()
     s.protocol_repeats = 1
     s.engine_settings.compute_platform = "cpu"
-    s.restraint_settings.guest_restraint_ids = [0, 1, 2]
-    # Ca and C from VAL 87, and N from TYR 88
-    s.restraint_settings.host_restraint_ids = [1383, 1384, 1398]
+    s.restraint_settings = openmm_afe.equil_afe_settings.ABFEBoreschRestraintSettings(
+        guest_restraint_ids=[0, 1, 2],
+        # Ca and C from VAL 87, and N from TYR 88
+        host_restraint_ids=[1383, 1384, 1398],
+    )
 
     protocol = openmm_afe.AbsoluteBindingProtocol(settings=s)
 
