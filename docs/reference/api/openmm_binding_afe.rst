@@ -34,7 +34,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
 .. module:: openfe.protocols.openmm_afe.equil_afe_settings
 
 
-.. autopydantic_model:: AlchemicalSettings
+.. autopydantic_model:: openfe.protocols.openmm_afe.equil_afe_settings.AlchemicalSettings
    :model-show-json: False
    :model-show-field-summary: False
    :model-show-config-member: False

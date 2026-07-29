@@ -59,6 +59,7 @@ Below are Settings classes which are unique to the ``AbsoluteSolvationProtocol``
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :no-index:
 
 .. autopydantic_model:: openfe.protocols.openmm_afe.equil_afe_settings.LambdaSettings
    :model-show-json: False
