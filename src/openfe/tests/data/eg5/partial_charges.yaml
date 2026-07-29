@@ -1,4 +1,0 @@
-partial_charge:
-  method: am1bcc
-  settings:
-    off_toolkit_backend: ambertools

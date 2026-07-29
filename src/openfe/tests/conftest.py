@@ -223,10 +223,21 @@ def benzene_toluene_topology():
 
 
 @pytest.fixture(scope="session")
-def benzene_modifications():
+def benzene_modifications_uncharged():
     files = {}
     with resources.as_file(resources.files("openfe.tests.data")) as d:
         fn = str(d / "benzene_modifications.sdf")
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp("_Name")] = SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture(scope="session")
+def benzene_modifications():
+    files = {}
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "benzene_modifications_am1bcc.sdf")
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
             files[rdmol.GetProp("_Name")] = SmallMoleculeComponent(rdmol)
@@ -266,7 +277,7 @@ def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        fn = str(d / "benzene_modifications.sdf")
+        fn = str(d / "benzene_modifications_am1bcc.sdf")
         supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
             mols[mol.GetProp("_Name")] = SmallMoleculeComponent(mol)

@@ -240,7 +240,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
 
 @pytest.mark.xfail(reason="Issue #1940")
 @pytest.mark.skipif(not HAS_ESPALOMA, reason="espaloma is not available")
-def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_settings, tmp_path):
+def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications_uncharged, vac_settings, tmp_path):
     vac_settings.forcefield_settings.small_molecule_forcefield = "espaloma-0.3.2"
 
     protocol = PlainMDProtocol(
@@ -248,7 +248,7 @@ def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications, vac_setting
     )
 
     # add some dummy charges to the benzene molecule
-    benzene = benzene_modifications["benzene"]
+    benzene = benzene_modifications_uncharged["benzene"]
     benzene_openff = benzene.to_openff()
     # assign some fake charges
     expected_charges = [-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]

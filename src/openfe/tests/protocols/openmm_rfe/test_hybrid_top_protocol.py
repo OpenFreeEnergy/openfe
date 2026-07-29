@@ -820,14 +820,14 @@ def test_setup_charge_backends(
             np.testing.assert_allclose(c, ref, rtol=1e-4)
 
 
-def test_setup_same_mol_different_charges(benzene_modifications, vac_settings, tmp_path):
+def test_setup_same_mol_different_charges(benzene_modifications_uncharged, vac_settings, tmp_path):
     """
     Issue #1120 - make sure we can do an RFE of a system with different
     parameters but the same molecule.
     """
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
 
-    benzene_offmol = benzene_modifications["benzene"].to_openff()
+    benzene_offmol = benzene_modifications_uncharged["benzene"].to_openff()
     # Give state A some gasteiger charges
     benzene_offmol.assign_partial_charges(partial_charge_method="gasteiger")
     stateA_charges = copy.deepcopy(benzene_offmol.partial_charges)
@@ -884,7 +884,7 @@ def test_setup_same_mol_different_charges(benzene_modifications, vac_settings, t
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
-def test_setup_user_charges(benzene_modifications, vac_settings, tmp_path):
+def test_setup_user_charges(benzene_modifications_uncharged, vac_settings, tmp_path):
     """
     Create a hybrid system with a set of fictitious user supplied charges
     and ensure that they are properly passed through to the constructed
@@ -915,8 +915,8 @@ def test_setup_user_charges(benzene_modifications, vac_settings, tmp_path):
         np.testing.assert_allclose(prop_chgs, charge_array.m)
 
     # Create new smc with overridden charges
-    benzene_offmol = benzene_modifications["benzene"].to_openff()
-    toluene_offmol = benzene_modifications["toluene"].to_openff()
+    benzene_offmol = benzene_modifications_uncharged["benzene"].to_openff()
+    toluene_offmol = benzene_modifications_uncharged["toluene"].to_openff()
     benzene_rand_chg = assign_fictitious_charges(benzene_offmol)
     toluene_rand_chg = assign_fictitious_charges(toluene_offmol)
     benzene_offmol.partial_charges = benzene_rand_chg
