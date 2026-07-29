@@ -213,6 +213,29 @@ class ABFEPreEquilOutputSettings(MDOutputSettings):
         return v
 
 
+class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
+    host_restraint_ids: tuple[int, int, int] | None = None
+    """
+    The indices of the host component atoms to restrain.
+    The entries define the H0, H1, and H2 atoms in order.
+    If defined, these will override any automatic selection.
+    """
+    guest_restraint_ids: tuple[int, int, int] | None = None
+    """
+    The indices of the guest component atoms to restraint.
+    The entries define the G0, G1, and G2 atoms in order.
+    If defined, these will override any automatic selection.
+    """
+
+    @field_validator("guest_restraint_ids", "host_restraint_ids")
+    def positive_idxs_three_tuple(cls, v):
+        if v is not None:
+            if any([i < 0 for i in v]):
+                errmsg = "``guest_atoms`` and ``host_atoms`` cannot have negative indices."
+                raise ValueError(errmsg)
+        return v
+
+
 # This subclasses from SettingsBaseModel as it has vacuum_forcefield and
 # solvent_forcefield fields, not just a single forcefield_settings field
 class AbsoluteSolvationSettings(SettingsBaseModel):

@@ -234,6 +234,17 @@ def benzene_modifications():
 
 
 @pytest.fixture(scope="session")
+def benzene_modifications_am1bcc():
+    files = {}
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "benzene_modifications_am1bcc.sdf")
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp("_Name")] = SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture(scope="session")
 def charged_benzene_modifications():
     files = {}
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
