@@ -96,3 +96,11 @@ def build_task_db_from_alchemical_network(
     db = exorcist.TaskStatusDB.from_filename(db_path)
     db.add_task_network(global_dag, max_tries)
     return db
+
+
+def build_protocol_dag_result_from_task_db():
+    pass
+
+    # identify transformations & their protocol dags
+    # query the status of the units of the dags
+    # collect results and return an iterable of transformations and their protocoldagresults
