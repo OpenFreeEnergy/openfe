@@ -240,7 +240,9 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
 
 @pytest.mark.xfail(reason="Issue #1940")
 @pytest.mark.skipif(not HAS_ESPALOMA, reason="espaloma is not available")
-def test_dry_run_espaloma_vacuum_user_charges(benzene_modifications_uncharged, vac_settings, tmp_path):
+def test_dry_run_espaloma_vacuum_user_charges(
+    benzene_modifications_uncharged, vac_settings, tmp_path
+):
     vac_settings.forcefield_settings.small_molecule_forcefield = "espaloma-0.3.2"
 
     protocol = PlainMDProtocol(
