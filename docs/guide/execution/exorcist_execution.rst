@@ -11,7 +11,7 @@ You can execute the network of simulation units defined by an ``AlchemicalNetwor
 
 First, we build a graph of tasks to be executed from the ``AlchemicalNetwork``:
 
-.. code:: bash
+.. code:: python
 
     from openfe.orchestration import build_task_db_from_alchemical_network
     from openfe.storage import warehouse
