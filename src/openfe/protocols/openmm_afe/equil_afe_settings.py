@@ -224,12 +224,12 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
     The restraint is defined in the following manner:
 
       H2                         G2
-       \                        /
-        \                      /
+       ⧹                         ⧸
+        ⧹                       ⧸ 
          H1 ——— H0 ——— G0 ——— G1
 
     Where HX represents the X index of ``host_atoms``
-    and GX the X indexx of ``guest_atoms``.
+    and GX the X index of ``guest_atoms``.
 
     By default, the Boresch-like restraint will be
     obtained using a modified version of the
@@ -245,6 +245,8 @@ class ABFEBoreschRestraintSettings(BoreschRestraintSettings):
     [2] Wu, Zhiyi, et al. "Optimizing Absolute Binding Free Energy
         Calculations for Production Usage."
         (2025; DOI 10.26434/chemrxiv-2025-q08ld-v2)
+    [3] Alibay, Irfan, et al. "Evaluating the use of absolute binding
+        free energy in the fragment optimisation process" (2022).
     """
     host_restraint_ids: tuple[int, int, int] | None = None
     """

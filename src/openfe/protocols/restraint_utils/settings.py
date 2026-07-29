@@ -117,7 +117,9 @@ class BoreschRestraintSettings(BaseRestraintSettings):
         energy calculations using a Separated Topologies approach." (2023).
     [2] Wu, Zhiyi, et al. "Optimizing Absolute Binding Free Energy
         Calculations for Production Usage."
-        (2025; DOI 10.26434/chemrxiv-2025-q08ld-v2)
+        (2025; DOI 10.26434/chemrxiv-2025-q08ld-v2).
+    [3] Alibay, Irfan, et al. "Evaluating the use of absolute binding
+        free energy in the fragment optimisation process" (2022).
     """
 
     K_r: SpringConstantLinearQuantity = 4184.0 * unit.kilojoule_per_mole / unit.nm**2
