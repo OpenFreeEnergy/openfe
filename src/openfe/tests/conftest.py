@@ -337,7 +337,10 @@ def eg5_protein(eg5_protein_pdb) -> openfe.ProteinComponent:
 
 @pytest.fixture()
 def eg5_ligands_uncharged(eg5_ligands_uncharged_sdf) -> list[SmallMoleculeComponent]:
-    return [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(eg5_ligands_uncharged_sdf, removeHs=False)]
+    return [
+        SmallMoleculeComponent(m)
+        for m in Chem.SDMolSupplier(eg5_ligands_uncharged_sdf, removeHs=False)
+    ]
 
 
 @pytest.fixture()

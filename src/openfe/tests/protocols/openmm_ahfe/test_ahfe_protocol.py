@@ -544,7 +544,9 @@ def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tm
     assert_allclose(expected_vectors, from_openmm(vectors))
 
 
-def test_dry_run_solv_user_charges_benzene(benzene_modifications_uncharged, protocol_dry_settings, tmp_path):
+def test_dry_run_solv_user_charges_benzene(
+    benzene_modifications_uncharged, protocol_dry_settings, tmp_path
+):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
