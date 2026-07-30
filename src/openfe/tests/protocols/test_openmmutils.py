@@ -1000,8 +1000,8 @@ class TestOFFPartialCharge:
             )
 
     @pytest.mark.slow
-    def test_am1bcc_conformer_nochange(self, eg5_ligands):
-        lig = eg5_ligands[0].to_openff()
+    def test_am1bcc_conformer_nochange(self, eg5_ligands_uncharged):
+        lig = eg5_ligands_uncharged[0].to_openff()
 
         conf = copy.deepcopy(lig.conformers)
 
