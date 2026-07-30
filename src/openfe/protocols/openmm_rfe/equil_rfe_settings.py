@@ -158,7 +158,43 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """
 
 
-class RBFEHTopProtocolSettings(Settings):
+class BaseHTopProtocolSettings(SettingsBaseModel):
+    """
+    Base configuration object for ``HTopProtocol`` and its subclasses.
+
+    See Also
+    --------
+    openfe.protocols.openmm_rfe.HTopProtocol
+    """
+
+    protocol_repeats: int
+    """
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of the ΔΔG
+    difference, while the variance between repeats is used as the uncertainty.
+    """
+
+    @field_validator("protocol_repeats")
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
+
+    thermo_settings: ThermoSettings
+    """Settings for thermodynamic parameters."""
+
+    partial_charge_settings: OpenFFPartialChargeSettings
+    """Settings for assigning partial charges to small molecules."""
+
+    # Alchemical settings
+    alchemical_settings: AlchemicalSettings
+    """
+    Alchemical protocol settings including soft core scaling.
+    """
+
+
+class RBFEHTopProtocolSettings(BaseHTopProtocolSettings):
     """
     Configuration object for ``RBFEHTopProtocol``.
 
@@ -167,32 +203,20 @@ class RBFEHTopProtocolSettings(Settings):
     openfe.protocols.openmm_rfe.RBFEHTopProtocol
     """
 
-    protocol_repeats: int
-    """
-    The number of completely independent repeats of the entire sampling
-    process. The mean of the repeats defines the final estimate of FE
-    difference, while the variance between repeats is used as the uncertainty.
-    """
-
-    @field_validator("protocol_repeats")
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = f"protocol_repeats must be a positive value, got {v}."
-            raise ValueError(errmsg)
-        return v
-
-    # Inherited things
+    # Force field settings - only need one
     forcefield_settings: OpenMMSystemGeneratorFFSettings
-    """Parameters to set up the force field with OpenMM Force Fields."""
-    thermo_settings: ThermoSettings
-    """Settings for thermodynamic parameters."""
-    partial_charge_settings: OpenFFPartialChargeSettings
-    """Settings for assigning partial charges to small molecules."""
+    """Parameters to control assigning force field parameters using OpenMMForceFields."""
 
-    # Alchemical settings
-    alchemical_settings: AlchemicalSettings
+    # Lambda schedule settings
+    solvent_lambda_settings: LambdaSettings
     """
-    Alchemical protocol settings including soft core scaling.
+    Lambda protocol settings defining the lambda schedule, including
+    the number of lambda windows and scaling function for the solvent leg.
+    """
+    complex_lambda_settings: LambdaSettings
+    """
+    Lambda protocol settings defining the lambda schedule, including
+    the number of lambda windows and scaling function for the complex leg.
     """
 
     # Things for creating the systems
@@ -201,130 +225,83 @@ class RBFEHTopProtocolSettings(Settings):
     complex_solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the complex leg system."""
 
-    # Lambda schedule settings
-    solvent_lambda_settings: LambdaSettings
-    """
-    Lambda protocol settings including lambda windows and lambda functions
-    for the solvent leg.
-    """
-    complex_lambda_settings: LambdaSettings
-    """
-    Lambda protocol settings including lambda windows and lambda functions
-    for the complex leg.
-    """
-
-    # Simulation settings
+    # Simulation control settings
     solvent_simulation_settings: MultiStateSimulationSettings
     """
-    Settings for the solvent leg alchemical sampler.
+    Settings for controlling the solvent leg alchemical simulation.
     """
     complex_simulation_settings: MultiStateSimulationSettings
     """
-    Settings for the complex leg alchemical sampler.
+    Settings for controlling the complex leg alchemical simulation.
     """
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings
-    """Settings specific to the OpenMM engine such as the compute platform."""
+    """Settings specific to the OpenMM MD engine such as what compute platform to use."""
 
-    # Sampling State defining things
+    # Integrator control
     solvent_integrator_settings: IntegratorSettings
     """Settings for the solvent leg integrator such as timestep and barostat settings."""
     complex_integrator_settings: IntegratorSettings
     """Settings for the complex leg integrator such as timestep and barostat settings."""
 
+    # Output control
     solvent_output_settings: MultiStateOutputSettings
     """
-    Solvent leg simulation output control settings.
+    Solvent leg simulation output (e.g. filenames) control settings.
     """
     complex_output_settings: MultiStateOutputSettings
     """
-    Complex leg simulation output control settings.
+    Complex leg simulation output (e.g. filenames) control settings.
     """
 
 
-class RHFEHTopProtocolSettings(SettingsBaseModel):
+class RHFEHTopProtocolSettings(BaseHTopProtocolSettings):
     """
     Configuration object for ``RHFEHTopProtocol``.
-
-    Note
-    ----
-    This subclasses ``SettingsBaseModel`` rather than ``Settings`` since the
-    solvent and vacuum legs require different ``forcefield_settings``
-    (the vacuum leg must use a ``nocutoff`` nonbonded method), so there is no
-    single shared ``forcefield_settings`` field to satisfy ``Settings``.
 
     See Also
     --------
     openfe.protocols.openmm_rfe.RHFEHTopProtocol
     """
 
-    protocol_repeats: int
-    """
-    The number of completely independent repeats of the entire sampling
-    process. The mean of the repeats defines the final estimate of FE
-    difference, while the variance between repeats is used as the uncertainty.
-    """
-
-    @field_validator("protocol_repeats")
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = f"protocol_repeats must be a positive value, got {v}."
-            raise ValueError(errmsg)
-        return v
-
-    # Inherited things
     solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
-    """Parameters to set up the force field with OpenMM Force Fields for the solvent leg."""
+    """Parameters to control assigning force field parameters using OpenMMForceFields for the solvent leg."""
     vacuum_forcefield_settings: OpenMMSystemGeneratorFFSettings
     """
-    Parameters to set up the force field with OpenMM Force Fields for the
-    vacuum leg. Must use a ``nonbonded_method`` of ``nocutoff``.
-    """
-    thermo_settings: ThermoSettings
-    """Settings for thermodynamic parameters."""
-    partial_charge_settings: OpenFFPartialChargeSettings
-    """Settings for assigning partial charges to small molecules."""
-
-    # Alchemical settings
-    alchemical_settings: AlchemicalSettings
-    """
-    Alchemical protocol settings including soft core scaling.
+    Parameters to control assigning the force field using OpenMMForceFields for the vacuum leg.
+    Must use a ``nonbonded_method`` of ``nocutoff``.
     """
 
-    # Things for creating the systems
     solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the solvent leg system. Ignored by the vacuum leg."""
 
-    # Lambda schedule settings
     solvent_lambda_settings: LambdaSettings
     """
-    Lambda protocol settings including lambda windows and lambda functions
-    for the solvent leg.
+    Lambda protocol settings defining the lambda schedule, including
+    the number of lambda windows and scaling function for the solvent leg.
     """
     vacuum_lambda_settings: LambdaSettings
     """
-    Lambda protocol settings including lambda windows and lambda functions
-    for the vacuum leg.
+    Lambda protocol settings defining the lambda schedule, including
+    the number of lambda windows and scaling function for the vacuum leg.
     """
 
-    # Simulation settings
     solvent_simulation_settings: MultiStateSimulationSettings
     """
-    Settings for the solvent leg alchemical sampler.
+    Settings for controlling the solvent leg alchemical simulation.
     """
     vacuum_simulation_settings: MultiStateSimulationSettings
     """
-    Settings for the vacuum leg alchemical sampler.
+    Settings for controlling the vacuum leg alchemical simulation.
     """
 
-    # MD Engine things
+    # Engine settings control hardware usage
     solvent_engine_settings: OpenMMEngineSettings
-    """Settings specific to the OpenMM engine for the solvent leg, such as the compute platform."""
+    """Settings specific to the OpenMM MD engine for the solvent leg, such as what compute platform to use."""
     vacuum_engine_settings: OpenMMEngineSettings
-    """Settings specific to the OpenMM engine for the vacuum leg, such as the compute platform."""
+    """Settings specific to the OpenMM MD engine for the vacuum leg, such as what compute platform to use."""
 
-    # Sampling State defining things
     solvent_integrator_settings: IntegratorSettings
     """Settings for the solvent leg integrator such as timestep and barostat settings."""
     vacuum_integrator_settings: IntegratorSettings
@@ -332,9 +309,9 @@ class RHFEHTopProtocolSettings(SettingsBaseModel):
 
     solvent_output_settings: MultiStateOutputSettings
     """
-    Solvent leg simulation output control settings.
+    Solvent leg simulation output (e.g. filenames) control settings.
     """
     vacuum_output_settings: MultiStateOutputSettings
     """
-    Vacuum leg simulation output control settings.
+    Vacuum leg simulation output (e.g. filenames) control settings.
     """
