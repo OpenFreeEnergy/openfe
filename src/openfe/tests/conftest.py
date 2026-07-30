@@ -223,10 +223,21 @@ def benzene_toluene_topology():
 
 
 @pytest.fixture(scope="session")
-def benzene_modifications():
+def benzene_modifications_uncharged():
     files = {}
     with resources.as_file(resources.files("openfe.tests.data")) as d:
         fn = str(d / "benzene_modifications.sdf")
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp("_Name")] = SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture(scope="session")
+def benzene_modifications():
+    files = {}
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "benzene_modifications_am1bcc.sdf")
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
             files[rdmol.GetProp("_Name")] = SmallMoleculeComponent(rdmol)
@@ -266,7 +277,7 @@ def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        fn = str(d / "benzene_modifications.sdf")
+        fn = str(d / "benzene_modifications_am1bcc.sdf")
         supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
             mols[mol.GetProp("_Name")] = SmallMoleculeComponent(mol)
@@ -302,20 +313,34 @@ def eg5_protein_pdb():
 
 
 @pytest.fixture()
-def eg5_ligands_sdf():
+def eg5_ligands_uncharged_sdf():
     with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
         yield str(d / "eg5_ligands.sdf")
 
 
 @pytest.fixture()
+def eg5_ligands_sdf():
+    with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
+        yield str(d / "eg5_ligands_am1bcc.sdf")
+
+
+@pytest.fixture()
 def eg5_cofactor_sdf():
     with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
-        yield str(d / "eg5_cofactor.sdf")
+        yield str(d / "eg5_cofactor_am1bcc.sdf")
 
 
 @pytest.fixture()
 def eg5_protein(eg5_protein_pdb) -> openfe.ProteinComponent:
     return openfe.ProteinComponent.from_pdb_file(eg5_protein_pdb)
+
+
+@pytest.fixture()
+def eg5_ligands_uncharged(eg5_ligands_uncharged_sdf) -> list[SmallMoleculeComponent]:
+    return [
+        SmallMoleculeComponent(m)
+        for m in Chem.SDMolSupplier(eg5_ligands_uncharged_sdf, removeHs=False)
+    ]
 
 
 @pytest.fixture()
