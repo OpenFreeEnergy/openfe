@@ -2015,9 +2015,7 @@ class RHFEHTopVacuumSimulationUnit(
     simtype = "vacuum"
 
 
-class RHFEHTopVacuumAnalysisUnit(
-    RHFEVacuumSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit
-):
+class RHFEHTopVacuumAnalysisUnit(RHFEVacuumSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit):
     """Analysis unit for the vacuum leg of ``RHFEHTopProtocol``."""
 
     simtype = "vacuum"
