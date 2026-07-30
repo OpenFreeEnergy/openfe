@@ -51,8 +51,7 @@ def alchemical_network_to_task_graph(
                 node_id,
             )
             warehouse.store_task(unit)
-            # TODO: do we want a separate warehouse store for dags?
-            warehouse.store_setup_tokenizable(dag)
+            warehouse.store_protocol_dag(dag)
         for dependent_unit, dependency_unit in dag.graph.edges:
             upstream_id = str(dependency_unit.key)
             downstream_id = str(dependent_unit.key)

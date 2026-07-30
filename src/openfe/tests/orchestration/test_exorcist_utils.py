@@ -22,6 +22,10 @@ class _RecordingWarehouse:
     def store_task(self, task):
         self.stored_tasks.append(task)
 
+    def store_setup_tokenizable(self, obj):
+        # TODO: add tests for tokenizable storage?
+        pass
+
 
 def _network_units(benzene_variants_star_map):
     units = []
@@ -35,7 +39,6 @@ def test_alchemical_network_to_task_graph_stores_all_units(request, fixture):
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
     expected_units = _network_units(network)
-
     alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     stored_unit_names = [str(unit.name) for unit in warehouse.stored_tasks]
@@ -52,13 +55,11 @@ def test_alchemical_network_to_task_graph_uses_canonical_task_ids(request, fixtu
 
     graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
-    transformation_keys = {str(transformation.key) for transformation in network.edges}
     expected_protocol_unit_keys = sorted(str(unit.key) for unit in warehouse.stored_tasks)
     observed_protocol_unit_keys = []
 
     for node in graph.nodes:
-        transformation_key, protocol_unit_key = node.split(":", maxsplit=1)
-        assert transformation_key in transformation_keys
+        protocol_unit_key = node
         observed_protocol_unit_keys.append(protocol_unit_key)
 
     assert sorted(observed_protocol_unit_keys) == expected_protocol_unit_keys
@@ -86,8 +87,9 @@ def test_alchemical_network_to_task_graph_edge_direction_matches_dependencies(re
     units_by_key = {str(unit.key): unit for unit in warehouse.stored_tasks}
 
     for upstream_id, downstream_id in graph.edges:
-        _, upstream_key = upstream_id.split(":", maxsplit=1)
-        _, downstream_key = downstream_id.split(":", maxsplit=1)
+        # as of now this is true, but 'node' may contain more info
+        upstream_key = upstream_id
+        downstream_key = downstream_id
         upstream_unit = units_by_key[upstream_key]
         downstream_unit = units_by_key[downstream_key]
         assert upstream_unit in downstream_unit.dependencies
@@ -148,7 +150,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
             break
 
         checkout_order.append(taskid)
-        _, protocol_unit_key = taskid.split(":", maxsplit=1)
+        protocol_unit_key = taskid
         loaded_unit = warehouse.load_task(GufeKey(protocol_unit_key))
         assert str(loaded_unit.key) == protocol_unit_key
         db.mark_task_completed(taskid, success=True)

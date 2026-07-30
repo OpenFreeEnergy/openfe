@@ -26,6 +26,7 @@ class TestWarehouseBaseClass:
             result=MemoryStorage(),
             shared=MemoryStorage(),
             tasks=MemoryStorage(),
+            protocol_dags=MemoryStorage(),
         )
 
     @staticmethod

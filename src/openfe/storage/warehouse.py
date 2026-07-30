@@ -28,6 +28,12 @@ class WarehouseStores(TypedDict):
         Storage location for setup-related objects and configurations.
     result : ExternalStorage
         Storage location for result-related object.
+    shared : ExternalStorage
+        Storage location for non-permanent shared data.
+    tasks: ExternalStorage
+        Storage location for execution tasks.
+    protocol_dags: ExternalStorage
+        Storage location for ProtocolDAGs that correspond to the ProtocolUnits stored in 'tasks'.
 
     Notes
     -----
@@ -38,6 +44,7 @@ class WarehouseStores(TypedDict):
     result: ExternalStorage
     shared: ExternalStorage
     tasks: ExternalStorage
+    protocol_dags: ExternalStorage
 
 
 class WarehouseBaseClass:
@@ -106,6 +113,7 @@ class WarehouseBaseClass:
         self._store_gufe_tokenizable("setup", obj)
 
     def load_setup_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
+        # TODO: this doesn't actually look specifically in the result store, which is misleading
         """Load a GufeTokenizable object from the setup store.
 
         Parameters
@@ -131,6 +139,7 @@ class WarehouseBaseClass:
         return self._store_gufe_tokenizable("result", obj)
 
     def load_result_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
+        # TODO: this doesn't actually look specifically in the result store, which is misleading
         """Load a GufeTokenizable object from the result store.
 
         Parameters
@@ -144,6 +153,32 @@ class WarehouseBaseClass:
             The loaded object.
         """
         return self._load_gufe_tokenizable(gufe_key=obj)
+
+    def store_protocol_dag(self, dag: ProtocolDAG):
+        """Store a ProtocolDAG in the "protocol_dags" store of the warehouse
+
+        Parameters
+        ----------
+        dag : ProtocolDAG
+        """
+        # TODO: do we enforce type here?
+        self._store_gufe_tokenizable("protocol_dags", dag)
+
+    def load_protocol_dag(self, gufe_key=GufeKey) -> GufeTokenizable:
+        """Load a GufeTokenizable object from the protocol_dag store.
+
+        Parameters
+        ----------
+        obj : GufeKey
+            The key of the protocoldag to load.
+
+        Returns
+        -------
+        GufeTokenizable
+            The loaded object.
+        """
+        # TODO: type check that it is a protocol dag before returning?
+        return self._load_gufe_tokenizable(gufe_key=gufe_key)
 
     def exists(self, key: GufeKey) -> bool:
         """Check if an object with the given key exists in any store that holds tokenizables.
@@ -188,7 +223,7 @@ class WarehouseBaseClass:
 
     def _store_gufe_tokenizable(
         self,
-        store_name: Literal["setup", "result", "tasks"],
+        store_name: Literal["setup", "result", "tasks", "protocol_dags"],
         obj: GufeTokenizable,
         name: str | None = None,
     ):
@@ -352,7 +387,13 @@ class FileSystemWarehouse(WarehouseBaseClass):
         result_store = FileStorage(f"{root_dir}/result")
         shared_store = FileStorage(f"{root_dir}/shared")
         tasks_store = FileStorage(f"{root_dir}/tasks")
+        # TODO: we can store dags in setup if we have a performant way of accessing them
+        protocol_dag_store = FileStorage(f"{root_dir}/protocol_dags")
         stores = WarehouseStores(
-            setup=setup_store, result=result_store, shared=shared_store, tasks=tasks_store
+            setup=setup_store,
+            result=result_store,
+            shared=shared_store,
+            tasks=tasks_store,
+            protocol_dags=protocol_dag_store,
         )
         super().__init__(stores)
