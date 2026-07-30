@@ -8,6 +8,7 @@ from pathlib import Path
 
 import exorcist
 import networkx as nx
+import pandas as pd
 from gufe import AlchemicalNetwork
 
 from openfe.storage.warehouse import WarehouseBaseClass
@@ -43,14 +44,18 @@ def alchemical_network_to_task_graph(
     for transformation in alchemical_network.edges:
         dag = transformation.create()
         for unit in dag.protocol_units:
-            node_id = f"{str(transformation.key)}:{str(unit.key)}"
+            # TODO: is it possible that two transformations will use the same protocol unit?
+            # if so, we shouldn't use transformation.key here
+            node_id = str(unit.key)
             global_dag.add_node(
                 node_id,
             )
             warehouse.store_task(unit)
+            # TODO: do we want a separate warehouse store for dags?
+            warehouse.store_setup_tokenizable(dag)
         for dependent_unit, dependency_unit in dag.graph.edges:
-            upstream_id = f"{str(transformation.key)}:{str(dependency_unit.key)}"
-            downstream_id = f"{str(transformation.key)}:{str(dependent_unit.key)}"
+            upstream_id = str(dependency_unit.key)
+            downstream_id = str(dependent_unit.key)
             global_dag.add_edge(upstream_id, downstream_id)
 
     if not nx.is_directed_acyclic_graph(global_dag):
@@ -59,6 +64,7 @@ def alchemical_network_to_task_graph(
     return global_dag
 
 
+# TODO: do we test adding a multiple alchemical networks to the same task graph?
 def build_task_db_from_alchemical_network(
     alchemical_network: AlchemicalNetwork,
     warehouse: WarehouseBaseClass,
@@ -89,7 +95,7 @@ def build_task_db_from_alchemical_network(
     if db_path is None:
         db_path = Path("tasks.db")
 
-    global_dag = alchemical_network_to_task_graph(alchemical_network, warehouse)
+    global_dag: nx.DiGraph = alchemical_network_to_task_graph(alchemical_network, warehouse)
     db = exorcist.TaskStatusDB.from_filename(db_path)
     db.add_task_network(global_dag, max_tries)
     return db
