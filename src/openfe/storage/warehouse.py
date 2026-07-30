@@ -145,7 +145,8 @@ class WarehouseBaseClass:
         bool
             True if the object exists, False otherwise.
         """
-        return any(key in store for store in self.stores.values())
+        # TODO: resolve type checking
+        return any(key in store for store in self.stores.values())  # type: ignore
 
     def _get_store_for_key(self, key: GufeKey) -> ExternalStorage:
         """Function to find the store in which a gufe key is stored in.
@@ -165,9 +166,11 @@ class WarehouseBaseClass:
         ValueError
             If the key is not found in any store.
         """
+        # TODO: resolve mypy Literal/str conflict here
+        # https://mypy.readthedocs.io/en/stable/literal_types.html
         for name in self.stores:
-            if key in self.stores[name]:
-                return self.stores[name]
+            if key in self.stores[name]:  # type: ignore
+                return self.stores[name]  # type: ignore
         raise ValueError(f"GufeKey {key} is not stored")
 
     def _store_gufe_tokenizable(self, store_name: Literal["setup", "result"], obj: GufeTokenizable):
