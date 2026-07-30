@@ -98,6 +98,13 @@ def build_task_db_from_alchemical_network(
     return db
 
 
+def get_task_df(task_db: exorcist.TaskStatusDB):
+    task_status_unpack = {e.value: e.name for e in exorcist.TaskStatus}
+    task_table = pd.read_sql_table("tasks", task_db.engine)
+    task_table.replace({"status": task_status_unpack}, inplace=True)
+    return task_table
+
+
 def build_protocol_dag_result_from_task_db():
     pass
 
