@@ -1,5 +1,6 @@
 """Task orchestration utilities backed by Exorcist and a warehouse."""
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -48,6 +49,7 @@ class Worker:
             return {value.key}
 
         found: set[GufeKey] = set()
+        items: Iterable  # TODO: update this to dict_values | list after python 3.13 min?
         if isinstance(value, dict):
             items = value.values()
         elif isinstance(value, list):
