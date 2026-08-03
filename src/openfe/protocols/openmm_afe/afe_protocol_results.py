@@ -31,8 +31,13 @@ logger = logging.getLogger(__name__)
 
 
 class AbsoluteProtocolResultMixin:
-    bound_state = "solvent"
-    unbound_state = "vacuum"
+    """
+    Subclasses must define the class attributes ``env_state`` and
+    ``ref_state``, naming the two legs of the thermodynamic cycle stored in
+    ``self.data`` (e.g. ``env_state = "complex"``, ``ref_state = "solvent"``).
+    """
+    env_state: str
+    ref_state: str
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -40,7 +45,7 @@ class AbsoluteProtocolResultMixin:
         if any(
             len(pur_list) > 2
             for pur_list in itertools.chain(
-                self.data[self.bound_state].values(), self.data[self.unbound_state].values()
+                self.data[self.env_state].values(), self.data[self.ref_state].values()
             )
         ):
             raise NotImplementedError("Can't stitch together results yet")
@@ -87,7 +92,7 @@ class AbsoluteProtocolResultMixin:
 
         forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]] = {}
 
-        for key in [self.bound_state, self.unbound_state]:
+        for key in [self.env_state, self.ref_state]:
             forward_reverse[key] = [
                 pus[0].outputs["forward_and_reverse_energies"]
                 for pus in self.data[key].values()  # type: ignore[attr-defined]
@@ -128,7 +133,7 @@ class AbsoluteProtocolResultMixin:
         # Loop through and get the repeats and get the matrices
         overlap_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
 
-        for key in [self.bound_state, self.unbound_state]:
+        for key in [self.env_state, self.ref_state]:
             overlap_stats[key] = [
                 pus[0].outputs["unit_mbar_overlap"]
                 for pus in self.data[key].values()  # type: ignore[attr-defined]
@@ -163,7 +168,7 @@ class AbsoluteProtocolResultMixin:
         """
         repex_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
         try:
-            for key in [self.bound_state, self.unbound_state]:
+            for key in [self.env_state, self.ref_state]:
                 repex_stats[key] = [
                     pus[0].outputs["replica_exchange_statistics"]
                     for pus in self.data[key].values()  # type: ignore[attr-defined]
@@ -188,8 +193,8 @@ class AbsoluteProtocolResultMixin:
           simulation type.
         """
         replica_states: dict[str, list[npt.NDArray]] = {
-            self.bound_state: [],
-            self.unbound_state: [],
+            self.env_state: [],
+            self.ref_state: [],
         }
 
         def is_file(filename: str):
@@ -215,7 +220,7 @@ class AbsoluteProtocolResultMixin:
 
             return retval
 
-        for key in [self.bound_state, self.unbound_state]:
+        for key in [self.env_state, self.ref_state]:
             for pus in self.data[key].values():  # type: ignore[attr-defined]
                 states = get_replica_state(
                     pus[0].outputs["trajectory"],
@@ -240,7 +245,7 @@ class AbsoluteProtocolResultMixin:
         """
         equilibration_lengths: dict[str, list[float]] = {}
 
-        for key in [self.bound_state, self.unbound_state]:
+        for key in [self.env_state, self.ref_state]:
             equilibration_lengths[key] = [
                 pus[0].outputs["equilibration_iterations"]
                 for pus in self.data[key].values()  # type: ignore[attr-defined]
@@ -265,7 +270,7 @@ class AbsoluteProtocolResultMixin:
         """
         production_lengths: dict[str, list[float]] = {}
 
-        for key in [self.bound_state, self.unbound_state]:
+        for key in [self.env_state, self.ref_state]:
             production_lengths[key] = [
                 pus[0].outputs["production_iterations"]
                 for pus in self.data[key].values()  # type: ignore[attr-defined]
@@ -290,7 +295,7 @@ class AbsoluteProtocolResultMixin:
         """
         indices: dict[str, list[Optional[npt.NDArray]]] = {}
 
-        for key in [self.bound_state, self.unbound_state]:
+        for key in [self.env_state, self.ref_state]:
             indices[key] = []
             for pus in self.data[key].values():  # type: ignore[attr-defined]
                 indices[key].append(pus[0].outputs["selection_indices"])
@@ -303,8 +308,8 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResul
     Protocol results with the output of a AbsoluteSolvationProtocol
     """
 
-    bound_state = "solvent"
-    unbound_state = "vacuum"
+    env_state = "solvent"
+    ref_state = "vacuum"
 
     def get_individual_estimates(self) -> dict[str, list[tuple[Quantity, Quantity]]]:
         """
@@ -320,7 +325,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResul
         """
         dGs = {}
 
-        for state in [self.bound_state, self.unbound_state]:
+        for state in [self.env_state, self.ref_state]:
             state_dGs = [
                 (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
                 for pus in self.data[state].values()
@@ -389,8 +394,8 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult, AbsoluteProtocolResultM
     Protocol results with the output of a AbsoluteBindingProtocol.
     """
 
-    bound_state = "complex"
-    unbound_state = "solvent"
+    env_state = "complex"
+    ref_state = "solvent"
 
     def get_individual_estimates(
         self,

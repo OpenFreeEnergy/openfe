@@ -249,8 +249,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
 class HTopProtocolResultMixin:
     """
-    Mixin providing the shared getters for two-leg hybrid topology Protocol
-    results (``RBFEHTopProtocolResult``, ``RHFEHTopProtocolResult``).
+    Mixin providing the shared utilities for two-leg hybrid topology
+    ProtocolResults (``RBFEHTopProtocolResult``, ``RHFEHTopProtocolResult``).
 
     Subclasses must define the class attributes ``env_state`` and
     ``ref_state``, naming the two legs of the thermodynamic cycle stored in
