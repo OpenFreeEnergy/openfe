@@ -43,11 +43,6 @@ from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     add_force_in_separate_group,
 )
-from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_offmol_resname,
-    _set_offmol_metadata,
-    _set_offmol_resname,
-)
 
 from ..openmm_utils import (
     settings_validation,
