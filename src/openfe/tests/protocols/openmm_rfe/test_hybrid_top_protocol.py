@@ -2556,12 +2556,12 @@ def test_empty_atom_mapping(tmp_path, benzene_vacuum_system, toluene_vacuum_syst
         componentA_to_componentB={},
     )
 
-    with pytest.raises(ValueError, match="No atoms are mapped between the two alchemical components."):
+    with pytest.raises(
+        ValueError, match="No atoms are mapped between the two alchemical components."
+    ):
         # create the DAG and run validation
         _ = protocol.create(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=blank_mapping,
         )
-
-
