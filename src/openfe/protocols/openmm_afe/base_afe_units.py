@@ -710,8 +710,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
                 if candidate not in used:
                     return candidate
             raise ValueError(
-                f"Could not assign a unique residue name with stem {stem!r}; "
-                "too many colliding names."
+                f"Could not assign a unique residue name with stem {stem!r}."
             )
 
         # Seed with user-provided resnames so auto-assigned names avoid them.
