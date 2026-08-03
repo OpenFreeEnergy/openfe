@@ -753,7 +753,7 @@ def test_dry_run_benzene_toluene_noncubic(
 
 
 def test_dry_run_solv_user_charges_benzene_toluene(
-    benzene_modifications,
+    benzene_modifications_uncharged,
     T4_protein_component,
     tmp_path,
     protocol_dry_settings,
@@ -784,8 +784,8 @@ def test_dry_run_solv_user_charges_benzene_toluene(
         np.testing.assert_allclose(prop_chgs, offmol_pchgs)
         return smc, prop_chgs
 
-    benzene_offmol = benzene_modifications["benzene"].to_openff()
-    toluene_offmol = benzene_modifications["toluene"].to_openff()
+    benzene_offmol = benzene_modifications_uncharged["benzene"].to_openff()
+    toluene_offmol = benzene_modifications_uncharged["toluene"].to_openff()
 
     benzene_smc, benzene_charge = check_partial_charges(benzene_offmol)
     toluene_smc, toluene_charge = check_partial_charges(toluene_offmol)

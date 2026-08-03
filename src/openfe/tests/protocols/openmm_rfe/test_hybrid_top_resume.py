@@ -189,6 +189,7 @@ class TestCheckpointResuming:
             pdb_file=setup_results["pdb_structure"],
             trajectory=sim_results["nc"],
             checkpoint=sim_results["checkpoint"],
+            ligand_resnames=["LIG"],
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,
         )
