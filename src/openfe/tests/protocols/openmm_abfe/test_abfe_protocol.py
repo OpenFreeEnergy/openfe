@@ -50,13 +50,6 @@ def default_settings():
     return AbsoluteBindingProtocol.default_settings()
 
 
-@pytest.fixture(scope="module")
-def benzene_wcharges(benzene_modifications):
-    benz_off = benzene_modifications["benzene"].to_openff()
-    benz_off.assign_partial_charges(partial_charge_method="gasteiger")
-    return SmallMoleculeComponent.from_openff(benz_off)
-
-
 def test_create_default_protocol(default_settings):
     # this is roughly how it should be created
     protocol = AbsoluteBindingProtocol(
@@ -236,10 +229,10 @@ class TestT4LysozymeDryRun:
         return s
 
     @pytest.fixture(scope="class")
-    def dag(self, protocol, benzene_wcharges, T4_protein_component):
+    def dag(self, protocol, benzene_modifications, T4_protein_component):
         stateA = ChemicalSystem(
             {
-                "benzene": benzene_wcharges,
+                "benzene": benzene_modifications["benzene"],
                 "protein": T4_protein_component,
                 "solvent": self.solvent,
             }
