@@ -76,6 +76,11 @@ from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings, SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_resname,
+    _set_offmol_metadata,
+    _set_offmol_resname,
+)
 from openfe.utils import log_system_probe, without_oechem_backend
 
 from ..openmm_utils import (
@@ -649,6 +654,52 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         smc_comps_AB = smc_off_A | smc_off_B | smc_off_both
 
         return smc_comps_A, smc_comps_B, smc_comps_AB
+
+    @staticmethod
+    def _assign_residue_names(
+            smc_comps: dict[SmallMoleculeComponent, OFFMolecule],
+            alchemical: set[SmallMoleculeComponent],
+    ) -> list[str]:
+        """Assign residue names to ligands/cofactors and return alchemical resnames."""
+
+        def _unique(stem: str, used: set[str]) -> str:
+            for i in range(1, 10):
+                candidate = f"{stem}{i}"
+                if candidate not in used:
+                    return candidate
+            raise ValueError(
+                f"Could not assign a unique residue name with stem {stem!r}."
+            )
+
+        used: set[str] = set()
+        for offmol in smc_comps.values():
+            name = _get_offmol_resname(offmol)
+            if name is not None:
+                used.add(name)
+
+        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
+
+        resnum = 1
+        for smc, offmol in smc_comps.items():
+            if _get_offmol_resname(offmol) is not None:
+                continue
+            if smc in alchemical:
+                name = lig_name
+            else:
+                name = "COF" if "COF" not in used else _unique("CO", used)
+
+            _set_offmol_resname(offmol, name)
+            _set_offmol_metadata(offmol, "residue_number", resnum)
+            resnum += 1
+
+        names: set[str] = set()
+        for comp in alchemical:
+            name = _get_offmol_resname(smc_comps[comp])
+            assert name is not None
+            names.add(name)
+        alchem_resnames = sorted(names)
+
+        return alchem_resnames
 
     def get_system(
         self,

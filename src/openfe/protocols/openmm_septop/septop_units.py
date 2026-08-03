@@ -682,44 +682,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
 
         alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
-
-        def _unique(stem: str, used: set[str]) -> str:
-            for i in range(1, 10):
-                candidate = f"{stem}{i}"
-                if candidate not in used:
-                    return candidate
-            raise ValueError(
-                f"Could not assign a unique residue name with stem {stem!r}; "
-                "too many colliding names."
-            )
-
-        # Seed with user-provided resnames so auto-assigned names avoid them.
-        used: set[str] = set()
-        for offmol in smc_comps.values():
-            name = _get_offmol_resname(offmol)
-            if name is not None:
-                used.add(name)
-
-        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
-
-        resnum = 1
-        for smc, offmol in smc_comps.items():
-            if _get_offmol_resname(offmol) is not None:
-                continue
-            if smc in alchemical:
-                name = lig_name
-            else:
-                name = "COF" if "COF" not in used else _unique("CO", used)
-            _set_offmol_resname(offmol, name)
-            _set_offmol_metadata(offmol, "residue_number", resnum)
-            resnum += 1
-
-        names: set[str] = set()
-        for comp in alchemical:
-            name = _get_offmol_resname(smc_comps[comp])
-            assert name is not None
-            names.add(name)
-        alchem_resnames = sorted(names)
+        alchem_resnames = self._assign_residue_names(smc_comps, alchemical)
 
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
@@ -1101,44 +1064,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
 
         alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
-
-        def _unique(stem: str, used: set[str]) -> str:
-            for i in range(1, 10):
-                candidate = f"{stem}{i}"
-                if candidate not in used:
-                    return candidate
-            raise ValueError(
-                f"Could not assign a unique residue name with stem {stem!r}; "
-                "too many colliding names."
-            )
-
-        # Seed with user-provided resnames so auto-assigned names avoid them.
-        used: set[str] = set()
-        for offmol in smc_comps.values():
-            name = _get_offmol_resname(offmol)
-            if name is not None:
-                used.add(name)
-
-        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
-
-        resnum = 1
-        for smc, offmol in smc_comps.items():
-            if _get_offmol_resname(offmol) is not None:
-                continue
-            if smc in alchemical:
-                name = lig_name
-            else:
-                name = "COF" if "COF" not in used else _unique("CO", used)
-            _set_offmol_resname(offmol, name)
-            _set_offmol_metadata(offmol, "residue_number", resnum)
-            resnum += 1
-
-        names: set[str] = set()
-        for comp in alchemical:
-            name = _get_offmol_resname(smc_comps[comp])
-            assert name is not None
-            names.add(name)
-        alchem_resnames = sorted(names)
+        alchem_resnames = self._assign_residue_names(smc_comps, alchemical)
 
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
