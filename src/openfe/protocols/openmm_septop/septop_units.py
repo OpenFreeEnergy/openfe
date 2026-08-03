@@ -43,6 +43,11 @@ from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     add_force_in_separate_group,
 )
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_resname,
+    _set_offmol_metadata,
+    _set_offmol_resname,
+)
 
 from ..openmm_utils import (
     settings_validation,
@@ -675,6 +680,47 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+
+        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
+
+        def _unique(stem: str, used: set[str]) -> str:
+            for i in range(1, 10):
+                candidate = f"{stem}{i}"
+                if candidate not in used:
+                    return candidate
+            raise ValueError(
+                f"Could not assign a unique residue name with stem {stem!r}; "
+                "too many colliding names."
+            )
+
+        # Seed with user-provided resnames so auto-assigned names avoid them.
+        used: set[str] = set()
+        for offmol in smc_comps.values():
+            name = _get_offmol_resname(offmol)
+            if name is not None:
+                used.add(name)
+
+        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
+
+        resnum = 1
+        for smc, offmol in smc_comps.items():
+            if _get_offmol_resname(offmol) is not None:
+                continue
+            if smc in alchemical:
+                name = lig_name
+            else:
+                name = "COF" if "COF" not in used else _unique("CO", used)
+            _set_offmol_resname(offmol, name)
+            _set_offmol_metadata(offmol, "residue_number", resnum)
+            resnum += 1
+
+        names: set[str] = set()
+        for comp in alchemical:
+            name = _get_offmol_resname(smc_comps[comp])
+            assert name is not None
+            names.add(name)
+        alchem_resnames = sorted(names)
+
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
         # 3. Get settings
@@ -856,6 +902,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "restraint_geometry_A": restraint_geom_A.model_dump(),
                 "restraint_geometry_B": restraint_geom_B.model_dump(),
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
@@ -873,6 +920,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "alchem_factory": alchemical_factory,
                 "positions": equil_positions_AB,
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
@@ -1051,6 +1099,47 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+
+        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
+
+        def _unique(stem: str, used: set[str]) -> str:
+            for i in range(1, 10):
+                candidate = f"{stem}{i}"
+                if candidate not in used:
+                    return candidate
+            raise ValueError(
+                f"Could not assign a unique residue name with stem {stem!r}; "
+                "too many colliding names."
+            )
+
+        # Seed with user-provided resnames so auto-assigned names avoid them.
+        used: set[str] = set()
+        for offmol in smc_comps.values():
+            name = _get_offmol_resname(offmol)
+            if name is not None:
+                used.add(name)
+
+        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
+
+        resnum = 1
+        for smc, offmol in smc_comps.items():
+            if _get_offmol_resname(offmol) is not None:
+                continue
+            if smc in alchemical:
+                name = lig_name
+            else:
+                name = "COF" if "COF" not in used else _unique("CO", used)
+            _set_offmol_resname(offmol, name)
+            _set_offmol_metadata(offmol, "residue_number", resnum)
+            resnum += 1
+
+        names: set[str] = set()
+        for comp in alchemical:
+            name = _get_offmol_resname(smc_comps[comp])
+            assert name is not None
+            names.add(name)
+        alchem_resnames = sorted(names)
+
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
         # 2. Get settings
@@ -1138,6 +1227,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "topology": topology_file,
                 "standard_state_correction": corr.to("kilocalorie_per_mole"),
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
@@ -1153,6 +1243,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "alchem_factory": alchemical_factory,
                 "positions": positions_AB,
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,

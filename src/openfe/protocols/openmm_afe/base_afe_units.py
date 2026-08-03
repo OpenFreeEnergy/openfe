@@ -85,6 +85,11 @@ from openfe.protocols.openmm_utils.serialization import (
     make_vec3_box,
     serialize,
 )
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_resname,
+    _set_offmol_metadata,
+    _set_offmol_resname,
+)
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.utils import log_system_probe, without_oechem_backend
@@ -696,6 +701,43 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         # Get components
         alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
 
+        # Set residue names
+        alchemical = alchem_comps["stateA"]
+
+        def _unique(stem: str, used: set[str]) -> str:
+            for i in range(1, 10):
+                candidate = f"{stem}{i}"
+                if candidate not in used:
+                    return candidate
+            raise ValueError(
+                f"Could not assign a unique residue name with stem {stem!r}; "
+                "too many colliding names."
+            )
+
+        # Seed with user-provided resnames so auto-assigned names avoid them.
+        used: set[str] = set()
+        for offmol in small_mols.values():
+            name = _get_offmol_resname(offmol)
+            if name is not None:
+                used.add(name)
+
+        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
+
+        resnum = 1
+        for smc, offmol in small_mols.items():
+            if _get_offmol_resname(offmol) is not None:
+                continue
+            if smc in alchemical:
+                name = lig_name
+            else:
+                name = "COF" if "COF" not in used else _unique("CO", used)
+            _set_offmol_resname(offmol, name)
+            _set_offmol_metadata(offmol, "residue_number", resnum)
+            resnum += 1
+
+        alchem_resname = _get_offmol_resname(small_mols[alchemical])
+        assert alchem_resname is not None
+
         # Get settings
         settings = self._get_settings()
 
@@ -767,6 +809,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             "pdb_structure": pdb_structure,
             "selection_indices": selection_indices,
             "box_vectors": from_openmm(box_vectors),
+            "alchemical_resname": alchem_resname,
         }
 
         if standard_state_corr is not None:
