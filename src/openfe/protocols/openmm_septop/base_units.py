@@ -74,13 +74,13 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import omm_compute
-from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings, SettingsBaseModel
-from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.openmm_utils.offmolecule_utils import (
     _get_offmol_resname,
     _set_offmol_metadata,
     _set_offmol_resname,
 )
+from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings, SettingsBaseModel
+from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import log_system_probe, without_oechem_backend
 
 from ..openmm_utils import (
@@ -657,8 +657,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
     @staticmethod
     def _assign_residue_names(
-            smc_comps: dict[SmallMoleculeComponent, OFFMolecule],
-            alchemical: set[SmallMoleculeComponent],
+        smc_comps: dict[SmallMoleculeComponent, OFFMolecule],
+        alchemical: set[SmallMoleculeComponent],
     ) -> list[str]:
         """Assign residue names to ligands/cofactors and return alchemical resnames."""
 
@@ -667,9 +667,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 candidate = f"{stem}{i}"
                 if candidate not in used:
                     return candidate
-            raise ValueError(
-                f"Could not assign a unique residue name with stem {stem!r}."
-            )
+            raise ValueError(f"Could not assign a unique residue name with stem {stem!r}.")
 
         used: set[str] = set()
         for offmol in smc_comps.values():

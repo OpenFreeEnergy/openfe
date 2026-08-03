@@ -4,8 +4,8 @@ import itertools
 import json
 import math
 import pathlib
-from unittest import mock
 from collections import Counter
+from unittest import mock
 
 import gufe
 import mdtraj as md

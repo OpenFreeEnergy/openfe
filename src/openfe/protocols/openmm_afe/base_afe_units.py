@@ -77,6 +77,11 @@ from openfe.protocols.openmm_utils import (
 from openfe.protocols.openmm_utils.mdtraj_utils import (
     mdtraj_from_openmm,
 )
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_resname,
+    _set_offmol_metadata,
+    _set_offmol_resname,
+)
 from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
 )
@@ -84,11 +89,6 @@ from openfe.protocols.openmm_utils.serialization import (
     deserialize,
     make_vec3_box,
     serialize,
-)
-from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_offmol_resname,
-    _set_offmol_metadata,
-    _set_offmol_resname,
 )
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
@@ -709,9 +709,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
                 candidate = f"{stem}{i}"
                 if candidate not in used:
                     return candidate
-            raise ValueError(
-                f"Could not assign a unique residue name with stem {stem!r}."
-            )
+            raise ValueError(f"Could not assign a unique residue name with stem {stem!r}.")
 
         # Seed with user-provided resnames so auto-assigned names avoid them.
         used: set[str] = set()

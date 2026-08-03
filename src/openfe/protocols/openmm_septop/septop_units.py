@@ -35,13 +35,13 @@ from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
 from openfe.protocols.openmm_utils import omm_compute
-from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_offmol_resname,
     _get_offmol_metadata,
+    _get_offmol_resname,
     _set_offmol_metadata,
     _set_offmol_resname,
 )
+from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
