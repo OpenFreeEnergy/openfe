@@ -299,7 +299,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             if not m.componentA_to_componentB:
                 raise ValueError("No atoms are mapped between the two alchemical components.")
 
-
     @staticmethod
     def _validate_smcs(
         stateA: ChemicalSystem,
