@@ -272,6 +272,76 @@ class HTopProtocolResultMixin:
         ):
             raise NotImplementedError("Can't stitch together results yet")
 
+    def get_individual_estimates(self) -> dict[str, list[tuple[Quantity, Quantity]]]:
+        """
+        Get the individual estimate of the free energies for both legs.
+
+        Returns
+        -------
+        dGs : dict[str, list[tuple[openff.units.Quantity, openff.units.Quantity]]]
+          A dictionary, keyed for each leg of the thermodynamic cycle, e.g.
+          ``solvent`` and ``complex`` for a relaltive binding free energy or
+          ``solvent`` and ``vacuum`` for a relative hydration free energy,
+          with lists of tuples containing the individual free energy estimates
+          and associated MBAR uncertainties for each repeat of that simulation type.
+        """
+        dGs = {}
+
+        for state in [self.env_state, self.ref_state]:
+            dGs[state] = [
+                (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
+                for pus in self.data[state].values()
+            ]
+
+        return dGs
+
+    @staticmethod
+    def _get_average(estimates: list[tuple[Quantity, Quantity]]) -> Quantity:
+        u = estimates[0][0].u
+        dGs = [i[0].to(u).m for i in estimates]
+        return np.average(dGs) * u
+
+    @staticmethod
+    def _get_stdev(estimates: list[tuple[Quantity, Quantity]]) -> Quantity:
+        u = estimates[0][0].u
+        dGs = [i[0].to(u).m for i in estimates]
+        # use the unbiased sample standard deviation (ddof=1) as the repeats are sampled from the
+        # (inaccessible) population of possible repeats.
+        std = np.std(dGs, ddof=1)
+        if np.isnan(std):
+            std = 0.0
+        return std * u
+
+    def get_estimate(self) -> Quantity:
+        """Get the relative free energy estimate for this calculation.
+
+        Returns
+        -------
+        ddG : openff.units.Quantity
+          The difference free energy. This is a Quantity defined
+          with units.
+        """
+        individual_estimates = self.get_individual_estimates()
+        env_dG = self._get_average(individual_estimates[self.env_state])
+        ref_dG = self._get_average(individual_estimates[self.ref_state])
+
+        return env_dG - ref_dG
+
+    def get_uncertainty(self) -> Quantity:
+        """Get the relative free energy error for this calculation.
+
+        Returns
+        -------
+        err : openff.units.Quantity
+          The unbiased standard deviation between estimates of the relative
+          free energy. This is a Quantity defined with units.
+        """
+        individual_estimates = self.get_individual_estimates()
+        env_err = self._get_stdev(individual_estimates[self.env_state])
+        ref_err = self._get_stdev(individual_estimates[self.ref_state])
+
+        return np.sqrt(env_err**2 + ref_err**2)
+
     def get_forward_and_reverse_energy_analysis(
         self,
     ) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]]:
@@ -282,7 +352,9 @@ class HTopProtocolResultMixin:
         Returns
         -------
         forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, openff.units.Quantity]]]]]
-            A dictionary, keyed by leg of the thermodynamic cycle, with each
+            A dictionary, keyed by leg of the thermodynamic cycle, e.g. ``solvent``
+            and ``vacuum`` for a relative hydration free energy or ``solvent`` and
+            ``complex`` for a relative binding free energy, with each
             entry containing a list of dictionaries with the forward and
             reverse analysis of each repeat of that simulation type.
 
@@ -337,8 +409,10 @@ class HTopProtocolResultMixin:
         Returns
         -------
         overlap_stats : dict[str, list[dict[str, npt.NDArray]]]
-          A dictionary keyed by leg of the thermodynamic cycle, with each
-          entry containing a list of dictionaries with the MBAR overlap
+          A dictionary keyed by leg of the thermodynamic cycle, e.g. 
+          ``solvent`` and ``vacuum`` for a relative hydration free energy
+          or ``solvent`` and ``complex`` for a relative binding free energy,
+          with each entry containing a list of dictionaries with the MBAR overlap
           estimates of each repeat of that simulation type.
 
           The underlying MBAR dictionaries contain the following keys:
@@ -348,6 +422,7 @@ class HTopProtocolResultMixin:
             * ``matrix``: Estimated overlap matrix of observing a sample from
               state i in state j
         """
+        # Loop through and get the repeats and get the matrices
         overlap_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
 
         for key in [self.env_state, self.ref_state]:
@@ -361,7 +436,7 @@ class HTopProtocolResultMixin:
     def get_replica_transition_statistics(self) -> dict[str, list[dict[str, npt.NDArray]]]:
         """
         Get the replica exchange transition statistics for both legs of the
-        simulation.
+        thermodynamic cycle.
 
         Note
         ----
@@ -371,7 +446,9 @@ class HTopProtocolResultMixin:
         Returns
         -------
         repex_stats : dict[str, list[dict[str, npt.NDArray]]]
-          A dictionary keyed by leg of the thermodynamic cycle, with each
+          A dictionary keyed by leg of the thermodynamic cycle, e.g.
+          ``solvent`` and ``vacuum`` for a relative hydration free energy or ``solvent`` and
+          ``complex`` for a relative binding free energy, with each
           entry containing a list of dictionaries with the replica
           transition statistics for each repeat of that simulation type.
 
@@ -401,9 +478,15 @@ class HTopProtocolResultMixin:
         Returns
         -------
         replica_states : dict[str, list[npt.NDArray]]
-          Dictionary keyed by leg of the thermodynamic cycle, with lists of
+          Dictionary keyed by leg of the thermodynamic cycle, e.g.
+          ``solvent`` and ``vacuum`` for a relative hydration free energy or ``solvent`` and
+          ``complex`` for a relative binding free energy, with lists of
           replica states timeseries for each repeat of that simulation type.
         """
+        replica_states: dict[str, list[npt.NDArray]] = {
+            self.env_state: [],
+            self.ref_state: [],
+        }
 
         def is_file(filename: str):
             p = pathlib.Path(filename)
@@ -412,18 +495,27 @@ class HTopProtocolResultMixin:
                 raise ValueError(errmsg)
             return p
 
-        replica_states: dict[str, list[npt.NDArray]] = {self.env_state: [], self.ref_state: []}
+        def get_replica_state(nc, chk):
+            nc = is_file(nc)
+            dir_path = nc.parents[0]
+            chk = is_file(dir_path / chk).name
+
+            reporter = multistate.MultiStateReporter(
+                storage=nc, checkpoint_storage=chk, open_mode="r"
+            )
+
+            retval = np.asarray(reporter.read_replica_thermodynamic_states())
+            reporter.close()
+
+            return retval
 
         for key in [self.env_state, self.ref_state]:
             for pus in self.data[key].values():  # type: ignore[attr-defined]
-                nc = is_file(pus[0].outputs["trajectory"])
-                dir_path = nc.parents[0]
-                chk = is_file(pus[0].outputs["checkpoint"]).name
-                reporter = multistate.MultiStateReporter(
-                    storage=nc, checkpoint_storage=chk, open_mode="r"
+                states = get_replica_state(
+                    pus[0].outputs["trajectory"],
+                    pus[0].outputs["checkpoint"],
                 )
-                replica_states[key].append(np.asarray(reporter.read_replica_thermodynamic_states()))
-                reporter.close()
+                replica_states[key].append(states)
 
         return replica_states
 
@@ -435,6 +527,11 @@ class HTopProtocolResultMixin:
         Returns
         -------
         equilibration_lengths : dict[str, list[float]]
+          Dictionary keyed for each leg of the thermodynamic cycle, e.g.
+          ``solvent`` and ``vacuum`` for a relative hydration free energy or
+          ``solvent`` and ``complex`` for a relative binding free energy,
+          with lists of the number of equilibration iterations for each
+          repeat of that simulation type.
         """
         equilibration_lengths: dict[str, list[float]] = {}
 
@@ -454,6 +551,11 @@ class HTopProtocolResultMixin:
         Returns
         -------
         production_lengths : dict[str, list[float]]
+          Dictionary keyed for each leg of the thermodynamic cycle, e.g.
+          ``solvent`` and ``vacuum`` for a relative hydration free energy or
+          ``solvent`` and ``complex`` for a relative binding free energy,
+          with lists of the number of uncorrelated production samples for
+          each repeat of that simulation type.
         """
         production_lengths: dict[str, list[float]] = {}
 
@@ -473,9 +575,11 @@ class HTopProtocolResultMixin:
         Returns
         -------
         indices : dict[str, list[Optional[npt.NDArray]]]
-          A dictionary keyed by leg of the thermodynamic cycle, each
-          containing a list of NDArrays with the corresponding full system
-          atom indices for each atom written in the production trajectory
+          A dictionary keyed by leg of the thermodynamic cycle, e.g. 
+          ``solvent`` and ``vacuum`` for a relative hydration free energy or
+          ``solvent`` and ``complex`` for a relative binding free energy,
+          each containing a list of NDArrays with the corresponding full system
+          atom indices for each atom written in the PDB or production trajectory
           files for each replica.
         """
         indices: dict[str, list[Optional[npt.NDArray]]] = {}
@@ -497,75 +601,6 @@ class RBFEHTopProtocolResult(gufe.ProtocolResult, HTopProtocolResultMixin):
     env_state = "complex"
     ref_state = "solvent"
 
-    def get_individual_estimates(self) -> dict[str, list[tuple[Quantity, Quantity]]]:
-        """
-        Get the individual estimate of the free energies for both legs.
-
-        Returns
-        -------
-        dGs : dict[str, list[tuple[openff.units.Quantity, openff.units.Quantity]]]
-          A dictionary, keyed ``solvent`` and ``complex`` for each leg of the
-          thermodynamic cycle, with lists of tuples containing the individual
-          free energy estimates and associated MBAR uncertainties for each
-          repeat of that simulation type.
-        """
-        dGs = {}
-
-        for state in [self.env_state, self.ref_state]:
-            dGs[state] = [
-                (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
-                for pus in self.data[state].values()
-            ]
-
-        return dGs
-
-    @staticmethod
-    def _get_average(estimates: list[tuple[Quantity, Quantity]]) -> Quantity:
-        u = estimates[0][0].u
-        dGs = [i[0].to(u).m for i in estimates]
-        return np.average(dGs) * u
-
-    @staticmethod
-    def _get_stdev(estimates: list[tuple[Quantity, Quantity]]) -> Quantity:
-        u = estimates[0][0].u
-        dGs = [i[0].to(u).m for i in estimates]
-        # use the unbiased sample standard deviation (ddof=1) as the repeats are sampled from the
-        # (inaccessible) population of possible repeats.
-        std = np.std(dGs, ddof=1)
-        if np.isnan(std):
-            std = 0.0
-        return std * u
-
-    def get_estimate(self) -> Quantity:
-        """Get the relative binding free energy estimate for this calculation.
-
-        Returns
-        -------
-        ddG : openff.units.Quantity
-          The difference in binding free energy. This is a Quantity defined
-          with units.
-        """
-        individual_estimates = self.get_individual_estimates()
-        complex_dG = self._get_average(individual_estimates["complex"])
-        solv_dG = self._get_average(individual_estimates["solvent"])
-
-        return complex_dG - solv_dG
-
-    def get_uncertainty(self) -> Quantity:
-        """Get the relative binding free energy error for this calculation.
-
-        Returns
-        -------
-        err : openff.units.Quantity
-          The unbiased standard deviation between estimates of the relative
-          binding free energy. This is a Quantity defined with units.
-        """
-        individual_estimates = self.get_individual_estimates()
-        complex_err = self._get_stdev(individual_estimates["complex"])
-        solv_err = self._get_stdev(individual_estimates["solvent"])
-
-        return np.sqrt(complex_err**2 + solv_err**2)
-
 
 class RHFEHTopProtocolResult(gufe.ProtocolResult, HTopProtocolResultMixin):
     """
@@ -574,72 +609,3 @@ class RHFEHTopProtocolResult(gufe.ProtocolResult, HTopProtocolResultMixin):
 
     env_state = "solvent"
     ref_state = "vacuum"
-
-    def get_individual_estimates(self) -> dict[str, list[tuple[Quantity, Quantity]]]:
-        """
-        Get the individual estimate of the free energies for both legs.
-
-        Returns
-        -------
-        dGs : dict[str, list[tuple[openff.units.Quantity, openff.units.Quantity]]]
-          A dictionary, keyed ``solvent`` and ``vacuum`` for each leg of the
-          thermodynamic cycle, with lists of tuples containing the individual
-          free energy estimates and associated MBAR uncertainties for each
-          repeat of that simulation type.
-        """
-        dGs = {}
-
-        for state in [self.env_state, self.ref_state]:
-            dGs[state] = [
-                (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
-                for pus in self.data[state].values()
-            ]
-
-        return dGs
-
-    @staticmethod
-    def _get_average(estimates: list[tuple[Quantity, Quantity]]) -> Quantity:
-        u = estimates[0][0].u
-        dGs = [i[0].to(u).m for i in estimates]
-        return np.average(dGs) * u
-
-    @staticmethod
-    def _get_stdev(estimates: list[tuple[Quantity, Quantity]]) -> Quantity:
-        u = estimates[0][0].u
-        dGs = [i[0].to(u).m for i in estimates]
-        # use the unbiased sample standard deviation (ddof=1) as the repeats are sampled from the
-        # (inaccessible) population of possible repeats.
-        std = np.std(dGs, ddof=1)
-        if np.isnan(std):
-            std = 0.0
-        return std * u
-
-    def get_estimate(self) -> Quantity:
-        """Get the relative hydration free energy estimate for this calculation.
-
-        Returns
-        -------
-        ddG : openff.units.Quantity
-          The difference in hydration free energy. This is a Quantity
-          defined with units.
-        """
-        individual_estimates = self.get_individual_estimates()
-        solv_dG = self._get_average(individual_estimates["solvent"])
-        vac_dG = self._get_average(individual_estimates["vacuum"])
-
-        return solv_dG - vac_dG
-
-    def get_uncertainty(self) -> Quantity:
-        """Get the relative hydration free energy error for this calculation.
-
-        Returns
-        -------
-        err : openff.units.Quantity
-          The unbiased standard deviation between estimates of the relative
-          hydration free energy. This is a Quantity defined with units.
-        """
-        individual_estimates = self.get_individual_estimates()
-        solv_err = self._get_stdev(individual_estimates["solvent"])
-        vac_err = self._get_stdev(individual_estimates["vacuum"])
-
-        return np.sqrt(solv_err**2 + vac_err**2)

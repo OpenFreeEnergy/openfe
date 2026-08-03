@@ -54,7 +54,8 @@ class AbsoluteProtocolResultMixin:
         self,
     ) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]]:
         """
-        Get the reverse and forward analysis of the free energies.
+        Get the reverse and forward analysis of the free energies for both
+        legs of the thermodynamic cycle.
 
         Returns
         -------
@@ -62,7 +63,7 @@ class AbsoluteProtocolResultMixin:
             A dictionary, keyed for each leg of the thermodynamic cycle,
             either ``solvent`` and ``vacuum` for a solvation free energy or
           ``solvent`` and ``complex`` for a binding free energy,
-            with each containing a list of dictionaries containing the forward
+            with each containing a list of dictionaries with the forward
             and reverse analysis of each repeat of that simulation type.
 
             The forward and reverse analysis dictionaries contain:
@@ -143,8 +144,8 @@ class AbsoluteProtocolResultMixin:
 
     def get_replica_transition_statistics(self) -> dict[str, list[dict[str, npt.NDArray]]]:
         """
-        Get the replica exchange transition statistics for all
-        legs of the simulation.
+        Get the replica exchange transition statistics for both
+        legs of the thermodynamic cycle.
 
         Note
         ----
@@ -187,8 +188,8 @@ class AbsoluteProtocolResultMixin:
         -------
         replica_states : dict[str, list[npt.NDArray]]
           Dictionary keyed for each leg of the thermodynamic cycle, either
-          `solvent` and `vacuum` for solvation free energies,
-          or `complex` and `solvent` for binding free energies,
+          ``solvent`` and ``vacuum`` for solvation free energies,
+          or ``complex`` and ``solvent`` for binding free energies,
           with lists of replica states timeseries for each repeat of that
           simulation type.
         """
@@ -232,14 +233,15 @@ class AbsoluteProtocolResultMixin:
 
     def equilibration_iterations(self) -> dict[str, list[float]]:
         """
-        Get the number of equilibration iterations for each simulation.
+        Get the number of equilibration iterations for each repeat of
+        both legs of the calculation.
 
         Returns
         -------
         equilibration_lengths : dict[str, list[float]]
           Dictionary keyed for each leg of the thermodynamic cycle, either
-         `solvent` and `vacuum` for solvation free energies,
-          or `complex` and `solvent` for binding free energies,
+          ``solvent`` and ``vacuum`` for solvation free energies,
+          or ``complex`` and ``solvent`` for binding free energies,
           with lists containing the number of equilibration iterations for
           each repeat of that simulation type.
         """
@@ -255,16 +257,15 @@ class AbsoluteProtocolResultMixin:
 
     def production_iterations(self) -> dict[str, list[float]]:
         """
-        Get the number of production iterations for each simulation.
         Returns the number of uncorrelated production samples for each
-        repeat of the calculation.
+        repeat of both legs of the calculation.
 
         Returns
         -------
         production_lengths : dict[str, list[float]]
           Dictionary keyed for each leg of the thermodynamic cycle, either
-         `solvent` and `vacuum` for solvation free energies,
-          or `complex` and `solvent` for binding free energies,
+         ``solvent`` and ``vacuum`` for solvation free energies,
+          or ``complex`` and ``solvent`` for binding free energies,
           with lists containing the number of equilibration iterations for
           each repeat of that simulation type.
         """
@@ -287,11 +288,11 @@ class AbsoluteProtocolResultMixin:
         -------
         indices : dict[str, list[npt.NDArray]]
           A dictionary keyed for each state, either
-         `solvent` and `vacuum` for solvation free energies,
-          or `complex` and `solvent` for binding free energies,
+         ``solvent`` and ``vacuum`` for solvation free energies,
+          or ``complex`` and ``solvent`` for binding free energies,
           each containing a list of NDArrays containing the corresponding
-          full system atom indices for each atom written in the production
-          trajectory files for each replica.
+          full system atom indices for each atom written in the PDB or
+          production trajectory files for each replica.
         """
         indices: dict[str, list[Optional[npt.NDArray]]] = {}
 
