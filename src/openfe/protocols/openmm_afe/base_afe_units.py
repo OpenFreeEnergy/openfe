@@ -702,7 +702,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
 
         # Set residue names
-        alchemical = alchem_comps["stateA"]
+        alchemical = alchem_comps["stateA"][0]
 
         def _unique(stem: str, used: set[str]) -> str:
             for i in range(1, 10):
@@ -726,7 +726,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         for smc, offmol in small_mols.items():
             if _get_offmol_resname(offmol) is not None:
                 continue
-            if smc in alchemical:
+            if smc == alchemical:
                 name = lig_name
             else:
                 name = "COF" if "COF" not in used else _unique("CO", used)

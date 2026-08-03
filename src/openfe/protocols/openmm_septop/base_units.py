@@ -698,7 +698,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             assert name is not None
             names.add(name)
         alchem_resnames = sorted(names)
-
         return alchem_resnames
 
     def get_system(

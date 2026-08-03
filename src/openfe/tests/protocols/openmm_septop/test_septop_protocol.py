@@ -5,6 +5,7 @@ import json
 import math
 import pathlib
 from unittest import mock
+from collections import Counter
 
 import gufe
 import mdtraj as md
@@ -467,8 +468,8 @@ def test_dry_run_methods(
 ):
     protocol_dry_settings.solvent_simulation_settings.sampler_method = method
     protocol_dry_settings.complex_simulation_settings.sampler_method = method
-    protocol_dry_settings.complex_output_settings.output_indices = "resname UNK"
-    protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
+    protocol_dry_settings.complex_output_settings.output_indices = "resname LIG"
+    protocol_dry_settings.solvent_output_settings.output_indices = "resname LIG"
 
     protocol = SepTopProtocol(
         settings=protocol_dry_settings,
@@ -487,6 +488,13 @@ def test_dry_run_methods(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
     )
     pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
+    # Check for the residue names
+    residue_names = {res.name for res in pdb_file.topology.residues()}
+    assert "LIG" in residue_names
+    assert "UNK" not in residue_names
+    residue_counts = Counter(res.name for res in pdb_file.topology.residues())
+    assert residue_counts["LIG"] == 2
+    assert residue_counts["UNK"] == 0
     alchem_system = deserialize(solv_setup_output["system"])
     solv_sampler = sol_run_unit[0].run(
         alchem_system,

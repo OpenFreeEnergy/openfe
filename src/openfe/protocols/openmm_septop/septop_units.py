@@ -36,6 +36,12 @@ from rdkit import Chem
 
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.serialization import serialize
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_resname,
+    _get_offmol_metadata,
+    _set_offmol_metadata,
+    _set_offmol_resname,
+)
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
@@ -676,10 +682,9 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
 
-        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
-        alchem_resnames = self._assign_residue_names(smc_comps, alchemical)
-
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
+        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
+        alchem_resnames = self._assign_residue_names(smc_comps_AB, alchemical)
 
         # 3. Get settings
         settings = self._get_settings()
@@ -1058,10 +1063,10 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
 
-        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
-        alchem_resnames = self._assign_residue_names(smc_comps, alchemical)
-
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
+
+        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
+        alchem_resnames = self._assign_residue_names(smc_comps_AB, alchemical)
 
         # 2. Get settings
         settings = self._get_settings()
@@ -1075,7 +1080,16 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
             alchem_comps["stateA"][0],
             alchem_comps["stateB"][0],
         )
-        smc_off_B = {smc_B: smc_B.to_openff()}
+        old_off_B = smc_comps_AB[alchem_comps["stateB"][0]]
+        new_off_B = smc_B.to_openff()
+
+        _set_offmol_resname(new_off_B, _get_offmol_resname(old_off_B))
+        _set_offmol_metadata(
+            new_off_B,
+            "residue_number",
+            _get_offmol_metadata(old_off_B, "residue_number"),
+        )
+        smc_off_B = {smc_B: new_off_B}
 
         # 5. Get the OpenMM systems
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB, comp_resids_AB = (
