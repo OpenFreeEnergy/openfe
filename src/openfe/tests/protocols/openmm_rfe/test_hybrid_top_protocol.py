@@ -2565,3 +2565,44 @@ def test_empty_atom_mapping(tmp_path, benzene_vacuum_system, toluene_vacuum_syst
             stateB=toluene_vacuum_system,
             mapping=blank_mapping,
         )
+
+
+def test_too_few_mapped_atoms(benzene_vacuum_system, toluene_vacuum_system, vac_settings):
+    """Make sure an informative error is raised if the user supplies too few mapped heavy atoms."""
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    small_mapping = gufe.LigandAtomMapping(
+        componentA=benzene_vacuum_system["ligand"],
+        componentB=toluene_vacuum_system["ligand"],
+        # map H-C-C-H 4 atoms but only 2 heavy
+        componentA_to_componentB={0: 4, 1: 5, 6: 10, 7: 11},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Number of mapped heavy atoms is less than 3: 2 which is required for this protocol.",
+    ):
+        _ = protocol.create(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=small_mapping,
+        )
+
+
+def test_atom_mapping_logging(benzene_vacuum_system, toluene_vacuum_system, vac_settings, benzene_to_toluene_mapping, caplog):
+    """Make sure the mapping validation logs information on the number of mapped heavy atoms in the transformation."""
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    with caplog.at_level(logging.INFO):
+        _ = protocol.create(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=benzene_to_toluene_mapping,
+        )
+        assert "Number of mapped heavy atoms: 6, number of unique heavy atoms (A,B): (0, 1), ratio of alchemical atoms to core atoms: 0.17" in caplog.text
+
