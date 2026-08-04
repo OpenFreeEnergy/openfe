@@ -334,14 +334,27 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         num_mapped_heavy_atoms = len(mapped_heavy_atoms)
         if num_mapped_heavy_atoms < 3:
-            raise ValueError(f"Number of mapped heavy atoms is less than 3: {num_mapped_heavy_atoms} which is required for this protocol.")
+            raise ValueError(
+                f"Number of mapped heavy atoms is less than 3: {num_mapped_heavy_atoms} which is required for this protocol."
+            )
 
-        num_unique_heavy_atoms_a = sum(1 for atom in mol_a.GetAtoms() if atom.GetAtomicNum() != 1 and atom.GetIdx() not in atom_map.keys())
-        num_unique_heavy_atoms_b = sum(1 for atom in mol_b.GetAtoms() if atom.GetAtomicNum() != 1 and atom.GetIdx() not in atom_map.values())
+        num_unique_heavy_atoms_a = sum(
+            1
+            for atom in mol_a.GetAtoms()
+            if atom.GetAtomicNum() != 1 and atom.GetIdx() not in atom_map.keys()
+        )
+        num_unique_heavy_atoms_b = sum(
+            1
+            for atom in mol_b.GetAtoms()
+            if atom.GetAtomicNum() != 1 and atom.GetIdx() not in atom_map.values()
+        )
         # calculate the ratio of alchemical atoms to the core atoms and report
-        mapping_ratio = (num_unique_heavy_atoms_a + num_unique_heavy_atoms_b) / num_mapped_heavy_atoms
-        logger.info(f"Number of mapped heavy atoms: {num_mapped_heavy_atoms}, number of unique heavy atoms (A,B): {num_unique_heavy_atoms_a, num_unique_heavy_atoms_b}, ratio of alchemical atoms to core atoms: {mapping_ratio:.2f}")
-
+        mapping_ratio = (
+            num_unique_heavy_atoms_a + num_unique_heavy_atoms_b
+        ) / num_mapped_heavy_atoms
+        logger.info(
+            f"Number of mapped heavy atoms: {num_mapped_heavy_atoms}, number of unique heavy atoms (A,B): {num_unique_heavy_atoms_a, num_unique_heavy_atoms_b}, ratio of alchemical atoms to core atoms: {mapping_ratio:.2f}"
+        )
 
     @staticmethod
     def _validate_smcs(

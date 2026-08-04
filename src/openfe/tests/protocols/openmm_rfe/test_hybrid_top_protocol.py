@@ -2592,7 +2592,9 @@ def test_too_few_mapped_atoms(benzene_vacuum_system, toluene_vacuum_system, vac_
         )
 
 
-def test_atom_mapping_logging(benzene_vacuum_system, toluene_vacuum_system, vac_settings, benzene_to_toluene_mapping, caplog):
+def test_atom_mapping_logging(
+    benzene_vacuum_system, toluene_vacuum_system, vac_settings, benzene_to_toluene_mapping, caplog
+):
     """Make sure the mapping validation logs information on the number of mapped heavy atoms in the transformation."""
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=vac_settings,
@@ -2604,5 +2606,7 @@ def test_atom_mapping_logging(benzene_vacuum_system, toluene_vacuum_system, vac_
             stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
         )
-        assert "Number of mapped heavy atoms: 6, number of unique heavy atoms (A,B): (0, 1), ratio of alchemical atoms to core atoms: 0.17" in caplog.text
-
+        assert (
+            "Number of mapped heavy atoms: 6, number of unique heavy atoms (A,B): (0, 1), ratio of alchemical atoms to core atoms: 0.17"
+            in caplog.text
+        )
