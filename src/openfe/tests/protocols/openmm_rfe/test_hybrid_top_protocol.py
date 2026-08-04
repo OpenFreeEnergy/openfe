@@ -2573,7 +2573,10 @@ def test_broken_bond_mapping(broken_bond_mapping, vac_settings):
         settings=vac_settings,
     )
 
-    with pytest.raises(ValueError, match="Bond 16-27 in componentA is broken in componentB via the provided mapping."):
+    with pytest.raises(
+        ValueError,
+        match="Bond 16-27 in componentA is broken in componentB via the provided mapping.",
+    ):
         _ = protocol.create(
             stateA=gufe.ChemicalSystem({"ligand": broken_bond_mapping.componentA}),
             stateB=gufe.ChemicalSystem({"ligand": broken_bond_mapping.componentB}),

@@ -302,7 +302,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             # check for broken bonds in the mapping
             RelativeHybridTopologyProtocol._check_for_bond_breaks(mapping=m)
 
-
     @staticmethod
     def _check_for_bond_breaks(
         mapping: ComponentMapping,
@@ -321,8 +320,14 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             If any bonds would be broken via the provided mapping.
         """
         # generate a list of bonds in the end states
-        mol_a_bonds = {frozenset((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())) for bond in mapping.componentA.to_rdkit().GetBonds()}
-        mol_b_bonds = {frozenset((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())) for bond in mapping.componentB.to_rdkit().GetBonds()}
+        mol_a_bonds = {
+            frozenset((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()))
+            for bond in mapping.componentA.to_rdkit().GetBonds()
+        }
+        mol_b_bonds = {
+            frozenset((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()))
+            for bond in mapping.componentB.to_rdkit().GetBonds()
+        }
         atom_map = mapping.componentA_to_componentB
 
         # for each bond in moleculeA if the atoms are mapped then make sure the mapped atoms are also bonded
@@ -330,8 +335,9 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             if atom_a in atom_map and atom_b in atom_map:
                 mapped_bond = frozenset((atom_map[atom_a], atom_map[atom_b]))
                 if mapped_bond not in mol_b_bonds:
-                    raise ValueError(f"Bond {atom_a}-{atom_b} in componentA is broken in componentB via the provided mapping.")
-
+                    raise ValueError(
+                        f"Bond {atom_a}-{atom_b} in componentA is broken in componentB via the provided mapping."
+                    )
 
     @staticmethod
     def _validate_smcs(
