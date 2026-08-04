@@ -811,3 +811,20 @@ def htf_chlorobenzene_benzene(
         "vdW_scale": ff.get_parameter_handler("vdW").scale14,
         "force_field": ff,
     }
+
+
+@pytest.fixture()
+def broken_bond_mapping() -> LigandAtomMapping:
+    """Build a broken bond mapping for two pfkfb3 ligands"""
+    with resources.as_file(resources.files("openfe.tests.data")) as f:
+        supplier = Chem.SDMolSupplier(str(f / "pfkfb3_ligands.sdf"), removeHs=False)
+        mol_by_name = dict()
+        for mol in supplier:
+            smc = SmallMoleculeComponent(mol)
+            mol_by_name[smc.name] = smc
+
+    return LigandAtomMapping(
+        componentA=mol_by_name["47"],
+        componentB=mol_by_name["46"],
+        componentA_to_componentB={29: 32, 30: 31, 31: 33, 32: 34, 33: 38, 34: 37, 36: 35, 37: 36, 38: 39, 39: 40, 40: 41, 41: 42, 42: 43, 43: 44, 0: 2, 1: 3, 2: 0, 3: 1, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 14, 11: 10, 12: 13, 13: 25, 14: 11, 15: 12, 16: 26, 17: 15, 18: 16, 19: 17, 20: 18, 21: 19, 22: 20, 23: 21, 24: 23, 25: 22, 26: 24, 27: 28, 28: 27,}
+    )

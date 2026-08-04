@@ -299,6 +299,40 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             if not m.componentA_to_componentB:
                 raise ValueError("No atoms are mapped between the two alchemical components.")
 
+            # check for broken bonds in the mapping
+            RelativeHybridTopologyProtocol._check_for_bond_breaks(mapping=m)
+
+
+    @staticmethod
+    def _check_for_bond_breaks(
+        mapping: ComponentMapping,
+    ):
+        """
+        Checks for bond breaking atom mappings in the provided ComponentMapping.
+
+        Parameters
+        ----------
+        mapping : ComponentMapping
+            The mapping to check
+
+        Raises
+        ------
+        ValueError
+            If any bonds would be broken via the provided mapping.
+        """
+        # generate a list of bonds in the end states
+        mol_a_bonds = {frozenset((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())) for bond in mapping.componentA.to_rdkit().GetBonds()}
+        mol_b_bonds = {frozenset((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())) for bond in mapping.componentB.to_rdkit().GetBonds()}
+        atom_map = mapping.componentA_to_componentB
+
+        # for each bond in moleculeA if the atoms are mapped then make sure the mapped atoms are also bonded
+        for atom_a, atom_b in mol_a_bonds:
+            if atom_a in atom_map and atom_b in atom_map:
+                mapped_bond = frozenset((atom_map[atom_a], atom_map[atom_b]))
+                if mapped_bond not in mol_b_bonds:
+                    raise ValueError(f"Bond {atom_a}-{atom_b} in componentA is broken in componentB via the provided mapping.")
+
+
     @staticmethod
     def _validate_smcs(
         stateA: ChemicalSystem,
