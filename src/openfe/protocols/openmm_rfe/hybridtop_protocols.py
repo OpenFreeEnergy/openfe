@@ -274,6 +274,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         ValueError
           * If there are more than one mapping or mapping is None
           * If the mapping components are not in the alchemical components.
+          * If the atom mapping is empty.
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
@@ -293,6 +294,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                         f"Mapping component{state} {comp} not "
                         f"in alchemical components of state{state}"
                     )
+
+            # make sure the mapping is not empty
+            if not m.componentA_to_componentB:
+                raise ValueError("No atoms are mapped between the two alchemical components.")
 
     @staticmethod
     def _validate_smcs(
