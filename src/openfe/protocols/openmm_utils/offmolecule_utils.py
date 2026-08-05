@@ -1,12 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import logging
-from typing import Any
-from typing import Collection
+from typing import Any, Collection
 
 from openff.toolkit import Molecule as OFFMolecule
-from openfe import SmallMoleculeComponent, Component
 
+from openfe import Component, SmallMoleculeComponent
 
 logger = logging.getLogger(__name__)
 

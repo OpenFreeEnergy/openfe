@@ -681,12 +681,10 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
         assigned = assign_offmol_residue_metadata(
-            smc_comps_AB, alchem_comps["stateA"] + alchem_comps["stateB"],
+            smc_comps_AB,
+            alchem_comps["stateA"] + alchem_comps["stateB"],
         )
-        alchem_resnames = [
-            assigned[c] for c in
-            alchem_comps["stateA"] + alchem_comps["stateB"]
-        ]
+        alchem_resnames = [assigned[c] for c in alchem_comps["stateA"] + alchem_comps["stateB"]]
 
         # 3. Get settings
         settings = self._get_settings()
@@ -1057,12 +1055,10 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
         assigned = assign_offmol_residue_metadata(
-            smc_comps_AB, alchem_comps["stateA"] + alchem_comps["stateB"],
+            smc_comps_AB,
+            alchem_comps["stateA"] + alchem_comps["stateB"],
         )
-        alchem_resnames = [
-            assigned[c] for c in
-            alchem_comps["stateA"] + alchem_comps["stateB"]
-        ]
+        alchem_resnames = [assigned[c] for c in alchem_comps["stateA"] + alchem_comps["stateB"]]
 
         # 2. Get settings
         settings = self._get_settings()
