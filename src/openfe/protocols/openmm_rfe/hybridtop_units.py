@@ -46,11 +46,7 @@ from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
 
 import openfe
-from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_offmol_resname,
-    _set_offmol_metadata,
-    _set_offmol_resname,
-)
+from openfe.protocols.openmm_utils.offmolecule_utils import assign_offmol_residue_metadata
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
@@ -758,45 +754,10 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         alchem_comps = self._inputs["alchemical_components"]
         solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
 
-        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
-
-        def _unique(stem: str, used: set[str]) -> str:
-            for i in range(1, 10):
-                candidate = f"{stem}{i}"
-                if candidate not in used:
-                    return candidate
-            raise ValueError(
-                f"Could not assign a unique residue name with stem {stem!r}; "
-                "too many colliding names."
-            )
-
-        # Seed with user-provided resnames so auto-assigned names avoid them.
-        used: set[str] = set()
-        for offmol in small_mols.values():
-            name = _get_offmol_resname(offmol)
-            if name is not None:
-                used.add(name)
-
-        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
-
-        resnum = 1
-        for smc, offmol in small_mols.items():
-            if _get_offmol_resname(offmol) is not None:
-                continue
-            if smc in alchemical:
-                name = lig_name
-            else:
-                name = "COF" if "COF" not in used else _unique("CO", used)
-            _set_offmol_resname(offmol, name)
-            _set_offmol_metadata(offmol, "residue_number", resnum)
-            resnum += 1
-
-        names: set[str] = set()
-        for comp in alchemical:
-            name = _get_offmol_resname(small_mols[comp])
-            assert name is not None
-            names.add(name)
-        alchem_resnames = sorted(names)
+        assigned = assign_offmol_residue_metadata(
+            small_mols, alchem_comps["stateA"] + alchem_comps["stateB"]
+        )
+        alchem_resnames = [assigned[c] for c in alchem_comps["stateA"] + alchem_comps["stateB"]]
 
         # Assign partial charges now to avoid any discrepancies later
         self._assign_partial_charges(settings["charge_settings"], small_mols)
