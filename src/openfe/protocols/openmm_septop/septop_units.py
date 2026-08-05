@@ -1090,7 +1090,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # system AB
         comp_atomids_AB = self._get_atom_indices(omm_topology_AB, comp_resids_AB)
         atom_indices_AB_A = comp_atomids_AB[alchem_comps["stateA"][0]]
-        atom_indices_AB_B = comp_atomids_AB[smc_B]
+        atom_indices_AB_B = comp_atomids_AB[alchem_comps["stateB"][0]]
 
         # 7. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
@@ -1104,7 +1104,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 8. Apply Restraints
         rdmol_A = alchem_comps["stateA"][0].to_rdkit()
-        rdmol_B = smc_B.to_rdkit()
+        rdmol_B = alchem_comps["stateB"][0].to_rdkit()
         Chem.SanitizeMol(rdmol_A)
         Chem.SanitizeMol(rdmol_B)
 
