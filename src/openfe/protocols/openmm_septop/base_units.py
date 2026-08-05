@@ -74,11 +74,6 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import omm_compute
-from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_offmol_resname,
-    _set_offmol_metadata,
-    _set_offmol_resname,
-)
 from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings, SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import log_system_probe, without_oechem_backend
@@ -654,7 +649,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         smc_comps_AB = smc_off_A | smc_off_B | smc_off_both
 
         return smc_comps_A, smc_comps_B, smc_comps_AB
-
 
     def get_system(
         self,
