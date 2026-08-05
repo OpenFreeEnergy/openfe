@@ -7,17 +7,18 @@ dependencies:
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
   - duecredit<0.10
-  # - kartograf>=2.0.0
+  # - kartograf>=2.0.0  # temporary, until gufe v1.13 is released
+  - dill  # temporary, needed by kartograf. remove when gufe v1.13 is released
   - konnektor~=0.4.0
   - lomap2>=3.2.1
   - networkx
   - numpy
   - openfe-analysis>=0.5.0
-  - openff-interchange-base >=0.5.4
+  - openff-interchange-base >=0.5.4  # adds pydantic 2.13 support
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
   - openff-toolkit-base >=0.16.2
-  - openff-units >=0.4.0
+  - openff-units >=0.4.0  # adds pydantic 2.13 support
   - openmm ~=8.4.0  # omit 8.3.0 and 8.3.1 due to https://github.com/openmm/openmm/pull/5069
   - openmmforcefields >=0.15.1  # min needed for https://github.com/openmm/openmmforcefields/pull/414
   - openmmtools >=0.26  # fix to support membrane barostat: https://github.com/choderalab/openmmtools/pull/798
@@ -51,13 +52,9 @@ dependencies:
   - sphinx-toolbox
   # Control blas/openmp threads
   - threadpoolctl
-  # temporary
-  - dill
   - pip:
-    - git+https://github.com/OpenFreeEnergy/kartograf@main
+    - git+https://github.com/OpenFreeEnergy/kartograf@main  # needs gufe which pins to pydantic < 2.13. update this once gufe v1.13 is released on conda-forge
     - git+https://github.com/OpenFreeEnergy/gufe@maint/pydantic_3.13
-
-
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
