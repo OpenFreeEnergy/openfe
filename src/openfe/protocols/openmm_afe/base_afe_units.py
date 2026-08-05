@@ -77,11 +77,7 @@ from openfe.protocols.openmm_utils import (
 from openfe.protocols.openmm_utils.mdtraj_utils import (
     mdtraj_from_openmm,
 )
-from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_offmol_resname,
-    _set_offmol_metadata,
-    _set_offmol_resname,
-)
+from openfe.protocols.openmm_utils.offmolecule_utils import assign_offmol_residue_metadata
 from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
 )
@@ -701,39 +697,9 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         # Get components
         alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
 
-        # Set residue names
-        alchemical = alchem_comps["stateA"][0]
-
-        def _unique(stem: str, used: set[str]) -> str:
-            for i in range(1, 10):
-                candidate = f"{stem}{i}"
-                if candidate not in used:
-                    return candidate
-            raise ValueError(f"Could not assign a unique residue name with stem {stem!r}.")
-
-        # Seed with user-provided resnames so auto-assigned names avoid them.
-        used: set[str] = set()
-        for offmol in small_mols.values():
-            name = _get_offmol_resname(offmol)
-            if name is not None:
-                used.add(name)
-
-        lig_name = "LIG" if "LIG" not in used else _unique("LG", used)
-
-        resnum = 1
-        for smc, offmol in small_mols.items():
-            if _get_offmol_resname(offmol) is not None:
-                continue
-            if smc == alchemical:
-                name = lig_name
-            else:
-                name = "COF" if "COF" not in used else _unique("CO", used)
-            _set_offmol_resname(offmol, name)
-            _set_offmol_metadata(offmol, "residue_number", resnum)
-            resnum += 1
-
-        alchem_resname = _get_offmol_resname(small_mols[alchemical])
-        assert alchem_resname is not None
+        # Assign residue names/numbers to the ligand and any cofactors
+        assigned = assign_offmol_residue_metadata(small_mols, alchem_comps["stateA"])
+        alchem_resname = assigned[alchem_comps["stateA"][0]]
 
         # Get settings
         settings = self._get_settings()

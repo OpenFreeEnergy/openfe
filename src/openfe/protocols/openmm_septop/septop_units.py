@@ -36,10 +36,7 @@ from rdkit import Chem
 
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_offmol_metadata,
-    _get_offmol_resname,
-    _set_offmol_metadata,
-    _set_offmol_resname,
+    assign_offmol_residue_metadata,
 )
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
@@ -683,8 +680,13 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
 
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
-        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
-        alchem_resnames = self._assign_residue_names(smc_comps_AB, alchemical)
+        assigned = assign_offmol_residue_metadata(
+            smc_comps_AB, alchem_comps["stateA"] + alchem_comps["stateB"],
+        )
+        alchem_resnames = [
+            assigned[c] for c in
+            alchem_comps["stateA"] + alchem_comps["stateB"]
+        ]
 
         # 3. Get settings
         settings = self._get_settings()
@@ -901,11 +903,10 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
     def _update_positions(
         mol_A: SmallMoleculeComponent,
         mol_B: SmallMoleculeComponent,
-    ) -> SmallMoleculeComponent:
+    ) -> Quantity:
         """
         Computes the amount to offset the second ligand by in the solution
-        phase during RBFE calculations and applies the offset to the ligand,
-        returning the SmallMoleculeComponent with the updated positions.
+        phase during RBFE calculations.
 
         Parameters
         ----------
@@ -915,9 +916,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
           The SmallMoleculeComponent of ligand B
         Returns
         -------
-        updated_mol_B: SmallMoleculeComponent
-          The SmallMoleculeComponent of ligand B after updating its positions
-          to be a certain distance away from ligand A
+        offset : openff.units.Quantity
+          The translation vector to add to every ligand B atom position.
         """
 
         # Convert SmallMolecule to Rdkit Molecule
@@ -934,15 +934,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         ligand_offset = pos_ligandA.mean(0) - pos_ligandB.mean(0)
         ligand_offset[0] += ligand_distance
 
-        # Offset the ligandB.
-        pos_ligandB += ligand_offset
-
-        # Extract updated system positions.
-        rdmol_B.GetConformers()[0].SetPositions(pos_ligandB)
-
-        updated_mol_B = SmallMoleculeComponent(rdmol_B)
-
-        return updated_mol_B
+        return Quantity(ligand_offset, "angstrom")
 
     def _add_restraints(
         self,
@@ -1065,8 +1057,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
-        alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
-        alchem_resnames = self._assign_residue_names(smc_comps_AB, alchemical)
+        assigned = assign_offmol_residue_metadata(
+            smc_comps_AB, alchem_comps["stateA"] + alchem_comps["stateB"],
+        )
+        alchem_resnames = [
+            assigned[c] for c in
+            alchem_comps["stateA"] + alchem_comps["stateB"]
+        ]
 
         # 2. Get settings
         settings = self._get_settings()
@@ -1076,20 +1073,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 4. Update the positions of ligand B:
         #    - solvent: Offset ligand B with respect to ligand A
-        smc_B = self._update_positions(
+        offset = self._update_positions(
             alchem_comps["stateA"][0],
             alchem_comps["stateB"][0],
         )
-        old_off_B = smc_comps_AB[alchem_comps["stateB"][0]]
-        new_off_B = smc_B.to_openff()
-
-        _set_offmol_resname(new_off_B, _get_offmol_resname(old_off_B))
-        _set_offmol_metadata(
-            new_off_B,
-            "residue_number",
-            _get_offmol_metadata(old_off_B, "residue_number"),
-        )
-        smc_off_B = {smc_B: new_off_B}
+        off_B = smc_comps_AB[alchem_comps["stateB"][0]]
+        off_B._conformers[0] = off_B._conformers[0] + offset
+        smc_off_B = {alchem_comps["stateB"][0]: off_B}
 
         # 5. Get the OpenMM systems
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB, comp_resids_AB = (
