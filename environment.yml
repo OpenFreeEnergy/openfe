@@ -9,7 +9,7 @@ dependencies:
   - duecredit<0.10
   # - kartograf>=2.0.0  # temporary, until gufe v1.13 is released
   - dill  # temporary, needed by kartograf. remove when gufe v1.13 is released
-  - konnektor~=0.4.0
+  # - konnektor~=0.4.0  # temporary, until gufe v1.13 is released
   - lomap2>=3.2.1
   - networkx
   - numpy
@@ -54,7 +54,8 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/kartograf@main  # needs gufe which pins to pydantic < 2.13. update this once gufe v1.13 is released on conda-forge
-    - git+https://github.com/OpenFreeEnergy/gufe@maint/pydantic_3.13
+    - git+https://github.com/OpenFreeEnergy/konnektor@v0.4.0
+    - git+https://github.com/OpenFreeEnergy/gufe@main
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
