@@ -30,7 +30,7 @@ dependencies:
   - pip
   - pooch >= 1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
   - py3dmol
-  - pydantic ==2.13.*
+  - pydantic >=2.13.0
   - pygraphviz
   - pytest
   - pytest-xdist
