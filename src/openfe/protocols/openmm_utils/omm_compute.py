@@ -52,6 +52,7 @@ def get_openmm_platform(
                 "cpu": "CPU",
                 "opencl": "OpenCL",
                 "cuda": "CUDA",
+                "hip": "HIP",
             }[str(platform_name).lower()]
         except KeyError:
             pass
@@ -61,18 +62,18 @@ def get_openmm_platform(
         platform = Platform.getPlatformByName(platform_name)
     # Set precision and properties
     name = platform.getName()
-    if name in ["CUDA", "OpenCL"]:
+    if name in ["CUDA", "OpenCL", "HIP"]:
         platform.setPropertyDefaultValue("Precision", "mixed")
         if gpu_device_index is not None:
             index_list = ",".join(str(i) for i in gpu_device_index)
             platform.setPropertyDefaultValue("DeviceIndex", index_list)
 
-    if name == "CUDA":
+    if name in ["CUDA", "HIP"]:
         platform.setPropertyDefaultValue("DeterministicForces", "true")
 
-    if name != "CUDA":
+    if name not in ["CUDA", "HIP"]:
         wmsg = (
-            f"Non-CUDA platform selected: {name}, this may significantly "
+            f"Either a non GPU platform or OpenCL selected: {name}, this may significantly "
             "impact simulation performance"
         )
         warnings.warn(wmsg)
