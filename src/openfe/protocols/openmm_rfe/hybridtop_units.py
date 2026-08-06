@@ -757,7 +757,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         assigned = assign_offmol_residue_metadata(
             small_mols, alchem_comps["stateA"] + alchem_comps["stateB"]
         )
-        alchem_resnames = [assigned[c] for c in alchem_comps["stateA"] + alchem_comps["stateB"]]
+        # We only store the stateA residue name since that's what is present
+        # in the topology
+        alchem_resnames = assigned[alchem_comps["stateA"]]
 
         # Assign partial charges now to avoid any discrepancies later
         self._assign_partial_charges(settings["charge_settings"], small_mols)
