@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -48,4 +49,4 @@ jobs:
           micromamba list
 
       - name: "Lint with mypy"
-        run: mypy 
+        run: mypy --warn-unused-ignores

@@ -64,7 +64,7 @@ lint.isort.known-first-party = [ "openfe" ]
 [tool.mypy]
 files = "src/openfe"  # TODO: add src/openfecli
 ignore_missing_imports = true
-warn_unused_ignores = true
+# warn_unused_ignores = true
 
 [tool.coverage]
 run.omit = [
