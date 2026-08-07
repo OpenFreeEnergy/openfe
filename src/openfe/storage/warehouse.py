@@ -8,7 +8,7 @@ import re
 from typing import Generator, Literal, TypedDict
 
 from gufe.protocols.protocoldag import ProtocolDAG
-from gufe.protocols.protocolunit import ProtocolUnit
+from gufe.protocols.protocolunit import ProtocolUnit, ProtocolUnitResult
 from gufe.storage.externalresource import ExternalStorage, FileStorage
 from gufe.tokenization import (
     JSON_HANDLER,
@@ -355,6 +355,17 @@ class WarehouseBaseClass:
             if item.startswith("ProtocolDAG"):
                 dag = self.load_protocol_dag(item)
                 yield dag
+
+    def get_unit_results(self) -> Generator[ProtocolUnitResult]:
+        """Yield all ProtocolUnitResult(s) stored in the Warehouse's 'results' store."""
+        for i in self.stores["result"]:
+            obj = self.load_result_tokenizable(i)
+            if isinstance(obj, ProtocolUnitResult):
+                yield obj
+            else:
+                raise RuntimeError(
+                    f"gufe tokenizable {obj} found in result store, but is not a ProtocolUnitResult."
+                )
 
     @property
     def setup_store(self):
