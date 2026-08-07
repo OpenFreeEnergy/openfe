@@ -1,7 +1,7 @@
 **Added:**
 
 * Added support for user-defined Boresch restraints in the
-  SepTop Protocol (`PR # <https://github.com/OpenFreeEnergy/openfe/pull/>`_).
+  SepTop Protocol (`PR #2128 <https://github.com/OpenFreeEnergy/openfe/pull/2128>`_).
 
 **Changed:**
 
