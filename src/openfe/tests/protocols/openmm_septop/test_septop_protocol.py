@@ -32,6 +32,9 @@ from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
+from openfe.protocols.openmm_afe.equil_afe_settings import (
+    ABFEBoreschRestraintSettings,
+)
 from openfe.protocols.openmm_septop import (
     SepTopComplexAnalysisUnit,
     SepTopComplexRunUnit,
@@ -41,9 +44,6 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventAnalysisUnit,
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
-)
-from openfe.protocols.openmm_afe.equil_afe_settings import (
-    ABFEBoreschRestraintSettings,
 )
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -927,9 +927,7 @@ def test_user_restraint_complex(
         stateB=toluene_complex_system,
         mapping=None,
     )
-    complex_setup_unit = [
-        u for u in dag.protocol_units if isinstance(u, SepTopComplexSetupUnit)
-    ]
+    complex_setup_unit = [u for u in dag.protocol_units if isinstance(u, SepTopComplexSetupUnit)]
     assert len(complex_setup_unit) == 1
 
     results = complex_setup_unit[0].run(

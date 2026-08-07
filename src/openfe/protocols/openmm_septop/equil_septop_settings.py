@@ -24,8 +24,8 @@ from openff.units import unit as offunit
 from pydantic import Field, field_validator
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    AlchemicalSettings,
     ABFEBoreschRestraintSettings,
+    AlchemicalSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,

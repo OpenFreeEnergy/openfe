@@ -34,6 +34,9 @@ from openff.units.openmm import from_openmm, to_openmm
 from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
+from openfe.protocols.openmm_afe.equil_afe_settings import (
+    ABFEBoreschRestraintSettings,
+)
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
@@ -42,9 +45,6 @@ from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     add_force_in_separate_group,
-)
-from openfe.protocols.openmm_afe.equil_afe_settings import (
-    ABFEBoreschRestraintSettings,
 )
 
 from ..openmm_utils import (

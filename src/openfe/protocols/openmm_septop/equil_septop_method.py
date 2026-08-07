@@ -53,8 +53,8 @@ from rdkit import Chem
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_septop.equil_septop_settings import (
-    AlchemicalSettings,
     ABFEBoreschRestraintSettings,
+    AlchemicalSettings,
     IntegratorSettings,
     LambdaSettings,
     MDSimulationSettings,
