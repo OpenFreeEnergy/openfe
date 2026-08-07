@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/gufe
 import json
 import re
-from typing import Literal, TypedDict
+from typing import Generator, Literal, TypedDict
 
 from gufe.protocols.protocoldag import ProtocolDAG
 from gufe.protocols.protocolunit import ProtocolUnit
@@ -328,6 +328,18 @@ class WarehouseBaseClass:
             return obj
 
         return recursive_build_object_cache(gufe_key)
+
+    def get_protocol_dags(self) -> Generator[ProtocolDAG]:
+        """Yield the protocol dags present in the Warehouse's 'protocol_dags' store.
+
+        Note that this requires the name of the item to start with 'ProtocolDAG'.
+        """
+        # NOTE: this can be made more robust (but slower) by using isinstance(obj, openfe.ProtocolDAG)
+        # _after_ loading each item, rather than filtering by name
+        for item in self.stores["protocol_dags"]:
+            if item.startswith("ProtocolDAG"):
+                dag = self.load_protocol_dag(item)
+                yield dag
 
     @property
     def setup_store(self):
