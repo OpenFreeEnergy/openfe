@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 import pathlib
 import re
-from typing import Generator, Literal, TypedDict
+from typing import Generator, Iterable, Literal, TypedDict
 
-from gufe.protocols.protocoldag import ProtocolDAG
+from gufe.protocols import ProtocolResult
+from gufe.protocols.protocoldag import ProtocolDAG, ProtocolDAGResult
 from gufe.protocols.protocolunit import ProtocolUnit, ProtocolUnitResult
 from gufe.storage.externalresource import ExternalStorage, FileStorage
 from gufe.tokenization import (
@@ -366,6 +367,60 @@ class WarehouseBaseClass:
                 raise RuntimeError(
                     f"gufe tokenizable {obj} found in result store, but is not a ProtocolUnitResult."
                 )
+
+    def gather_all_results(self) -> list[tuple[ProtocolResult, ProtocolDAGResult]]:
+        dags_to_purs = self._construct_dags_to_purs(
+            self.get_protocol_dags(), self.get_unit_results()
+        )
+        dags_with_results = [
+            self.load_protocol_dag(d) for d in dags_to_purs if dags_to_purs[d] != []
+        ]
+
+        result_edges: list[tuple[ProtocolResult, ProtocolDAGResult]] = []
+        for dag in dags_with_results:
+            prot_dag_result: ProtocolDAGResult = self._construct_protocol_dag_result(
+                protocol_dag=dag, dags_to_purs=dags_to_purs
+            )
+            prot_result: ProtocolResult = self.gather_result(
+                protocol_dag=dag, dags_to_purs=dags_to_purs
+            )
+            result_edges.append((prot_result, prot_dag_result))
+
+        return result_edges
+
+    @classmethod
+    def _construct_dags_to_purs(dags: Iterable[ProtocolDAG], purs: Iterable[ProtocolUnitResult]):
+        """Creating a mapping of protocolDAGs to their corresponding ProtocolUnitResults"""
+        pur_pu_keys = {str(pur.source_key): pur for pur in purs}
+        dag_map = {}
+        for dag in dags:
+            dag_purs = []
+            for unit in dag.protocol_units:
+                if unit.key in pur_pu_keys:
+                    dag_purs.append(pur_pu_keys[unit.key])
+            dag_map[str(dag.key)] = dag_purs
+        return dag_map
+
+    @classmethod
+    def _construct_protocol_dag_result(
+        protocol_dag: ProtocolDAG,
+        dags_to_purs: dict[str, list[ProtocolUnitResult]],
+    ) -> ProtocolDAGResult:
+        """Create a ProtocolDAGResult from the ProtocolDAG and its corresponding ProtocolUnitResults"""
+        purs = dags_to_purs[str(protocol_dag.key)]
+        dag_result = ProtocolDAGResult(
+            protocol_units=protocol_dag.protocol_units,
+            protocol_unit_results=purs,
+            transformation_key=protocol_dag.transformation_key,
+            extends_key=protocol_dag.extends_key,
+        )
+        return dag_result
+
+    def gather_result(self, protocol_dag, dags_to_purs) -> ProtocolResult:
+        protocol_dag_result = self._construct_protocol_dag_result(protocol_dag, dags_to_purs)
+        transformation = self.load_setup_tokenizable(protocol_dag.transformation_key)
+        result = transformation.gather([protocol_dag_result])
+        return result
 
     @property
     def setup_store(self):
