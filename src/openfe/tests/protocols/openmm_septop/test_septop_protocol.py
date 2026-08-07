@@ -42,6 +42,9 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
 )
+from openfe.protocols.openmm_afe.equil_afe_settings import (
+    ABFEBoreschRestraintSettings,
+)
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
@@ -899,6 +902,60 @@ def test_bad_sampler():
             platform=None,
             restart=False,
         )
+
+
+def test_user_restraint_complex(
+    benzene_complex_system,
+    toluene_complex_system,
+    protocol_dry_settings,
+    tmp_path,
+):
+    host_ids = [1383, 1384, 1398]
+    protocol_dry_settings.complex_restraint_settings_A = ABFEBoreschRestraintSettings(
+        guest_restraint_ids=[0, 1, 2],
+        host_restraint_ids=host_ids,
+    )
+    # For toluene pick the atoms that are overlapping with the three benzene atoms
+    protocol_dry_settings.complex_restraint_settings_B = ABFEBoreschRestraintSettings(
+        guest_restraint_ids=[4, 5, 6],
+        host_restraint_ids=host_ids,
+    )
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
+
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    complex_setup_unit = [
+        u for u in dag.protocol_units if isinstance(u, SepTopComplexSetupUnit)
+    ]
+    assert len(complex_setup_unit) == 1
+
+    results = complex_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+
+    geom_A = BoreschRestraintGeometry.model_validate(results["restraint_geometry_A"])
+    geom_B = BoreschRestraintGeometry.model_validate(results["restraint_geometry_B"])
+
+    assert geom_A.host_atoms == host_ids
+    assert geom_B.host_atoms == host_ids
+
+    assert len(geom_A.guest_atoms) == 3
+    assert len(geom_B.guest_atoms) == 3
+    assert geom_A.guest_atoms != geom_B.guest_atoms
+
+    assert geom_A.guest_atoms == [2613, 2614, 2615]
+    assert geom_B.guest_atoms == [24162, 24163, 24164]
+
+    for geom in [geom_A, geom_B]:
+        assert pytest.approx(geom.r_aA0.to("nanometer").m, rel=1e-4) == 0.510798
+        assert pytest.approx(geom.theta_A0.to("radians").m, rel=1e-4) == 1.20278
+        assert pytest.approx(geom.theta_B0.to("radians").m, rel=1e-4) == 1.25705
+        assert pytest.approx(geom.phi_A0.to("radians").m, rel=1e-4) == 0.86035
+        assert pytest.approx(geom.phi_B0.to("radians").m, rel=1e-4) == 1.59444
+        assert pytest.approx(geom.phi_C0.to("radians").m, rel=1e-4) == 2.92365
 
 
 @pytest.fixture
