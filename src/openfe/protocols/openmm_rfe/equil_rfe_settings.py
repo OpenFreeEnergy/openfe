@@ -102,62 +102,6 @@ class AlchemicalSettings(SettingsBaseModel):
     """
 
 
-class RelativeHybridTopologyProtocolSettings(Settings):
-    protocol_repeats: int
-    """
-    The number of completely independent repeats of the entire sampling
-    process. The mean of the repeats defines the final estimate of FE
-    difference, while the variance between repeats is used as the uncertainty.
-    """
-
-    @field_validator("protocol_repeats")
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = f"protocol_repeats must be a positive value, got {v}."
-            raise ValueError(errmsg)
-        return v
-
-    # Inherited things
-
-    forcefield_settings: OpenMMSystemGeneratorFFSettings
-    """Parameters to set up the force field with OpenMM Force Fields."""
-    thermo_settings: ThermoSettings
-    """Settings for thermodynamic parameters."""
-
-    # Things for creating the systems
-    solvation_settings: OpenMMSolvationSettings
-    """Settings for solvating the system."""
-    partial_charge_settings: OpenFFPartialChargeSettings
-    """Settings for assigning partial charges to small molecules."""
-
-    # Alchemical settings
-    lambda_settings: LambdaSettings
-    """
-    Lambda protocol settings including lambda windows and lambda functions.
-    """
-    alchemical_settings: AlchemicalSettings
-    """
-    Alchemical protocol settings including soft core scaling.
-    """
-    simulation_settings: MultiStateSimulationSettings
-    """
-    Settings for alchemical sampler.
-    """
-
-    # MD Engine things
-    engine_settings: OpenMMEngineSettings
-    """Settings specific to the OpenMM engine such as the compute platform."""
-
-    # Sampling State defining things
-    integrator_settings: IntegratorSettings
-    """Settings for the integrator such as timestep and barostat settings."""
-
-    output_settings: MultiStateOutputSettings
-    """
-    Simulation output control settings.
-    """
-
-
 class BaseHTopProtocolSettings(SettingsBaseModel):
     """
     Base configuration object for ``HTopProtocol`` and its subclasses.
@@ -191,6 +135,37 @@ class BaseHTopProtocolSettings(SettingsBaseModel):
     alchemical_settings: AlchemicalSettings
     """
     Alchemical protocol settings including soft core scaling.
+    """
+
+
+class RelativeHybridTopologyProtocolSettings(BaseHTopProtocolSettings):
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
+    """Parameters to set up the force field with OpenMM Force Fields."""
+
+    solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the system."""
+
+    lambda_settings: LambdaSettings
+    """
+    Lambda protocol settings including lambda windows and lambda functions.
+    """
+
+    simulation_settings: MultiStateSimulationSettings
+    """
+    Settings for alchemical sampler.
+    """
+
+    # MD Engine things
+    engine_settings: OpenMMEngineSettings
+    """Settings specific to the OpenMM engine such as the compute platform."""
+
+    # Sampling State defining things
+    integrator_settings: IntegratorSettings
+    """Settings for the integrator such as timestep and barostat settings."""
+
+    output_settings: MultiStateOutputSettings
+    """
+    Simulation output control settings.
     """
 
 

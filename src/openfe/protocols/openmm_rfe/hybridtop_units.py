@@ -13,8 +13,6 @@ the Perses toolkit (https://github.com/choderalab/perses).
 import logging
 import os
 import pathlib
-import subprocess
-from itertools import chain
 from typing import Any
 
 import gufe
@@ -51,9 +49,6 @@ from openfe.protocols.openmm_utils.offmolecule_utils import (
     _set_offmol_metadata,
     _set_offmol_resname,
 )
-from openfe.protocols.openmm_utils.omm_settings import (
-    BasePartialChargeSettings,
-)
 
 from ...analysis import plotting
 from ...utils import log_system_probe, without_oechem_backend
@@ -70,15 +65,12 @@ from ..openmm_utils.serialization import (
     serialize,
 )
 from . import _rfe_utils
-from ._rfe_utils.relative import HybridTopologyFactory
 from .equil_rfe_settings import (
     AlchemicalSettings,
     IntegratorSettings,
-    LambdaSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
-    OpenMMEngineSettings,
     OpenMMSolvationSettings,
 )
 
