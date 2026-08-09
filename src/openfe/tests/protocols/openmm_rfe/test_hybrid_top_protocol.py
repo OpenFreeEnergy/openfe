@@ -2541,3 +2541,27 @@ def test_structural_analysis_uses_ligand_resnames(tmp_path):
         )
 
     assert captured["ligand_selection"] == "resname LIG"
+
+
+def test_empty_atom_mapping(tmp_path, benzene_vacuum_system, toluene_vacuum_system, vac_settings):
+    """Make sure an informative error is raised if the user supplies an empty atom mapping which is not supported."""
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    blank_mapping = gufe.LigandAtomMapping(
+        componentA=benzene_vacuum_system["ligand"],
+        componentB=toluene_vacuum_system["ligand"],
+        componentA_to_componentB={},
+    )
+
+    with pytest.raises(
+        ValueError, match="No atoms are mapped between the two alchemical components."
+    ):
+        # create the DAG and run validation
+        _ = protocol.create(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=blank_mapping,
+        )
