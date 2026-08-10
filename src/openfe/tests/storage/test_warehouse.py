@@ -42,7 +42,7 @@ class TestWarehouseBaseClass:
         store_name: Literal["setup", "result", "tasks"],
     ):
         stores = TestWarehouseBaseClass._build_stores()
-        client = WarehouseBaseClass(stores)
+        client = WarehouseBaseClass(stores, "test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
@@ -64,7 +64,7 @@ class TestWarehouseBaseClass:
         store_name: Literal["setup", "result", "tasks"],
     ):
         stores = TestWarehouseBaseClass._build_stores()
-        client = WarehouseBaseClass(stores)
+        client = WarehouseBaseClass(stores, "test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
@@ -94,7 +94,7 @@ class TestWarehouseBaseClass:
     def test_store_task_writes_to_tasks_store(self, absolute_transformation):
         unit = self._get_protocol_unit(absolute_transformation)
         stores = self._build_stores()
-        client = WarehouseBaseClass(stores)
+        client = WarehouseBaseClass(stores, name="test_warehouse")
         client.store_task(unit)
 
         assert stores["tasks"]._data != {}
@@ -105,7 +105,7 @@ class TestWarehouseBaseClass:
     def test_exists_finds_task_key(self, absolute_transformation):
         unit = self._get_protocol_unit(absolute_transformation)
         stores = self._build_stores()
-        client = WarehouseBaseClass(stores)
+        client = WarehouseBaseClass(stores, "test_warehouse")
 
         client.store_task(unit)
 
@@ -114,7 +114,7 @@ class TestWarehouseBaseClass:
     def test_load_task_returns_object(self, absolute_transformation):
         unit = self._get_protocol_unit(absolute_transformation)
         stores = self._build_stores()
-        client = WarehouseBaseClass(stores)
+        client = WarehouseBaseClass(stores, name="test_warehouse")
 
         client.store_task(unit)
         loaded = client.load_task(unit.key)

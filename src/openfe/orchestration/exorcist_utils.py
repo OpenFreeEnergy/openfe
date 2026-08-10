@@ -47,6 +47,8 @@ def alchemical_network_to_task_graph(
             node_id = str(unit.key)
             global_dag.add_node(node_id)
             warehouse.store_task(unit)
+        # store the protocol_dag as a shallow dict, since all its units are
+        # already written to disk
         warehouse.store_protocol_dag(dag)
         for dependent_unit, dependency_unit in dag.graph.edges:
             upstream_id = str(dependency_unit.key)

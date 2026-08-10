@@ -26,6 +26,9 @@ class _RecordingWarehouse:
         # TODO: add tests for tokenizable storage?
         pass
 
+    def store_protocol_dag(self, dag):
+        pass
+
 
 def _network_units(benzene_variants_star_map):
     units = []

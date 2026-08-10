@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/gufe
 import json
+import pathlib
 import re
 from typing import Generator, Literal, TypedDict
 
@@ -65,8 +66,11 @@ class WarehouseBaseClass:
         The storage locations managed by this warehouse instance.
     """
 
-    def __init__(self, stores: WarehouseStores):
+    def __init__(self, stores: WarehouseStores, name: str):
         self.stores = stores
+        if not isinstance(name, str) or len(name) == 0:
+            raise ValueError("Warehouse name must be a string.")
+        self.name = name
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.stores == other.stores
@@ -161,7 +165,9 @@ class WarehouseBaseClass:
         ----------
         dag : ProtocolDAG
         """
-        # TODO: do we enforce type here?
+        # TODO: write this as a shallow dict only?
+        if not isinstance(dag, ProtocolDAG):
+            raise ValueError("Only ProtocolDAGs may be written to the 'protocol_dags' store.")
         self._store_gufe_tokenizable("protocol_dags", dag)
 
     def load_protocol_dag(self, gufe_key=GufeKey) -> GufeTokenizable:
@@ -393,14 +399,15 @@ class FileSystemWarehouse(WarehouseBaseClass):
     for results and other data types.
     """
 
-    def __init__(self, root_dir: str = "warehouse"):
-        self.root_dir = root_dir
-        setup_store = FileStorage(f"{root_dir}/setup")
-        result_store = FileStorage(f"{root_dir}/result")
-        shared_store = FileStorage(f"{root_dir}/shared")
-        tasks_store = FileStorage(f"{root_dir}/tasks")
+    def __init__(self, name):
+        # TODO: should name and location be different?
+        self.root_dir = pathlib.Path(f"{name}")
+        setup_store = FileStorage(f"{self.root_dir}/setup")
+        result_store = FileStorage(f"{self.root_dir}/result")
+        shared_store = FileStorage(f"{self.root_dir}/shared")
+        tasks_store = FileStorage(f"{self.root_dir}/tasks")
         # TODO: we can store dags in setup if we have a performant way of accessing them
-        protocol_dag_store = FileStorage(f"{root_dir}/protocol_dags")
+        protocol_dag_store = FileStorage(f"{self.root_dir}/protocol_dags")
         stores = WarehouseStores(
             setup=setup_store,
             result=result_store,
@@ -408,4 +415,4 @@ class FileSystemWarehouse(WarehouseBaseClass):
             tasks=tasks_store,
             protocol_dags=protocol_dag_store,
         )
-        super().__init__(stores)
+        super().__init__(stores, name)
