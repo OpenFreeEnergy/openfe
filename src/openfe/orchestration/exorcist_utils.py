@@ -44,14 +44,10 @@ def alchemical_network_to_task_graph(
     for transformation in alchemical_network.edges:
         dag = transformation.create()
         for unit in dag.protocol_units:
-            # TODO: is it possible that two transformations will use the same protocol unit?
-            # if so, we shouldn't use transformation.key here
             node_id = str(unit.key)
-            global_dag.add_node(
-                node_id,
-            )
+            global_dag.add_node(node_id)
             warehouse.store_task(unit)
-            warehouse.store_protocol_dag(dag)
+        warehouse.store_protocol_dag(dag)
         for dependent_unit, dependency_unit in dag.graph.edges:
             upstream_id = str(dependency_unit.key)
             downstream_id = str(dependent_unit.key)
