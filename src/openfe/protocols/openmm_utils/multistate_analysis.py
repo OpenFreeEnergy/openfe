@@ -241,7 +241,7 @@ class MultistateEquilFEAnalysis:
         mbar = MBAR(
             u_ln,
             N_l,
-            solver_protocol="robust",
+            solver_protocol="numba",
             n_bootstraps=bootstraps,
             bootstrap_solver_protocol="robust",
         )

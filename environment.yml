@@ -12,6 +12,7 @@ dependencies:
   # - konnektor~=0.4.0  # temporary, until gufe v1.13 is released
   - lomap2>=3.2.1
   - networkx
+  - numba
   - numpy
   - openfe-analysis>=0.5.0
   - openff-interchange-base >=0.5.4  # adds pydantic 2.13 support
@@ -56,6 +57,7 @@ dependencies:
     - git+https://github.com/OpenFreeEnergy/kartograf@main  # needs gufe which pins to pydantic < 2.13. update this once gufe v1.13 is released on conda-forge
     - git+https://github.com/OpenFreeEnergy/konnektor@main
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/choderalab/pymbar.git@ed40ec3bbef03bb08938ad1a74d459b0d1ab81f7
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
