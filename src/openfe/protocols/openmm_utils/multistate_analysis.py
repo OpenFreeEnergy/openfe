@@ -363,7 +363,7 @@ class MultistateEquilFEAnalysis:
                 "for both the forward and reverse estimates."
             )
             warnings.warn(wmsg, stacklevel=2)
-            forward_DG = forward_dDG = reverse_DG = reverse_dDG = np.nan * self.units
+            forward_DG = forward_dDG = reverse_DG = reverse_dDG = np.nan * self.units  # type: ignore[operator, assignment]
 
         return forward_DG, forward_dDG, reverse_DG, reverse_dDG
 
