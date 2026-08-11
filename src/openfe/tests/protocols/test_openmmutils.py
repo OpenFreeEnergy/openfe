@@ -379,7 +379,6 @@ class TestFEAnalysis:
             ),
             rtol=1e-04,
         )  # fmt: skip
-        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict["forward_and_reverse_energies"]["forward_dDGs"].m,
             np.array(
@@ -400,7 +399,6 @@ class TestFEAnalysis:
             ),
             rtol=1e-04,
         )  # fmt: skip
-        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict["forward_and_reverse_energies"]["reverse_dDGs"].m,
             np.array(
