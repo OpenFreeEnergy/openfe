@@ -310,9 +310,7 @@ class MultistateEquilFEAnalysis:
         """
         # We do some sanity checks here to make sure the u_ln matches our assumptions.
         if u_ln.shape[0] != n_states:
-            errmsg = (
-                f"u_ln shape {u_ln.shape} is not compatible with n_states {n_states}"
-            )
+            errmsg = f"u_ln shape {u_ln.shape} is not compatible with n_states {n_states}"
             raise ValueError(errmsg)
 
         if u_ln.shape[1] != n_states * num_samples:

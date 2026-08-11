@@ -418,12 +418,23 @@ class TestFEAnalysis:
             Helper method to recreate u_kln the same way openmmtools does.
             """
             energy_data = list(analyzer._read_energies(truncate_max_n_iterations=True))
-            sampled_energy_matrix, unsampled_energy_matrix, neighborhoods, replicas_state_indices = energy_data
-            number_equilibrated, g_t, Neff_max = analyzer._get_equilibration_data(sampled_energy_matrix, neighborhoods, replicas_state_indices)
+            (
+                sampled_energy_matrix,
+                unsampled_energy_matrix,
+                neighborhoods,
+                replicas_state_indices,
+            ) = energy_data
+            number_equilibrated, g_t, Neff_max = analyzer._get_equilibration_data(
+                sampled_energy_matrix, neighborhoods, replicas_state_indices
+            )
             for i, energies in enumerate(energy_data):
-                energies = multistate.utils.remove_unequilibrated_data(energies, number_equilibrated, -1)
+                energies = multistate.utils.remove_unequilibrated_data(
+                    energies, number_equilibrated, -1
+                )
                 energy_data[i] = multistate.utils.subsample_data_along_axis(energies, g_t, -1)
-            sampled_energy_matrix, unsampled_energy_matrix, neighborhood, replicas_state_indices = energy_data
+            sampled_energy_matrix, unsampled_energy_matrix, neighborhood, replicas_state_indices = (
+                energy_data
+            )
             return sampled_energy_matrix
 
         u_ln = analyzer.analyzer._unbiased_decorrelated_u_ln
@@ -439,13 +450,13 @@ class TestFEAnalysis:
 
     def test_ukln_from_uln_errors(self, analyzer):
         # Check the exceptions we could raise ahead of the conversion
-        u_ln = np.zeros((2,  100))
+        u_ln = np.zeros((2, 100))
 
-        errmsg = "u_ln shape \(2, 100\) is not compatible with n_states 3"
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 3"
         with pytest.raises(ValueError, match=errmsg):
             analyzer._get_ukln_from_uln(u_ln, 3, 100)
 
-        errmsg = "u_ln shape \(2, 100\) is not compatible with n_states 2 and num_samples 75"
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 2 and num_samples 75"
         with pytest.raises(ValueError, match=errmsg):
             analyzer._get_ukln_from_uln(u_ln, 2, 75)
 
