@@ -1,9 +1,7 @@
-import importlib.resources
 import inspect
 from unittest import mock
 
 import matplotlib
-import matplotlib.figure
 import pytest
 from matplotlib import pyplot as plt
 
