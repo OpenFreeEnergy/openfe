@@ -504,6 +504,7 @@ def bulk_assign_partial_charges(
 
     if processors > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
+
         # track the input ordering as multiprocessing can shuffle the order of the ligands
         input_order = [mol.smiles for mol in molecules]
         with ProcessPoolExecutor(max_workers=processors) as pool:
