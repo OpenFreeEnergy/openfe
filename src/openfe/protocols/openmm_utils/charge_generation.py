@@ -504,7 +504,8 @@ def bulk_assign_partial_charges(
 
     if processors > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
-
+        # track the input ordering as multiprocessing can shuffle the order of the ligands
+        input_order = [mol.smiles for mol in molecules]
         with ProcessPoolExecutor(max_workers=processors) as pool:
             work_list = [
                 pool.submit(
@@ -519,6 +520,9 @@ def bulk_assign_partial_charges(
                 as_completed(work_list), desc="Generating charges", ncols=80, total=len(molecules)
             ):
                 charged_ligands.append(SmallMoleculeComponent.from_openff(work.result()))
+
+            # sort the ligands by the input ordering
+            charged_ligands = sorted(charged_ligands, key=lambda x: input_order.index(x.smiles))
 
     else:
         for m in tqdm.tqdm(molecules, desc="Generating charges", ncols=80, total=len(molecules)):
