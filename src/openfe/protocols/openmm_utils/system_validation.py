@@ -23,8 +23,8 @@ from gufe import (
 )
 from gufe.components.errors import ComponentValidationError
 from gufe.protocols.errors import ProtocolValidationError
-from openff.toolkit import Molecule as OFFMol
 from openff.toolkit import ForceField
+from openff.toolkit import Molecule as OFFMol
 
 logger = logging.getLogger(__name__)
 
@@ -375,11 +375,8 @@ def validate_chemical_system(system: ChemicalSystem):
             raise ComponentValidationError(errmsg)
 
 
-def validate_nondeterministic_charges(
-    system: ChemicalSystem,
-    small_molecule_forcefield: str
-):
-    """"
+def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_forcefield: str):
+    """ "
     Validate that the SmallMoleculeComponents of the system will have deterministic partial charges.
 
     This is determined by checking for charges on the molecules before checking what would be assigned by the force field.
@@ -418,8 +415,8 @@ def validate_nondeterministic_charges(
 
         # We count library and nagl charges as deterministic
         if len(labels["LibraryCharges"]) != offmol.n_atoms and "NAGLCharges" not in labels:
-            errmsg = (f"SmallMoleculeComponent {smc} from system {system.name} would have am1bcc charges generated at runtime which is non-deterministic. "
-                      f"Please provide a molecule with pre-computed charges or use library charges instead.")
+            errmsg = (
+                f"SmallMoleculeComponent {smc} from system {system.name} would have am1bcc charges generated at runtime which is non-deterministic. "
+                f"Please provide a molecule with pre-computed charges or use library charges instead."
+            )
             raise ProtocolValidationError(errmsg)
-
-
