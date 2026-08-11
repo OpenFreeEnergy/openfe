@@ -265,7 +265,7 @@ def handle_alchemical_waters(
                                   "water parameters")
                         raise ValueError(errmsg)
 
-                    nbf.setParticleParameters(idx, 0.0, sigma, epsilon)
+                    nbf.setParticleParameters(idx, 0.0, sigma, 0.0)
 
 
 def get_alchemical_waters(
