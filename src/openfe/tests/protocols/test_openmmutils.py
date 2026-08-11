@@ -4,6 +4,7 @@ import copy
 import gzip
 import logging
 import os
+import re
 import sys
 from importlib import resources
 from pathlib import Path
@@ -11,10 +12,13 @@ from unittest import mock
 
 import numpy as np
 import pytest
+from gufe import ChemicalSystem
 from gufe.components.errors import ComponentValidationError
+from gufe.protocols.errors import ProtocolValidationError
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
 from openff.toolkit import Molecule as OFFMol
+from openff.toolkit import ForceField
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
@@ -1283,3 +1287,76 @@ def test_set_metadata_none_clears():
     _set_offmol_metadata(mol, "residue_name", "LIG")
     _set_offmol_metadata(mol, "residue_name", None)
     assert all("residue_name" not in a.metadata for a in mol.atoms)
+
+
+class TestChargeValidation:
+    """Test validation of nondeterministic partial charge assignment."""
+
+    @pytest.fixture
+    def benzene_charged_system(self, benzene_modifications):
+        return ChemicalSystem({"ligand": benzene_modifications["benzene"]}, name="charged")
+
+    @pytest.fixture
+    def benzene_no_charge_system(self, benzene_modifications_uncharged):
+        return ChemicalSystem({"ligand": benzene_modifications_uncharged["benzene"]}, name="no charges")
+
+    def test_gaff_with_molecule_charges(self, benzene_charged_system):
+        system_validation.validate_nondeterministic_charges(
+            benzene_charged_system,
+            small_molecule_forcefield="gaff-2.11"
+        )
+
+    def test_gaff_no_charges(self, benzene_no_charge_system):
+        with pytest.raises(ProtocolValidationError, match=re.escape("SmallMoleculeComponent(name=benzene) from system no charges would have am1bcc charges")):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield="gaff-2.11"
+            )
+
+    def test_espaloma_with_molecule_charges(self, benzene_charged_system):
+        system_validation.validate_nondeterministic_charges(
+            benzene_charged_system,
+            small_molecule_forcefield="espaloma-0.3.2"
+        )
+
+    def test_espaloma_no_charges(self, benzene_no_charge_system):
+        with pytest.raises(ProtocolValidationError, match=re.escape("SmallMoleculeComponent(name=benzene) from system no charges would have am1bcc charges")):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield="espaloma-0.3.2"
+            )
+
+    def test_openff_with_molecule_charges(self, benzene_charged_system):
+        system_validation.validate_nondeterministic_charges(
+            benzene_charged_system,
+            small_molecule_forcefield="openff-2.2.0.offxml"
+        )
+
+    def test_openff_no_charges(self, benzene_no_charge_system):
+        with pytest.raises(ProtocolValidationError, match=re.escape("SmallMoleculeComponent(name=benzene) from system no charges would have am1bcc charges")):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield="openff-2.2.0.offxml"
+            )
+
+    def test_openff_nagl_no_charges(self, benzene_no_charge_system):
+        system_validation.validate_nondeterministic_charges(
+            benzene_no_charge_system,
+            small_molecule_forcefield="openff-2.3.0.offxml"
+        )
+
+    def test_openff_lib_charges_no_charges(self, benzene_no_charge_system, benzene_modifications):
+        # add some library charges to the force field and test using a string
+        benzene = benzene_modifications["benzene"].to_openff()
+        # use a force field with an am1bcc handler
+        ff = ForceField("openff-2.2.0.offxml")
+        lib_charge_handler = ff.get_parameter_handler("LibraryCharges")
+        # make a new parameter
+        lib_charge = lib_charge_handler._INFOTYPE.from_molecule(benzene)
+        # add it to the handler
+        lib_charge_handler.add_parameter(parameter=lib_charge)
+        # run the validation
+        system_validation.validate_nondeterministic_charges(
+            benzene_no_charge_system,
+            small_molecule_forcefield=ff.to_string()
+        )

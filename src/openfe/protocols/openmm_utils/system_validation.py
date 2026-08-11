@@ -376,7 +376,7 @@ def validate_chemical_system(system: ChemicalSystem):
 
 
 def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_forcefield: str):
-    """ "
+    """
     Validate that the SmallMoleculeComponents of the system will have deterministic partial charges.
 
     This is determined by checking for charges on the molecules before checking what would be assigned by the force field.
@@ -416,7 +416,7 @@ def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_for
         # We count library and nagl charges as deterministic
         if len(labels["LibraryCharges"]) != offmol.n_atoms and "NAGLCharges" not in labels:
             errmsg = (
-                f"SmallMoleculeComponent {smc} from system {system.name} would have am1bcc charges generated at runtime which is non-deterministic. "
+                f"{smc} from system {system.name} would have am1bcc charges generated at runtime which is non-deterministic. "
                 f"Please provide a molecule with pre-computed charges or use library charges instead."
             )
             raise ProtocolValidationError(errmsg)
