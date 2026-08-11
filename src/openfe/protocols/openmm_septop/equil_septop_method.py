@@ -69,10 +69,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
 )
 
 from ..openmm_utils import settings_validation, system_validation
-from ..restraint_utils.settings import (
-    BoreschRestraintSettings,
-    DistanceRestraintSettings,
-)
+from ..restraint_utils.settings import BoreschRestraintSettings
 from .septop_protocol_results import SepTopProtocolResult
 from .septop_units import (
     SepTopComplexAnalysisUnit,
@@ -264,9 +261,7 @@ class SepTopProtocol(gufe.Protocol):
                 output_filename="complex.nc",
                 checkpoint_storage_filename="complex_checkpoint.nc",
             ),
-            solvent_restraint_settings=DistanceRestraintSettings(
-                spring_constant=1000.0 * offunit.kilojoule_per_mole / offunit.nanometer**2,
-            ),
+            solvent_restraint_settings=BoreschRestraintSettings(),
             complex_restraint_settings=BoreschRestraintSettings(),
             analysis_settings=MultiStateAnalysisSettings(),
         )  # fmt: skip
