@@ -13,8 +13,6 @@ the Perses toolkit (https://github.com/choderalab/perses).
 import logging
 import os
 import pathlib
-import subprocess
-from itertools import chain
 from typing import Any
 
 import gufe
@@ -51,9 +49,6 @@ from openfe.protocols.openmm_utils.offmolecule_utils import (
     _set_offmol_metadata,
     _set_offmol_resname,
 )
-from openfe.protocols.openmm_utils.omm_settings import (
-    BasePartialChargeSettings,
-)
 
 from ...analysis import plotting
 from ...utils import log_system_probe, without_oechem_backend
@@ -70,23 +65,24 @@ from ..openmm_utils.serialization import (
     serialize,
 )
 from . import _rfe_utils
-from ._rfe_utils.relative import HybridTopologyFactory
 from .equil_rfe_settings import (
     AlchemicalSettings,
     IntegratorSettings,
-    LambdaSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
-    OpenMMEngineSettings,
     OpenMMSolvationSettings,
-    RelativeHybridTopologyProtocolSettings,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class HybridTopologyUnitMixin:
+    #: Label identifying which leg of a multi-leg thermodynamic cycle this
+    #: unit belongs to (e.g. ``"solvent"``, ``"complex"``, ``"vacuum"``).
+    #: ``None`` for the single-leg ``RelativeHybridTopologyProtocol`` units.
+    simtype: str | None = None
+
     def _prepare(
         self,
         verbose: bool,
@@ -117,10 +113,7 @@ class HybridTopologyUnitMixin:
         self.scratch_basepath = _set_optional_path(scratch_basepath)
         self.shared_basepath = _set_optional_path(shared_basepath)
 
-    @staticmethod
-    def _get_settings(
-        settings: RelativeHybridTopologyProtocolSettings,
-    ) -> dict[str, SettingsBaseModel]:
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Get a dictionary of Protocol settings.
 
@@ -131,22 +124,61 @@ class HybridTopologyUnitMixin:
         Notes
         -----
         We return a dict so that we can duck type behaviour between phases.
-        For example subclasses may contain both `solvent` and `complex`
-        settings, using this approach we can extract the relevant entry
-        to the same key and pass it to other methods in a seamless manner.
+        Subclasses/mixins for multi-leg Protocols (e.g. ``solvent`` and
+        ``complex``) override this method to extract the relevant
+        leg-specific settings to the same dict keys, so that the rest of the
+        unit's code can be shared seamlessly across legs.
+
+        This default implementation reads the flat, single-leg settings used
+        by ``RelativeHybridTopologyProtocol``.
         """
-        protocol_settings: dict[str, SettingsBaseModel] = {}
-        protocol_settings["forcefield_settings"] = settings.forcefield_settings
-        protocol_settings["thermo_settings"] = settings.thermo_settings
-        protocol_settings["alchemical_settings"] = settings.alchemical_settings
-        protocol_settings["lambda_settings"] = settings.lambda_settings
-        protocol_settings["charge_settings"] = settings.partial_charge_settings
-        protocol_settings["solvation_settings"] = settings.solvation_settings
-        protocol_settings["simulation_settings"] = settings.simulation_settings
-        protocol_settings["output_settings"] = settings.output_settings
-        protocol_settings["integrator_settings"] = settings.integrator_settings
-        protocol_settings["engine_settings"] = settings.engine_settings
-        return protocol_settings
+        settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
+
+        return {
+            "forcefield_settings": settings.forcefield_settings,
+            "thermo_settings": settings.thermo_settings,
+            "alchemical_settings": settings.alchemical_settings,
+            "lambda_settings": settings.lambda_settings,
+            "charge_settings": settings.partial_charge_settings,
+            "solvation_settings": settings.solvation_settings,
+            "simulation_settings": settings.simulation_settings,
+            "output_settings": settings.output_settings,
+            "integrator_settings": settings.integrator_settings,
+            "engine_settings": settings.engine_settings,
+        }
+
+    def _get_base_components(
+        self,
+    ) -> tuple[
+        SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]
+    ]:
+        """
+        Get the solvent, protein and small molecule components directly from
+        the ``stateA``/``stateB`` inputs, with no leg-specific stripping.
+
+        Returns
+        -------
+        solv_comp : SolventComponent | None
+            The solvent component, if any.
+        protein_comp : ProteinComponent | None
+            The protein component, if any.
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+            Dictionary of small molecule components paired with their
+            OpenFF Molecule.
+        """
+        stateA = self._inputs["stateA"]  # type: ignore[attr-defined]
+        stateB = self._inputs["stateB"]  # type: ignore[attr-defined]
+
+        solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
+        _, _, smcs_B = system_validation.get_components(stateB)
+
+        small_mols = {m: m.to_openff() for m in set(smcs_A).union(set(smcs_B))}
+
+        # If there is a SolvatedPDBComponent, we set the solvent_comp
+        if isinstance(protein_comp, SolvatedPDBComponent):
+            solvent_comp = protein_comp
+
+        return solvent_comp, protein_comp, small_mols
 
     @staticmethod
     def _verify_execution_environment(
@@ -169,45 +201,39 @@ class HybridTopologyUnitMixin:
             raise ProtocolUnitExecutionError(errmsg)
 
 
-class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+class BaseHybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
-    Setup unit for Hybrid Topology Protocol transformations.
+    Base setup unit for Hybrid Topology Protocol transformations.
+
+    Subclasses (in combination with a components mixin, e.g.
+    ``HybridTopologyComplexComponentsMixin``) must provide a
+    ``_get_components(self)`` method.
     """
 
-    @staticmethod
     def _get_components(
-        stateA: ChemicalSystem, stateB: ChemicalSystem
-    ) -> tuple[SolventComponent, ProteinComponent, dict[SmallMoleculeComponent, OFFMolecule]]:
+        self,
+    ) -> tuple[
+        SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]
+    ]:
         """
         Get the components from the ChemicalSystem inputs.
 
-        Parameters
-        ----------
-        stateA : ChemicalSystem
-          ChemicalSystem defining the state A components.
-        stateB : CHemicalSystem
-          ChemicalSystem defining the state B components.
-
         Returns
         -------
-        solv_comp : SolventComponent
-            The solvent component.
-        protein_comp : ProteinComponent
-            The protein component.
+        solv_comp : SolventComponent | None
+            The solvent component, if any.
+        protein_comp : ProteinComponent | None
+            The protein component, if any.
         small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
             Dictionary of small molecule components paired
             with their OpenFF Molecule.
+
+        Note
+        ----
+        Must be implemented (directly, or via a components mixin) in the
+        child class.
         """
-        solvent_comp, protein_comp, smcs_A = system_validation.get_components(stateA)
-        _, _, smcs_B = system_validation.get_components(stateB)
-
-        small_mols = {m: m.to_openff() for m in set(smcs_A).union(set(smcs_B))}
-
-        # If there is a SolvatedPDBComponent, we set the solvent_comp
-        if isinstance(protein_comp, SolvatedPDBComponent):
-            solvent_comp = protein_comp
-
-        return solvent_comp, protein_comp, small_mols
+        raise NotImplementedError()
 
     @staticmethod
     def _assign_partial_charges(
@@ -749,14 +775,14 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             self.logger.info("Starting system setup unit")
 
         # Get settings
-        settings = self._get_settings(self._inputs["protocol"].settings)
+        settings = self._get_settings()
 
         # Get components
         stateA = self._inputs["stateA"]
         stateB = self._inputs["stateB"]
         mapping = self._inputs["ligandmapping"]
         alchem_comps = self._inputs["alchemical_components"]
-        solvent_comp, protein_comp, small_mols = self._get_components(stateA, stateB)
+        solvent_comp, protein_comp, small_mols = self._get_components()
 
         alchemical = set(alchem_comps["stateA"]) | set(alchem_comps["stateB"])
 
@@ -880,6 +906,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            "simtype": self.simtype,
             "openmm_version": openmm.__version__,
             "openfe_version": openfe.__version__,
             "gufe_version": gufe.__version__,
@@ -887,9 +914,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         }
 
 
-class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+class BaseHybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
-    Multi-state simulation (e.g. multi replica methods like hamiltonian
+    Base multi-state simulation (e.g. multi replica methods like hamiltonian
     replica exchange) unit for Hybrid Topology Protocol transformations.
     """
 
@@ -1360,7 +1387,7 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
             self.logger.info("Starting simulation unit")
 
         # Get the settings
-        settings = self._get_settings(self._inputs["protocol"].settings)
+        settings = self._get_settings()
 
         # Check for a restart
         self.restart = self._check_restart(
@@ -1489,13 +1516,14 @@ class HybridTopologyMultiStateSimulationUnit(gufe.ProtocolUnit, HybridTopologyUn
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            "simtype": self.simtype,
             **outputs,
         }
 
 
-class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
+class BaseHybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     """
-    Analysis unit for multi-state Hybrid Topology Protocol transformations.
+    Base analysis unit for multi-state Hybrid Topology Protocol transformations.
     """
 
     @staticmethod
@@ -1672,7 +1700,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             self.logger.info("Starting simulation analysis unit")
 
         # Get the settings
-        settings = self._get_settings(self._inputs["protocol"].settings)
+        settings = self._get_settings()
 
         # Energies analysis
         if verbose:
@@ -1733,6 +1761,7 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
         return {
             "repeat_id": self._inputs["repeat_id"],
             "generation": self._inputs["generation"],
+            "simtype": self.simtype,
             # We include various other outputs here to make
             # things easier when gathering.
             "pdb_structure": pdb_file,
@@ -1741,3 +1770,244 @@ class HybridTopologyMultiStateAnalysisUnit(gufe.ProtocolUnit, HybridTopologyUnit
             "selection_indices": selection_indices,
             **outputs,
         }
+
+
+class HybridTopologyComplexComponentsMixin:
+    """
+    Components mixin returning the full set of components (protein, solvent,
+    small molecules) present in the ``stateA``/``stateB`` inputs, with no
+    leg-specific stripping. Used both by the single-leg
+    ``RelativeHybridTopologyProtocol`` units and by the complex leg of
+    ``RBFEHTopProtocol``.
+    """
+
+    def _get_components(
+        self,
+    ) -> tuple[
+        SolventComponent | None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]
+    ]:
+        return self._get_base_components()
+
+
+class HybridTopologySolventComponentsMixin:
+    """
+    Components mixin for the solvent leg of a multi-leg Protocol: reuses
+    the full components, but always nulls out any protein component (be it
+    absent from the input already, as for ``RHFEHTopProtocol``, or
+    present and stripped, as for the solvent leg derived from
+    ``RBFEHTopProtocol``'s complex-shaped ChemicalSystem inputs).
+    """
+
+    def _get_components(
+        self,
+    ) -> tuple[SolventComponent | None, None, dict[SmallMoleculeComponent, OFFMolecule]]:
+        solvent_comp, _protein_comp, small_mols = self._get_base_components()  # type: ignore[attr-defined]
+        return solvent_comp, None, small_mols
+
+
+class HybridTopologyVacuumComponentsMixin:
+    """
+    Components mixin for the vacuum leg of ``RHFEHTopProtocol``: reuses
+    the full components, but always nulls out the solvent component.
+    """
+
+    def _get_components(
+        self,
+    ) -> tuple[None, ProteinComponent | None, dict[SmallMoleculeComponent, OFFMolecule]]:
+        _solvent_comp, protein_comp, small_mols = self._get_base_components()  # type: ignore[attr-defined]
+        return None, protein_comp, small_mols
+
+
+class HybridTopologySetupUnit(HybridTopologyComplexComponentsMixin, BaseHybridTopologySetupUnit):
+    """
+    Setup unit for Hybrid Topology Protocol transformations.
+    """
+
+
+class HybridTopologyMultiStateSimulationUnit(BaseHybridTopologyMultiStateSimulationUnit):
+    """
+    Multi-state simulation (e.g. multi replica methods like hamiltonian
+    replica exchange) unit for Hybrid Topology Protocol transformations.
+    """
+
+
+class HybridTopologyMultiStateAnalysisUnit(BaseHybridTopologyMultiStateAnalysisUnit):
+    """
+    Analysis unit for multi-state Hybrid Topology Protocol transformations.
+    """
+
+
+class RBFEComplexSettingsMixin:
+    """Settings mixin for the complex leg of ``RBFEHTopProtocol``."""
+
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
+        settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
+
+        return {
+            "forcefield_settings": settings.forcefield_settings,
+            "thermo_settings": settings.thermo_settings,
+            "alchemical_settings": settings.alchemical_settings,
+            "lambda_settings": settings.complex_lambda_settings,
+            "charge_settings": settings.partial_charge_settings,
+            "solvation_settings": settings.complex_solvation_settings,
+            "simulation_settings": settings.complex_simulation_settings,
+            "output_settings": settings.complex_output_settings,
+            "integrator_settings": settings.complex_integrator_settings,
+            "engine_settings": settings.engine_settings,
+        }
+
+
+class RBFESolventSettingsMixin:
+    """Settings mixin for the solvent leg of ``RBFEHTopProtocol``."""
+
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
+        settings = self._inputs["protocol"].settings
+
+        return {
+            "forcefield_settings": settings.forcefield_settings,
+            "thermo_settings": settings.thermo_settings,
+            "alchemical_settings": settings.alchemical_settings,
+            "lambda_settings": settings.solvent_lambda_settings,
+            "charge_settings": settings.partial_charge_settings,
+            "solvation_settings": settings.solvent_solvation_settings,
+            "simulation_settings": settings.solvent_simulation_settings,
+            "output_settings": settings.solvent_output_settings,
+            "integrator_settings": settings.solvent_integrator_settings,
+            "engine_settings": settings.engine_settings,
+        }
+
+
+class RBFEHTopComplexSetupUnit(
+    HybridTopologyComplexComponentsMixin, RBFEComplexSettingsMixin, BaseHybridTopologySetupUnit
+):
+    """Setup unit for the complex leg of ``RBFEHTopProtocol``."""
+
+    simtype = "complex"
+
+
+class RBFEHTopComplexSimulationUnit(
+    RBFEComplexSettingsMixin, BaseHybridTopologyMultiStateSimulationUnit
+):
+    """Multi-state simulation unit for the complex leg of ``RBFEHTopProtocol``."""
+
+    simtype = "complex"
+
+
+class RBFEHTopComplexAnalysisUnit(
+    RBFEComplexSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit
+):
+    """Analysis unit for the complex leg of ``RBFEHTopProtocol``."""
+
+    simtype = "complex"
+
+
+class RBFEHTopSolventSetupUnit(
+    HybridTopologySolventComponentsMixin, RBFESolventSettingsMixin, BaseHybridTopologySetupUnit
+):
+    """Setup unit for the solvent leg of ``RBFEHTopProtocol``."""
+
+    simtype = "solvent"
+
+
+class RBFEHTopSolventSimulationUnit(
+    RBFESolventSettingsMixin, BaseHybridTopologyMultiStateSimulationUnit
+):
+    """Multi-state simulation unit for the solvent leg of ``RBFEHTopProtocol``."""
+
+    simtype = "solvent"
+
+
+class RBFEHTopSolventAnalysisUnit(
+    RBFESolventSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit
+):
+    """Analysis unit for the solvent leg of ``RBFEHTopProtocol``."""
+
+    simtype = "solvent"
+
+
+class RHFESolventSettingsMixin:
+    """Settings mixin for the solvent leg of ``RHFEHTopProtocol``."""
+
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
+        settings = self._inputs["protocol"].settings
+
+        return {
+            "forcefield_settings": settings.solvent_forcefield_settings,
+            "thermo_settings": settings.thermo_settings,
+            "alchemical_settings": settings.alchemical_settings,
+            "lambda_settings": settings.solvent_lambda_settings,
+            "charge_settings": settings.partial_charge_settings,
+            "solvation_settings": settings.solvation_settings,
+            "simulation_settings": settings.solvent_simulation_settings,
+            "output_settings": settings.solvent_output_settings,
+            "integrator_settings": settings.solvent_integrator_settings,
+            "engine_settings": settings.solvent_engine_settings,
+        }
+
+
+class RHFEVacuumSettingsMixin:
+    """Settings mixin for the vacuum leg of ``RHFEHTopProtocol``."""
+
+    def _get_settings(self) -> dict[str, SettingsBaseModel]:
+        settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
+
+        return {
+            "forcefield_settings": settings.vacuum_forcefield_settings,
+            "thermo_settings": settings.thermo_settings,
+            "alchemical_settings": settings.alchemical_settings,
+            "lambda_settings": settings.vacuum_lambda_settings,
+            "charge_settings": settings.partial_charge_settings,
+            # Solvation settings are ignored by the vacuum leg (no solvent to
+            # add), but are included here for a consistent settings shape.
+            "solvation_settings": settings.solvation_settings,
+            "simulation_settings": settings.vacuum_simulation_settings,
+            "output_settings": settings.vacuum_output_settings,
+            "integrator_settings": settings.vacuum_integrator_settings,
+            "engine_settings": settings.vacuum_engine_settings,
+        }
+
+
+class RHFEHTopSolventSetupUnit(
+    HybridTopologySolventComponentsMixin, RHFESolventSettingsMixin, BaseHybridTopologySetupUnit
+):
+    """Setup unit for the solvent leg of ``RHFEHTopProtocol``."""
+
+    simtype = "solvent"
+
+
+class RHFEHTopSolventSimulationUnit(
+    RHFESolventSettingsMixin, BaseHybridTopologyMultiStateSimulationUnit
+):
+    """Multi-state simulation unit for the solvent leg of ``RHFEHTopProtocol``."""
+
+    simtype = "solvent"
+
+
+class RHFEHTopSolventAnalysisUnit(
+    RHFESolventSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit
+):
+    """Analysis unit for the solvent leg of ``RHFEHTopProtocol``."""
+
+    simtype = "solvent"
+
+
+class RHFEHTopVacuumSetupUnit(
+    HybridTopologyVacuumComponentsMixin, RHFEVacuumSettingsMixin, BaseHybridTopologySetupUnit
+):
+    """Setup unit for the vacuum leg of ``RHFEHTopProtocol``."""
+
+    simtype = "vacuum"
+
+
+class RHFEHTopVacuumSimulationUnit(
+    RHFEVacuumSettingsMixin, BaseHybridTopologyMultiStateSimulationUnit
+):
+    """Multi-state simulation unit for the vacuum leg of ``RHFEHTopProtocol``."""
+
+    simtype = "vacuum"
+
+
+class RHFEHTopVacuumAnalysisUnit(RHFEVacuumSettingsMixin, BaseHybridTopologyMultiStateAnalysisUnit):
+    """Analysis unit for the vacuum leg of ``RHFEHTopProtocol``."""
+
+    simtype = "vacuum"
