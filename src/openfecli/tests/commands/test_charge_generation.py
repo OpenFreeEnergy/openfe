@@ -9,13 +9,13 @@ from gufe import SmallMoleculeComponent
 from openff.toolkit import Molecule
 from openff.units import unit
 from openff.utilities.testing import skip_if_missing
+from rdkit import Chem
 
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
 from openfecli.commands.generate_partial_charges import charge_molecules
-from rdkit import Chem
 
 
 @pytest.fixture
@@ -40,6 +40,7 @@ def methane() -> Molecule:
 def methane_with_charges(methane) -> Molecule:
     methane._partial_charges = [-1.0, 0.25, 0.25, 0.25, 0.25] * unit.elementary_charge
     return methane
+
 
 @pytest.fixture
 def benzene_modifications_filepath():
@@ -140,7 +141,9 @@ def test_charge_molecules_overwrite(
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_charge_settings(benzene_modifications_filepath, tmp_path, caplog, yaml_nagl_settings, ncores):
+def test_charge_settings(
+    benzene_modifications_filepath, tmp_path, caplog, yaml_nagl_settings, ncores
+):
     runner = CliRunner()
     output_file = str(tmp_path / "charged_benzenes.sdf")
 
@@ -157,7 +160,17 @@ def test_charge_settings(benzene_modifications_filepath, tmp_path, caplog, yaml_
         caplog.set_level(logging.INFO)
         # make sure the charges are picked up
         result = runner.invoke(
-            charge_molecules, ["-M", benzene_modifications_filepath, "-o", output_file, "-s", settings_path, "-n", ncores]
+            charge_molecules,
+            [
+                "-M",
+                benzene_modifications_filepath,
+                "-o",
+                output_file,
+                "-s",
+                settings_path,
+                "-n",
+                ncores,
+            ],
         )
 
         assert result.exit_code == 0
