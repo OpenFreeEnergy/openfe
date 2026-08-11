@@ -1,4 +1,5 @@
 import logging
+from importlib import resources
 
 import numpy as np
 import pytest
@@ -14,6 +15,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_OPENEYE,
 )
 from openfecli.commands.generate_partial_charges import charge_molecules
+from rdkit import Chem
 
 
 @pytest.fixture
@@ -38,6 +40,11 @@ def methane() -> Molecule:
 def methane_with_charges(methane) -> Molecule:
     methane._partial_charges = [-1.0, 0.25, 0.25, 0.25, 0.25] * unit.elementary_charge
     return methane
+
+@pytest.fixture
+def benzene_modifications_filepath():
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        yield str(d / "benzene_modifications.sdf")
 
 
 def test_missing_output(methane, tmp_path):
@@ -133,11 +140,13 @@ def test_charge_molecules_overwrite(
 @pytest.mark.skipif(
     HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
 )
-def test_charge_settings(methane, tmp_path, caplog, yaml_nagl_settings, ncores):
+def test_charge_settings(benzene_modifications_filepath, tmp_path, caplog, yaml_nagl_settings, ncores):
     runner = CliRunner()
-    mol_path = tmp_path / "methane.sdf"
-    methane.to_file(str(mol_path), "sdf")
-    output_file = str(tmp_path / "charged_methane.sdf")
+    output_file = str(tmp_path / "charged_benzenes.sdf")
+
+    # get the input order
+    supplier = Chem.SDMolSupplier(benzene_modifications_filepath, removeHs=False)
+    input_order = [mol.GetProp("_Name") for mol in supplier]
 
     # use nagl charges for CI speed!
     settings_path = tmp_path / "settings.yaml"
@@ -148,15 +157,21 @@ def test_charge_settings(methane, tmp_path, caplog, yaml_nagl_settings, ncores):
         caplog.set_level(logging.INFO)
         # make sure the charges are picked up
         result = runner.invoke(
-            charge_molecules, ["-M", mol_path, "-o", output_file, "-s", settings_path, "-n", ncores]
+            charge_molecules, ["-M", benzene_modifications_filepath, "-o", output_file, "-s", settings_path, "-n", ncores]
         )
 
         assert result.exit_code == 0
-
         assert "Partial charges are present for" in caplog.text
         assert "Partial Charge Generation: nagl" in result.output
-        # make sure the charges have been saved
-        methane = SmallMoleculeComponent.from_sdf_file(filename=output_file)
-        off_methane = methane.to_openff()
-        assert off_methane.partial_charges is not None
-        assert len(off_methane.partial_charges) == 5
+
+        # make sure the charges have been saved and the order of the molecules is preserved
+        supplier_out = Chem.SDMolSupplier(output_file, removeHs=False)
+        output_order = []
+        for mol in supplier_out:
+            smc = SmallMoleculeComponent.from_rdkit(mol)
+            off_mol = smc.to_openff()
+            assert off_mol.partial_charges is not None
+            assert len(off_mol.partial_charges) == off_mol.n_atoms
+            output_order.append(smc.name)
+
+        assert input_order == output_order
