@@ -282,6 +282,70 @@ class MultistateEquilFEAnalysis:
 
         return DG, dDG
 
+    @staticmethod
+    def _get_ukln_from_uln(
+        u_ln: npt.NDArray,
+        n_states: int,
+        num_samples: int,
+    ) -> npt.NDArray:
+        """
+        Helper method to convert
+        a u_ln array of shape [L thermodynamic states, n_sampled_states * n_iterations]
+        to a u_kln array of shape [K replicas, L states, n_iterations].
+
+        Parameters
+        ----------
+        u_ln : npt.NDArray
+          A n_states x (n_sampled_states * n_iterations)
+          array of energies (in kT).
+        n_states : int
+          The number of thermodynamic states.
+        num_samples : int
+          The number of samples to use for each state.
+
+        Returns
+        -------
+        u_kln : npt.NDArray
+          The reformatted energy matrix of shape [K replicas, L states, n_iterations].
+        """
+        # We do some sanity checks here to make sure the u_ln matches our assumptions.
+        if u_ln.shape[0] != n_states:
+            errmsg = (
+                f"u_ln shape {u_ln.shape} is not compatible with n_states {n_states}"
+            )
+            raise ValueError(errmsg)
+
+        if u_ln.shape[1] != n_states * num_samples:
+            errmsg = (
+                f"u_ln shape {u_ln.shape} is not compatible with n_states {n_states} "
+                f"and num_samples {num_samples}"
+            )
+            raise ValueError(errmsg)
+
+        return u_ln.reshape((n_states, n_states, num_samples)).transpose(1, 0, 2)
+
+    @staticmethod
+    def _get_uln_from_ukln(
+        u_kln: npt.NDArray,
+    ) -> npt.NDArray:
+        """
+        Helper method to convert
+        a u_kln array of shape [K replicas, L states, n_iterations]
+        to a u_ln array of shape [L thermodynamic states, n_sampled_states * n_iterations].
+
+        Parameters
+        ----------
+        u_kln : npt.NDArray
+          The reformatted energy matrix of shape [K replicas, L states, n_iterations].
+
+        Returns
+        -------
+        u_ln : npt.NDArray
+          A n_states x (n_sampled_states * n_iterations)
+          array of energies (in kT).
+        """
+        return u_kln.transpose(1, 0, 2).reshape(u_kln.shape[1], u_kln.shape[0] * u_kln.shape[2])
+
     def _get_fraction_free_energy(
         self,
         u_kln: npt.NDArray,
@@ -309,7 +373,7 @@ class MultistateEquilFEAnalysis:
         N_l : npt.NDArray
           An array containing the number of samples drawn from each state.
         chunk : int
-          The number of samples per state (e.g. final dimensions of u_kln) to
+          The number of samples per state (i.e. final dimensions of u_kln) to
           use for each estimate.
         fraction : float
           The fraction of uncorrelated samples this corresponds to. Only used
@@ -332,14 +396,8 @@ class MultistateEquilFEAnalysis:
 
         # Slice out the first and last `chunk` iterations for the forward and reverse estimates, respectively.
         # Then convert them to u_ln arrays of shape [L thermodynamic states, n_sampled_states * n_iterations] for MBAR.
-        # The transpose / reshape effectively does the same as
-        # multistate.MultiStateSamplerAnalyzer.reformat_energies_for_mbar
-        forward_subsampled_u_ln = (
-            u_kln[:, :, :chunk].transpose(1, 0, 2).reshape(u_kln.shape[1], u_kln.shape[0] * chunk)
-        )
-        backward_subsampled_u_ln = (
-            u_kln[:, :, -chunk:].transpose(1, 0, 2).reshape(u_kln.shape[1], u_kln.shape[0] * chunk)
-        )
+        forward_subsampled_u_ln = self._get_uln_from_ukln(u_kln[:, :, :chunk])
+        reverse_subsampled_u_ln = self._get_uln_from_ukln(u_kln[:, :, -chunk:])
 
         try:
             forward_DG, forward_dDG = self._get_free_energy(
@@ -351,7 +409,7 @@ class MultistateEquilFEAnalysis:
             )
             reverse_DG, reverse_dDG = self._get_free_energy(
                 self.analyzer,
-                backward_subsampled_u_ln,
+                reverse_subsampled_u_ln,
                 N_l,
                 0,
                 self.units,
@@ -415,11 +473,11 @@ class MultistateEquilFEAnalysis:
             errmsg = f"The number of samples is not equivalent across all states {N_l}"
             raise ValueError(errmsg)
 
-        # u_ln is indexed [L thermodynamic states, n_sampled_states * n_iterations]
-        # We want to reshape it to be [K replicas, L states, n_iterations]
-        # so that we can slice out the first and last n_iterations for the forward and reverse estimates.
-        # Note we can safely say n_iterations = N_l[0] because we already checked that N_l is the same across all states.
-        u_kln = u_ln.reshape((n_states, n_states, N_l[0])).transpose(1, 0, 2)
+        # convert u_ln to u_kln for slicing out the first and last
+        # n_iterations for the forward and reverse estimates
+        # Note: we can safely say n_samples = N_l[0] because we already checked
+        # that N_l is the same across all states.
+        u_kln = self._get_ukln_from_uln(u_ln, n_states, N_l[0])
 
         # Get the chunks of N_l going from 10% to ~ 100%
         # Note: you always lose out a few data points but it's fine
