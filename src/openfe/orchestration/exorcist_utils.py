@@ -4,6 +4,7 @@ This module translates an :class:`gufe.AlchemicalNetwork` into Exorcist task
 structures and can initialize an Exorcist task database from that graph.
 """
 
+import sys
 from pathlib import Path
 
 import exorcist
@@ -15,17 +16,22 @@ from openfe.storage.warehouse import WarehouseBaseClass
 
 
 def alchemical_network_to_task_graph(
-    alchemical_network: AlchemicalNetwork, warehouse: WarehouseBaseClass
+    alchemical_network: AlchemicalNetwork,
+    warehouse: WarehouseBaseClass,
 ) -> nx.DiGraph:
-    """Build a global task DAG from an alchemical network.
+    """Build a global task DAG from `alchemical_network` and store its relevant data
+    in `warehouse` the following warehouse stores:
+        - 'setup': The AlchemicalNetwork, deduplicated on disk
+        - 'tasks': The ProtocolUnits to be executed as tasks
+        - 'protocol_dags': The ProtocolDAGs that the ProtocolUnits belong to.
+                           Used to gather results after execution.
 
     Parameters
     ----------
     alchemical_network : AlchemicalNetwork
-        Network containing transformations to execute.
+        Network containing alchemical transformations to be executed.
     warehouse : WarehouseBaseClass
-        Warehouse used to persist protocol units as tasks while the graph is
-        constructed.
+        Warehouse used to store data used by the execution and simulation engines.
 
     Returns
     -------
@@ -37,11 +43,18 @@ def alchemical_network_to_task_graph(
     Raises
     ------
     ValueError
-        Raised if the assembled task graph is not acyclic.
+        If the assembled task graph is not acyclic.
+        If the input `alchemical_network` is not a valid openfe.AlchemicalNetwork
     """
 
+    if not isinstance(alchemical_network, AlchemicalNetwork):
+        raise ValueError(
+            f"alchemical_network must be an AlchemicalNetwork, not {type(alchemical_network)}."
+        )
+
+    warehouse.store_setup_tokenizable(alchemical_network)
     global_dag = nx.DiGraph()
-    for transformation in alchemical_network.edges:
+    for transformation in alchemical_network.edges:  # TODO: skip edges that already have units?
         dag = transformation.create()
         for unit in dag.protocol_units:
             node_id = str(unit.key)
@@ -91,6 +104,9 @@ def build_task_db_from_alchemical_network(
     """
     if db_path is None:
         db_path = Path(f"{warehouse.name}.db")
+    if db_path.exists():
+        print(f"{db_path} already exists.")  # TODO: add more user flexibility here
+        sys.exit()
 
     global_dag: nx.DiGraph = alchemical_network_to_task_graph(alchemical_network, warehouse)
     db = exorcist.TaskStatusDB.from_filename(db_path)
