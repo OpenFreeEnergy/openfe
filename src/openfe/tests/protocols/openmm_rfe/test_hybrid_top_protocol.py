@@ -2582,3 +2582,17 @@ def test_broken_bond_mapping(broken_bond_mapping, vac_settings):
             stateB=gufe.ChemicalSystem({"ligand": broken_bond_mapping.componentB}),
             mapping=broken_bond_mapping,
         )
+
+
+def test_appearing_bond_mapping(appearing_bond_mapping, vac_settings):
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    with pytest.raises(ValueError, match="Bond 0-1 in componentB is broken in componentA via the provided mapping."):
+        _ = protocol.create(
+            stateA=gufe.ChemicalSystem({"ligand": appearing_bond_mapping.componentA}),
+            stateB=gufe.ChemicalSystem({"ligand": appearing_bond_mapping.componentB}),
+            mapping=appearing_bond_mapping,
+        )

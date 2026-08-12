@@ -872,3 +872,24 @@ def broken_bond_mapping() -> LigandAtomMapping:
             28: 27,
         },
     )
+
+
+@pytest.fixture()
+def appearing_bond_mapping(chlorobenzene):
+    with resources.as_file(resources.files("openfe.tests.data")) as f:
+        ethyl_benzene = SmallMoleculeComponent.from_sdf_file(str(f / "ethylbenzene.sdf"))
+
+    # create a fake mapping which adds a new bond during the transformation by mapping the ethyl group to the chlorine atom in chlorobenzene
+    return LigandAtomMapping(
+        componentA=ethyl_benzene,
+        componentB=chlorobenzene,
+        componentA_to_componentB={
+            5: 0,
+            7: 1,
+            8: 2,
+            9: 3,
+            10: 4,
+            11: 5,
+            12: 6
+        },
+    )
