@@ -19,15 +19,19 @@ def _alchemical_network_to_task_graph(
     alchemical_network: AlchemicalNetwork,
     warehouse: WarehouseBaseClass,
 ) -> nx.DiGraph:
-    """Build a global task DAG from an alchemical network.
+    """Build a global task DAG from `alchemical_network` and store its relevant data
+    in `warehouse` the following warehouse stores:
+        - 'setup': The AlchemicalNetwork, deduplicated on disk
+        - 'tasks': The ProtocolUnits to be executed as tasks
+        - 'protocol_dags': The ProtocolDAGs that the ProtocolUnits belong to.
+                           Used to gather results after execution.
 
     Parameters
     ----------
     alchemical_network : AlchemicalNetwork
-        Network containing transformations to execute.
+        Network containing alchemical transformations to be executed.
     warehouse : WarehouseBaseClass
-        Warehouse used to persist protocol units as tasks while the graph is
-        constructed.
+        Warehouse used to store data used by the execution and simulation engines.
 
     Returns
     -------
@@ -38,7 +42,8 @@ def _alchemical_network_to_task_graph(
     Raises
     ------
     ValueError
-        Raised if the assembled task graph is not acyclic.
+        If the assembled task graph is not acyclic.
+        If the input `alchemical_network` is not a valid openfe.AlchemicalNetwork
     """
 
     if not isinstance(alchemical_network, AlchemicalNetwork):
@@ -50,7 +55,7 @@ def _alchemical_network_to_task_graph(
 
     global_task_dag = nx.DiGraph()
     for transformation in alchemical_network.edges:
-        dag: ProtocolDAG = transformation.create()
+        dag: ProtocolDAG = transformation.create()  # TODO: skip edges that already have units?
         for unit in dag.protocol_units:
             global_task_dag.add_node(str(unit.key))
             warehouse.store_task(unit)
