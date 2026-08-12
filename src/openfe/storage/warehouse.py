@@ -117,7 +117,7 @@ class WarehouseBaseClass:
         self._store_gufe_tokenizable("setup", obj)
 
     def load_setup_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
-        # TODO: this doesn't actually look specifically in the result store, which is misleading
+        # TODO: this doesn't actually look specifically in the setup store, which is misleading
         """Load a GufeTokenizable object from the setup store.
 
         Parameters
@@ -159,13 +159,17 @@ class WarehouseBaseClass:
         return self._load_gufe_tokenizable(gufe_key=obj)
 
     def store_protocol_dag(self, dag: ProtocolDAG):
-        """Store a ProtocolDAG in the "protocol_dags" store of the warehouse
-
+        """Store a ProtocolDAG in the "protocol_dags" store of this warehouse.
         Parameters
         ----------
         dag : ProtocolDAG
+            The ProtocolDAG object to store.
+
+        Raises
+        ------
+        ValueError
+            If `dag` is not a ProtocolDAG instance.
         """
-        # TODO: write this as a shallow dict only?
         if not isinstance(dag, ProtocolDAG):
             raise ValueError("Only ProtocolDAGs may be written to the 'protocol_dags' store.")
         self._store_gufe_tokenizable("protocol_dags", dag)
@@ -339,6 +343,11 @@ class WarehouseBaseClass:
         """Yield the protocol dags present in the Warehouse's 'protocol_dags' store.
 
         Note that this requires the name of the item to start with 'ProtocolDAG'.
+
+        Yields
+        ------
+        Generator[ProtocolDAG]
+            The ProtocolDAGs found in this Warehouse's 'protocol_dags' store.
         """
         # NOTE: this can be made more robust (but slower) by using isinstance(obj, openfe.ProtocolDAG)
         # _after_ loading each item, rather than filtering by name

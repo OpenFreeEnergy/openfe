@@ -78,7 +78,7 @@ def build_task_db_from_alchemical_network(
         Warehouse used to persist protocol units while building the task DAG.
     db_path : pathlib.Path or None, optional
         Location of the SQLite-backed Exorcist database. If ``None``, defaults
-        to {warehouse_name}.db in the current working directory.
+        to {warehouse.name}.db in the current working directory.
     max_tries : int, default=1
         Maximum number of retries for each task before Exorcist marks it as
         ``TOO_MANY_RETRIES``.
