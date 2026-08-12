@@ -517,7 +517,10 @@ def bulk_assign_partial_charges(
             }
 
             for work in tqdm.tqdm(
-                as_completed(future_to_index), desc="Generating charges", ncols=80, total=len(molecules)
+                as_completed(future_to_index),
+                desc="Generating charges",
+                ncols=80,
+                total=len(molecules),
             ):
                 i = future_to_index[work]
                 charged_ligands[i] = SmallMoleculeComponent.from_openff(work.result())
