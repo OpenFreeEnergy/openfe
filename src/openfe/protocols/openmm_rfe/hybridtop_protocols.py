@@ -314,10 +314,15 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         mapping : ComponentMapping
             The mapping to check
 
+        Notes
+        -----
+        Bond breaking is detected by checking that if atoms are bonded in one state and mapped, that their mapped
+        counterparts are also bonded in the other state.
+
         Raises
         ------
         ValueError
-            If any bonds would be broken via the provided mapping.
+            If any bonds would be broken/introduced via the provided mapping.
         """
         # generate a list of bonds in the end states
         mol_a_bonds = {
