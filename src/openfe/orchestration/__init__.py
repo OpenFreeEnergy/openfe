@@ -160,12 +160,12 @@ class Worker:
         """
 
         db: TaskStatusDB = TaskStatusDB.from_filename(self.task_db_path)
-        # The format for the taskid is "Transformation-<HASH>:ProtocolUnit-<HASH>"
+        # The format for the taskid is "ProtocolUnit-<HASH>"
         taskid = db.check_out_task()
         if taskid is None:
             return None
 
-        _, protocol_unit_key = taskid.split(":", maxsplit=1)
+        protocol_unit_key = taskid
         unit = self.warehouse.load_task(GufeKey(protocol_unit_key))
         return db, taskid, unit
 
