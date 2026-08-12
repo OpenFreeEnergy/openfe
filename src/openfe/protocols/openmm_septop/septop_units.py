@@ -463,14 +463,10 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         frc_const = min(settings.K_thetaA, settings.K_thetaB)
 
         guest_restraint_atoms_idxs = (
-            list(settings.guest_restraint_ids)
-            if settings.guest_restraint_ids is not None
-            else None
+            list(settings.guest_restraint_ids) if settings.guest_restraint_ids is not None else None
         )
         host_restraint_atoms_idxs = (
-            list(settings.host_restraint_ids)
-            if settings.host_restraint_ids is not None
-            else None
+            list(settings.host_restraint_ids) if settings.host_restraint_ids is not None else None
         )
 
         geom = geometry.boresch.find_boresch_restraint(
