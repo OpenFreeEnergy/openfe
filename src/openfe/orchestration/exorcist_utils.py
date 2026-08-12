@@ -8,6 +8,7 @@ from pathlib import Path
 
 import exorcist
 import networkx as nx
+import pandas as pd
 from gufe import AlchemicalNetwork
 
 from openfe.storage.warehouse import WarehouseBaseClass
@@ -43,14 +44,15 @@ def alchemical_network_to_task_graph(
     for transformation in alchemical_network.edges:
         dag = transformation.create()
         for unit in dag.protocol_units:
-            node_id = f"{str(transformation.key)}:{str(unit.key)}"
-            global_dag.add_node(
-                node_id,
-            )
+            node_id = str(unit.key)
+            global_dag.add_node(node_id)
             warehouse.store_task(unit)
+        # store the protocol_dag as a shallow dict, since all its units are
+        # already written to disk
+        warehouse.store_protocol_dag(dag)
         for dependent_unit, dependency_unit in dag.graph.edges:
-            upstream_id = f"{str(transformation.key)}:{str(dependency_unit.key)}"
-            downstream_id = f"{str(transformation.key)}:{str(dependent_unit.key)}"
+            upstream_id = str(dependency_unit.key)
+            downstream_id = str(dependent_unit.key)
             global_dag.add_edge(upstream_id, downstream_id)
 
     if not nx.is_directed_acyclic_graph(global_dag):
@@ -59,6 +61,7 @@ def alchemical_network_to_task_graph(
     return global_dag
 
 
+# TODO: do we test adding a multiple alchemical networks to the same task graph?
 def build_task_db_from_alchemical_network(
     alchemical_network: AlchemicalNetwork,
     warehouse: WarehouseBaseClass,
@@ -75,7 +78,7 @@ def build_task_db_from_alchemical_network(
         Warehouse used to persist protocol units while building the task DAG.
     db_path : pathlib.Path or None, optional
         Location of the SQLite-backed Exorcist database. If ``None``, defaults
-        to ``Path("tasks.db")`` in the current working directory.
+        to {warehouse.name}.db in the current working directory.
     max_tries : int, default=1
         Maximum number of retries for each task before Exorcist marks it as
         ``TOO_MANY_RETRIES``.
@@ -87,9 +90,9 @@ def build_task_db_from_alchemical_network(
         edges derived from ``alchemical_network``.
     """
     if db_path is None:
-        db_path = Path("tasks.db")
+        db_path = Path(f"{warehouse.name}.db")
 
-    global_dag = alchemical_network_to_task_graph(alchemical_network, warehouse)
+    global_dag: nx.DiGraph = alchemical_network_to_task_graph(alchemical_network, warehouse)
     db = exorcist.TaskStatusDB.from_filename(db_path)
     db.add_task_network(global_dag, max_tries)
     return db
