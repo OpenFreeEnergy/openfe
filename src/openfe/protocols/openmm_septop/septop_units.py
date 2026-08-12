@@ -467,6 +467,11 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             if settings.guest_restraint_ids is not None
             else None
         )
+        host_restraint_atoms_idxs = (
+            list(settings.host_restraint_ids)
+            if settings.host_restraint_ids is not None
+            else None
+        )
 
         geom = geometry.boresch.find_boresch_restraint(
             universe=universe,
@@ -474,9 +479,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             guest_idxs=guest_atom_ids,
             host_idxs=host_atom_ids,
             guest_restraint_atoms_idxs=guest_restraint_atoms_idxs,
-            host_restraint_atoms_idxs=list(settings.host_restraint_ids)
-            if settings.host_restraint_ids is not None
-            else None,
+            host_restraint_atoms_idxs=host_restraint_atoms_idxs,
             host_selection=settings.host_selection,
             anchor_finding_strategy=settings.anchor_finding_strategy,
             dssp_filter=settings.dssp_filter,
