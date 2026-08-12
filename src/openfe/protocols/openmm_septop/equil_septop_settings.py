@@ -23,7 +23,10 @@ from gufe.settings.typing import PicosecondQuantity
 from openff.units import unit as offunit
 from pydantic import Field, field_validator
 
-from openfe.protocols.openmm_afe.equil_afe_settings import AlchemicalSettings
+from openfe.protocols.openmm_afe.equil_afe_settings import (
+    ABFEBoreschRestraintSettings,
+    AlchemicalSettings,
+)
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     MDOutputSettings,
@@ -358,9 +361,13 @@ class SepTopSettings(SettingsBaseModel):
     """
     Settings for the harmonic restraint in the solvent
     """
-    complex_restraint_settings: BaseRestraintSettings
+    complex_restraint_settings_A: BaseRestraintSettings
     """
-    Settings for the Boresch restraints in the complex
+    Settings for the Boresch restraint applied to ligand A in the complex.
+    """
+    complex_restraint_settings_B: BaseRestraintSettings
+    """
+    Settings for the Boresch restraint applied to ligand B in the complex.
     """
     analysis_settings: MultiStateAnalysisSettings = Field(
         default_factory=MultiStateAnalysisSettings
