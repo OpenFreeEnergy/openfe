@@ -195,7 +195,7 @@ def test_build_task_db_default_path(request, fixture):
         result = build_task_db_from_alchemical_network(network, warehouse)
 
     task_graph_mock.assert_called_once_with(network, warehouse)
-    db_ctor.assert_called_once_with(Path("tasks.db"))
+    db_ctor.assert_called_once_with(Path(f"{warehouse.name}.db"))
     fake_db.add_task_network.assert_called_once_with(fake_graph, 1)
     assert result is fake_db
 
