@@ -358,7 +358,18 @@ class WarehouseBaseClass:
                 yield dag
 
     def get_unit_results(self) -> Generator[ProtocolUnitResult]:
-        """Yield all ProtocolUnitResult(s) stored in the Warehouse's 'results' store."""
+        """Yield all ProtocolUnitResult(s) stored in the Warehouse's 'result' store.
+
+        Yields
+        ------
+        Generator[ProtocolUnitResult]
+            The ProtocolUnitResults found in this Warehouse's 'result' store
+
+        Raises
+        ------
+        RuntimeError
+            If any object in the result store is not a ProtocolUnitResult
+        """
         for i in self.stores["result"]:
             obj = self.load_result_tokenizable(i)
             if isinstance(obj, ProtocolUnitResult):
