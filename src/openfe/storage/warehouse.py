@@ -339,7 +339,7 @@ class WarehouseBaseClass:
 
         return recursive_build_object_cache(gufe_key)
 
-    def get_protocol_dags(self) -> Generator[ProtocolDAG]:
+    def get_protocol_dags(self) -> Generator[ProtocolDAG, None, None]:
         """Yield the protocol dags present in the Warehouse's 'protocol_dags' store.
 
         Note that this requires the name of the item to start with 'ProtocolDAG'.
