@@ -11,7 +11,7 @@ from typing import Callable, Literal
 
 import numpy as np
 from gufe import SmallMoleculeComponent
-from openff.toolkit import Molecule as OFFMol
+from openff.toolkit import Molecule as OFFMol, ForceField
 from openff.toolkit.utils.base_wrapper import ToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import (
@@ -20,6 +20,7 @@ from openff.toolkit.utils.toolkits import (
     RDKitToolkitWrapper,
 )
 from openff.units import unit
+from sympy.codegen.ast import continue_
 from threadpoolctl import threadpool_limits
 
 try:
@@ -290,6 +291,7 @@ def assign_offmol_partial_charges(
     toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
     generate_n_conformers: int | None,
     nagl_model: str | None,
+    force_field: list[str] | None = None,
 ) -> OFFMol:
     """
     Assign partial charges to an OpenFF Molecule based on a selected method.
@@ -299,7 +301,7 @@ def assign_offmol_partial_charges(
     offmol : openff.toolkit.Molecule
       The Molecule to assign partial charges to.
     overwrite : bool
-      Whether or not to overwrite any existing non-zero partial charges.
+      Whether to overwrite any existing non-zero partial charges.
       Note that zeroed charges will always be overwritten.
     method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
       Partial charge assignment method.
@@ -319,6 +321,15 @@ def assign_offmol_partial_charges(
     nagl_model : str | None
       The NAGL model to use for charge assignment if method is ``nagl``.
       If ``None``, the latest am1bcc NAGL charge model is used.
+    force_field : list[str] | None, default None
+        An optional list of SMIRNOFF style force field offxml paths or strings which should be used to assign partial charges.
+
+    Notes
+    -----
+    Charges are applied based on the following source preferences:
+     - Charges already present on the ligand are retained if overwrite is ``False``
+     - Charges are applied as defined by the method in the given SMIRNOFF style force field if present and the handler is not ``ToolkitAM1BCCHandler``
+     - Charges are applied using the input method and settings
 
     Raises
     ------
@@ -338,6 +349,20 @@ def assign_offmol_partial_charges(
     if offmol.partial_charges is not None and np.any(offmol.partial_charges):
         if not overwrite:
             return offmol
+
+    if force_field is not None:
+        ff = ForceField(force_field)
+        if "ToolkitAM1BCC" in ff.registered_parameter_handlers:
+            ff.deregister_parameter_handler("ToolkitAM1BCC")
+
+        try:
+            # let the force field resolve the partial charge assignment
+            charges = ff.get_partial_charges(offmol)
+            offmol.partial_charges = charges
+            return offmol
+        except RuntimeError:
+            # this has failed to assign charges fall back to the user specified method
+            pass
 
     # Dictionary for each available charge method
     # The idea of this pattern is to allow for maximum flexibility by
