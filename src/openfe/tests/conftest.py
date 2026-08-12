@@ -883,13 +883,5 @@ def appearing_bond_mapping(chlorobenzene):
     return LigandAtomMapping(
         componentA=ethyl_benzene,
         componentB=chlorobenzene,
-        componentA_to_componentB={
-            5: 0,
-            7: 1,
-            8: 2,
-            9: 3,
-            10: 4,
-            11: 5,
-            12: 6
-        },
+        componentA_to_componentB={5: 0, 7: 1, 8: 2, 9: 3, 10: 4, 11: 5, 12: 6},
     )

@@ -334,7 +334,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             # Bond in A is broken in B -> Broken
             ("A", "B", mol_a_bonds, mol_b_bonds, mapping.componentA_to_componentB),
             # Bond in B is missing in A -> Introduced
-            ("B", "A", mol_b_bonds, mol_a_bonds, mapping.componentB_to_componentA)
+            ("B", "A", mol_b_bonds, mol_a_bonds, mapping.componentB_to_componentA),
         )
 
         for state_from, state_to, bonds_from, bonds_to, atom_map in checks:
@@ -346,7 +346,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                         raise ValueError(
                             f"Bond {atom_a}-{atom_b} in component{state_from} is broken in component{state_to} via the provided mapping."
                         )
-
 
     @staticmethod
     def _validate_smcs(
