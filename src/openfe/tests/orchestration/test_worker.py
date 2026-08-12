@@ -71,7 +71,7 @@ def worker_with_executable_task_db(tmp_path, absolute_transformation):
     unit = _get_dependency_free_unit(absolute_transformation)
     warehouse.store_task(unit)
 
-    taskid = f"{absolute_transformation.key}:{unit.key}"
+    taskid = unit.key
     task_graph = nx.DiGraph()
     task_graph.add_node(taskid)
 
@@ -94,24 +94,24 @@ def test_get_task_uses_default_db_path_without_patching(
     worker = Worker(warehouse=warehouse)
     taskid, loaded = worker._get_task()
 
-    expected_keys = {task_row.taskid.split(":", maxsplit=1)[1] for task_row in db.get_all_tasks()}
+    expected_keys = {task_row.taskid for task_row in db.get_all_tasks()}
     assert worker.task_db_path == Path("./warehouse/tasks.db")
     assert str(loaded.key) in expected_keys
-    assert taskid.endswith(f":{loaded.key}")
+    assert taskid == loaded.key
 
 
 def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
     worker, warehouse, db = worker_with_real_db
 
     task_ids = [row.taskid for row in db.get_all_tasks()]
-    expected_protocol_unit_keys = {task_id.split(":", maxsplit=1)[1] for task_id in task_ids}
+    expected_protocol_unit_keys = {task_id for task_id in task_ids}
 
     taskid, loaded = worker._get_task()
     reloaded = warehouse.load_task(loaded.key)
 
     assert str(loaded.key) in expected_protocol_unit_keys
     assert loaded == reloaded
-    assert taskid.endswith(f":{loaded.key}")
+    assert taskid == loaded.key
 
 
 def test_execute_unit_stores_real_result(worker_with_executable_task_db, tmp_path):
@@ -185,9 +185,8 @@ def test_execute_unit_resolves_dependency_results(tmp_path):
     warehouse.store_task(first_unit)
     warehouse.store_task(second_unit)
 
-    transformation_key = "Transformation-toy"
-    first_taskid = f"{transformation_key}:{first_unit.key}"
-    second_taskid = f"{transformation_key}:{second_unit.key}"
+    first_taskid = first_unit.key
+    second_taskid = second_unit.key
 
     task_graph = nx.DiGraph()
     task_graph.add_edge(first_taskid, second_taskid)
@@ -220,7 +219,7 @@ def test_execute_unit_marks_missing_dependency_as_failed(tmp_path):
     dependent_unit = _ToyProtocolUnit(name="dependent", upstream=missing_upstream, increment=2)
     warehouse.store_task(dependent_unit)
 
-    taskid = f"Transformation-toy:{dependent_unit.key}"
+    taskid = dependent_unit.key
     task_graph = nx.DiGraph()
     task_graph.add_node(taskid)
 
@@ -247,8 +246,8 @@ def test_execute_unit_uses_isolated_shared_workspace_per_task(tmp_path):
     warehouse.store_task(first_unit)
     warehouse.store_task(second_unit)
 
-    first_taskid = f"Transformation-toy:{first_unit.key}"
-    second_taskid = f"Transformation-toy:{second_unit.key}"
+    first_taskid = first_unit.key
+    second_taskid = second_unit.key
 
     task_graph = nx.DiGraph()
     task_graph.add_node(first_taskid)
