@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* The RelativeHybridTopologyProtocol will now raise a ValueError during validation if the number of heavy atoms in the atom mapping is less than 3 preventing execution of the simulation.
+* The RelativeHybridTopologyProtocol will now raise a ValueError during validation if the number of heavy atoms in the atom mapping is less than 3 and the components have more than 6 heavy atoms preventing execution of the simulation.
 
 **Deprecated:**
 

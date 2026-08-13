@@ -388,7 +388,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         num_mapped_heavy_atoms = len(mapped_heavy_atoms)
 
         passed = (
-            (num_mapped_heavy_atoms >= 4)
+            (num_mapped_heavy_atoms >= 3)
             or (num_heavy_mol_a < 6 and num_mapped_heavy_atoms >= 1)
             or (num_heavy_mol_b < 6 and num_mapped_heavy_atoms >= 1)
         )
