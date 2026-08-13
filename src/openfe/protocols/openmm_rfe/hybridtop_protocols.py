@@ -387,13 +387,16 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         num_mapped_heavy_atoms = len(mapped_heavy_atoms)
 
-        passed = (num_mapped_heavy_atoms >= 4) or (num_heavy_mol_a < 6 and num_mapped_heavy_atoms >= 1) or (num_heavy_mol_b < 6 and num_mapped_heavy_atoms >= 1)
+        passed = (
+            (num_mapped_heavy_atoms >= 4)
+            or (num_heavy_mol_a < 6 and num_mapped_heavy_atoms >= 1)
+            or (num_heavy_mol_b < 6 and num_mapped_heavy_atoms >= 1)
+        )
 
         if not passed:
             raise ValueError(
                 f"Number of mapped heavy atoms is less than 3: {num_mapped_heavy_atoms} which is required for this protocol."
             )
-
 
     @staticmethod
     def _validate_smcs(

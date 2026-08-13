@@ -2627,14 +2627,12 @@ def test_too_few_mapped_atoms(benzene_vacuum_system, toluene_vacuum_system, vac_
 
 def test_too_few_mapped_small_molecules(chloroethane_to_ethane_mapping, vac_settings):
     # make sure this mapping of only 2 heavy atoms passes due to the small size of the molecules
-    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=vac_settings
-    )
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
     # make sure the heavy atom mapping only has 2 atoms
     assert len(chloroethane_to_ethane_mapping.heavy_atom_componentA_to_componentB) == 2
     # make sure validation passes without issue
     _ = protocol.validate(
         stateA=gufe.ChemicalSystem({"ligand": chloroethane_to_ethane_mapping.componentA}),
         stateB=gufe.ChemicalSystem({"ligand": chloroethane_to_ethane_mapping.componentB}),
-        mapping=chloroethane_to_ethane_mapping
+        mapping=chloroethane_to_ethane_mapping,
     )
