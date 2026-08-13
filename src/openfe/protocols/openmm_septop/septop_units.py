@@ -35,6 +35,9 @@ from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
 from openfe.protocols.openmm_utils import omm_compute
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    assign_offmol_residue_metadata,
+)
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -677,6 +680,12 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
+        assigned = assign_offmol_residue_metadata(
+            smc_comps_AB,
+            alchem_comps["stateA"] + alchem_comps["stateB"],
+        )
+        alchem_resnames = [assigned[c] for c in alchem_comps["stateA"] + alchem_comps["stateB"]]
+
         # 3. Get settings
         settings = self._get_settings()
 
@@ -856,6 +865,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "restraint_geometry_A": restraint_geom_A.model_dump(),
                 "restraint_geometry_B": restraint_geom_B.model_dump(),
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
@@ -873,6 +883,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "alchem_factory": alchemical_factory,
                 "positions": equil_positions_AB,
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
@@ -887,14 +898,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
     simtype = "solvent"
 
     @staticmethod
-    def _update_positions(
+    def _get_ligand_offset(
         mol_A: SmallMoleculeComponent,
         mol_B: SmallMoleculeComponent,
-    ) -> SmallMoleculeComponent:
+    ) -> Quantity:
         """
         Computes the amount to offset the second ligand by in the solution
-        phase during RBFE calculations and applies the offset to the ligand,
-        returning the SmallMoleculeComponent with the updated positions.
+        phase during RBFE calculations.
 
         Parameters
         ----------
@@ -904,9 +914,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
           The SmallMoleculeComponent of ligand B
         Returns
         -------
-        updated_mol_B: SmallMoleculeComponent
-          The SmallMoleculeComponent of ligand B after updating its positions
-          to be a certain distance away from ligand A
+        offset : openff.units.Quantity
+          The translation vector to add to every ligand B atom position.
         """
 
         # Convert SmallMolecule to Rdkit Molecule
@@ -923,15 +932,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         ligand_offset = pos_ligandA.mean(0) - pos_ligandB.mean(0)
         ligand_offset[0] += ligand_distance
 
-        # Offset the ligandB.
-        pos_ligandB += ligand_offset
-
-        # Extract updated system positions.
-        rdmol_B.GetConformers()[0].SetPositions(pos_ligandB)
-
-        updated_mol_B = SmallMoleculeComponent(rdmol_B)
-
-        return updated_mol_B
+        return Quantity(ligand_offset, "angstrom")
 
     def _add_restraints(
         self,
@@ -1053,6 +1054,12 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
+        assigned = assign_offmol_residue_metadata(
+            smc_comps_AB,
+            alchem_comps["stateA"] + alchem_comps["stateB"],
+        )
+        alchem_resnames = [assigned[c] for c in alchem_comps["stateA"] + alchem_comps["stateB"]]
+
         # 2. Get settings
         settings = self._get_settings()
 
@@ -1061,11 +1068,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 4. Update the positions of ligand B:
         #    - solvent: Offset ligand B with respect to ligand A
-        smc_B = self._update_positions(
+        offset = self._get_ligand_offset(
             alchem_comps["stateA"][0],
             alchem_comps["stateB"][0],
         )
-        smc_off_B = {smc_B: smc_B.to_openff()}
+        off_B = smc_comps_AB[alchem_comps["stateB"][0]]
+        off_B._conformers[0] = off_B._conformers[0] + offset
+        smc_off_B = {alchem_comps["stateB"][0]: off_B}
 
         # 5. Get the OpenMM systems
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB, comp_resids_AB = (
@@ -1081,7 +1090,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # system AB
         comp_atomids_AB = self._get_atom_indices(omm_topology_AB, comp_resids_AB)
         atom_indices_AB_A = comp_atomids_AB[alchem_comps["stateA"][0]]
-        atom_indices_AB_B = comp_atomids_AB[smc_B]
+        atom_indices_AB_B = comp_atomids_AB[alchem_comps["stateB"][0]]
 
         # 7. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
@@ -1095,7 +1104,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 8. Apply Restraints
         rdmol_A = alchem_comps["stateA"][0].to_rdkit()
-        rdmol_B = smc_B.to_rdkit()
+        rdmol_B = alchem_comps["stateB"][0].to_rdkit()
         Chem.SanitizeMol(rdmol_A)
         Chem.SanitizeMol(rdmol_B)
 
@@ -1138,6 +1147,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "topology": topology_file,
                 "standard_state_correction": corr.to("kilocalorie_per_mole"),
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
@@ -1153,6 +1163,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "alchem_factory": alchemical_factory,
                 "positions": positions_AB,
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
