@@ -2543,7 +2543,7 @@ def test_structural_analysis_uses_ligand_resnames(tmp_path):
     assert captured["ligand_selection"] == "resname LIG"
 
 
-def test_empty_atom_mapping(tmp_path, benzene_vacuum_system, toluene_vacuum_system, vac_settings):
+def test_empty_atom_mapping(benzene_vacuum_system, toluene_vacuum_system, vac_settings):
     """Make sure an informative error is raised if the user supplies an empty atom mapping which is not supported."""
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -2564,6 +2564,39 @@ def test_empty_atom_mapping(tmp_path, benzene_vacuum_system, toluene_vacuum_syst
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=blank_mapping,
+        )
+
+
+def test_broken_bond_mapping(broken_bond_mapping, vac_settings):
+    """Make sure an informative error is raised if the user supplies an atom mapping which would break a chemical bond."""
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Bond 16-27 in componentA is broken in componentB via the provided mapping.",
+    ):
+        _ = protocol.create(
+            stateA=gufe.ChemicalSystem({"ligand": broken_bond_mapping.componentA}),
+            stateB=gufe.ChemicalSystem({"ligand": broken_bond_mapping.componentB}),
+            mapping=broken_bond_mapping,
+        )
+
+
+def test_appearing_bond_mapping(appearing_bond_mapping, vac_settings):
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    with pytest.raises(
+        ValueError, match="Bond 0-1 in componentB is broken in componentA via the provided mapping."
+    ):
+        _ = protocol.create(
+            stateA=gufe.ChemicalSystem({"ligand": appearing_bond_mapping.componentA}),
+            stateB=gufe.ChemicalSystem({"ligand": appearing_bond_mapping.componentB}),
+            mapping=appearing_bond_mapping,
         )
 
 

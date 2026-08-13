@@ -373,13 +373,12 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["forward_DGs"].m,
             np.array(
                 [
-                    -48.057326, -48.038367, -48.033994, -48.0228, -48.028532,
-                    -48.025258, -48.006349, -47.986304, -47.972138, -47.960623,
+                    -47.823889, -47.905875, -47.935716, -47.951184, -47.971532,
+                    -47.949007, -47.938932, -47.936925, -47.951239, -47.960623,
                 ]
             ),
             rtol=1e-04,
         )  # fmt: skip
-        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict["forward_and_reverse_energies"]["forward_dDGs"].m,
             np.array(
@@ -394,13 +393,12 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["reverse_DGs"].m,
             np.array(
                 [
-                    -47.823839, -47.833107, -47.845866, -47.858173, -47.883887,
-                    -47.915963, -47.93319, -47.939125, -47.949016, -47.960623,
+                    -48.0018, -48.00823 , -48.012272, -47.974658, -47.96017,
+                    -47.961262, -47.971833, -47.971134, -47.971301, -47.960623,
                 ]
             ),
             rtol=1e-04,
         )  # fmt: skip
-        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict["forward_and_reverse_energies"]["reverse_dDGs"].m,
             np.array(
@@ -411,6 +409,54 @@ class TestFEAnalysis:
             ),
             rtol=5e-01,
         )  # fmt: skip
+
+    def test_forward_reverse_uln_to_ukln_to_uln_conversion(self, analyzer):
+        def _recreate_ukln(analyzer):
+            """
+            Helper method to recreate u_kln the same way openmmtools does.
+            """
+            energy_data = list(analyzer._read_energies(truncate_max_n_iterations=True))
+            (
+                sampled_energy_matrix,
+                unsampled_energy_matrix,
+                neighborhoods,
+                replicas_state_indices,
+            ) = energy_data
+            number_equilibrated, g_t, Neff_max = analyzer._get_equilibration_data(
+                sampled_energy_matrix, neighborhoods, replicas_state_indices
+            )
+            for i, energies in enumerate(energy_data):
+                energies = multistate.utils.remove_unequilibrated_data(
+                    energies, number_equilibrated, -1
+                )
+                energy_data[i] = multistate.utils.subsample_data_along_axis(energies, g_t, -1)
+            sampled_energy_matrix, unsampled_energy_matrix, neighborhood, replicas_state_indices = (
+                energy_data
+            )
+            return sampled_energy_matrix
+
+        u_ln = analyzer.analyzer._unbiased_decorrelated_u_ln
+        N_l = analyzer.analyzer._unbiased_decorrelated_N_l
+
+        u_kln = analyzer._get_ukln_from_uln(u_ln, len(N_l), N_l[0])
+
+        assert (u_kln == _recreate_ukln(analyzer.analyzer)).all()
+
+        new_u_ln = analyzer._get_uln_from_ukln(u_kln)
+
+        assert (new_u_ln == u_ln).all()
+
+    def test_ukln_from_uln_errors(self, analyzer):
+        # Check the exceptions we could raise ahead of the conversion
+        u_ln = np.zeros((2, 100))
+
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 3"
+        with pytest.raises(ValueError, match=errmsg):
+            analyzer._get_ukln_from_uln(u_ln, 3, 100)
+
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 2 and num_samples 75"
+        with pytest.raises(ValueError, match=errmsg):
+            analyzer._get_ukln_from_uln(u_ln, 2, 75)
 
     @pytest.mark.parametrize("fail_on_call", [1, 2], ids=["forward_fails", "reverse_fails"])
     def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer, fail_on_call):
