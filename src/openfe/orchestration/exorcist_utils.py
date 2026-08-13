@@ -114,16 +114,37 @@ def build_task_db_from_alchemical_network(
     return db
 
 
-def get_task_df(task_db: exorcist.TaskStatusDB):
-    task_status_unpack = {e.value: e.name for e in exorcist.TaskStatus}
+def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
+    """Create a pandas Dataframe from task_db.
+
+    Parameters
+    ----------
+    task_db : exorcist.TaskStatusDB
+        A task database.
+
+    Returns
+    -------
+    pd.DataFrame
+        A dataframe of the tasks and their statuses
+    """
+    status_name_encoding = {e.value: e.name for e in exorcist.TaskStatus}
     task_table = pd.read_sql_table("tasks", task_db.engine)
-    task_table.replace({"status": task_status_unpack}, inplace=True)
+    task_table.replace({"status": status_name_encoding}, inplace=True)
     return task_table
 
 
-def build_protocol_dag_result_from_task_db():
-    pass
+def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
+    """Create a pandas Dataframe from task_db.
 
-    # identify transformations & their protocol dags
-    # query the status of the units of the dags
-    # collect results and return an iterable of transformations and their protocoldagresults
+    Parameters
+    ----------
+    task_db : exorcist.TaskStatusDB
+        A task database.
+
+    Returns
+    -------
+    pd.DataFrame
+        A dataframe of the tasks and their dependencies.
+
+    """
+    return pd.read_sql_table("dependencies", task_db.engine)

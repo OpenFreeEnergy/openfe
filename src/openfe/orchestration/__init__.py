@@ -159,7 +159,6 @@ class Worker:
             The caller is responsible for calling ``mark_task_completed`` on the
             returned database using the returned task ID.
         """
-
         db: TaskStatusDB = TaskStatusDB.from_filename(self.task_db_path)
         # The format for the taskid is "ProtocolUnit-<HASH>"
         taskid = db.check_out_task()

@@ -380,9 +380,23 @@ class WarehouseBaseClass:
                 )
 
     def gather_all_results(self) -> list[tuple[ProtocolResult, ProtocolDAGResult]]:
+        """From this warehouse, gather all ProtocolDAGResults corresponding to the recorded
+        ProtocolDAGs, and return all (ProtocolResult, ProtocolDAGResult) pairs.
+
+        Note: this requires the Warehouse to explicitly have stored the ProtocolDAGs and
+        their ProtocolUnits when constructing the task graph.
+
+        Returns
+        -------
+        list[tuple[ProtocolResult, ProtocolDAGResult]]
+            ProtocolResults and their corresponding ProtocolDAGResults
+        """
+
+        # construct a map of all the ProtocolDAGs and their corresponding ProtocolUnitResults
         dags_to_purs = self._construct_dags_to_purs(
             self.get_protocol_dags(), self.get_unit_results()
         )
+        # load all dags
         dags_with_results = [
             self.load_protocol_dag(d) for d in dags_to_purs if dags_to_purs[d] != []
         ]
@@ -399,7 +413,7 @@ class WarehouseBaseClass:
 
         return result_edges
 
-    @classmethod
+    @staticmethod
     def _construct_dags_to_purs(dags: Iterable[ProtocolDAG], purs: Iterable[ProtocolUnitResult]):
         """Creating a mapping of protocolDAGs to their corresponding ProtocolUnitResults"""
         pur_pu_keys = {str(pur.source_key): pur for pur in purs}
@@ -412,12 +426,24 @@ class WarehouseBaseClass:
             dag_map[str(dag.key)] = dag_purs
         return dag_map
 
-    @classmethod
+    @staticmethod
     def _construct_protocol_dag_result(
         protocol_dag: ProtocolDAG,
         dags_to_purs: dict[str, list[ProtocolUnitResult]],
     ) -> ProtocolDAGResult:
-        """Create a ProtocolDAGResult from the ProtocolDAG and its corresponding ProtocolUnitResults"""
+        """Create a ProtocolDAGResult from the ProtocolDAG and its corresponding ProtocolUnitResults
+
+        Parameters
+        ----------
+        protocol_dag : ProtocolDAG
+            The ProtocolDAG to construct a ProtocolDAGResult for.
+        dags_to_purs : dict[str, list[ProtocolUnitResult]]
+            Mapping of all ProtocolDAG keys and their ProtocolUnitResults
+
+        Returns
+        -------
+        ProtocolDAGResult
+        """
         purs = dags_to_purs[str(protocol_dag.key)]
         dag_result = ProtocolDAGResult(
             protocol_units=protocol_dag.protocol_units,
@@ -486,7 +512,7 @@ class FileSystemWarehouse(WarehouseBaseClass):
     """
 
     def __init__(self, name):
-        # TODO: should name and location be different?
+        # TODO: should name and location be allowed to be different?
         self.root_dir = pathlib.Path(f"{name}")
         setup_store = FileStorage(f"{self.root_dir}/setup")
         result_store = FileStorage(f"{self.root_dir}/result")

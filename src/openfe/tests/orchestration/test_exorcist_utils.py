@@ -6,6 +6,7 @@ import exorcist
 import networkx as nx
 import pytest
 import sqlalchemy as sqla
+from gufe import AlchemicalNetwork
 from gufe.tokenization import GufeKey
 
 from openfe.orchestration.exorcist_utils import (
@@ -118,7 +119,7 @@ def test_alchemical_network_to_task_graph_raises_for_cycle():
             dag.graph.add_edges_from([(unit_a, unit_b), (unit_b, unit_a)])
             return dag
 
-    network = mock.Mock()
+    network = mock.Mock(AlchemicalNetwork)
     network.edges = [_Transformation()]
     warehouse = mock.Mock()
 
