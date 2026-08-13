@@ -14,7 +14,7 @@ from typing import Annotated, Literal, Optional, TypeAlias
 from gufe.settings import SettingsBaseModel
 from gufe.settings.typing import GufeQuantity, NanometerQuantity, specify_quantity_units
 from openff.units import unit
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator, model_validator
 
 SpringConstantLinearQuantity: TypeAlias = Annotated[
     GufeQuantity, specify_quantity_units("kilojoule_per_mole / nm ** 2")
@@ -94,15 +94,15 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Settings to define a Boresch-style restraint between
     two groups of atoms named ``host`` and ``guest``.
 
-    The restraint is defined in the following manner:
+    The restraint is defined in the following manner::
 
       H2                         G2
-       -                        -
-        -                      -
-         H1 - - H0 -- G0 - - G1
+       ⧹                         ⧸
+        ⧹                       ⧸
+         H1 ——— H0 ——— G0 ——— G1
 
     Where HX represents the X index of ``host_atoms``
-    and GX the X indexx of ``guest_atoms``.
+    and GX the X index of ``guest_atoms``.
 
     By default, the Boresch-like restraint will be
     obtained using a modified version of the
@@ -118,6 +118,8 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     [2] Wu, Zhiyi, et al. "Optimizing Absolute Binding Free Energy
         Calculations for Production Usage."
         (2025; DOI 10.26434/chemrxiv-2025-q08ld-v2)
+    [3] Alibay, Irfan, et al. "Evaluating the use of absolute binding
+        free energy in the fragment optimisation process" (2022).
     """
 
     K_r: SpringConstantLinearQuantity = 4184.0 * unit.kilojoule_per_mole / unit.nm**2
@@ -174,17 +176,6 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Boresch-like restraint search parameter.
     The maximum distance between any host atom and the guest G0 atom. Must be in units compatible with nanometer.
     """
-    # TODO: re-enable this (Issue #1555)
-    # host_atoms: Optional[list[int]] = None
-    # """
-    # The indices of the host component atoms to restrain.
-    # If defined, these will override any automatic selection.
-    # """
-    # guest_atoms: Optional[list[int]] = None
-    # """
-    # The indices of the guest component atoms to restraint.
-    # If defined, these will override any automatic selection.
-    # """
     anchor_finding_strategy: Literal["multi-residue", "bonded"] = "bonded"
     """
     The Boresch atom picking strategy to use.
@@ -193,11 +184,44 @@ class BoreschRestraintSettings(BaseRestraintSettings):
       * `bonded`: pick host atoms that are bonded to each other.
       * `multi-residue`: pick host atoms which can span multiple residues.
     """
+    host_restraint_ids: tuple[int, int, int] | None = None
+    """
+    The indices of the host component atoms to restrain.
+    The entries define the H0, H1, and H2 atoms in order.
+    If defined, these will override any automatic selection.
 
+    Notes
+    -----
+    These indices refer to the atom index in the host component
+    (e.g. the PDB file defining the host) and not the final
+    index of the fully solvated complex which will be simulated.
+    """
+    guest_restraint_ids: tuple[int, int, int] | None = None
+    """
+    The indices of the guest component atoms to restraint.
+    The entries define the G0, G1, and G2 atoms in order.
+    If defined, these will override any automatic selection.
 
-#     @field_validator("guest_atoms", "host_atoms")
-#     def positive_idxs_list(cls, v):
-#         if v is not None and any([i < 0 for i in v]):
-#             errmsg = "negative indices passed"
-#             raise ValueError(errmsg)
-#         return v
+    Notes
+    -----
+    These indices refer to the atom index in the SmallMoleculeComponent
+    defining the guest (e.g. in the input SDF file) and not the final
+    index of the fully sollvated complex which will be simulated.
+    """
+
+    @field_validator("guest_restraint_ids", "host_restraint_ids")
+    def positive_idxs_three_tuple(cls, v):
+        if v is not None:
+            if any([i < 0 for i in v]):
+                errmsg = "``guest_atoms`` and ``host_atoms`` cannot have negative indices."
+                raise ValueError(errmsg)
+        return v
+
+    @model_validator(mode="after")
+    def check_restraint_ids_defined(self):
+        if (self.host_restraint_ids is None) ^ (self.guest_restraint_ids is None):
+            errmsg = (
+                "`guest_restraint_ids` and `host_restraint_ids` must both "
+                "either be defined or undefined"
+            )
+            raise ValueError(errmsg)
