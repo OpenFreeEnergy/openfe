@@ -544,7 +544,9 @@ def test_dry_run_solv_benzene_noncubic(benzene_system, protocol_dry_settings, tm
     assert_allclose(expected_vectors, from_openmm(vectors))
 
 
-def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_settings, tmp_path):
+def test_dry_run_solv_user_charges_benzene(
+    benzene_modifications_uncharged, protocol_dry_settings, tmp_path
+):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
@@ -560,7 +562,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, protocol_dry_s
         rand_arr[-1] = -sum(rand_arr[:-1])
         return rand_arr * offunit.elementary_charge
 
-    benzene_offmol = benzene_modifications["benzene"].to_openff()
+    benzene_offmol = benzene_modifications_uncharged["benzene"].to_openff()
     offmol_pchgs = assign_fictitious_charges(benzene_offmol)
     benzene_offmol.partial_charges = offmol_pchgs
     benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)

@@ -223,7 +223,7 @@ def benzene_toluene_topology():
 
 
 @pytest.fixture(scope="session")
-def benzene_modifications():
+def benzene_modifications_uncharged():
     files = {}
     with resources.as_file(resources.files("openfe.tests.data")) as d:
         fn = str(d / "benzene_modifications.sdf")
@@ -234,7 +234,7 @@ def benzene_modifications():
 
 
 @pytest.fixture(scope="session")
-def benzene_modifications_am1bcc():
+def benzene_modifications():
     files = {}
     with resources.as_file(resources.files("openfe.tests.data")) as d:
         fn = str(d / "benzene_modifications_am1bcc.sdf")
@@ -277,7 +277,7 @@ def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        fn = str(d / "benzene_modifications.sdf")
+        fn = str(d / "benzene_modifications_am1bcc.sdf")
         supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
             mols[mol.GetProp("_Name")] = SmallMoleculeComponent(mol)
@@ -313,20 +313,34 @@ def eg5_protein_pdb():
 
 
 @pytest.fixture()
-def eg5_ligands_sdf():
+def eg5_ligands_uncharged_sdf():
     with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
         yield str(d / "eg5_ligands.sdf")
 
 
 @pytest.fixture()
+def eg5_ligands_sdf():
+    with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
+        yield str(d / "eg5_ligands_am1bcc.sdf")
+
+
+@pytest.fixture()
 def eg5_cofactor_sdf():
     with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
-        yield str(d / "eg5_cofactor.sdf")
+        yield str(d / "eg5_cofactor_am1bcc.sdf")
 
 
 @pytest.fixture()
 def eg5_protein(eg5_protein_pdb) -> openfe.ProteinComponent:
     return openfe.ProteinComponent.from_pdb_file(eg5_protein_pdb)
+
+
+@pytest.fixture()
+def eg5_ligands_uncharged(eg5_ligands_uncharged_sdf) -> list[SmallMoleculeComponent]:
+    return [
+        SmallMoleculeComponent(m)
+        for m in Chem.SDMolSupplier(eg5_ligands_uncharged_sdf, removeHs=False)
+    ]
 
 
 @pytest.fixture()
@@ -797,3 +811,77 @@ def htf_chlorobenzene_benzene(
         "vdW_scale": ff.get_parameter_handler("vdW").scale14,
         "force_field": ff,
     }
+
+
+@pytest.fixture()
+def broken_bond_mapping() -> LigandAtomMapping:
+    """Build a broken bond mapping for two pfkfb3 ligands"""
+    with resources.as_file(resources.files("openfe.tests.data")) as f:
+        supplier = Chem.SDMolSupplier(str(f / "pfkfb3_ligands.sdf"), removeHs=False)
+        mol_by_name = dict()
+        for mol in supplier:
+            smc = SmallMoleculeComponent(mol)
+            mol_by_name[smc.name] = smc
+
+    return LigandAtomMapping(
+        componentA=mol_by_name["47"],
+        componentB=mol_by_name["46"],
+        componentA_to_componentB={
+            29: 32,
+            30: 31,
+            31: 33,
+            32: 34,
+            33: 38,
+            34: 37,
+            36: 35,
+            37: 36,
+            38: 39,
+            39: 40,
+            40: 41,
+            41: 42,
+            42: 43,
+            43: 44,
+            0: 2,
+            1: 3,
+            2: 0,
+            3: 1,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+            10: 14,
+            11: 10,
+            12: 13,
+            13: 25,
+            14: 11,
+            15: 12,
+            16: 26,
+            17: 15,
+            18: 16,
+            19: 17,
+            20: 18,
+            21: 19,
+            22: 20,
+            23: 21,
+            24: 23,
+            25: 22,
+            26: 24,
+            27: 28,
+            28: 27,
+        },
+    )
+
+
+@pytest.fixture()
+def appearing_bond_mapping(chlorobenzene):
+    with resources.as_file(resources.files("openfe.tests.data")) as f:
+        ethyl_benzene = SmallMoleculeComponent.from_sdf_file(str(f / "ethylbenzene.sdf"))
+
+    # create a fake mapping which adds a new bond during the transformation by mapping the ethyl group to the chlorine atom in chlorobenzene
+    return LigandAtomMapping(
+        componentA=ethyl_benzene,
+        componentB=chlorobenzene,
+        componentA_to_componentB={5: 0, 7: 1, 8: 2, 9: 3, 10: 4, 11: 5, 12: 6},
+    )

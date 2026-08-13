@@ -1,8 +1,6 @@
 name: "PR: mypy static type checking"
 on:
   pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
