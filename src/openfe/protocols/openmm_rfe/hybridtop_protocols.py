@@ -369,7 +369,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Raises
         ------
         ValueError
-          * If the atom mapping has less than 3 mapped heavy atoms and each component has more than 6 heavy atoms.
+          * If the atom mapping has less than 4 mapped heavy atoms and each component has more than 6 heavy atoms.
 
         Notes
         -----
