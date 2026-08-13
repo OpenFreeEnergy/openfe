@@ -2585,28 +2585,23 @@ def test_too_few_mapped_atoms(benzene_vacuum_system, toluene_vacuum_system, vac_
         ValueError,
         match="Number of mapped heavy atoms is less than 3: 2 which is required for this protocol.",
     ):
-        _ = protocol.create(
+        _ = protocol.validate(
             stateA=benzene_vacuum_system,
             stateB=toluene_vacuum_system,
             mapping=small_mapping,
         )
 
 
-def test_atom_mapping_logging(
-    benzene_vacuum_system, toluene_vacuum_system, vac_settings, benzene_to_toluene_mapping, caplog
-):
-    """Make sure the mapping validation logs information on the number of mapped heavy atoms in the transformation."""
+def test_too_few_mapped_small_molecules(chloroethane_to_ethane_mapping, vac_settings):
+    # make sure this mapping of only 2 heavy atoms passes due to the small size of the molecules
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=vac_settings,
+        settings=vac_settings
     )
-
-    with caplog.at_level(logging.INFO):
-        _ = protocol.create(
-            stateA=benzene_vacuum_system,
-            stateB=toluene_vacuum_system,
-            mapping=benzene_to_toluene_mapping,
-        )
-        assert (
-            "Number of mapped heavy atoms: 6, number of unique heavy atoms (A,B): (0, 1), ratio of alchemical atoms to core atoms: 0.17"
-            in caplog.text
-        )
+    # make sure the heavy atom mapping only has 2 atoms
+    assert len(chloroethane_to_ethane_mapping.heavy_atom_componentA_to_componentB) == 2
+    # make sure validation passes without issue
+    _ = protocol.validate(
+        stateA=gufe.ChemicalSystem({"ligand": chloroethane_to_ethane_mapping.componentA}),
+        stateB=gufe.ChemicalSystem({"ligand": chloroethane_to_ethane_mapping.componentB}),
+        mapping=chloroethane_to_ethane_mapping
+    )

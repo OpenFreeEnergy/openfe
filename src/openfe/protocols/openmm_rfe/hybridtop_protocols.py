@@ -299,12 +299,12 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             if not m.componentA_to_componentB:
                 raise ValueError("No atoms are mapped between the two alchemical components.")
 
-            RelativeHybridTopologyProtocol._check_number_of_mapped_atoms(mapping=m)
+            RelativeHybridTopologyProtocol._check_minimum_number_of_mapped_atoms(mapping=m)
 
     @staticmethod
-    def _check_number_of_mapped_atoms(mapping: LigandAtomMapping) -> None:
+    def _check_minimum_number_of_mapped_atoms(mapping: LigandAtomMapping) -> None:
         """
-        Validates that the provided mapping has at least three mapped heavy atoms.
+        Validates the provided mapping meets the minimum number of mapped heavy atoms (3) rule based on the ``mncar_score`` in lomap.
 
         Parameters
         ----------
@@ -314,47 +314,31 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Raises
         ------
         ValueError
-          * If the atom mapping has less than 3 mapped heavy atoms.
+          * If the atom mapping has less than 3 mapped heavy atoms and each component has more than 6 heavy atoms.
 
         Notes
         -----
-        The method logs the ratio of mapped to unique atoms.
-        """
-        atom_map = mapping.componentA_to_componentB
-        mol_a = mapping.componentA.to_rdkit()
-        mol_b = mapping.componentB.to_rdkit()
+        The two components must contain at least 3 mapped heavy atoms to pass this validation.
+        If the components contain fewer than 6 heavy atoms in total then only a single mapped heavy atom is required.
 
-        mapped_heavy_atoms = []
-        for atom_idx_a, atom_idx_b in atom_map.items():
-            atom_a = mol_a.GetAtomWithIdx(atom_idx_a)
-            atom_b = mol_b.GetAtomWithIdx(atom_idx_b)
-            # heavy to hydrogen maps are removed at run time as constraint length changes are not allowed
-            if atom_a.GetAtomicNum() != 1 and atom_b.GetAtomicNum() != 1:
-                mapped_heavy_atoms.append((atom_idx_a, atom_idx_b))
+        See Also
+        --------
+        lomap.gufe_bindings.scorers.mncar_score
+        """
+        mapped_heavy_atoms = mapping.heavy_atom_componentA_to_componentB
+
+        num_heavy_mol_a = mapping.componentA.to_rdkit().GetNumHeavyAtoms()
+        num_heavy_mol_b = mapping.componentB.to_rdkit().GetNumHeavyAtoms()
 
         num_mapped_heavy_atoms = len(mapped_heavy_atoms)
-        if num_mapped_heavy_atoms < 3:
+
+        passed = (num_mapped_heavy_atoms >= 4) or (num_heavy_mol_a < 6 and num_mapped_heavy_atoms >= 1) or (num_heavy_mol_b < 6 and num_mapped_heavy_atoms >= 1)
+
+        if not passed:
             raise ValueError(
                 f"Number of mapped heavy atoms is less than 3: {num_mapped_heavy_atoms} which is required for this protocol."
             )
 
-        num_unique_heavy_atoms_a = sum(
-            1
-            for atom in mol_a.GetAtoms()
-            if atom.GetAtomicNum() != 1 and atom.GetIdx() not in atom_map.keys()
-        )
-        num_unique_heavy_atoms_b = sum(
-            1
-            for atom in mol_b.GetAtoms()
-            if atom.GetAtomicNum() != 1 and atom.GetIdx() not in atom_map.values()
-        )
-        # calculate the ratio of alchemical atoms to the core atoms and report
-        mapping_ratio = (
-            num_unique_heavy_atoms_a + num_unique_heavy_atoms_b
-        ) / num_mapped_heavy_atoms
-        logger.info(
-            f"Number of mapped heavy atoms: {num_mapped_heavy_atoms}, number of unique heavy atoms (A,B): {num_unique_heavy_atoms_a, num_unique_heavy_atoms_b}, ratio of alchemical atoms to core atoms: {mapping_ratio:.2f}"
-        )
 
     @staticmethod
     def _validate_smcs(
