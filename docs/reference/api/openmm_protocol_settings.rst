@@ -9,6 +9,7 @@ Details on which of these Settings classes are used by a given Protocol
 can be found on the individual Protocol API reference documentation pages:
 
 * :ref:`OpenMM Absolute Solvation Free Energy <afe solvation protocol api>`
+* :ref:`OpenMM Absolute Binding Free Energy <afe binding protocol api>`
 * :ref:`OpenMM Relative Free Energy <rfe protocol api>`
 * :ref:`OpenMM Relative Free Energy using SepTop <septop protocol api>`
 * :ref:`OpenMM Molecular Dynamics Protocol <md protocol api>`
