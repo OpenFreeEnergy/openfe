@@ -513,9 +513,9 @@ class FileSystemWarehouse(WarehouseBaseClass):
     for results and other data types.
     """
 
-    def __init__(self, root_dir: pathlib.Path):
+    def __init__(self, root_dir: pathlib.Path, exist_okay=False):
         self.root_dir = pathlib.Path(root_dir)
-        if self.root_dir.is_dir():
+        if self.root_dir.is_dir() and not exist_okay:
             raise ValueError(
                 "`root_dir` already exists. To load an existing Warehouse, use FileSystemWarehouse.load(`root_dir`)"
             )
@@ -541,4 +541,4 @@ class FileSystemWarehouse(WarehouseBaseClass):
             raise ValueError(
                 "`root_dir` must be an existing filepath. To create a new Warehouse, use FileSystemWarehouse(`root_dir`)"
             )
-        return cls(root_dir=root_dir)
+        return cls(root_dir=root_dir, exist_okay=True)

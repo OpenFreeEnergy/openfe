@@ -241,6 +241,18 @@ class TestFileSystemWarehouse:
             client.store_task(unit)
             assert client.exists(unit.key)
 
+    def test_filesystem_warehouse_exists_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(wh_dir)
+            # store some data so files are created
+            client.stores["shared"].store_bytes("sentinel", b"shared-data")
+
+            with pytest.raises(ValueError, match="already exists"):
+                _ = FileSystemWarehouse(wh_dir)
+
+            reloaded_client = FileSystemWarehouse.load(root_dir=wh_dir)
+
     @pytest.mark.parametrize(
         "fixture",
         ["absolute_transformation", "complex_equilibrium"],
