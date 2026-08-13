@@ -267,7 +267,8 @@ class SepTopProtocol(gufe.Protocol):
             solvent_restraint_settings=DistanceRestraintSettings(
                 spring_constant=1000.0 * offunit.kilojoule_per_mole / offunit.nanometer**2,
             ),
-            complex_restraint_settings=BoreschRestraintSettings(),
+            complex_restraint_settings_A=BoreschRestraintSettings(),
+            complex_restraint_settings_B=BoreschRestraintSettings(),
             analysis_settings=MultiStateAnalysisSettings(),
         )  # fmt: skip
 

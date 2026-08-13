@@ -122,7 +122,8 @@ class SepTopComplexMixin:
             * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: BoreschRestraintSettings
+            * restraint_settings_A: BoreschRestraintSettings
+            * restraint_settings_B: BoreschRestraintSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore
 
@@ -139,7 +140,8 @@ class SepTopComplexMixin:
             "equil_output_settings": prot_settings.complex_equil_output_settings,
             "simulation_settings": prot_settings.complex_simulation_settings,
             "output_settings": prot_settings.complex_output_settings,
-            "restraint_settings": prot_settings.complex_restraint_settings,
+            "restraint_settings_A": prot_settings.complex_restraint_settings_A,
+            "restraint_settings_B": prot_settings.complex_restraint_settings_B,
             "analysis_settings": prot_settings.analysis_settings,
         }
 
@@ -461,11 +463,20 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         """
         frc_const = min(settings.K_thetaA, settings.K_thetaB)
 
+        guest_restraint_atoms_idxs = (
+            list(settings.guest_restraint_ids) if settings.guest_restraint_ids is not None else None
+        )
+        host_restraint_atoms_idxs = (
+            list(settings.host_restraint_ids) if settings.host_restraint_ids is not None else None
+        )
+
         geom = geometry.boresch.find_boresch_restraint(
             universe=universe,
             guest_rdmol=guest_rdmol,
             guest_idxs=guest_atom_ids,
             host_idxs=host_atom_ids,
+            guest_restraint_atoms_idxs=guest_restraint_atoms_idxs,
+            host_restraint_atoms_idxs=host_restraint_atoms_idxs,
             host_selection=settings.host_selection,
             anchor_finding_strategy=settings.anchor_finding_strategy,
             dssp_filter=settings.dssp_filter,
@@ -575,7 +586,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             ligand_A_inxs,
             protein_inxs,
             settings["thermo_settings"].temperature,
-            settings["restraint_settings"],
+            settings["restraint_settings_A"],
         )
 
         rest_geom_B, restraint_B = self._get_boresch_restraint(
@@ -584,7 +595,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             ligand_B_inxs_B,
             protein_inxs,
             settings["thermo_settings"].temperature,
-            settings["restraint_settings"],
+            settings["restraint_settings_B"],
         )
         # We have to update the indices for ligand B to match the AB complex
         new_boresch_B_indices = [ligand_B_inxs_B.index(i) for i in rest_geom_B.guest_atoms]
@@ -856,25 +867,23 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             open(topology_file, "w"),
         )
 
-        if not dry:
-            return {
-                "system": system_outfile,
-                "topology": topology_file,
-                "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
-                "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
-                "restraint_geometry_A": restraint_geom_A.model_dump(),
-                "restraint_geometry_B": restraint_geom_B.model_dump(),
-                "selection_indices": selection_indices,
-                "alchemical_resnames": alchem_resnames,
-                "subsampled_pdb_structure": sub_pdb_structure,
-                "ligand_A_indices": atom_indices_AB_A,
-                "ligand_B_indices": atom_indices_AB_B,
-            }
-        else:
-            return {
-                # Add in various objects we can use to test the system
-                "system": system_outfile,
-                "topology": topology_file,
+        outputs = {
+            "system": system_outfile,
+            "topology": topology_file,
+            "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
+            "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
+            "restraint_geometry_A": restraint_geom_A.model_dump(),
+            "restraint_geometry_B": restraint_geom_B.model_dump(),
+            "selection_indices": selection_indices,
+            "alchemical_resnames": alchem_resnames,
+            "subsampled_pdb_structure": sub_pdb_structure,
+            "ligand_A_indices": atom_indices_AB_A,
+            "ligand_B_indices": atom_indices_AB_B,
+        }
+
+        if dry:
+            # Add in various objects we can use to test the system
+            outputs |= {
                 "system_A": omm_system_A,
                 "system_B": omm_system_B,
                 "system_AB": omm_system_AB,
@@ -882,12 +891,9 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "alchem_system": alchemical_system,
                 "alchem_factory": alchemical_factory,
                 "positions": equil_positions_AB,
-                "selection_indices": selection_indices,
-                "alchemical_resnames": alchem_resnames,
-                "subsampled_pdb_structure": sub_pdb_structure,
-                "ligand_A_indices": atom_indices_AB_A,
-                "ligand_B_indices": atom_indices_AB_B,
             }
+
+        return outputs
 
 
 class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
