@@ -367,7 +367,7 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
             self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
         )
 
-        if isinstance(settings["restraint_settings"], ABFEBoreschRestraintSettings):
+        if isinstance(settings["restraint_settings"], BoreschRestraintSettings):
             rest_geom, restraint = self._get_boresch_restraint(
                 univ,
                 guest_rdmol,

@@ -43,10 +43,8 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
 )
 from openfe.protocols.openmm_utils.serialization import deserialize
-from openfe.protocols.restraint_utils.geometry.boresch import (
-    BoreschRestraintSettings,
-    BoreschRestraintGeometry,
-)
+from openfe.protocols.restraint_utils.settings import BoreschRestraintSettings
+from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
 from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
     _assert_num_forces,
