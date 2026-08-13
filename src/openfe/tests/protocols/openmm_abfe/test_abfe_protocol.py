@@ -478,6 +478,9 @@ class TestT4LysozymeDryRun:
         ]
         assert expected_indices == setup_results["alchem_indices"]
 
+        # Check the ligand residue name
+        assert setup_results["alchemical_resname"] == "LIG"
+
         # Check the non-alchemical system
         assert setup_results["standard_system"].getNumParticles() == self.expected_complex_particles
         self._assert_expected_nonalchemical_forces(
@@ -539,6 +542,9 @@ class TestT4LysozymeDryRun:
         # Check the alchemical indices
         expected_indices = [i for i in range(self.num_ligand_atoms)]
         assert expected_indices == setup_results["alchem_indices"]
+
+        # Check the ligand residue name
+        assert setup_results["alchemical_resname"] == "LIG"
 
         # Check the non-alchemical system
         assert (
