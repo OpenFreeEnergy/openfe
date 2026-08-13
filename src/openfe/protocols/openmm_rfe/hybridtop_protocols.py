@@ -276,7 +276,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           * If the mapping components are not in the alchemical components.
           * If the atom mapping is empty.
           * If the atom mapping would break or form a bond.
-          * If the atom mapping contains less than 3 heavy atoms and the components have more than 6 atoms.
+          * If the atom mapping contains less than 4 heavy atoms and the components have more than 6 atoms.
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
