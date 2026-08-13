@@ -276,6 +276,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           * If the mapping components are not in the alchemical components.
           * If the atom mapping is empty.
           * If the atom mapping would break or form a bond.
+          * If the atom mapping contains less than 3 heavy atoms and the components have more than 6 atoms.
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
@@ -302,6 +303,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
             # check for broken bonds in the mapping
             RelativeHybridTopologyProtocol._check_for_bond_breaks(mapping=m)
+            # check for the minimum number of mapped heavy atoms
+            RelativeHybridTopologyProtocol._check_minimum_number_of_mapped_atoms(mapping=m)
 
     @staticmethod
     def _check_for_bond_breaks(
@@ -353,16 +356,14 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                             f"Bond {atom_a}-{atom_b} in component{state_from} is broken in component{state_to} via the provided mapping."
                         )
 
-            RelativeHybridTopologyProtocol._check_minimum_number_of_mapped_atoms(mapping=m)
-
     @staticmethod
-    def _check_minimum_number_of_mapped_atoms(mapping: LigandAtomMapping) -> None:
+    def _check_minimum_number_of_mapped_atoms(mapping: ComponentMapping) -> None:
         """
         Validates the provided mapping meets the minimum number of mapped heavy atoms (3) rule based on the ``mncar_score`` in lomap.
 
         Parameters
         ----------
-        mapping : LigandAtomMapping
+        mapping : ComponentMapping
           The mapping between transforming components.
 
         Raises
