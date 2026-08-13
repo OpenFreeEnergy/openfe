@@ -38,8 +38,8 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMSolvationSettings,
 )
 from openfe.protocols.restraint_utils.settings import (
-    BoreschRestraintSettings,
     BaseRestraintSettings,
+    BoreschRestraintSettings,
 )
 
 
