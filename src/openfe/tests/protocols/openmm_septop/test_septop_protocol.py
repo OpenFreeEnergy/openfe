@@ -32,9 +32,6 @@ from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
-from openfe.protocols.openmm_afe.equil_afe_settings import (
-    ABFEBoreschRestraintSettings,
-)
 from openfe.protocols.openmm_septop import (
     SepTopComplexAnalysisUnit,
     SepTopComplexRunUnit,
@@ -46,7 +43,10 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
 )
 from openfe.protocols.openmm_utils.serialization import deserialize
-from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
+from openfe.protocols.restraint_utils.geometry.boresch import (
+    BoreschRestraintSettings,
+    BoreschRestraintGeometry,
+)
 from openfe.tests.protocols.conftest import compute_energy
 from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
     _assert_num_forces,
@@ -911,12 +911,12 @@ def test_user_restraint_complex(
     tmp_path,
 ):
     host_ids = [1383, 1384, 1398]
-    protocol_dry_settings.complex_restraint_settings_A = ABFEBoreschRestraintSettings(
+    protocol_dry_settings.complex_restraint_settings_A = BoreschRestraintSettings(
         guest_restraint_ids=[0, 1, 2],
         host_restraint_ids=host_ids,
     )
     # For toluene pick the atoms that are overlapping with the three benzene atoms
-    protocol_dry_settings.complex_restraint_settings_B = ABFEBoreschRestraintSettings(
+    protocol_dry_settings.complex_restraint_settings_B = BoreschRestraintSettings(
         guest_restraint_ids=[4, 5, 6],
         host_restraint_ids=host_ids,
     )

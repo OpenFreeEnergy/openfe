@@ -34,9 +34,6 @@ from openff.units.openmm import from_openmm, to_openmm
 from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
-from openfe.protocols.openmm_afe.equil_afe_settings import (
-    ABFEBoreschRestraintSettings,
-)
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
@@ -53,6 +50,7 @@ from ..openmm_utils import (
 )
 from ..openmm_utils.mdtraj_utils import mdtraj_from_openmm
 from ..restraint_utils.settings import (
+    BoreschRestraintSettings,
     DistanceRestraintSettings,
 )
 from .base_units import (
@@ -121,8 +119,8 @@ class SepTopComplexMixin:
             * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings_A: ABFEBoreschRestraintSettings
-            * restraint_settings_B: ABFEBoreschRestraintSettings
+            * restraint_settings_A: BoreschRestraintSettings
+            * restraint_settings_B: BoreschRestraintSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore
 
@@ -432,7 +430,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         guest_atom_ids: list[int],
         host_atom_ids: list[int],
         temperature: Quantity,
-        settings: ABFEBoreschRestraintSettings,
+        settings: BoreschRestraintSettings,
     ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
         """
         Get a Boresch-like restraint Geometry and OpenMM restraint force
@@ -450,7 +448,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
           A list of atom indices defining the host molecules in the universe.
         temperature : unit.Quantity
           The temperature of the simulation where the restraint will be added.
-        settings : ABFEBoreschRestraintSettings
+        settings : BoreschRestraintSettings
           Settings on how the Boresch-like restraint should be defined.
 
         Returns

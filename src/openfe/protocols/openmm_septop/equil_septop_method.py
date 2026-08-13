@@ -53,7 +53,6 @@ from rdkit import Chem
 
 from openfe.due import Doi, due
 from openfe.protocols.openmm_septop.equil_septop_settings import (
-    ABFEBoreschRestraintSettings,
     AlchemicalSettings,
     IntegratorSettings,
     LambdaSettings,
@@ -70,7 +69,10 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
 )
 
 from ..openmm_utils import settings_validation, system_validation
-from ..restraint_utils.settings import DistanceRestraintSettings
+from ..restraint_utils.settings import (
+    BoreschRestraintSettings,
+    DistanceRestraintSettings,
+)
 from .septop_protocol_results import SepTopProtocolResult
 from .septop_units import (
     SepTopComplexAnalysisUnit,
@@ -265,8 +267,8 @@ class SepTopProtocol(gufe.Protocol):
             solvent_restraint_settings=DistanceRestraintSettings(
                 spring_constant=1000.0 * offunit.kilojoule_per_mole / offunit.nanometer**2,
             ),
-            complex_restraint_settings_A=ABFEBoreschRestraintSettings(),
-            complex_restraint_settings_B=ABFEBoreschRestraintSettings(),
+            complex_restraint_settings_A=BoreschRestraintSettings(),
+            complex_restraint_settings_B=BoreschRestraintSettings(),
             analysis_settings=MultiStateAnalysisSettings(),
         )  # fmt: skip
 
