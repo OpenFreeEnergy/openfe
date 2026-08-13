@@ -359,7 +359,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
     @staticmethod
     def _check_minimum_number_of_mapped_atoms(mapping: ComponentMapping) -> None:
         """
-        Validates the provided mapping meets the minimum number of mapped heavy atoms (3) rule based on the ``mncar_score`` in lomap.
+        Validates the provided mapping meets the minimum number of mapped heavy atoms (4) rule based on the ``mncar_score`` in lomap.
 
         Parameters
         ----------
@@ -373,7 +373,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         Notes
         -----
-        The two components must contain at least 3 mapped heavy atoms to pass this validation.
+        The two components must contain at least 4 mapped heavy atoms to pass this validation.
         If the components contain fewer than 6 heavy atoms in total then only a single mapped heavy atom is required.
 
         See Also
@@ -388,7 +388,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         num_mapped_heavy_atoms = len(mapped_heavy_atoms)
 
         passed = (
-            (num_mapped_heavy_atoms >= 3)
+            (num_mapped_heavy_atoms >= 4)
             or (num_heavy_mol_a < 6 and num_mapped_heavy_atoms >= 1)
             or (num_heavy_mol_b < 6 and num_mapped_heavy_atoms >= 1)
         )
@@ -397,6 +397,12 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             raise ValueError(
                 f"Number of mapped heavy atoms is less than 3: {num_mapped_heavy_atoms} which is required for this protocol."
             )
+
+        mapping_ratio = mapping.get_heavy_atom_mapping_ratio()
+        if mapping_ratio >= 2.0:
+            wmsg = f"The ratio of alchemical to mapped heavy atoms: {mapping_ratio} is large, please review the mapping if the simulation is unstable."
+            warnings.warn(wmsg)
+            logger.warning(wmsg)
 
     @staticmethod
     def _validate_smcs(
