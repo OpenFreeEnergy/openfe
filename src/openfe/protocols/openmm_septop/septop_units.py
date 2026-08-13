@@ -898,7 +898,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
     simtype = "solvent"
 
     @staticmethod
-    def _update_positions(
+    def _get_ligand_offset(
         mol_A: SmallMoleculeComponent,
         mol_B: SmallMoleculeComponent,
     ) -> Quantity:
@@ -1068,7 +1068,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 4. Update the positions of ligand B:
         #    - solvent: Offset ligand B with respect to ligand A
-        offset = self._update_positions(
+        offset = self._get_ligand_offset(
             alchem_comps["stateA"][0],
             alchem_comps["stateB"][0],
         )

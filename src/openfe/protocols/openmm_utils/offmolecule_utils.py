@@ -111,10 +111,6 @@ def _get_offmol_resname(offmol: OFFMolecule) -> str | None:
     return _get_offmol_metadata(offmol, "residue_name")
 
 
-_LIGAND_RESNAME, _LIGAND_STEM = "LIG", "LG"
-_COFACTOR_RESNAME, _COFACTOR_STEM = "COF", "CF"
-
-
 def assign_offmol_residue_metadata(
     small_mols: dict[SmallMoleculeComponent, OFFMolecule],
     alchemical_components: Collection[Component],
@@ -134,6 +130,9 @@ def assign_offmol_residue_metadata(
     assigned : dict[SmallMoleculeComponent, str]
       The resname assigned (or retained) for each component.
     """
+    ligand_resname, ligand_stem = "LIG", "LG"
+    cofactor_resname, cofactor_stem = "COF", "CF"
+
     alchemical = set(alchemical_components)
 
     used_names: set[str] = set()
@@ -154,9 +153,9 @@ def assign_offmol_residue_metadata(
                 return candidate
         raise ValueError(f"Could not assign a unique residue name with stem {stem!r}.")
 
-    lig_name = _unique(_LIGAND_RESNAME, _LIGAND_STEM)
+    lig_name = _unique(ligand_resname, ligand_stem)
     used_names.add(lig_name)
-    cof_name = _unique(_COFACTOR_RESNAME, _COFACTOR_STEM)
+    cof_name = _unique(cofactor_resname, cofactor_stem)
 
     def _next_resnum() -> int:
         """Return the lowest residue number not already in use."""
