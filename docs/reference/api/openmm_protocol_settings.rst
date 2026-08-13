@@ -121,6 +121,7 @@ Protocol Settings shared between MultiState simulation protocols.
 These currently include the following Protocols:
 
 * :ref:`OpenMM Absolute Solvation Free Energy <afe solvation protocol api>`
+* :ref:`OpenMM Absolute Binding Free Energy <afe binding protocol api>`
 * :ref:`OpenMM Relative Free Energy <rfe protocol api>`
 * :ref:`OpenMM Relative Free Energy using SepTop <septop protocol api>`
 
@@ -137,6 +138,40 @@ These currently include the following Protocols:
    :member-order: bysource
 
 .. autopydantic_model:: MultiStateSimulationSettings
+   :model-show-json: False
+   :model-show-field-summary: False
+   :model-show-config-member: False
+   :model-show-config-summary: False
+   :model-show-validator-members: False
+   :model-show-validator-summary: False
+   :field-list-validators: False
+   :inherited-members: SettingsBaseModel
+   :member-order: bysource
+
+
+Shared OpenMM Protocol Restraint Settings
+-----------------------------------------
+
+Protocol Settings that define restraints used in simulations.
+
+One or more of these are currently used in the following Protocols:
+
+* :ref:`OpenMM Absolute Binding Free Energy <afe binding protocol api>`
+* :ref:`OpenMM Relative Free Energy using SepTop <septop protocol api>`
+
+
+.. autopydantic_model:: openfe.protocols.restraint_utils.settings.BoreschRestraintSettings
+   :model-show-json: False
+   :model-show-field-summary: False
+   :model-show-config-member: False
+   :model-show-config-summary: False
+   :model-show-validator-members: False
+   :model-show-validator-summary: False
+   :field-list-validators: False
+   :inherited-members: SettingsBaseModel
+   :member-order: bysource
+
+.. autopydantic_model:: openfe.protocols.restraint_utils.settings.DistanceRestraintSettings
    :model-show-json: False
    :model-show-field-summary: False
    :model-show-config-member: False
