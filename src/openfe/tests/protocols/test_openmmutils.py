@@ -45,8 +45,10 @@ from openfe.protocols.openmm_utils.charge_generation import (
 )
 from openfe.protocols.openmm_utils.offmolecule_utils import (
     _get_offmol_metadata,
+    _get_offmol_resname,
     _set_offmol_metadata,
     _set_offmol_resname,
+    assign_offmol_residue_metadata,
 )
 
 from ..conftest import HAS_INTERNET
@@ -1329,3 +1331,101 @@ def test_set_metadata_none_clears():
     _set_offmol_metadata(mol, "residue_name", "LIG")
     _set_offmol_metadata(mol, "residue_name", None)
     assert all("residue_name" not in a.metadata for a in mol.atoms)
+
+
+class TestAssignOffmolResidueMetadata:
+    # name, is_ligand, preset resname, preset residue number
+    _RESIDUE_METADATA_CASES = {
+        "single ligand": (
+            [("benzene", True, None, None)],
+            [("LIG", 1)],
+        ),
+        "ligand and cofactors": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", False, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", 1), ("COF", 2), ("COF", 3)],
+        ),
+        "two ligands pool to LIG": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", True, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", 1), ("LIG", 2), ("COF", 3)],
+        ),
+        "custom cofactor name kept": (
+            [("benzene", True, None, None), ("toluene", False, "NAD", None)],
+            [("LIG", 1), ("NAD", 2)],
+        ),
+        "custom ligand name kept": (
+            [("benzene", True, "BNZ", None), ("toluene", False, None, None)],
+            [("BNZ", 1), ("COF", 2)],
+        ),
+        "cofactor named LIG, ligands fall back to LG1": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", True, None, None),
+                ("phenol", False, "LIG", None),
+                ("benzonitrile", False, None, None),
+            ],
+            [("LG1", 1), ("LG1", 2), ("LIG", 3), ("COF", 4)],
+        ),
+        "ligand named COF, cofactors fall back to CF1": (
+            [
+                ("benzene", True, "COF", None),
+                ("toluene", False, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("COF", 1), ("CF1", 2), ("CF1", 3)],
+        ),
+        "pinned residue number respected": (
+            [("benzene", True, None, None), ("toluene", False, None, 5)],
+            [("LIG", 1), ("COF", 5)],
+        ),
+        "auto residue number steps past a pinned one": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", False, None, 2),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", 1), ("COF", 2), ("COF", 3)],
+        ),
+    }
+
+    @staticmethod
+    def _build_small_molecules(benzene_modifications, specs):
+        """Build the small molecules and alchemical components for a test case."""
+        small, alchemical = {}, []
+
+        for name, is_ligand, resname, residue_number in specs:
+            smc = benzene_modifications[name]
+            off = copy.deepcopy(smc.to_openff())
+
+            if resname is not None:
+                _set_offmol_resname(off, resname)
+            if residue_number is not None:
+                _set_offmol_metadata(off, "residue_number", residue_number)
+
+            small[smc] = off
+            if is_ligand:
+                alchemical.append(smc)
+
+        return small, alchemical
+
+    @pytest.mark.parametrize(
+        "specs, expected",
+        _RESIDUE_METADATA_CASES.values(),
+        ids=list(_RESIDUE_METADATA_CASES),
+    )
+    def test_assign_offmol_residue_metadata(self, benzene_modifications, specs, expected):
+        small, alchemical = self._build_small_molecules(benzene_modifications, specs)
+
+        assigned = assign_offmol_residue_metadata(small, alchemical)
+
+        for smc, off, (resname, residue_number) in zip(small.keys(), small.values(), expected):
+            assert _get_offmol_resname(off) == resname
+            assert _get_offmol_metadata(off, "residue_number") == residue_number
+            assert assigned[smc] == resname

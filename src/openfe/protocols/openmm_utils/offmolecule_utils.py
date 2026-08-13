@@ -1,9 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import logging
-from typing import Any
+from typing import Any, Collection
 
 from openff.toolkit import Molecule as OFFMolecule
+
+from openfe import Component, SmallMoleculeComponent
 
 logger = logging.getLogger(__name__)
 
@@ -107,3 +109,69 @@ def _get_offmol_resname(offmol: OFFMolecule) -> str | None:
       inconsistent across all the atoms.
     """
     return _get_offmol_metadata(offmol, "residue_name")
+
+
+def assign_offmol_residue_metadata(
+    small_mols: dict[SmallMoleculeComponent, OFFMolecule],
+    alchemical_components: Collection[Component],
+) -> dict[SmallMoleculeComponent, str]:
+    """
+    Assign residue names and numbers to every SmallMoleculeComponent.
+
+    Parameters
+    ----------
+    small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+      The molecules to name.
+    alchemical_components : Collection[Component]
+      The alchemical components.
+
+    Returns
+    -------
+    assigned : dict[SmallMoleculeComponent, str]
+      The resname assigned (or retained) for each component.
+    """
+    ligand_resname, ligand_stem = "LIG", "LG"
+    cofactor_resname, cofactor_stem = "COF", "CF"
+
+    alchemical = set(alchemical_components)
+
+    used_names: set[str] = set()
+    used_resnums: set[int] = set()
+    for offmol in small_mols.values():
+        name = _get_offmol_resname(offmol)
+        resnum = _get_offmol_metadata(offmol, "residue_number")
+        if name is not None:
+            used_names.add(name)
+        if resnum is not None:
+            used_resnums.add(int(resnum))
+
+    def _unique(default: str, stem: str) -> str:
+        if default not in used_names:
+            return default
+        for i in range(1, 10):
+            if (candidate := f"{stem}{i}") not in used_names:
+                return candidate
+        raise ValueError(f"Could not assign a unique residue name with stem {stem!r}.")
+
+    lig_name = _unique(ligand_resname, ligand_stem)
+    used_names.add(lig_name)
+    cof_name = _unique(cofactor_resname, cofactor_stem)
+
+    def _next_resnum() -> int:
+        """Return the lowest residue number not already in use."""
+        resnum = 1
+        while resnum in used_resnums:
+            resnum += 1
+        used_resnums.add(resnum)
+        return resnum
+
+    assigned: dict[SmallMoleculeComponent, str] = {}
+    for smc, offmol in small_mols.items():
+        name = _get_offmol_resname(offmol)
+        if name is None:
+            name = lig_name if smc in alchemical else cof_name
+            _set_offmol_resname(offmol, name)
+        if _get_offmol_metadata(offmol, "residue_number") is None:
+            _set_offmol_metadata(offmol, "residue_number", _next_resnum())
+        assigned[smc] = name
+    return assigned
