@@ -608,7 +608,7 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         return s
 
 
-def test_user_restraint(benzene_modifications_am1bcc, T4_protein_component, tmp_path):
+def test_user_restraint(benzene_modifications, T4_protein_component, tmp_path):
     s = openmm_afe.AbsoluteBindingProtocol.default_settings()
     s.protocol_repeats = 1
     s.engine_settings.compute_platform = "cpu"
@@ -623,7 +623,7 @@ def test_user_restraint(benzene_modifications_am1bcc, T4_protein_component, tmp_
     stateA = gufe.ChemicalSystem(
         {
             "protein": T4_protein_component,
-            "benzene": benzene_modifications_am1bcc["benzene"],
+            "benzene": benzene_modifications["benzene"],
             "solvent": gufe.SolventComponent(),
         }
     )
