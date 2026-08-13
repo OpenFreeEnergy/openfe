@@ -2624,6 +2624,7 @@ def test_too_few_mapped_atoms(benzene_vacuum_system, toluene_vacuum_system, vac_
             mapping=small_mapping,
         )
 
+
 def test_too_few_mapped_small_molecules(chloroethane_to_ethane_mapping, vac_settings):
     # make sure this mapping of only 2 heavy atoms passes due to the small size of the molecules
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
@@ -2643,10 +2644,13 @@ def test_high_heavy_atom_mapping_ratio_warning(atom_mapping_basic_test_files, va
     mapping = gufe.LigandAtomMapping(
         componentA=atom_mapping_basic_test_files["1,3,7-trimethylnaphthalene"],
         componentB=atom_mapping_basic_test_files["2-methylnaphthalene"],
-        componentA_to_componentB={0: 0, 1: 1, 2: 10, 3: 9, 8: 8}
+        componentA_to_componentB={0: 0, 1: 1, 2: 10, 3: 9, 8: 8},
     )
 
-    with pytest.warns(UserWarning, match="The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable."):
+    with pytest.warns(
+        UserWarning,
+        match="The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable.",
+    ):
         _ = protocol.validate(
             stateA=gufe.ChemicalSystem({"ligand": mapping.componentA}),
             stateB=gufe.ChemicalSystem({"ligand": mapping.componentB}),
@@ -2654,4 +2658,7 @@ def test_high_heavy_atom_mapping_ratio_warning(atom_mapping_basic_test_files, va
         )
 
     # check the log as well
-    assert "The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable." in caplog.text
+    assert (
+        "The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable."
+        in caplog.text
+    )
