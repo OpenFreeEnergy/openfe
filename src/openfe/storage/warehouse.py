@@ -1,5 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/gufe
+from __future__ import annotations
+
 import json
 import pathlib
 import re
@@ -501,8 +503,8 @@ class FileSystemWarehouse(WarehouseBaseClass):
 
     Parameters
     ----------
-    root_dir : str, optional
-        Root directory for the warehouse storage, by default "warehouse".
+    root_dir : pathlib.Path, optional
+        Root directory in which to create the warehouse storage.
 
     Notes
     -----
@@ -511,14 +513,16 @@ class FileSystemWarehouse(WarehouseBaseClass):
     for results and other data types.
     """
 
-    def __init__(self, name):
-        # TODO: should name and location be allowed to be different?
-        self.root_dir = pathlib.Path(f"{name}")
+    def __init__(self, root_dir: pathlib.Path):
+        self.root_dir = pathlib.Path(root_dir)
+        if self.root_dir.is_dir():
+            raise ValueError(
+                "`root_dir` already exists. To load an existing Warehouse, use FileSystemWarehouse.load(`root_dir`)"
+            )
         setup_store = FileStorage(f"{self.root_dir}/setup")
         result_store = FileStorage(f"{self.root_dir}/result")
         shared_store = FileStorage(f"{self.root_dir}/shared")
         tasks_store = FileStorage(f"{self.root_dir}/tasks")
-        # TODO: we can store dags in setup if we have a performant way of accessing them
         protocol_dag_store = FileStorage(f"{self.root_dir}/protocol_dags")
         stores = WarehouseStores(
             setup=setup_store,
@@ -527,4 +531,14 @@ class FileSystemWarehouse(WarehouseBaseClass):
             tasks=tasks_store,
             protocol_dags=protocol_dag_store,
         )
-        super().__init__(stores, name)
+        name = self.root_dir.resolve().name
+        super().__init__(stores=stores, name=name)
+
+    @classmethod
+    def load(cls, root_dir: pathlib.Path) -> FileSystemWarehouse:
+        root_dir = pathlib.Path(root_dir)
+        if not root_dir.is_dir():
+            raise ValueError(
+                "`root_dir` must be an existing filepath. To create a new Warehouse, use FileSystemWarehouse(`root_dir`)"
+            )
+        return cls(root_dir=root_dir)
