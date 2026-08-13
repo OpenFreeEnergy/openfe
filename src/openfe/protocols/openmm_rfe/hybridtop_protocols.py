@@ -395,7 +395,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         if not passed:
             raise ValueError(
-                f"Number of mapped heavy atoms is less than 3: {num_mapped_heavy_atoms} which is required for this protocol."
+                f"Number of mapped heavy atoms is less than 4: {num_mapped_heavy_atoms} which is required for this protocol."
             )
 
         mapping_ratio = mapping.get_heavy_atom_mapping_ratio()

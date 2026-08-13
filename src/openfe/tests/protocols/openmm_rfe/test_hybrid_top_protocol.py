@@ -2616,7 +2616,7 @@ def test_too_few_mapped_atoms(benzene_vacuum_system, toluene_vacuum_system, vac_
 
     with pytest.raises(
         ValueError,
-        match="Number of mapped heavy atoms is less than 3: 2 which is required for this protocol.",
+        match="Number of mapped heavy atoms is less than 4: 2 which is required for this protocol.",
     ):
         _ = protocol.validate(
             stateA=benzene_vacuum_system,
