@@ -1420,18 +1420,12 @@ class TestAssignOffmolResidueMetadata:
         _RESIDUE_METADATA_CASES.values(),
         ids=list(_RESIDUE_METADATA_CASES),
     )
-    def test_assign_offmol_residue_metadata(
-        self, benzene_modifications, specs, expected
-    ):
-        small, alchemical = self._build_small_molecules(
-            benzene_modifications, specs
-        )
+    def test_assign_offmol_residue_metadata(self, benzene_modifications, specs, expected):
+        small, alchemical = self._build_small_molecules(benzene_modifications, specs)
 
         assigned = assign_offmol_residue_metadata(small, alchemical)
 
-        for smc, off, (resname, residue_number) in zip(
-            small.keys(), small.values(), expected
-        ):
+        for smc, off, (resname, residue_number) in zip(small.keys(), small.values(), expected):
             assert _get_offmol_resname(off) == resname
             assert _get_offmol_metadata(off, "residue_number") == residue_number
             assert assigned[smc] == resname
