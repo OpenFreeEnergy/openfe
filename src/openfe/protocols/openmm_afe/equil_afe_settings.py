@@ -22,7 +22,7 @@ from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
 )
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 
 from openfe.protocols.openmm_utils.omm_settings import (
     BaseSolvationSettings,
@@ -169,6 +169,10 @@ class LambdaSettings(SettingsBaseModel):
 
 
 class ABFEPreEquilOutputSettings(MDOutputSettings):
+    """
+    Settings controlling the pre-alchemical equilibration MD simulations.
+    """
+
     output_indices: str = "all"
     """
     Selection string for which part of the system to write coordinates for.

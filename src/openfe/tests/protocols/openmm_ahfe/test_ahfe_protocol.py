@@ -367,7 +367,7 @@ def test_confgen_fail_AFE(benzene_system, protocol_dry_settings, tmp_path):
 
 
 def test_setup_solv_benzene(benzene_system, protocol_dry_settings, tmp_path):
-    protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
+    protocol_dry_settings.solvent_output_settings.output_indices = "resname LIG"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
 
@@ -718,7 +718,7 @@ def test_dry_run_vacuum_write_frequency(
     protocol_dry_settings,
     tmp_path,
 ):
-    protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
+    protocol_dry_settings.solvent_output_settings.output_indices = "resname LIG"
     protocol_dry_settings.solvent_output_settings.positions_write_frequency = positions_write_frequency  # fmt: skip
     protocol_dry_settings.solvent_output_settings.velocities_write_frequency = velocities_write_frequency  # fmt: skip
     protocol_dry_settings.vacuum_output_settings.positions_write_frequency = positions_write_frequency  # fmt: skip
@@ -752,6 +752,9 @@ def test_dry_run_vacuum_write_frequency(
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,
         )
+        # Check the ligand residue name is "LIG"
+        assert setup_results["alchemical_resname"] == "LIG"
+
         sim_results = sim_units[0].run(
             system=setup_results["alchem_system"],
             positions=setup_results["debug_positions"],

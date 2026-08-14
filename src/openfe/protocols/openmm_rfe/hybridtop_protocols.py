@@ -275,6 +275,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           * If there are more than one mapping or mapping is None
           * If the mapping components are not in the alchemical components.
           * If the atom mapping is empty.
+          * If the atom mapping would break or form a bond.
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
@@ -298,6 +299,59 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             # make sure the mapping is not empty
             if not m.componentA_to_componentB:
                 raise ValueError("No atoms are mapped between the two alchemical components.")
+
+            # check for broken bonds in the mapping
+            RelativeHybridTopologyProtocol._check_for_bond_breaks(mapping=m)
+
+    @staticmethod
+    def _check_for_bond_breaks(
+        mapping: ComponentMapping,
+    ):
+        """
+        Checks for bond breaking/forming atom mappings in the provided ComponentMapping.
+
+        Parameters
+        ----------
+        mapping : ComponentMapping
+            The mapping to check
+
+        Notes
+        -----
+        Bond breaking is detected by checking that if atoms are bonded in one state and mapped, that their mapped
+        counterparts are also bonded in the other state.
+
+        Raises
+        ------
+        ValueError
+            If any bonds would be broken/introduced via the provided mapping.
+        """
+        # generate a list of bonds in the end states
+        mol_a_bonds = {
+            frozenset((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()))
+            for bond in mapping.componentA.to_rdkit().GetBonds()
+        }
+        mol_b_bonds = {
+            frozenset((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()))
+            for bond in mapping.componentB.to_rdkit().GetBonds()
+        }
+
+        # build the list of directions to check
+        checks = (
+            # Bond in A is broken in B -> Broken
+            ("A", "B", mol_a_bonds, mol_b_bonds, mapping.componentA_to_componentB),
+            # Bond in B is missing in A -> Introduced
+            ("B", "A", mol_b_bonds, mol_a_bonds, mapping.componentB_to_componentA),
+        )
+
+        for state_from, state_to, bonds_from, bonds_to, atom_map in checks:
+            for atom_a, atom_b in bonds_from:
+                if atom_a in atom_map and atom_b in atom_map:
+                    mapped_bond = frozenset((atom_map[atom_a], atom_map[atom_b]))
+                    if mapped_bond not in bonds_to:
+                        # if bonded atoms are mapped but not bonded in the other endstate raise an error
+                        raise ValueError(
+                            f"Bond {atom_a}-{atom_b} in component{state_from} is broken in component{state_to} via the provided mapping."
+                        )
 
     @staticmethod
     def _validate_smcs(

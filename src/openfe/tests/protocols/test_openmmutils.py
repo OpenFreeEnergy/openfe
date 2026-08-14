@@ -49,8 +49,10 @@ from openfe.protocols.openmm_utils.charge_generation import (
 )
 from openfe.protocols.openmm_utils.offmolecule_utils import (
     _get_offmol_metadata,
+    _get_offmol_resname,
     _set_offmol_metadata,
     _set_offmol_resname,
+    assign_offmol_residue_metadata,
 )
 
 from ..conftest import HAS_INTERNET
@@ -377,13 +379,12 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["forward_DGs"].m,
             np.array(
                 [
-                    -48.057326, -48.038367, -48.033994, -48.0228, -48.028532,
-                    -48.025258, -48.006349, -47.986304, -47.972138, -47.960623,
+                    -47.823889, -47.905875, -47.935716, -47.951184, -47.971532,
+                    -47.949007, -47.938932, -47.936925, -47.951239, -47.960623,
                 ]
             ),
             rtol=1e-04,
         )  # fmt: skip
-        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict["forward_and_reverse_energies"]["forward_dDGs"].m,
             np.array(
@@ -398,13 +399,12 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["reverse_DGs"].m,
             np.array(
                 [
-                    -47.823839, -47.833107, -47.845866, -47.858173, -47.883887,
-                    -47.915963, -47.93319, -47.939125, -47.949016, -47.960623,
+                    -48.0018, -48.00823 , -48.012272, -47.974658, -47.96017,
+                    -47.961262, -47.971833, -47.971134, -47.971301, -47.960623,
                 ]
             ),
             rtol=1e-04,
         )  # fmt: skip
-        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict["forward_and_reverse_energies"]["reverse_dDGs"].m,
             np.array(
@@ -415,6 +415,54 @@ class TestFEAnalysis:
             ),
             rtol=5e-01,
         )  # fmt: skip
+
+    def test_forward_reverse_uln_to_ukln_to_uln_conversion(self, analyzer):
+        def _recreate_ukln(analyzer):
+            """
+            Helper method to recreate u_kln the same way openmmtools does.
+            """
+            energy_data = list(analyzer._read_energies(truncate_max_n_iterations=True))
+            (
+                sampled_energy_matrix,
+                unsampled_energy_matrix,
+                neighborhoods,
+                replicas_state_indices,
+            ) = energy_data
+            number_equilibrated, g_t, Neff_max = analyzer._get_equilibration_data(
+                sampled_energy_matrix, neighborhoods, replicas_state_indices
+            )
+            for i, energies in enumerate(energy_data):
+                energies = multistate.utils.remove_unequilibrated_data(
+                    energies, number_equilibrated, -1
+                )
+                energy_data[i] = multistate.utils.subsample_data_along_axis(energies, g_t, -1)
+            sampled_energy_matrix, unsampled_energy_matrix, neighborhood, replicas_state_indices = (
+                energy_data
+            )
+            return sampled_energy_matrix
+
+        u_ln = analyzer.analyzer._unbiased_decorrelated_u_ln
+        N_l = analyzer.analyzer._unbiased_decorrelated_N_l
+
+        u_kln = analyzer._get_ukln_from_uln(u_ln, len(N_l), N_l[0])
+
+        assert (u_kln == _recreate_ukln(analyzer.analyzer)).all()
+
+        new_u_ln = analyzer._get_uln_from_ukln(u_kln)
+
+        assert (new_u_ln == u_ln).all()
+
+    def test_ukln_from_uln_errors(self, analyzer):
+        # Check the exceptions we could raise ahead of the conversion
+        u_ln = np.zeros((2, 100))
+
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 3"
+        with pytest.raises(ValueError, match=errmsg):
+            analyzer._get_ukln_from_uln(u_ln, 3, 100)
+
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 2 and num_samples 75"
+        with pytest.raises(ValueError, match=errmsg):
+            analyzer._get_ukln_from_uln(u_ln, 2, 75)
 
     @pytest.mark.parametrize("fail_on_call", [1, 2], ids=["forward_fails", "reverse_fails"])
     def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer, fail_on_call):
@@ -1287,6 +1335,104 @@ def test_set_metadata_none_clears():
     _set_offmol_metadata(mol, "residue_name", "LIG")
     _set_offmol_metadata(mol, "residue_name", None)
     assert all("residue_name" not in a.metadata for a in mol.atoms)
+
+
+class TestAssignOffmolResidueMetadata:
+    # name, is_ligand, preset resname, preset residue number
+    _RESIDUE_METADATA_CASES = {
+        "single ligand": (
+            [("benzene", True, None, None)],
+            [("LIG", 1)],
+        ),
+        "ligand and cofactors": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", False, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", 1), ("COF", 2), ("COF", 3)],
+        ),
+        "two ligands pool to LIG": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", True, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", 1), ("LIG", 2), ("COF", 3)],
+        ),
+        "custom cofactor name kept": (
+            [("benzene", True, None, None), ("toluene", False, "NAD", None)],
+            [("LIG", 1), ("NAD", 2)],
+        ),
+        "custom ligand name kept": (
+            [("benzene", True, "BNZ", None), ("toluene", False, None, None)],
+            [("BNZ", 1), ("COF", 2)],
+        ),
+        "cofactor named LIG, ligands fall back to LG1": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", True, None, None),
+                ("phenol", False, "LIG", None),
+                ("benzonitrile", False, None, None),
+            ],
+            [("LG1", 1), ("LG1", 2), ("LIG", 3), ("COF", 4)],
+        ),
+        "ligand named COF, cofactors fall back to CF1": (
+            [
+                ("benzene", True, "COF", None),
+                ("toluene", False, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("COF", 1), ("CF1", 2), ("CF1", 3)],
+        ),
+        "pinned residue number respected": (
+            [("benzene", True, None, None), ("toluene", False, None, 5)],
+            [("LIG", 1), ("COF", 5)],
+        ),
+        "auto residue number steps past a pinned one": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", False, None, 2),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", 1), ("COF", 2), ("COF", 3)],
+        ),
+    }
+
+    @staticmethod
+    def _build_small_molecules(benzene_modifications, specs):
+        """Build the small molecules and alchemical components for a test case."""
+        small, alchemical = {}, []
+
+        for name, is_ligand, resname, residue_number in specs:
+            smc = benzene_modifications[name]
+            off = copy.deepcopy(smc.to_openff())
+
+            if resname is not None:
+                _set_offmol_resname(off, resname)
+            if residue_number is not None:
+                _set_offmol_metadata(off, "residue_number", residue_number)
+
+            small[smc] = off
+            if is_ligand:
+                alchemical.append(smc)
+
+        return small, alchemical
+
+    @pytest.mark.parametrize(
+        "specs, expected",
+        _RESIDUE_METADATA_CASES.values(),
+        ids=list(_RESIDUE_METADATA_CASES),
+    )
+    def test_assign_offmol_residue_metadata(self, benzene_modifications, specs, expected):
+        small, alchemical = self._build_small_molecules(benzene_modifications, specs)
+
+        assigned = assign_offmol_residue_metadata(small, alchemical)
+
+        for smc, off, (resname, residue_number) in zip(small.keys(), small.values(), expected):
+            assert _get_offmol_resname(off) == resname
+            assert _get_offmol_metadata(off, "residue_number") == residue_number
+            assert assigned[smc] == resname
 
 
 class TestChargeValidation:
