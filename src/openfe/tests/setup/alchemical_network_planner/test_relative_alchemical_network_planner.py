@@ -65,7 +65,7 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
         "rbfe_2-methylnaphthalene_solvent_toluene_solvent",
         "rbfe_1,3,7-trimethylnaphthalene_complex_2,6-dimethylnaphthalene_complex",
         "rbfe_2-naftanol_complex_methylcyclohexane_complex",
-        "rbfe_2-naftanol_solvent_methylcyclohexane_solvent"
+        "rbfe_2-naftanol_solvent_methylcyclohexane_solvent",
     }
     result_names = {e.name for e in alchem_network.edges}
     assert result_names == expected_names
