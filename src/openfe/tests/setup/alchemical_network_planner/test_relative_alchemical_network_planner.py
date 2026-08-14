@@ -29,7 +29,7 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
             openfe.LomapAtomMapper(
                 time=20,
                 element_change=False,
-                max3d=1,
+                max3d=1.5,
                 shift=True,
             )
         ]
@@ -52,20 +52,20 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
     assert sum([r_vacuum_edge(e) for e in edges]) == 0  # no vacuum here!
 
     expected_names = {
-        "rbfe_1,3,7-trimethylnaphthalene_solvent_1-butyl-4-methylbenzene_solvent",
-        "rbfe_2-methylnaphthalene_complex_methylcyclohexane_complex",
+        "rbfe_1-butyl-4-methylbenzene_complex_toluene_complex",
+        "rbfe_1-butyl-4-methylbenzene_solvent_toluene_solvent",
         "rbfe_2,6-dimethylnaphthalene_solvent_2-methyl-6-propylnaphthalene_solvent",
         "rbfe_2-methylnaphthalene_complex_toluene_complex",
         "rbfe_2,6-dimethylnaphthalene_complex_2-methyl-6-propylnaphthalene_complex",
         "rbfe_2,6-dimethylnaphthalene_solvent_toluene_solvent",
-        "rbfe_1,3,7-trimethylnaphthalene_complex_1-butyl-4-methylbenzene_complex",
         "rbfe_1,3,7-trimethylnaphthalene_solvent_2,6-dimethylnaphthalene_solvent",
         "rbfe_2,6-dimethylnaphthalene_complex_toluene_complex",
         "rbfe_2-naftanol_solvent_toluene_solvent",
         "rbfe_2-naftanol_complex_toluene_complex",
         "rbfe_2-methylnaphthalene_solvent_toluene_solvent",
         "rbfe_1,3,7-trimethylnaphthalene_complex_2,6-dimethylnaphthalene_complex",
-        "rbfe_2-methylnaphthalene_solvent_methylcyclohexane_solvent",
+        "rbfe_2-naftanol_complex_methylcyclohexane_complex",
+        "rbfe_2-naftanol_solvent_methylcyclohexane_solvent"
     }
     result_names = {e.name for e in alchem_network.edges}
     assert result_names == expected_names
