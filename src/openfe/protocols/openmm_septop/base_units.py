@@ -1510,6 +1510,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         return analyzer.unit_results_dict
 
     @staticmethod
+    @abc.abstractmethod
     def _run_trajectory_analysis(
         ds: nc.Dataset,
         pdb_file: pathlib.Path,
