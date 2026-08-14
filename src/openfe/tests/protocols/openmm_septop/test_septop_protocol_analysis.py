@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from rdkit.Chem import SDMolSupplier
 
-from openfe.protocols.openmm_septop.base_units import BaseSepTopAnalysisUnit
+from openfe.protocols.openmm_septop.septop_units import SepTopComplexAnalysisUnit, SepTopSolventAnalysisUnit
 
 
 @pytest.fixture(scope="session")
@@ -35,11 +35,11 @@ def septop_solvent_data(septop_structural_results_dir):
 def septop_complex_structural_analysis_result(septop_complex_data, tmp_path_factory):
     d = septop_complex_data
     tmp = tmp_path_factory.mktemp("septop_complex_structural_analysis_result")
-    result = BaseSepTopAnalysisUnit._structural_analysis(
+    unit = SepTopComplexAnalysisUnit()
+    result = unit._structural_analysis(
         pdb_file=d["pdb"],
         trj_file=d["nc"],
         output_directory=tmp,
-        simtype="complex",
         ligand_A_indices=d["ligand_A_indices"],
         ligand_B_indices=d["ligand_B_indices"],
         rdmol_A=d["rdmol_A"],
@@ -55,11 +55,11 @@ def septop_complex_structural_analysis_result(septop_complex_data, tmp_path_fact
 def septop_solvent_structural_analysis_result(septop_solvent_data, tmp_path_factory):
     d = septop_solvent_data
     tmp = tmp_path_factory.mktemp("solvent_structural_analysis")
-    result = BaseSepTopAnalysisUnit._structural_analysis(
+    unit = SepTopSolventAnalysisUnit()
+    result = unit._structural_analysis(
         pdb_file=d["pdb"],
         trj_file=d["nc"],
         output_directory=tmp,
-        simtype="solvent",
         ligand_A_indices=d["ligand_A_indices"],
         ligand_B_indices=d["ligand_B_indices"],
         rdmol_A=d["rdmol_A"],
@@ -128,11 +128,10 @@ class TestComplexStructuralAnalysis:
 
     def test_bad_trajectory_returns_error_dict(self, septop_complex_data, tmp_path):
         d = septop_complex_data
-        result = BaseSepTopAnalysisUnit._structural_analysis(
+        result = SepTopComplexAnalysisUnit()._structural_analysis(
             pdb_file=d["pdb"],
             trj_file=tmp_path / "nonexistent.nc",
             output_directory=tmp_path,
-            simtype="complex",
             ligand_A_indices=d["ligand_A_indices"],
             ligand_B_indices=d["ligand_B_indices"],
             rdmol_A=d["rdmol_A"],
@@ -148,11 +147,10 @@ class TestComplexStructuralAnalysis:
     def test_skip_affects_output_length(self, septop_complex_data, tmp_path):
         d = septop_complex_data
 
-        result_skip1 = BaseSepTopAnalysisUnit._structural_analysis(
+        result_skip1 = SepTopComplexAnalysisUnit()._structural_analysis(
             pdb_file=d["pdb"],
             trj_file=d["nc"],
             output_directory=tmp_path,
-            simtype="complex",
             ligand_A_indices=d["ligand_A_indices"],
             ligand_B_indices=d["ligand_B_indices"],
             rdmol_A=d["rdmol_A"],
@@ -163,11 +161,10 @@ class TestComplexStructuralAnalysis:
         )
         n_frames_skip1 = len(np.load(result_skip1["structural_analysis"])["time_ps"])
 
-        result_skip2 = BaseSepTopAnalysisUnit._structural_analysis(
+        result_skip2 = SepTopComplexAnalysisUnit()._structural_analysis(
             pdb_file=d["pdb"],
             trj_file=d["nc"],
             output_directory=tmp_path,
-            simtype="complex",
             ligand_A_indices=d["ligand_A_indices"],
             ligand_B_indices=d["ligand_B_indices"],
             rdmol_A=d["rdmol_A"],
@@ -222,11 +219,10 @@ class TestSolventStructuralAnalysis:
 
     def test_bad_trajectory_returns_error_dict(self, septop_solvent_data, tmp_path):
         d = septop_solvent_data
-        result = BaseSepTopAnalysisUnit._structural_analysis(
+        result = SepTopSolventAnalysisUnit()._structural_analysis(
             pdb_file=d["pdb"],
             trj_file=tmp_path / "nonexistent.nc",
             output_directory=tmp_path,
-            simtype="solvent",
             ligand_A_indices=d["ligand_A_indices"],
             ligand_B_indices=d["ligand_B_indices"],
             rdmol_A=d["rdmol_A"],
@@ -245,11 +241,10 @@ class TestSolventStructuralAnalysis:
         d = septop_solvent_data
 
         with caplog.at_level(logging.WARNING):
-            result = BaseSepTopAnalysisUnit._structural_analysis(
+            result = SepTopSolventAnalysisUnit()._structural_analysis(
                 pdb_file=d["pdb"],
                 trj_file=tmp_path / "nonexistent.nc",  # won't be accessed
                 output_directory=tmp_path,
-                simtype="solvent",
                 ligand_A_indices=[],
                 ligand_B_indices=[],
                 rdmol_A=d["rdmol_A"],

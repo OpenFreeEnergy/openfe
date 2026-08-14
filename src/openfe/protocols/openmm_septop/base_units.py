@@ -35,17 +35,9 @@ from gufe import (
 )
 from gufe.components import Component
 from gufe.protocols.errors import ProtocolUnitExecutionError
-from openfe_analysis.rmsd import (
-    LigandCOMDrift,
-    Protein2DRMSD,
-    SymmetryCorrectedLigandRMSD,
-)
+
 from openfe_analysis.utils import plotting
-from openfe_analysis.utils.apply_transformations import (
-    apply_complex_alignment_transformations,
-    apply_ligand_alignment_transformations,
-)
-from openfe_analysis.utils.universe_utils import create_universe_single_state
+
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
@@ -1519,7 +1511,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         reporter.close()
         return analyzer.unit_results_dict
 
-    @abc.abstractmethod
     @staticmethod
     def _run_trajectory_analysis(
         ds: nc.Dataset,
@@ -1569,7 +1560,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         pdb_file: pathlib.Path,
         trj_file: pathlib.Path,
         output_directory: pathlib.Path,
-        simtype: Literal["complex", "solvent"],
         ligand_A_indices: list[int],
         ligand_B_indices: list[int],
         rdmol_A: Chem.Mol,
@@ -1590,9 +1580,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         output_directory : pathlib.Path
             The output directory where plots and the data NPZ file
             will be stored.
-        simtype : Literal["complex", "solvent"]
-            Either ``"complex"`` or ``"solvent"``. Controls whether protein
-            analyses are run and how alignment is applied.
         ligand_A_indices : list[int]
             Atom indices of ligand A in the subsampled system.
         ligand_B_indices : list[int]
@@ -1762,7 +1749,6 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             pdb_file=pdb_file,
             trj_file=trajectory,
             output_directory=self.shared_basepath,
-            simtype=self.simtype,
             ligand_A_indices=ligand_A_indices,
             ligand_B_indices=ligand_B_indices,
             rdmol_A=smc_A.to_rdkit(),

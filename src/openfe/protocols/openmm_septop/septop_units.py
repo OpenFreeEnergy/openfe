@@ -39,6 +39,11 @@ from openfe_analysis.rmsd import (
     Protein2DRMSD,
     SymmetryCorrectedLigandRMSD,
 )
+from openfe_analysis.utils.apply_transformations import (
+    apply_complex_alignment_transformations,
+    apply_ligand_alignment_transformations,
+)
+from openfe_analysis.utils.universe_utils import create_universe_single_state
 
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.offmolecule_utils import (
@@ -1260,7 +1265,7 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
 
     simtype = "solvent"
 
-   @staticmethod
+    @staticmethod
     def _run_trajectory_analysis(
         ds: nc.Dataset,
         pdb_file: pathlib.Path,
