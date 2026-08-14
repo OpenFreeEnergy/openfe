@@ -414,6 +414,7 @@ def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_for
             labels = {"LibraryCharges": {}}
 
         # We count library and nagl charges as deterministic
+        # While users could use a deterministic charge method with increments we don't currently support this
         if len(labels["LibraryCharges"]) != offmol.n_atoms and "NAGLCharges" not in labels:
             errmsg = (
                 f"{smc} from system {system.name} would have am1bcc charges generated at runtime which is non-deterministic. "

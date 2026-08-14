@@ -54,7 +54,6 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from ...analysis import plotting
 from ...utils import log_system_probe, without_oechem_backend
 from ..openmm_utils import (
-    charge_generation,
     multistate_analysis,
     omm_compute,
     settings_validation,
@@ -205,32 +204,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
         return solvent_comp, protein_comp, small_mols
 
-    @staticmethod
-    def _assign_partial_charges(
-        charge_settings: OpenFFPartialChargeSettings,
-        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
-    ) -> None:
-        """
-        Assign partial charges to the OpenFF Molecules associated with all
-        the SmallMoleculeComponents in the transformation.
-
-        Parameters
-        ----------
-        charge_settings : OpenFFPartialChargeSettings
-          Settings for controlling how the partial charges are assigned.
-        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
-          Dictionary of OpenFF Molecules to add, keyed by
-          their associated SmallMoleculeComponent.
-        """
-        for smc, mol in small_mols.items():
-            charge_generation.assign_offmol_partial_charges(
-                offmol=mol,
-                overwrite=False,
-                method=charge_settings.partial_charge_method,
-                toolkit_backend=charge_settings.off_toolkit_backend,
-                generate_n_conformers=charge_settings.number_of_conformers,
-                nagl_model=charge_settings.nagl_model,
-            )
 
     @staticmethod
     def _get_system_generator(
@@ -760,9 +733,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # We only store the stateA residue name since that's what is present
         # in the topology
         alchem_resnames = [assigned[alchem_comps["stateA"][0]]]
-
-        # Assign partial charges now to avoid any discrepancies later
-        self._assign_partial_charges(settings["charge_settings"], small_mols)
 
         (
             stateA_system,
