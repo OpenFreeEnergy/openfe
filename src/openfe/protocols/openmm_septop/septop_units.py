@@ -29,11 +29,6 @@ from gufe import (
 )
 from gufe.settings import SettingsBaseModel
 from MDAnalysis.coordinates.memory import MemoryReader
-from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import Quantity
-from openff.units.openmm import from_openmm, to_openmm
-from openmmtools.states import ThermodynamicState
-from rdkit import Chem
 from openfe_analysis.rmsd import (
     LigandCOMDrift,
     Protein2DRMSD,
@@ -44,6 +39,11 @@ from openfe_analysis.utils.apply_transformations import (
     apply_ligand_alignment_transformations,
 )
 from openfe_analysis.utils.universe_utils import create_universe_single_state
+from openff.toolkit.topology import Molecule as OFFMolecule
+from openff.units import Quantity
+from openff.units.openmm import from_openmm, to_openmm
+from openmmtools.states import ThermodynamicState
+from rdkit import Chem
 
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.offmolecule_utils import (
@@ -1421,4 +1421,3 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
             if time_ps is None:
                 time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
         return per_state_data, time_ps
-

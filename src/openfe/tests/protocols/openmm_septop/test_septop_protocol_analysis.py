@@ -2,7 +2,10 @@ import numpy as np
 import pytest
 from rdkit.Chem import SDMolSupplier
 
-from openfe.protocols.openmm_septop.septop_units import SepTopComplexAnalysisUnit, SepTopSolventAnalysisUnit
+from openfe.protocols.openmm_septop.septop_units import (
+    SepTopComplexAnalysisUnit,
+    SepTopSolventAnalysisUnit,
+)
 
 
 @pytest.fixture(scope="session")

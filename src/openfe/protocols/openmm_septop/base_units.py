@@ -35,9 +35,7 @@ from gufe import (
 )
 from gufe.components import Component
 from gufe.protocols.errors import ProtocolUnitExecutionError
-
 from openfe_analysis.utils import plotting
-
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
