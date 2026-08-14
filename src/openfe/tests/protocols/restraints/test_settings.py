@@ -76,20 +76,26 @@ def test_boresch_restraint_settings_default():
     assert isinstance(settings, BoreschRestraintSettings)
 
 
-# TODO: re-enable this Issue #1556
-# def test_boresch_restraint_negative_idxs():
-#     """
-#     Check that the positive_idxs_list validator is
-#     working as expected.
-#     """
-#     with pytest.raises(ValueError, match="negative indices"):
-#         _ = BoreschRestraintSettings(
-#             K_r=10 * unit.kilojoule_per_mole / unit.nm**2,
-#             K_thetaA=10 * unit.kilojoule_per_mole / unit.radians**2,
-#             K_thetaB=10 * unit.kilojoule_per_mole / unit.radians**2,
-#             phi_A0=10 * unit.kilojoule_per_mole / unit.radians**2,
-#             phi_B0=10 * unit.kilojoule_per_mole / unit.radians**2,
-#             phi_C0=10 * unit.kilojoule_per_mole / unit.radians**2,
-#             host_atoms=[-1, 0],
-#             guest_atoms=[0, 1],
-#         )
+@pytest.mark.parametrize("parameter", ["host_restraint_ids", "guest_restraint_ids"])
+def test_boresch_restraints_restraint_negative_ids(parameter):
+    setting = BoreschRestraintSettings()
+
+    errmsg = "``guest_atoms`` and ``host_atoms`` cannot have negative indices."
+    with pytest.raises(ValueError, match=errmsg):
+        setattr(setting, parameter, [1, 2, -3])
+
+
+@pytest.mark.parametrize("parameter", ["host_restraint_ids", "guest_restraint_ids"])
+def test_boresch_restraints_too_many_ids(parameter):
+    setting = BoreschRestraintSettings()
+
+    errmsg = "Tuple should have at most 3 items after validation, not 4"
+    with pytest.raises(ValueError, match=errmsg):
+        setattr(setting, parameter, [1, 2, 3, 4])
+
+
+def test_boresch_restraint_partially_defined_ids():
+    setting = BoreschRestraintSettings()
+
+    with pytest.raises(ValueError, match="must both either be defined or undefined"):
+        setting.host_restraint_ids = [1, 2, 3]

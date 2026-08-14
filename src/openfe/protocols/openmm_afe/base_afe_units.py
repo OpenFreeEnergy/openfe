@@ -77,6 +77,7 @@ from openfe.protocols.openmm_utils import (
 from openfe.protocols.openmm_utils.mdtraj_utils import (
     mdtraj_from_openmm,
 )
+from openfe.protocols.openmm_utils.offmolecule_utils import assign_offmol_residue_metadata
 from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
 )
@@ -696,6 +697,10 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         # Get components
         alchem_comps, solv_comp, prot_comp, small_mols = self._get_components()
 
+        # Assign residue names/numbers to the ligand and any cofactors
+        assigned = assign_offmol_residue_metadata(small_mols, alchem_comps["stateA"])
+        alchem_resname = assigned[alchem_comps["stateA"][0]]
+
         # Get settings
         settings = self._get_settings()
 
@@ -767,6 +772,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             "pdb_structure": pdb_structure,
             "selection_indices": selection_indices,
             "box_vectors": from_openmm(box_vectors),
+            "alchemical_resname": alchem_resname,
         }
 
         if standard_state_corr is not None:
