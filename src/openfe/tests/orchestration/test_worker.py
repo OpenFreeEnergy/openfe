@@ -156,7 +156,7 @@ def test_checkout_task_returns_none_when_no_available_tasks(tmp_path):
     warehouse_root = tmp_path / "warehouse"
     db_path = warehouse_root / "tasks.db"
     warehouse_root.mkdir(parents=True, exist_ok=True)
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    warehouse = FileSystemWarehouse.load(str(warehouse_root))
     exorcist.TaskStatusDB.from_filename(db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
 
@@ -167,7 +167,7 @@ def test_execute_unit_returns_none_when_no_available_tasks(tmp_path):
     warehouse_root = tmp_path / "warehouse"
     db_path = warehouse_root / "tasks.db"
     warehouse_root.mkdir(parents=True, exist_ok=True)
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    warehouse = FileSystemWarehouse.load(str(warehouse_root))
     exorcist.TaskStatusDB.from_filename(db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
 
