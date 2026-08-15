@@ -6,10 +6,11 @@ import exorcist
 import networkx as nx
 import pytest
 import sqlalchemy as sqla
+from gufe import AlchemicalNetwork
 from gufe.tokenization import GufeKey
 
-from openfe.orchestration.exorcist_utils import (
-    alchemical_network_to_task_graph,
+from openfe.orchestration import (
+    _alchemical_network_to_task_graph,
     build_task_db_from_alchemical_network,
 )
 from openfe.storage.warehouse import FileSystemWarehouse, WarehouseBaseClass
@@ -42,7 +43,7 @@ def test_alchemical_network_to_task_graph_stores_all_units(request, fixture):
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
     expected_units = _network_units(network)
-    alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     stored_unit_names = [str(unit.name) for unit in warehouse.stored_tasks]
     expected_unit_names = [str(unit.name) for unit in expected_units]
@@ -56,7 +57,7 @@ def test_alchemical_network_to_task_graph_uses_canonical_task_ids(request, fixtu
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
 
-    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     expected_protocol_unit_keys = sorted(str(unit.key) for unit in warehouse.stored_tasks)
     observed_protocol_unit_keys = []
@@ -73,7 +74,7 @@ def test_alchemical_network_to_task_graph_edges_reference_existing_nodes(request
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
 
-    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     assert len(graph.edges) > 0
     for u, v in graph.edges:
@@ -86,7 +87,7 @@ def test_alchemical_network_to_task_graph_edge_direction_matches_dependencies(re
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
 
-    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
     units_by_key = {str(unit.key): unit for unit in warehouse.stored_tasks}
 
     for upstream_id, downstream_id in graph.edges:
@@ -118,12 +119,12 @@ def test_alchemical_network_to_task_graph_raises_for_cycle():
             dag.graph.add_edges_from([(unit_a, unit_b), (unit_b, unit_a)])
             return dag
 
-    network = mock.Mock()
+    network = mock.Mock(AlchemicalNetwork)
     network.edges = [_Transformation()]
     warehouse = mock.Mock()
 
     with pytest.raises(ValueError, match="not a DAG"):
-        alchemical_network_to_task_graph(network, warehouse)
+        _alchemical_network_to_task_graph(network, warehouse)
 
 
 @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
@@ -184,7 +185,7 @@ def test_build_task_db_default_path(request, fixture):
 
     with (
         mock.patch(
-            "openfe.orchestration.exorcist_utils.alchemical_network_to_task_graph",
+            "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
             return_value=fake_graph,
         ) as task_graph_mock,
         mock.patch(
@@ -210,7 +211,7 @@ def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
 
     with (
         mock.patch(
-            "openfe.orchestration.exorcist_utils.alchemical_network_to_task_graph",
+            "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
             return_value=fake_graph,
         ) as task_graph_mock,
         mock.patch(

@@ -4,18 +4,19 @@ This module translates an :class:`gufe.AlchemicalNetwork` into Exorcist task
 structures and can initialize an Exorcist task database from that graph.
 """
 
+import sys
 from pathlib import Path
 
 import exorcist
 import networkx as nx
-import pandas as pd
-from gufe import AlchemicalNetwork
+from gufe import AlchemicalNetwork, ProtocolDAG
 
 from openfe.storage.warehouse import WarehouseBaseClass
 
 
-def alchemical_network_to_task_graph(
-    alchemical_network: AlchemicalNetwork, warehouse: WarehouseBaseClass
+def _alchemical_network_to_task_graph(
+    alchemical_network: AlchemicalNetwork,
+    warehouse: WarehouseBaseClass,
 ) -> nx.DiGraph:
     """Build a global task DAG from an alchemical network.
 
@@ -30,9 +31,8 @@ def alchemical_network_to_task_graph(
     Returns
     -------
     nx.DiGraph
-        A directed acyclic graph where each node is a task ID in the form
-        ``"<transformation_key>:<protocol_unit_key>"`` and edges encode
-        protocol-unit dependencies.
+        A directed acyclic graph where each node is a task ID with the ProtocolUnit key as a name
+        and edges encode protocol-unit dependencies.
 
     Raises
     ------
@@ -40,35 +40,40 @@ def alchemical_network_to_task_graph(
         Raised if the assembled task graph is not acyclic.
     """
 
-    global_dag = nx.DiGraph()
+    if not isinstance(alchemical_network, AlchemicalNetwork):
+        raise ValueError(
+            f"alchemical_network must be an AlchemicalNetwork, not {type(alchemical_network)}."
+        )
+
+    warehouse.store_setup_tokenizable(alchemical_network)
+
+    global_task_dag = nx.DiGraph()
     for transformation in alchemical_network.edges:
-        dag = transformation.create()
+        dag: ProtocolDAG = transformation.create()
         for unit in dag.protocol_units:
-            node_id = str(unit.key)
-            global_dag.add_node(node_id)
+            global_task_dag.add_node(str(unit.key))
             warehouse.store_task(unit)
-        # store the protocol_dag as a shallow dict, since all its units are
-        # already written to disk
-        warehouse.store_protocol_dag(dag)
         for dependent_unit, dependency_unit in dag.graph.edges:
             upstream_id = str(dependency_unit.key)
             downstream_id = str(dependent_unit.key)
-            global_dag.add_edge(upstream_id, downstream_id)
+            global_task_dag.add_edge(upstream_id, downstream_id)
 
-    if not nx.is_directed_acyclic_graph(global_dag):
+        # at this point, stored as a shallow dict since all its units are already stored
+        warehouse.store_protocol_dag(dag)
+
+    if not nx.is_directed_acyclic_graph(global_task_dag):
         raise ValueError("AlchemicalNetwork produced a task graph that is not a DAG.")
 
-    return global_dag
+    return global_task_dag
 
 
-# TODO: do we test adding a multiple alchemical networks to the same task graph?
 def build_task_db_from_alchemical_network(
     alchemical_network: AlchemicalNetwork,
     warehouse: WarehouseBaseClass,
     db_path: Path | None = None,
     max_tries: int = 1,
 ) -> exorcist.TaskStatusDB:
-    """Create and populate a task database from an alchemical network.
+    """Create and populate a task database and warehouse from an alchemical network.
 
     Parameters
     ----------
@@ -80,8 +85,8 @@ def build_task_db_from_alchemical_network(
         Location of the SQLite-backed Exorcist database. If ``None``, defaults
         to {warehouse.name}.db in the current working directory.
     max_tries : int, default=1
-        Maximum number of retries for each task before Exorcist marks it as
-        ``TOO_MANY_RETRIES``.
+        Maximum number of times a task will attempt to be submitted before it
+        is labelled ``TOO_MANY_RETRIES``.
 
     Returns
     -------
@@ -91,8 +96,11 @@ def build_task_db_from_alchemical_network(
     """
     if db_path is None:
         db_path = Path(f"{warehouse.name}.db")
+    if db_path.exists():
+        print(f"Error: {db_path} already exists.")  # TODO: add more user flexibility here
+        sys.exit()
 
-    global_dag: nx.DiGraph = alchemical_network_to_task_graph(alchemical_network, warehouse)
+    global_task_dag: nx.DiGraph = _alchemical_network_to_task_graph(alchemical_network, warehouse)
     db = exorcist.TaskStatusDB.from_filename(db_path)
-    db.add_task_network(global_dag, max_tries)
+    db.add_task_network(global_task_dag, max_tries)
     return db

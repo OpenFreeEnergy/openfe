@@ -18,7 +18,7 @@ from gufe.tokenization import GufeKey
 from openfe.storage.warehouse import FileSystemWarehouse
 
 from .exorcist_utils import (
-    alchemical_network_to_task_graph,
+    _alchemical_network_to_task_graph,
     build_task_db_from_alchemical_network,
 )
 
