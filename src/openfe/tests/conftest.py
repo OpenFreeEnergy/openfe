@@ -379,13 +379,35 @@ def fepplus_network():
 
 
 @pytest.fixture()
-def CN_molecule() -> list[SmallMoleculeComponent]:
+def CN_molecule():
     """
     A basic CH3NH2 molecule for quick testing.
     """
     with resources.as_file(resources.files("openfe.tests.data")) as d:
         yield SmallMoleculeComponent.from_sdf_file(d / "CN.sdf")
 
+
+@pytest.fixture(scope="function")
+def am1bcc_ref_charges():
+    ref_chgs = {
+        "ambertools":[
+            0.146957, -0.918943, 0.025557, 0.025557,
+            0.025557, 0.347657, 0.347657
+        ] * offunit.elementary_charge,
+        "openeye": [
+            0.14713, -0.92016, 0.02595, 0.02595,
+            0.02595, 0.34759, 0.34759
+        ] * offunit.elementary_charge,
+        "nagl": [
+            0.170413, -0.930417, 0.021593, 0.021593,
+            0.021593, 0.347612, 0.347612
+        ] * offunit.elementary_charge,
+        "espaloma": [
+            0.017702, -0.966793, 0.063076, 0.063076,
+            0.063076, 0.379931, 0.379931
+        ] * offunit.elementary_charge,
+    }  # fmt: skip
+    return ref_chgs
 
 try:
     urllib.request.urlopen("https://www.google.com")

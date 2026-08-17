@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import re
 import sys
 from math import sqrt
 from unittest import mock
@@ -8,6 +9,7 @@ import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
+from gufe.protocols import ProtocolValidationError
 from numpy.testing import assert_allclose
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
@@ -619,76 +621,30 @@ def test_dry_run_solv_user_charges_benzene(
         assert pytest.approx(c) == prop_chgs[i]
 
 
-@pytest.mark.parametrize(
-    "method, backend, ref_key",
-    [
-        ("am1bcc", "ambertools", "ambertools"),
-        pytest.param(
-            "am1bcc",
-            "openeye",
-            "openeye",
-            marks=pytest.mark.skipif(not HAS_OPENEYE, reason="needs oechem"),
-        ),
-        pytest.param(
-            "nagl",
-            "rdkit",
-            "nagl",
-            marks=pytest.mark.skipif(
-                not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
-                reason="needs NAGL (without oechem) and/or on macos",
-            ),
-        ),
-        pytest.param(
-            "espaloma",
-            "rdkit",
-            "espaloma",
-            marks=pytest.mark.skipif(not HAS_ESPALOMA_CHARGE, reason="needs espaloma charge"),
-        ),
-    ],
-)
-def test_dry_run_charge_backends(
-    CN_molecule, tmp_path, method, backend, ref_key, protocol_dry_settings, am1bcc_ref_charges
+def test_dry_run_missing_charges(
+    CN_molecule, protocol_dry_settings
 ):
     """
-    Check that partial charge generation with different backends
-    works as expected.
+    Make sure an error is raised if a nondeterministic charge method would be used at run time
     """
-    protocol_dry_settings.partial_charge_settings.partial_charge_method = method
-    protocol_dry_settings.partial_charge_settings.off_toolkit_backend = backend
+    protocol_dry_settings.partial_charge_settings.partial_charge_method = "am1bcc"
+    protocol_dry_settings.partial_charge_settings.off_toolkit_backend = "ambertools"
     protocol_dry_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
 
     # Create ChemicalSystems
-    stateA = ChemicalSystem({"benzene": CN_molecule, "solvent": SolventComponent()})
+    stateA = ChemicalSystem({"benzene": CN_molecule, "solvent": SolventComponent()}, name="CN no charges")
 
     stateB = ChemicalSystem({"solvent": SolventComponent()})
 
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first solvent unit
-    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
-    prot_units = list(dag.protocol_units)
-
-    vac_setup_units = _get_units(prot_units, UNIT_TYPES["vacuum"]["setup"])
-
-    # check vac_unit charges
-    results = vac_setup_units[0].run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
-    system = results["alchem_system"]
-    nonbond = [f for f in system.getForces() if isinstance(f, CustomNonbondedForce)]
-    assert len(nonbond) == 4
-
-    custom_elec = [n for n in nonbond if n.getGlobalParameterName(0) == "lambda_electrostatics"][0]
-
-    charges = []
-    for i in range(system.getNumParticles()):
-        c, s = custom_elec.getParticleParameters(i)
-        charges.append(c)
-
-    assert_allclose(
-        am1bcc_ref_charges[ref_key],
-        charges * offunit.elementary_charge,
-        rtol=1e-4,
-    )
+    with pytest.raises(
+        ProtocolValidationError,
+        match=re.escape(
+            "SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic."
+        )
+    ):
+        _ = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 
 
 @pytest.fixture

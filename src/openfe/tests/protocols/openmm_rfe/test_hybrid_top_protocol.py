@@ -3,6 +3,7 @@
 import copy
 import json
 import logging
+import re
 import sys
 import xml.etree.ElementTree as ET
 from importlib import resources
@@ -16,6 +17,8 @@ import mdtraj as mdt
 import numpy as np
 import openmm
 import pytest
+from gufe import LigandAtomMapping
+from gufe.protocols import ProtocolValidationError
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
@@ -742,38 +745,12 @@ def test_setup_ligand_system_cutoff(
         assert f_cutoff == cutoff
 
 
-@pytest.mark.parametrize(
-    "method, backend, ref_key",
-    [
-        ("am1bcc", "ambertools", "ambertools"),
-        pytest.param(
-            "am1bcc",
-            "openeye",
-            "openeye",
-            marks=pytest.mark.skipif(not HAS_OPENEYE, reason="needs oechem"),
-        ),
-        pytest.param(
-            "nagl",
-            "rdkit",
-            "nagl",
-            marks=pytest.mark.skipif(
-                not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
-                reason="needs NAGL (without oechem) and/or on macos",
-            ),
-        ),
-        pytest.param(
-            "espaloma",
-            "rdkit",
-            "espaloma",
-            marks=pytest.mark.skipif(not HAS_ESPALOMA_CHARGE, reason="needs espaloma charge"),
-        ),
-    ],
-)
 def test_setup_charge_backends(
-    CN_molecule, tmp_path, method, backend, ref_key, vac_settings, am1bcc_ref_charges
+    CN_molecule, vac_settings,
 ):
-    vac_settings.partial_charge_settings.partial_charge_method = method
-    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+    # make sure an error is raised if a nondeterministic charge method would be used at run time
+    vac_settings.partial_charge_settings.partial_charge_method = "am1bcc"
+    vac_settings.partial_charge_settings.off_toolkit_backend = "ambertools"
     vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -784,51 +761,17 @@ def test_setup_charge_backends(
     offmolB = Molecule.from_smiles("CCN")
     offmolB.generate_conformers()
     molB = openfe.SmallMoleculeComponent.from_openff(offmolB)
-    a_molB = align_mol_shape(molB, ref_mol=CN_molecule)
-    mapper = KartografAtomMapper(atom_map_hydrogens=True)
-    mapping = next(mapper.suggest_mappings(CN_molecule, a_molB))
+    mapping = LigandAtomMapping(componentA=CN_molecule, componentB=molB, componentA_to_componentB={0: 1})
+    systemA = openfe.ChemicalSystem({"l": CN_molecule}, name="CN no charges")
+    systemB = openfe.ChemicalSystem({"l": molB})
 
-    systemA = openfe.ChemicalSystem({"l": CN_molecule})
-    systemB = openfe.ChemicalSystem({"l": a_molB})
-
-    dag = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
-
-    dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
-
-    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
-    htf = results["hybrid_factory"]
-    hybrid_system = results["hybrid_system"]
-
-    # get the standard nonbonded force
-    nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
-    assert len(nonbond) == 1
-
-    # get the particle parameter offsets
-    c_offsets = {}
-    for i in range(nonbond[0].getNumParticleParameterOffsets()):
-        offset = nonbond[0].getParticleParameterOffset(i)
-        c_offsets[offset[1]] = ensure_quantity(offset[2], "openff")
-
-    # See the user charges test below for an idea of what we're doing here
-    # In this particular case we are solely checking that the old atoms
-    # match the reference charges in am1bcc_ref_charges
-    for i in range(hybrid_system.getNumParticles()):
-        c, s, e = nonbond[0].getParticleParameters(i)
-        # get the particle charge (c)
-        c = ensure_quantity(c, "openff")
-        # particle charge (c) is equal to molA particle charge
-        # offset (c_offsets) is equal to -(molA particle charge)
-        if i in htf._atom_classes["unique_old_atoms"]:
-            idx = htf._hybrid_to_old_map[i]
-            ref = am1bcc_ref_charges[ref_key][idx]
-            np.testing.assert_allclose(c, ref, rtol=1e-4)
-            np.testing.assert_allclose(c_offsets[i], -ref, rtol=1e-4)
-        # particle charge (c) is equal to molA particle charge
-        # offset (c_offsets) is equal to difference between molB and molA
-        elif i in htf._atom_classes["core_atoms"]:
-            old_i = htf._hybrid_to_old_map[i]
-            ref = am1bcc_ref_charges[ref_key][i]
-            np.testing.assert_allclose(c, ref, rtol=1e-4)
+    with pytest.raises(
+        ProtocolValidationError,
+        match=re.escape(
+            "SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic."
+        )
+    ):
+        _ = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
 
 
 def test_setup_same_mol_different_charges(benzene_modifications_uncharged, vac_settings, tmp_path):

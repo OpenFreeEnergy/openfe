@@ -272,7 +272,6 @@ def test_dry_run_espaloma_vacuum_user_charges(
 
 def test_dry_run_missing_charges(
     CN_molecule,
-    tmp_path,
     vac_settings,
 ):
     # an error should be raised if a nondeterministic charge method would be used at run time
