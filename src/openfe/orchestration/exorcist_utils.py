@@ -70,8 +70,8 @@ def _alchemical_network_to_task_graph(
 
 def build_task_db_from_alchemical_network(
     alchemical_network: AlchemicalNetwork,
-    warehouse_root_dir: Path,  # TODO: make optional?
-    db_path: Path | None = None,
+    warehouse_dir: Path,  # TODO: make optional?
+    db_path: Path,  # TODO: make optional?
     max_tries: int = 1,
 ) -> exorcist.TaskStatusDB:
     """Create and populate a task database and warehouse from an alchemical network.
@@ -79,12 +79,11 @@ def build_task_db_from_alchemical_network(
     Parameters
     ----------
     alchemical_network : AlchemicalNetwork
-        Network containing transformations to convert into task records.
-    warehouse_root_dir : pathlib.Path or None, optional
-        Root director at which to create a FileSystemWarehouse
-    db_path : pathlib.Path or None, optional
-        Location of the SQLite-backed Exorcist database. If ``None``, defaults
-        to {warehouse.name}.db in the current working directory.
+        ``AlchemicalNetwork`` containing transformations to convert into task records.
+    warehouse_dir : pathlib.Path
+        Root directory at which to create a FileSystemWarehouse (e.g. ``campaign_name/``).
+    db_path : pathlib.Path
+        Location to store the SQLite-backed Exorcist database (e.g. ``campaign_name.db``).
     max_tries : int, default=1
         Maximum number of times a task will attempt to be submitted before it
         is labelled ``TOO_MANY_RETRIES``.
@@ -95,16 +94,10 @@ def build_task_db_from_alchemical_network(
         Initialized task database populated with graph nodes and dependency
         edges derived from ``alchemical_network``.
     """
-    if db_path is None:
-        # use alchemical network name?
-        db_path = Path("alchemicalNetwork.db")
-    if db_path.exists():
-        print(f"Error: {db_path} already exists.")  # TODO: add more user flexibility here
-        sys.exit()
-
-    warehouse = FileSystemWarehouse(
-        warehouse_root_dir, exist_ok=False
-    )  # start clean each time for now
+    # require starting clean each time for now - guardrails around modifying existing state can come later
+    if Path(db_path).exists():
+        raise FileExistsError(f"Error: {db_path} cannot already exist.")
+    warehouse = FileSystemWarehouse(warehouse_dir, exist_ok=False)
     global_task_dag: nx.DiGraph = _alchemical_network_to_task_graph(alchemical_network, warehouse)
     db = exorcist.TaskStatusDB.from_filename(db_path)
     db.add_task_network(global_task_dag, max_tries)

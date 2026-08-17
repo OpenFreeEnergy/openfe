@@ -135,7 +135,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     wh_dir = tmp_path / "campaign"
     db = build_task_db_from_alchemical_network(
         network,
-        warehouse_root_dir=wh_dir,
+        warehouse_dir=wh_dir,
         db_path=tmp_path / "campaign.db",
     )
 
