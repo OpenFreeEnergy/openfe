@@ -329,9 +329,12 @@ class OpenMMEngineSettings(SettingsBaseModel):
     """
     OpenMM compute platform to perform MD integration with. If ``None``, will
     choose fastest available platform.
-    Allowed platforms are; ``cuda``, ``opencl``, ``cpu``.
+    Allowed platforms are; ``cuda``, ``opencl``, ``cpu``, and ``hip``.
     Default ``cuda``.
 
+    Notes
+    -----
+    To use the ``hip`` platform, you will need to install ``openmm-hip``.
     """
     gpu_device_index: Optional[list[int]] = None
     """
@@ -348,7 +351,7 @@ class OpenMMEngineSettings(SettingsBaseModel):
 
     @field_validator("compute_platform")
     def supported_sampler(cls, v):
-        supported = ["cpu", "opencl", "cuda"]
+        supported = ["cpu", "opencl", "cuda", "hip"]
         if v is not None and v.lower() not in supported:
             errmsg = f"Only the following OpenMM compute backends are supported: {supported}"
             raise ValueError(errmsg)
