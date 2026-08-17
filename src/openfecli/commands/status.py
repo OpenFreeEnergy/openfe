@@ -18,7 +18,8 @@ def status_main(
 
     task_db = TaskStatusDB.from_filename(task_db_path)
     task_df = get_task_df(task_db)
-    rich_print_to_stdout(task_df)
+    # TODO: add task_type back in once it's used
+    rich_print_to_stdout(task_df.drop("task_type", axis=1))
 
 
 @click.command("status", short_help="Output the status of the task database as a table.")
