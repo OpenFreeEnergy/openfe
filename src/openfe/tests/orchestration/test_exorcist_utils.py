@@ -127,15 +127,16 @@ def test_alchemical_network_to_task_graph_raises_for_cycle():
         _alchemical_network_to_task_graph(network, warehouse)
 
 
+# TODO: slow test
 @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
 def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixture):
     network = request.getfixturevalue(fixture)
-    warehouse = FileSystemWarehouse(str(tmp_path / "warehouse"))
     # Build the real sqlite task DB from a real alchemical network fixture.
+    wh_dir = tmp_path / "campaign"
     db = build_task_db_from_alchemical_network(
         network,
-        warehouse,
-        db_path=tmp_path / "tasks.db",
+        warehouse_root_dir=wh_dir,
+        db_path=tmp_path / "campaign.db",
     )
 
     # Read task IDs and dependency edges from the persisted DB state.
@@ -148,6 +149,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     checkout_order = []
     # Hard upper bound prevents infinite checkout loops.
     max_checkouts = len(graph_taskids)
+    warehouse = FileSystemWarehouse.from_dir(wh_dir)
     for _ in range(max_checkouts):
         taskid = db.check_out_task()
         if taskid is None:
@@ -176,39 +178,39 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     assert {row.status for row in task_rows} == {exorcist.TaskStatus.COMPLETED.value}
 
 
-@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
-def test_build_task_db_default_path(request, fixture):
-    network = request.getfixturevalue(fixture)
-    warehouse = mock.Mock()
-    fake_graph = nx.DiGraph()
-    fake_db = mock.Mock()
+# TODO: revisit this after deciding how we want to handle defaults
+# @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+# def test_build_task_db_default_path(request, fixture):
+#     network = request.getfixturevalue(fixture)
+#     warehouse = mock.Mock()
+#     fake_graph = nx.DiGraph()
+#     fake_db = mock.Mock()
 
-    with (
-        mock.patch(
-            "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
-            return_value=fake_graph,
-        ) as task_graph_mock,
-        mock.patch(
-            "openfe.orchestration.exorcist_utils.exorcist.TaskStatusDB.from_filename",
-            return_value=fake_db,
-        ) as db_ctor,
-    ):
-        result = build_task_db_from_alchemical_network(network, warehouse)
+#     with (
+#         mock.patch(
+#             "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
+#             return_value=fake_graph,
+#         ) as task_graph_mock,
+#         mock.patch(
+#             "openfe.orchestration.exorcist_utils.exorcist.TaskStatusDB.from_filename",
+#             return_value=fake_db,
+#         ) as db_ctor,
+#     ):
+#         result = build_task_db_from_alchemical_network(network, warehouse)
 
-    task_graph_mock.assert_called_once_with(network, warehouse)
-    db_ctor.assert_called_once_with(Path(f"{warehouse.name}.db"))
-    fake_db.add_task_network.assert_called_once_with(fake_graph, 1)
-    assert result is fake_db
+#     task_graph_mock.assert_called_once_with(network, warehouse)
+#     db_ctor.assert_called_once_with(Path(f"{warehouse.name}.db"))
+#     fake_db.add_task_network.assert_called_once_with(fake_graph, 1)
+#     assert result is fake_db
 
 
 @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
 def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
     network = request.getfixturevalue(fixture)
-    warehouse = mock.Mock()
     fake_graph = nx.DiGraph()
     fake_db = mock.Mock()
-    db_path = tmp_path / "custom_tasks.db"
-
+    db_path = tmp_path / "tmp_campaign.db"
+    wh_path = tmp_path / "tmp_campaign"
     with (
         mock.patch(
             "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
@@ -221,11 +223,11 @@ def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
     ):
         result = build_task_db_from_alchemical_network(
             network,
-            warehouse,
+            wh_path,
             db_path=db_path,
             max_tries=7,
         )
-
+    warehouse = FileSystemWarehouse.from_dir(wh_path)
     task_graph_mock.assert_called_once_with(network, warehouse)
     db_ctor.assert_called_once_with(db_path)
     fake_db.add_task_network.assert_called_once_with(fake_graph, 7)

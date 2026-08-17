@@ -55,7 +55,7 @@ dependencies:
   - pip:
     - git+https://github.com/OpenFreeEnergy/kartograf@main  # needs gufe which pins to pydantic < 2.13. update this once gufe v1.13 is released on conda-forge
     - git+https://github.com/OpenFreeEnergy/konnektor@main
-    - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/gufe@feat/filestorage_create_on_init
     - git+https://github.com/OpenFreeEnergy/exorcist@main
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
