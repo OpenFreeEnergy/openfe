@@ -272,7 +272,7 @@ class TestFileSystemWarehouse:
 @pytest.fixture
 def warehouse_partial_failure():
     with resources.path("openfe.tests.data.warehouse", "mc1_campaign") as d:
-        warehouse = FileSystemWarehouse.load(root_dir=d)
+        warehouse = FileSystemWarehouse.from_dir(root_dir=d)
         return warehouse
 
 
