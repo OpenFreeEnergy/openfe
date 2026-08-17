@@ -11,6 +11,7 @@ import exorcist
 import networkx as nx
 from gufe import AlchemicalNetwork, ProtocolDAG
 
+from openfe.orchestration import FileSystemWarehouse
 from openfe.storage.warehouse import WarehouseBaseClass
 
 
@@ -69,7 +70,7 @@ def _alchemical_network_to_task_graph(
 
 def build_task_db_from_alchemical_network(
     alchemical_network: AlchemicalNetwork,
-    warehouse: WarehouseBaseClass,
+    warehouse_root_dir: Path,  # TODO: make optional?
     db_path: Path | None = None,
     max_tries: int = 1,
 ) -> exorcist.TaskStatusDB:
@@ -79,8 +80,8 @@ def build_task_db_from_alchemical_network(
     ----------
     alchemical_network : AlchemicalNetwork
         Network containing transformations to convert into task records.
-    warehouse : WarehouseBaseClass
-        Warehouse used to persist protocol units while building the task DAG.
+    warehouse_root_dir : pathlib.Path or None, optional
+        Root director at which to create a FileSystemWarehouse
     db_path : pathlib.Path or None, optional
         Location of the SQLite-backed Exorcist database. If ``None``, defaults
         to {warehouse.name}.db in the current working directory.
@@ -95,11 +96,15 @@ def build_task_db_from_alchemical_network(
         edges derived from ``alchemical_network``.
     """
     if db_path is None:
-        db_path = Path(f"{warehouse.name}.db")
+        # use alchemical network name?
+        db_path = Path("alchemicalNetwork.db")
     if db_path.exists():
         print(f"Error: {db_path} already exists.")  # TODO: add more user flexibility here
         sys.exit()
 
+    warehouse = FileSystemWarehouse(
+        warehouse_root_dir, exist_ok=False
+    )  # start clean each time for now
     global_task_dag: nx.DiGraph = _alchemical_network_to_task_graph(alchemical_network, warehouse)
     db = exorcist.TaskStatusDB.from_filename(db_path)
     db.add_task_network(global_task_dag, max_tries)

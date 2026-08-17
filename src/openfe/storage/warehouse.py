@@ -14,8 +14,6 @@ from gufe.tokenization import (
     JSON_HANDLER,
     GufeKey,
     GufeTokenizable,
-    from_dict,
-    get_all_gufe_objs,
     key_decode_dependencies,
 )
 
@@ -410,17 +408,18 @@ class FileSystemWarehouse(WarehouseBaseClass):
     for results and other data types.
     """
 
-    def __init__(self, root_dir: pathlib.Path, exist_okay=False):
+    def __init__(self, root_dir: pathlib.Path, exist_ok=False):
         self.root_dir = pathlib.Path(root_dir)
-        if self.root_dir.is_dir() and not exist_okay:
+        if self.root_dir.is_dir() and not exist_ok:
             raise ValueError(
-                "`root_dir` already exists. To load an existing Warehouse, use FileSystemWarehouse.load(`root_dir`)"
+                "`root_dir` already exists. To load an existing Warehouse, use FileSystemWarehouse.from_dir(`root_dir`)"
             )
-        setup_store = FileStorage(f"{self.root_dir}/setup")
-        result_store = FileStorage(f"{self.root_dir}/result")
-        shared_store = FileStorage(f"{self.root_dir}/shared")
-        tasks_store = FileStorage(f"{self.root_dir}/tasks")
-        protocol_dag_store = FileStorage(f"{self.root_dir}/protocol_dags")
+        self.root_dir.mkdir(exist_ok=exist_ok)  # make parents?
+        setup_store = FileStorage(f"{self.root_dir}/setup", exist_ok=exist_ok)
+        result_store = FileStorage(f"{self.root_dir}/result", exist_ok=exist_ok)
+        shared_store = FileStorage(f"{self.root_dir}/shared", exist_ok=exist_ok)
+        tasks_store = FileStorage(f"{self.root_dir}/tasks", exist_ok=exist_ok)
+        protocol_dag_store = FileStorage(f"{self.root_dir}/protocol_dags", exist_ok=exist_ok)
         stores = WarehouseStores(
             setup=setup_store,
             result=result_store,
@@ -432,10 +431,26 @@ class FileSystemWarehouse(WarehouseBaseClass):
         super().__init__(stores=stores, name=name)
 
     @classmethod
-    def load(cls, root_dir: pathlib.Path) -> FileSystemWarehouse:
+    def from_dir(cls, root_dir: pathlib.Path) -> FileSystemWarehouse:
+        """Initialize a FileSystemWarehouse from an existing directory.
+
+        Parameters
+        ----------
+        root_dir : pathlib.Path
+            Root directory of the Warehouse.
+
+        Returns
+        -------
+        FileSystemWarehouse
+
+        Raises
+        ------
+        ValueError
+            If `root_dir` is not an existing directory.
+        """
         root_dir = pathlib.Path(root_dir)
         if not root_dir.is_dir():
             raise ValueError(
                 "`root_dir` must be an existing filepath. To create a new Warehouse, use FileSystemWarehouse(`root_dir`)"
             )
-        return cls(root_dir=root_dir, exist_okay=True)
+        return cls(root_dir=root_dir, exist_ok=True)
