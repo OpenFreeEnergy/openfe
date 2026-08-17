@@ -405,9 +405,7 @@ def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_for
             try:
                 ff = ForceField(small_molecule_forcefield + ".offxml")
             except OSError as e:
-                errmsg = (
-                    f"Could not load force field {small_molecule_forcefield} or {small_molecule_forcefield}.offxml: {e}"
-                )
+                errmsg = f"Could not load force field {small_molecule_forcefield} or {small_molecule_forcefield}.offxml: {e}"
                 raise ProtocolValidationError(errmsg)
 
     for smc in smcs:
@@ -424,7 +422,7 @@ def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_for
 
         # We count library and nagl charges as deterministic
         # While users could use a deterministic charge method with increments we don't currently support this
-        if  not labels["LibraryCharges"] and "NAGLCharges" not in labels:
+        if not labels["LibraryCharges"] and "NAGLCharges" not in labels:
             errmsg = (
                 f"{smc} from system {system.name} would have am1bcc charges generated at runtime which is non-deterministic. "
                 f"Please provide a molecule with pre-computed charges or use library charges instead."

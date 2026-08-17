@@ -271,7 +271,9 @@ def test_dry_run_espaloma_vacuum_user_charges(
 
 
 def test_dry_run_missing_charges(
-    CN_molecule, tmp_path, vac_settings,
+    CN_molecule,
+    tmp_path,
+    vac_settings,
 ):
     # an error should be raised if a nondeterministic charge method would be used at run time
     vac_settings.partial_charge_settings.partial_charge_method = "am1bcc"
@@ -282,7 +284,12 @@ def test_dry_run_missing_charges(
 
     csystem = openfe.ChemicalSystem({"ligand": CN_molecule}, name="CN no charges")
 
-    with pytest.raises(ProtocolValidationError, match=re.escape("SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic.")):
+    with pytest.raises(
+        ProtocolValidationError,
+        match=re.escape(
+            "SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic."
+        ),
+    ):
         _ = protocol.create(stateA=csystem, stateB=csystem, mapping=None)
 
 

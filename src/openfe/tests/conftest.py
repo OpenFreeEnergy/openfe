@@ -386,6 +386,7 @@ def CN_molecule() -> list[SmallMoleculeComponent]:
     with resources.as_file(resources.files("openfe.tests.data")) as d:
         yield SmallMoleculeComponent.from_sdf_file(d / "CN.sdf")
 
+
 try:
     urllib.request.urlopen("https://www.google.com")
 except urllib.error.URLError:  # -no-cov-

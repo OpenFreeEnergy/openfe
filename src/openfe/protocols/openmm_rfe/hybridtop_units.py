@@ -204,7 +204,6 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
         return solvent_comp, protein_comp, small_mols
 
-
     @staticmethod
     def _get_system_generator(
         settings: dict[str, SettingsBaseModel],
