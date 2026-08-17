@@ -96,3 +96,20 @@ def build_task_db_from_alchemical_network(
     db = exorcist.TaskStatusDB.from_filename(db_path)
     db.add_task_network(global_dag, max_tries)
     return db
+
+
+def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
+    """Create a pandas Dataframe from task_db.
+    Parameters
+    ----------
+    task_db : exorcist.TaskStatusDB
+        A task database.
+    Returns
+    -------
+    pd.DataFrame
+        A dataframe of the tasks and their statuses
+    """
+    status_name_encoding = {e.value: e.name for e in exorcist.TaskStatus}
+    task_table = pd.read_sql_table("tasks", task_db.engine)
+    task_table.replace({"status": status_name_encoding}, inplace=True)
+    return task_table
