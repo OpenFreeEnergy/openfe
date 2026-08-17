@@ -4,6 +4,7 @@
 import pathlib
 
 import click
+from gufe.protocols.protocolunit import ProtocolUnitResult
 
 from openfecli import OFECommandPlugin
 from openfecli.utils import configure_logger, print_duration, write
@@ -78,7 +79,7 @@ def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
 
     try:
         write("Executing unit...")
-        execution = worker.execute_unit(scratch=scratch)
+        execution: tuple[str, ProtocolUnitResult] = worker.execute_unit(scratch=scratch)
     except Exception as exc:
         write(traceback.format_exc())
         raise click.ClickException(f"Task execution failed: {exc}") from exc

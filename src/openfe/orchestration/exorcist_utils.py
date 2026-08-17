@@ -8,8 +8,7 @@ from pathlib import Path
 
 import exorcist
 import networkx as nx
-import pandas as pd
-from gufe import AlchemicalNetwork
+from gufe import AlchemicalNetwork, ProtocolDAG
 
 from openfe.storage.warehouse import WarehouseBaseClass
 
@@ -42,7 +41,7 @@ def alchemical_network_to_task_graph(
 
     global_dag = nx.DiGraph()
     for transformation in alchemical_network.edges:
-        dag = transformation.create()
+        dag: ProtocolDAG = transformation.create()
         for unit in dag.protocol_units:
             node_id = str(unit.key)
             global_dag.add_node(node_id)
