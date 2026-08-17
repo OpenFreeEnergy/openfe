@@ -621,9 +621,7 @@ def test_dry_run_solv_user_charges_benzene(
         assert pytest.approx(c) == prop_chgs[i]
 
 
-def test_dry_run_missing_charges(
-    CN_molecule, protocol_dry_settings
-):
+def test_dry_run_missing_charges(CN_molecule, protocol_dry_settings):
     """
     Make sure an error is raised if a nondeterministic charge method would be used at run time
     """
@@ -634,7 +632,9 @@ def test_dry_run_missing_charges(
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
 
     # Create ChemicalSystems
-    stateA = ChemicalSystem({"benzene": CN_molecule, "solvent": SolventComponent()}, name="CN no charges")
+    stateA = ChemicalSystem(
+        {"benzene": CN_molecule, "solvent": SolventComponent()}, name="CN no charges"
+    )
 
     stateB = ChemicalSystem({"solvent": SolventComponent()})
 
@@ -642,7 +642,7 @@ def test_dry_run_missing_charges(
         ProtocolValidationError,
         match=re.escape(
             "SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic."
-        )
+        ),
     ):
         _ = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 

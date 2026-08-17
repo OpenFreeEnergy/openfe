@@ -746,7 +746,8 @@ def test_setup_ligand_system_cutoff(
 
 
 def test_setup_charge_backends(
-    CN_molecule, vac_settings,
+    CN_molecule,
+    vac_settings,
 ):
     # make sure an error is raised if a nondeterministic charge method would be used at run time
     vac_settings.partial_charge_settings.partial_charge_method = "am1bcc"
@@ -761,7 +762,9 @@ def test_setup_charge_backends(
     offmolB = Molecule.from_smiles("CCN")
     offmolB.generate_conformers()
     molB = openfe.SmallMoleculeComponent.from_openff(offmolB)
-    mapping = LigandAtomMapping(componentA=CN_molecule, componentB=molB, componentA_to_componentB={0: 1})
+    mapping = LigandAtomMapping(
+        componentA=CN_molecule, componentB=molB, componentA_to_componentB={0: 1}
+    )
     systemA = openfe.ChemicalSystem({"l": CN_molecule}, name="CN no charges")
     systemB = openfe.ChemicalSystem({"l": molB})
 
@@ -769,7 +772,7 @@ def test_setup_charge_backends(
         ProtocolValidationError,
         match=re.escape(
             "SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic."
-        )
+        ),
     ):
         _ = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
 
