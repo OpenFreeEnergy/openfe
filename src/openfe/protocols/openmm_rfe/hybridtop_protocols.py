@@ -276,6 +276,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           * If the mapping components are not in the alchemical components.
           * If the atom mapping is empty.
           * If the atom mapping would break or form a bond.
+          * If the atom mapping contains less than 4 heavy atoms and the components have more than 6 atoms.
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
@@ -302,6 +303,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
             # check for broken bonds in the mapping
             RelativeHybridTopologyProtocol._check_for_bond_breaks(mapping=m)
+            # check for the minimum number of mapped heavy atoms
+            RelativeHybridTopologyProtocol._check_minimum_number_of_mapped_atoms(mapping=m)
 
     @staticmethod
     def _check_for_bond_breaks(
@@ -352,6 +355,54 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                         raise ValueError(
                             f"Bond {atom_a}-{atom_b} in component{state_from} is broken in component{state_to} via the provided mapping."
                         )
+
+    @staticmethod
+    def _check_minimum_number_of_mapped_atoms(mapping: ComponentMapping) -> None:
+        """
+        Validates the provided mapping meets the minimum number of mapped heavy atoms (4) rule based on the ``mncar_score`` in lomap.
+
+        Parameters
+        ----------
+        mapping : ComponentMapping
+          The mapping between transforming components.
+
+        Raises
+        ------
+        ValueError
+          * If the atom mapping has less than 4 mapped heavy atoms and each component has more than 6 heavy atoms.
+
+        Notes
+        -----
+        The two components must contain at least 4 mapped heavy atoms to pass this validation.
+        If the components contain fewer than 6 heavy atoms in total then only a single mapped heavy atom is required.
+
+        See Also
+        --------
+        lomap.gufe_bindings.scorers.mncar_score
+        """
+        mapped_heavy_atoms = mapping.heavy_atom_componentA_to_componentB
+
+        num_heavy_mol_a = mapping.componentA.to_rdkit().GetNumHeavyAtoms()
+        num_heavy_mol_b = mapping.componentB.to_rdkit().GetNumHeavyAtoms()
+
+        num_mapped_heavy_atoms = len(mapped_heavy_atoms)
+
+        passed = (
+            (num_mapped_heavy_atoms >= 4)
+            or (num_heavy_mol_a < 6 and num_mapped_heavy_atoms >= 1)
+            or (num_heavy_mol_b < 6 and num_mapped_heavy_atoms >= 1)
+        )
+
+        if not passed:
+            raise ValueError(
+                f"Number of mapped heavy atoms is less than 4: {num_mapped_heavy_atoms} which is required for this protocol."
+            )
+
+        mapping_ratio = mapping.get_heavy_atom_mapping_ratio()
+        if mapping_ratio >= 2.0:
+            wmsg = f"The ratio of alchemical to mapped heavy atoms: {mapping_ratio} is large, please review the mapping if the simulation is unstable."
+            warnings.warn(wmsg)
+            logger.warning(wmsg)
 
     @staticmethod
     def _validate_smcs(

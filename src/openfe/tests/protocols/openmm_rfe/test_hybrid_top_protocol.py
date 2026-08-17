@@ -2609,3 +2609,67 @@ def test_appearing_bond_mapping(appearing_bond_mapping, vac_settings):
             stateB=gufe.ChemicalSystem({"ligand": appearing_bond_mapping.componentB}),
             mapping=appearing_bond_mapping,
         )
+
+
+def test_too_few_mapped_atoms(benzene_vacuum_system, toluene_vacuum_system, vac_settings):
+    """Make sure an informative error is raised if the user supplies too few mapped heavy atoms."""
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    small_mapping = gufe.LigandAtomMapping(
+        componentA=benzene_vacuum_system["ligand"],
+        componentB=toluene_vacuum_system["ligand"],
+        # map H-C-C-H 4 atoms but only 2 heavy
+        componentA_to_componentB={0: 4, 1: 5, 6: 10, 7: 11},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Number of mapped heavy atoms is less than 4: 2 which is required for this protocol.",
+    ):
+        _ = protocol.validate(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            mapping=small_mapping,
+        )
+
+
+def test_too_few_mapped_small_molecules(chloroethane_to_ethane_mapping, vac_settings):
+    # make sure this mapping of only 2 heavy atoms passes due to the small size of the molecules
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+    # make sure the heavy atom mapping only has 2 atoms
+    assert len(chloroethane_to_ethane_mapping.heavy_atom_componentA_to_componentB) == 2
+    # make sure validation passes without issue
+    _ = protocol.validate(
+        stateA=gufe.ChemicalSystem({"ligand": chloroethane_to_ethane_mapping.componentA}),
+        stateB=gufe.ChemicalSystem({"ligand": chloroethane_to_ethane_mapping.componentB}),
+        mapping=chloroethane_to_ethane_mapping,
+    )
+
+
+def test_high_heavy_atom_mapping_ratio_warning(atom_mapping_basic_test_files, vac_settings, caplog):
+    # make sure a warning is emitted if the alchemical to mapped heavy atom ratio is over 2.0
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+    mapping = gufe.LigandAtomMapping(
+        componentA=atom_mapping_basic_test_files["1,3,7-trimethylnaphthalene"],
+        componentB=atom_mapping_basic_test_files["2-methylnaphthalene"],
+        componentA_to_componentB={0: 0, 1: 1, 2: 10, 3: 9, 8: 8},
+    )
+
+    with pytest.warns(
+        UserWarning,
+        match="The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable.",
+    ):
+        _ = protocol.validate(
+            stateA=gufe.ChemicalSystem({"ligand": mapping.componentA}),
+            stateB=gufe.ChemicalSystem({"ligand": mapping.componentB}),
+            mapping=mapping,
+        )
+
+    # check the log as well
+    assert (
+        "The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable."
+        in caplog.text
+    )
