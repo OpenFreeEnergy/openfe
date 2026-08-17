@@ -3,7 +3,7 @@
 import json
 import logging
 import pathlib
-import sys
+import re
 from unittest import mock
 
 import gufe
@@ -11,13 +11,13 @@ import numpy as np
 import openmm
 import pytest
 from gufe import ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent
+from gufe.protocols.errors import ProtocolValidationError
 from numpy.testing import assert_allclose
 from openff.units import unit
-from openff.units.openmm import from_openmm, to_openmm
+from openff.units.openmm import to_openmm
 from openmm import MonteCarloBarostat, NonbondedForce
 from openmm import unit as omm_unit
 from openmmtools.states import ThermodynamicState
-from pydantic import ValidationError
 
 import openfe
 from openfe.protocols import openmm_md
@@ -28,11 +28,6 @@ from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDSimulationUnit,
 )
 from openfe.protocols.openmm_utils import serialization
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_ESPALOMA_CHARGE,
-    HAS_NAGL,
-    HAS_OPENEYE,
-)
 from openfe.tests.conftest import HAS_ESPALOMA
 
 
@@ -275,60 +270,20 @@ def test_dry_run_espaloma_vacuum_user_charges(
     assert_allclose(charges, expected_charges, rtol=1e-6)
 
 
-@pytest.mark.parametrize(
-    "method, backend, ref_key",
-    [
-        ("am1bcc", "ambertools", "ambertools"),
-        pytest.param(
-            "am1bcc",
-            "openeye",
-            "openeye",
-            marks=pytest.mark.skipif(not HAS_OPENEYE, reason="needs oechem"),
-        ),
-        pytest.param(
-            "nagl",
-            "rdkit",
-            "nagl",
-            marks=pytest.mark.skipif(
-                not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
-                reason="needs NAGL (without oechem) and/or on macos",
-            ),
-        ),
-        pytest.param(
-            "espaloma",
-            "rdkit",
-            "espaloma",
-            marks=pytest.mark.skipif(not HAS_ESPALOMA_CHARGE, reason="needs espaloma charge"),
-        ),
-    ],
-)
-def test_dry_run_charge_backends(
-    CN_molecule, tmp_path, method, backend, ref_key, vac_settings, am1bcc_ref_charges
+def test_dry_run_missing_charges(
+    CN_molecule, tmp_path, vac_settings,
 ):
-    vac_settings.partial_charge_settings.partial_charge_method = method
-    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+    # an error should be raised if a nondeterministic charge method would be used at run time
+    vac_settings.partial_charge_settings.partial_charge_method = "am1bcc"
+    vac_settings.partial_charge_settings.off_toolkit_backend = "ambertools"
     vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
 
     protocol = PlainMDProtocol(settings=vac_settings)
 
-    csystem = openfe.ChemicalSystem({"ligand": CN_molecule})
+    csystem = openfe.ChemicalSystem({"ligand": CN_molecule}, name="CN no charges")
 
-    dag = protocol.create(stateA=csystem, stateB=csystem, mapping=None)
-    md_unit = list(dag.protocol_units)[0]
-
-    result = md_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
-    system = result["debug"]["system"]
-
-    nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
-
-    charges = []
-    for i in range(system.getNumParticles()):
-        c, s, e = nonbond.getParticleParameters(i)
-        charges.append(from_openmm(c))
-
-    charges = unit.Quantity.from_list(charges)
-
-    assert_allclose(am1bcc_ref_charges[ref_key], charges, rtol=1e-4)
+    with pytest.raises(ProtocolValidationError, match=re.escape("SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic.")):
+        _ = protocol.create(stateA=csystem, stateB=csystem, mapping=None)
 
 
 def test_dry_many_molecules_solvent(benzene_many_solv_system, tmp_path):
@@ -349,72 +304,6 @@ def test_dry_many_molecules_solvent(benzene_many_solv_system, tmp_path):
     dag_unit = list(dag.protocol_units)[0]
 
     dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
-
-
-BENZ = """\
-benzene
-  PyMOL2.5          3D                             0
-
- 12 12  0  0  0  0  0  0  0  0999 V2000
-    1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7022    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.7023    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.5079   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-    1.2540    2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.2540    2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -2.5079   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.2540   -2.1719    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-    1.2540   -2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-  1  2  2  0  0  0  0
-  1  6  1  0  0  0  0
-  1  7  1  0  0  0  0
-  2  3  1  0  0  0  0
-  2  8  1  0  0  0  0
-  3  4  2  0  0  0  0
-  3  9  1  0  0  0  0
-  4  5  1  0  0  0  0
-  4 10  1  0  0  0  0
-  5  6  2  0  0  0  0
-  5 11  1  0  0  0  0
-  6 12  1  0  0  0  0
-M  END
-$$$$
-"""
-
-
-PYRIDINE = """\
-pyridine
-  PyMOL2.5          3D                             0
-
- 11 11  0  0  0  0  0  0  0  0999 V2000
-    1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.7023    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.4940   -0.0325    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-    1.2473   -2.1604    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.2473   -2.1604    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -2.4945   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.2753    2.1437    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7525    1.3034    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-  1  5  1  0  0  0  0
-  1  6  1  0  0  0  0
-  1 11  2  0  0  0  0
-  2  3  2  0  0  0  0
-  2 10  1  0  0  0  0
-  3  4  1  0  0  0  0
-  3  9  1  0  0  0  0
-  4  5  2  0  0  0  0
-  4  8  1  0  0  0  0
-  5  7  1  0  0  0  0
-  2 11  1  0  0  0  0
-M  END
-$$$$
-"""
 
 
 def test_dry_run_ligand_tip4p(benzene_system, tmp_path):

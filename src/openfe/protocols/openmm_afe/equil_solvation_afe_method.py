@@ -386,7 +386,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         self._validate_endstates(stateA, stateB)
 
         # validate small molecule charges
-        small_ff = self.settings.forcefield_settings.small_molecule_forcefield
+        small_ff = self.settings.solvent_forcefield_settings.small_molecule_forcefield
         system_validation.validate_nondeterministic_charges(stateA, small_ff)
         system_validation.validate_nondeterministic_charges(stateB, small_ff)
 
