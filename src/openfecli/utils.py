@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Callable, Optional
 
 import click
+import pandas as pd
 
 
 def import_thing(import_string: str):
@@ -121,3 +122,23 @@ def print_duration(function: Callable) -> Callable:
         return result
 
     return wrapper
+
+
+def rich_print_to_stdout(df: pd.DataFrame) -> None:
+    """Use rich to pretty print a table to stdout."""
+
+    from rich import box
+    from rich.console import Console
+    from rich.table import Table
+
+    table = Table(box=box.SQUARE)
+
+    for col in df.columns:
+        table.add_column(col)
+
+    for row_values in df.values:
+        row = [str(val) for val in row_values]
+        table.add_row(*row)
+
+    console = Console()
+    console.print(table)
