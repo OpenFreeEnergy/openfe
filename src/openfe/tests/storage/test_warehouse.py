@@ -36,13 +36,12 @@ class TestWarehouseBaseClass:
 
     @staticmethod
     def _test_store_load_same_process(
-        obj,
-        store_func_name,
-        load_func_name,
-        store_name: Literal["setup", "result", "tasks"],
-    ):
-        stores = TestWarehouseBaseClass._build_stores()
-        client = WarehouseBaseClass(stores, "test_warehouse")
+        obj, store_func_name, load_func_name, store_name: Literal["setup", "result"]
+    ) -> tuple[GufeTokenizable, WarehouseBaseClass]:
+        setup_store = MemoryStorage()
+        result_store = MemoryStorage()
+        stores = WarehouseStores(setup=setup_store, result=result_store)
+        client = WarehouseBaseClass(stores)
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
@@ -61,10 +60,12 @@ class TestWarehouseBaseClass:
         obj: GufeTokenizable,
         store_func_name,
         load_func_name,
-        store_name: Literal["setup", "result", "tasks"],
-    ):
-        stores = TestWarehouseBaseClass._build_stores()
-        client = WarehouseBaseClass(stores, "test_warehouse")
+        store_name: Literal["setup", "result"],
+    ) -> None:
+        setup_store = MemoryStorage()
+        result_store = MemoryStorage()
+        stores = WarehouseStores(setup=setup_store, result=result_store)
+        client = WarehouseBaseClass(stores)
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}

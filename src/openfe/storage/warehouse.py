@@ -25,9 +25,9 @@ class WarehouseStores(TypedDict):
 
     Parameters
     ----------
-    setup : ExternalStorage
+    setup : Required[ExternalStorage]
         Storage location for setup-related objects and configurations.
-    result : ExternalStorage
+    result : Required[ExternalStorage]
         Storage location for result-related object.
     shared : ExternalStorage
         Storage location for non-permanent shared data.
@@ -92,7 +92,7 @@ class WarehouseBaseClass:
         Raises
         -------
         MissingExternalResourceError
-            Thrown if the object you are trying to delete, can't delete from the store
+            If the object cannot be deleted from the store.
         """
         store: ExternalStorage = self.stores[store_name]
         store.delete(location)
@@ -357,24 +357,24 @@ class WarehouseBaseClass:
                 yield dag
 
     @property
-    def setup_store(self):
-        """Get the setup store
+    def setup_store(self) -> ExternalStorage:
+        """Get the setup store.
 
         Returns
         -------
         ExternalStorage
-            The setup storage location
+            The setup storage location.
         """
         return self.stores["setup"]
 
     @property
-    def result_store(self):
+    def result_store(self) -> ExternalStorage:
         """Get the result store.
 
         Returns
         -------
         ExternalStorage
-            The result storage location
+            The result storage location.
         """
         return self.stores["result"]
 
@@ -399,11 +399,11 @@ class FileSystemWarehouse(WarehouseBaseClass):
     Parameters
     ----------
     root_dir : str, optional
-        Root directory for the warehouse storage, by default "warehouse".
+        Root directory for the warehouse storage, by default "warehouse/".
 
     Notes
     -----
-    Creates a "setup" subdirectory within the root directory for storing
+    Creates a "setup/" subdirectory within the root directory for storing
     setup-related objects. Future versions may include additional stores
     for results and other data types.
     """
