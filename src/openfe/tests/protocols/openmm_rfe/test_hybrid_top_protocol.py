@@ -2604,6 +2604,9 @@ def test_high_heavy_atom_mapping_ratio_warning(atom_mapping_basic_test_files, va
         componentA_to_componentB={0: 0, 1: 1, 2: 10, 3: 9, 8: 8},
     )
 
+    # make sure the mapping ratio is over 2 which should trigger the warning
+    assert mapping.get_heavy_atom_mapping_ratio() >= 2.0
+
     with pytest.warns(
         UserWarning,
         match="The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable.",

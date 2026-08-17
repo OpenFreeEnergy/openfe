@@ -27,6 +27,8 @@ from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactor
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.tests.protocols.openmm_rfe.helpers import make_htf
 
+from openff.toolkit import Molecule
+
 
 class SlowTests:
     """Plugin for handling fixtures that skips slow tests
@@ -189,8 +191,9 @@ def atom_mapping_basic_test_files():
     ]:
         with resources.as_file(resources.files("openfe.tests.data.lomap_basic")) as d:
             fn = str(d / (f + ".mol2"))
-            mol = Chem.MolFromMol2File(fn, removeHs=False)
-            files[f] = SmallMoleculeComponent(mol, name=f)
+            # go via openff to make sure the partial charges are pulled
+            mol = Molecule.from_file(fn)
+            files[f] = SmallMoleculeComponent.from_openff(mol, name=f)
 
     return files
 
