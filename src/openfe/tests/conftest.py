@@ -14,7 +14,7 @@ import openmm
 import pandas as pd
 import pytest
 from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
-from openff.toolkit import ForceField
+from openff.toolkit import ForceField, Molecule
 from openff.units import unit as offunit
 from openmm import unit as ommunit
 from rdkit import Chem
@@ -26,8 +26,6 @@ from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.tests.protocols.openmm_rfe.helpers import make_htf
-
-from openff.toolkit import Molecule
 
 
 class SlowTests:
