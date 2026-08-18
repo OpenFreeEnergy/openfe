@@ -453,7 +453,12 @@ class WarehouseBaseClass:
         )
         return dag_result
 
-    def gather_result(self, protocol_dag, dags_to_purs) -> ProtocolResult:
+    def gather_result(
+        self,
+        protocol_dag: ProtocolDAG,
+        dags_to_purs: dict[str, list[ProtocolUnitResult]],
+    ) -> ProtocolResult:
+
         protocol_dag_result = self._construct_protocol_dag_result(protocol_dag, dags_to_purs)
         transformation = self.load_setup_tokenizable(protocol_dag.transformation_key)
         result = transformation.gather([protocol_dag_result])
