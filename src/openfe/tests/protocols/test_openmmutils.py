@@ -1448,6 +1448,16 @@ class TestChargeValidation:
             {"ligand": benzene_modifications_uncharged["benzene"]}, name="no charges"
         )
 
+    @pytest.fixture
+    def mixed_charge_system(self, benzene_modifications, benzene_modifications_uncharged):
+        return ChemicalSystem(
+            {
+                "benzene": benzene_modifications["benzene"],
+                "toluene": benzene_modifications_uncharged["toluene"],
+            },
+            name="mixed charges",
+        )
+
     def test_gaff_with_molecule_charges(self, benzene_charged_system):
         system_validation.validate_nondeterministic_charges(
             benzene_charged_system, small_molecule_forcefield="gaff-2.11"
@@ -1515,3 +1525,16 @@ class TestChargeValidation:
         system_validation.validate_nondeterministic_charges(
             benzene_no_charge_system, small_molecule_forcefield=ff.to_string()
         )
+
+    def test_openff_nagl_mixed_charges(self, mixed_charge_system):
+        # make sure an error is raised if not all smcs would have deterministic charges
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "SmallMoleculeComponent(name=toluene) from system mixed charges would have am1bcc charges"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                # pick a force field with an am1bcc handler
+                mixed_charge_system, small_molecule_forcefield="openff-2.2.0.offxml"
+            )
