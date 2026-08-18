@@ -12,12 +12,12 @@ from openfecli.clicktypes import HyphenAwareChoice
 from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
-    load_json,
     rich_print_to_stdout,
 )
+from openfecli.quickrun_result import _QuickrunResult
 
 
-def _get_name(result: dict) -> str:
+def _get_name(result: _QuickrunResult) -> str:
     """Get the ligand name from a unit's results data.
 
     Parameters
@@ -31,7 +31,7 @@ def _get_name(result: dict) -> str:
         Ligand name corresponding to the results.
     """
 
-    solvent_data = list(result["protocol_result"]["data"]["solvent"].values())[0][0]
+    solvent_data = list(result.protocol_result["data"]["solvent"].values())[0][0]
     try:
         name = solvent_data["inputs"]["setup_results"]["inputs"]["alchemical_components"]["stateA"][
             0
@@ -42,7 +42,9 @@ def _get_name(result: dict) -> str:
     return str(name)
 
 
-def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
+def _load_valid_result_json(
+    fpath: os.PathLike | str,
+) -> tuple[tuple | None, _QuickrunResult | None]:
     """Load the data from a results JSON into a dict.
 
     Parameters
@@ -67,19 +69,19 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
 
     # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
     # for now though, it's not the bottleneck on performance
-    result = load_json(fpath)
+    result = _QuickrunResult.from_json(fpath)
     try:
         names = _get_name(result)
     except (ValueError, IndexError):
         click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.",err=True, fg="yellow")  # fmt: skip
         return None, None
-    if result["estimate"] is None:
+    if result.estimate is None:
         click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return names, None
-    if result["uncertainty"] is None:
+    if result.uncertainty is None:
         click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return names, None
-    if all("exception" in u for u in result["unit_results"].values()):
+    if all("exception" in u for u in result.unit_results.values()):
         click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return names, None
     return names, result
@@ -116,25 +118,25 @@ def _get_legs_from_result_jsons(
         if name is None:  # this means it couldn't find name and/or simtype
             continue
 
-        dgs[name]["overall"].append([result["estimate"], result["uncertainty"]])
-        proto_key = [k for k in result["unit_results"].keys() if k.startswith("ProtocolUnitResult")]
+        dgs[name]["overall"].append([result.estimate, result.uncertainty])
+        proto_key = [k for k in result.unit_results.keys() if k.startswith("ProtocolUnitResult")]
         for p in proto_key:
             # In openfe v1.9+, we only want to pick up results from
             # the Analysis Unit. To ensure backwards compatibility with
             # prior releases of openfe v1.x, we exclude Setup and Simulation
             if (
-                "Setup" in result["unit_results"][p]["source_key"]
-                or "Simulation" in result["unit_results"][p]["source_key"]
+                "Setup" in result.unit_results[p]["source_key"]
+                or "Simulation" in result.unit_results[p]["source_key"]
             ):
                 continue
-            if "unit_estimate" in result["unit_results"][p]["outputs"]:
-                simtype = result["unit_results"][p]["outputs"]["simtype"]
-                dg = result["unit_results"][p]["outputs"]["unit_estimate"]
-                dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
+            if "unit_estimate" in result.unit_results[p]["outputs"]:
+                simtype = result.unit_results[p]["outputs"]["simtype"]
+                dg = result.unit_results[p]["outputs"]["unit_estimate"]
+                dg_error = result.unit_results[p]["outputs"]["unit_estimate_error"]
 
                 dgs[name][simtype].append([dg, dg_error])
-            if "standard_state_correction" in result["unit_results"][p]["outputs"]:
-                corr = result["unit_results"][p]["outputs"]["standard_state_correction"]
+            if "standard_state_correction" in result.unit_results[p]["outputs"]:
+                corr = result.unit_results[p]["outputs"]["standard_state_correction"]
                 # In openfe v1.9+, standard state corrections are set to 0 kcal/mol
                 # when no correction is being applied (e.g. no restraints).
                 # To make raw outputs similar to pre-v1.9, we exclude corrections
