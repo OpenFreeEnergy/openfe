@@ -73,8 +73,8 @@ def build_task_db_from_alchemical_network(
     warehouse_dir: Path,  # TODO: make optional?
     db_path: Path,  # TODO: make optional?
     max_tries: int = 1,
-) -> exorcist.TaskStatusDB:
-    """Create and populate a task database and warehouse from an alchemical network.
+) -> tuple[exorcist.TaskStatusDB, FileSystemWarehouse]:
+    """Create a task database and FileSystemWarehouse from an alchemical network.
 
     Parameters
     ----------
@@ -101,4 +101,4 @@ def build_task_db_from_alchemical_network(
     global_task_dag: nx.DiGraph = _alchemical_network_to_task_graph(alchemical_network, warehouse)
     db = exorcist.TaskStatusDB.from_filename(db_path)
     db.add_task_network(global_task_dag, max_tries)
-    return db
+    return db, warehouse

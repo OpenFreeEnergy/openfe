@@ -57,8 +57,7 @@ def worker_with_real_db(tmp_path, absolute_transformation):
     warehouse_root = tmp_path / "warehouse"
     db_path = tmp_path / "tasks.db"
     network = gufe.AlchemicalNetwork([absolute_transformation])
-    db = build_task_db_from_alchemical_network(network, warehouse_root, db_path=db_path)
-    warehouse = FileSystemWarehouse.from_dir(warehouse_root)
+    db, warehouse = build_task_db_from_alchemical_network(network, warehouse_root, db_path=db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
     return worker, warehouse, db
 
@@ -90,7 +89,7 @@ def test_get_task_uses_default_db_path_without_patching(
     warehouse_root = "warehouse"
     db_path = Path("warehouse/tasks.db")
     network = gufe.AlchemicalNetwork([absolute_transformation])
-    db = build_task_db_from_alchemical_network(network, warehouse_root, db_path=db_path)
+    db, warehouse = build_task_db_from_alchemical_network(network, warehouse_root, db_path=db_path)
 
     warehouse = FileSystemWarehouse.from_dir("warehouse")
     worker = Worker(warehouse=warehouse)

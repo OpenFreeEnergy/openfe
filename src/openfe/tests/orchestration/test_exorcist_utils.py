@@ -133,7 +133,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     network = request.getfixturevalue(fixture)
     # Build the real sqlite task DB from a real alchemical network fixture.
     wh_dir = tmp_path / "campaign"
-    db = build_task_db_from_alchemical_network(
+    db, warehouse = build_task_db_from_alchemical_network(
         network,
         warehouse_dir=wh_dir,
         db_path=tmp_path / "campaign.db",
@@ -149,7 +149,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     checkout_order = []
     # Hard upper bound prevents infinite checkout loops.
     max_checkouts = len(graph_taskids)
-    warehouse = FileSystemWarehouse.from_dir(wh_dir)
+
     for _ in range(max_checkouts):
         taskid = db.check_out_task()
         if taskid is None:
@@ -221,14 +221,13 @@ def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
             return_value=fake_db,
         ) as db_ctor,
     ):
-        result = build_task_db_from_alchemical_network(
+        db, warehouse = build_task_db_from_alchemical_network(
             network,
             wh_path,
             db_path=db_path,
             max_tries=7,
         )
-    warehouse = FileSystemWarehouse.from_dir(wh_path)
     task_graph_mock.assert_called_once_with(network, warehouse)
     db_ctor.assert_called_once_with(db_path)
     fake_db.add_task_network.assert_called_once_with(fake_graph, 7)
-    assert result is fake_db
+    assert db is fake_db
