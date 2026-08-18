@@ -20,6 +20,7 @@ from openfe.storage.warehouse import FileSystemWarehouse
 from .exorcist_utils import (
     _alchemical_network_to_task_graph,
     build_task_db_from_alchemical_network,
+    get_dependency_df,
     get_task_df,
 )
 

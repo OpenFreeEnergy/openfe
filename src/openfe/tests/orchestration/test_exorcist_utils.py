@@ -1,9 +1,9 @@
-from pathlib import Path
 from typing import cast
 from unittest import mock
 
 import exorcist
 import networkx as nx
+import pandas as pd
 import pytest
 import sqlalchemy as sqla
 from gufe import AlchemicalNetwork
@@ -12,8 +12,10 @@ from gufe.tokenization import GufeKey
 from openfe.orchestration import (
     _alchemical_network_to_task_graph,
     build_task_db_from_alchemical_network,
+    get_dependency_df,
+    get_task_df,
 )
-from openfe.storage.warehouse import FileSystemWarehouse, WarehouseBaseClass
+from openfe.storage.warehouse import WarehouseBaseClass
 
 
 class _RecordingWarehouse:
@@ -231,3 +233,40 @@ def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
     db_ctor.assert_called_once_with(db_path)
     fake_db.add_task_network.assert_called_once_with(fake_graph, 7)
     assert db is fake_db
+
+
+@pytest.fixture()
+def benzene_star_map_task_db(benzene_variants_star_map, tmp_path):
+    warehouse = _RecordingWarehouse()
+    network = benzene_variants_star_map
+    global_task_dag = _alchemical_network_to_task_graph(
+        network, cast(WarehouseBaseClass, warehouse)
+    )
+    db = exorcist.TaskStatusDB.from_filename(
+        tmp_path / "tasks.db"
+    )  # TODO: how to make a barebones db that doesn't write to disk?
+    db.add_task_network(global_task_dag, 5)
+    return db
+
+
+def test_get_task_df(benzene_star_map_task_db):
+    df = get_task_df(benzene_star_map_task_db)
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == [
+        "taskid",
+        "status",
+        "last_modified",
+        "tries",
+        "max_tries",
+        "task_type",
+    ]
+    assert len(df) == 276
+    assert len(df[df.status == "AVAILABLE"]) == 12
+    assert len(df[df.status == "BLOCKED"]) == 264
+
+
+def test_get_dependency_df(benzene_star_map_task_db):
+    df = get_dependency_df(benzene_star_map_task_db)
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["to", "from", "blocking"]
+    assert len(df) == 504
