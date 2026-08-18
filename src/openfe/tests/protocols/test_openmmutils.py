@@ -1536,5 +1536,6 @@ class TestChargeValidation:
         ):
             system_validation.validate_nondeterministic_charges(
                 # pick a force field with an am1bcc handler
-                mixed_charge_system, small_molecule_forcefield="openff-2.2.0.offxml"
+                mixed_charge_system,
+                small_molecule_forcefield="openff-2.2.0.offxml",
             )
