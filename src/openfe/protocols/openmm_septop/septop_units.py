@@ -17,6 +17,7 @@ from typing import Any
 
 import MDAnalysis as mda
 import mdtraj as md
+import netCDF4 as nc
 import numpy as np
 import openmm
 import openmm.unit
@@ -28,6 +29,16 @@ from gufe import (
 )
 from gufe.settings import SettingsBaseModel
 from MDAnalysis.coordinates.memory import MemoryReader
+from openfe_analysis.rmsd import (
+    LigandCOMDrift,
+    Protein2DRMSD,
+    SymmetryCorrectedLigandRMSD,
+)
+from openfe_analysis.utils.apply_transformations import (
+    apply_complex_alignment_transformations,
+    apply_ligand_alignment_transformations,
+)
+from openfe_analysis.utils.universe_utils import create_universe_single_state
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity
 from openff.units.openmm import from_openmm, to_openmm
@@ -35,6 +46,9 @@ from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
 from openfe.protocols.openmm_utils import omm_compute
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    assign_offmol_residue_metadata,
+)
 from openfe.protocols.openmm_utils.serialization import serialize
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
@@ -119,7 +133,8 @@ class SepTopComplexMixin:
             * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: BoreschRestraintSettings
+            * restraint_settings_A: BoreschRestraintSettings
+            * restraint_settings_B: BoreschRestraintSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore
 
@@ -136,7 +151,8 @@ class SepTopComplexMixin:
             "equil_output_settings": prot_settings.complex_equil_output_settings,
             "simulation_settings": prot_settings.complex_simulation_settings,
             "output_settings": prot_settings.complex_output_settings,
-            "restraint_settings": prot_settings.complex_restraint_settings,
+            "restraint_settings_A": prot_settings.complex_restraint_settings_A,
+            "restraint_settings_B": prot_settings.complex_restraint_settings_B,
             "analysis_settings": prot_settings.analysis_settings,
         }
 
@@ -458,11 +474,20 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         """
         frc_const = min(settings.K_thetaA, settings.K_thetaB)
 
+        guest_restraint_atoms_idxs = (
+            list(settings.guest_restraint_ids) if settings.guest_restraint_ids is not None else None
+        )
+        host_restraint_atoms_idxs = (
+            list(settings.host_restraint_ids) if settings.host_restraint_ids is not None else None
+        )
+
         geom = geometry.boresch.find_boresch_restraint(
             universe=universe,
             guest_rdmol=guest_rdmol,
             guest_idxs=guest_atom_ids,
             host_idxs=host_atom_ids,
+            guest_restraint_atoms_idxs=guest_restraint_atoms_idxs,
+            host_restraint_atoms_idxs=host_restraint_atoms_idxs,
             host_selection=settings.host_selection,
             anchor_finding_strategy=settings.anchor_finding_strategy,
             dssp_filter=settings.dssp_filter,
@@ -572,7 +597,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             ligand_A_inxs,
             protein_inxs,
             settings["thermo_settings"].temperature,
-            settings["restraint_settings"],
+            settings["restraint_settings_A"],
         )
 
         rest_geom_B, restraint_B = self._get_boresch_restraint(
@@ -581,7 +606,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             ligand_B_inxs_B,
             protein_inxs,
             settings["thermo_settings"].temperature,
-            settings["restraint_settings"],
+            settings["restraint_settings_B"],
         )
         # We have to update the indices for ligand B to match the AB complex
         new_boresch_B_indices = [ligand_B_inxs_B.index(i) for i in rest_geom_B.guest_atoms]
@@ -676,6 +701,12 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
+
+        assigned = assign_offmol_residue_metadata(
+            smc_comps_AB,
+            alchem_comps["stateA"] + alchem_comps["stateB"],
+        )
+        alchem_resnames = [assigned[c] for c in alchem_comps["stateA"] + alchem_comps["stateB"]]
 
         # 3. Get settings
         settings = self._get_settings()
@@ -847,24 +878,23 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             open(topology_file, "w"),
         )
 
-        if not dry:
-            return {
-                "system": system_outfile,
-                "topology": topology_file,
-                "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
-                "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
-                "restraint_geometry_A": restraint_geom_A.model_dump(),
-                "restraint_geometry_B": restraint_geom_B.model_dump(),
-                "selection_indices": selection_indices,
-                "subsampled_pdb_structure": sub_pdb_structure,
-                "ligand_A_indices": atom_indices_AB_A,
-                "ligand_B_indices": atom_indices_AB_B,
-            }
-        else:
-            return {
-                # Add in various objects we can use to test the system
-                "system": system_outfile,
-                "topology": topology_file,
+        outputs = {
+            "system": system_outfile,
+            "topology": topology_file,
+            "standard_state_correction_A": corr_A.to("kilocalorie_per_mole"),
+            "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
+            "restraint_geometry_A": restraint_geom_A.model_dump(),
+            "restraint_geometry_B": restraint_geom_B.model_dump(),
+            "selection_indices": selection_indices,
+            "alchemical_resnames": alchem_resnames,
+            "subsampled_pdb_structure": sub_pdb_structure,
+            "ligand_A_indices": atom_indices_AB_A,
+            "ligand_B_indices": atom_indices_AB_B,
+        }
+
+        if dry:
+            # Add in various objects we can use to test the system
+            outputs |= {
                 "system_A": omm_system_A,
                 "system_B": omm_system_B,
                 "system_AB": omm_system_AB,
@@ -872,11 +902,9 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 "alchem_system": alchemical_system,
                 "alchem_factory": alchemical_factory,
                 "positions": equil_positions_AB,
-                "selection_indices": selection_indices,
-                "subsampled_pdb_structure": sub_pdb_structure,
-                "ligand_A_indices": atom_indices_AB_A,
-                "ligand_B_indices": atom_indices_AB_B,
             }
+
+        return outputs
 
 
 class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
@@ -887,14 +915,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
     simtype = "solvent"
 
     @staticmethod
-    def _update_positions(
+    def _get_ligand_offset(
         mol_A: SmallMoleculeComponent,
         mol_B: SmallMoleculeComponent,
-    ) -> SmallMoleculeComponent:
+    ) -> Quantity:
         """
         Computes the amount to offset the second ligand by in the solution
-        phase during RBFE calculations and applies the offset to the ligand,
-        returning the SmallMoleculeComponent with the updated positions.
+        phase during RBFE calculations.
 
         Parameters
         ----------
@@ -904,9 +931,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
           The SmallMoleculeComponent of ligand B
         Returns
         -------
-        updated_mol_B: SmallMoleculeComponent
-          The SmallMoleculeComponent of ligand B after updating its positions
-          to be a certain distance away from ligand A
+        offset : openff.units.Quantity
+          The translation vector to add to every ligand B atom position.
         """
 
         # Convert SmallMolecule to Rdkit Molecule
@@ -923,15 +949,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         ligand_offset = pos_ligandA.mean(0) - pos_ligandB.mean(0)
         ligand_offset[0] += ligand_distance
 
-        # Offset the ligandB.
-        pos_ligandB += ligand_offset
-
-        # Extract updated system positions.
-        rdmol_B.GetConformers()[0].SetPositions(pos_ligandB)
-
-        updated_mol_B = SmallMoleculeComponent(rdmol_B)
-
-        return updated_mol_B
+        return Quantity(ligand_offset, "angstrom")
 
     def _add_restraints(
         self,
@@ -1053,6 +1071,12 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
+        assigned = assign_offmol_residue_metadata(
+            smc_comps_AB,
+            alchem_comps["stateA"] + alchem_comps["stateB"],
+        )
+        alchem_resnames = [assigned[c] for c in alchem_comps["stateA"] + alchem_comps["stateB"]]
+
         # 2. Get settings
         settings = self._get_settings()
 
@@ -1061,11 +1085,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 4. Update the positions of ligand B:
         #    - solvent: Offset ligand B with respect to ligand A
-        smc_B = self._update_positions(
+        offset = self._get_ligand_offset(
             alchem_comps["stateA"][0],
             alchem_comps["stateB"][0],
         )
-        smc_off_B = {smc_B: smc_B.to_openff()}
+        off_B = smc_comps_AB[alchem_comps["stateB"][0]]
+        off_B._conformers[0] = off_B._conformers[0] + offset
+        smc_off_B = {alchem_comps["stateB"][0]: off_B}
 
         # 5. Get the OpenMM systems
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB, comp_resids_AB = (
@@ -1081,7 +1107,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # system AB
         comp_atomids_AB = self._get_atom_indices(omm_topology_AB, comp_resids_AB)
         atom_indices_AB_A = comp_atomids_AB[alchem_comps["stateA"][0]]
-        atom_indices_AB_B = comp_atomids_AB[smc_B]
+        atom_indices_AB_B = comp_atomids_AB[alchem_comps["stateB"][0]]
 
         # 7. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
@@ -1095,7 +1121,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 8. Apply Restraints
         rdmol_A = alchem_comps["stateA"][0].to_rdkit()
-        rdmol_B = smc_B.to_rdkit()
+        rdmol_B = alchem_comps["stateB"][0].to_rdkit()
         Chem.SanitizeMol(rdmol_A)
         Chem.SanitizeMol(rdmol_B)
 
@@ -1138,6 +1164,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "topology": topology_file,
                 "standard_state_correction": corr.to("kilocalorie_per_mole"),
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
@@ -1153,6 +1180,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "alchem_factory": alchemical_factory,
                 "positions": positions_AB,
                 "selection_indices": selection_indices,
+                "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
                 "ligand_A_indices": atom_indices_AB_A,
                 "ligand_B_indices": atom_indices_AB_B,
@@ -1237,6 +1265,74 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
 
     simtype = "solvent"
 
+    @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        pdb_file: pathlib.Path,
+        skip: int,
+        ligand_A_indices: list[int],
+        ligand_B_indices: list[int],
+        rdmol_A: Chem.Mol,
+        rdmol_B: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run trjectory analysis for the solvent phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        pdb_file : pathlib.Path
+          Path to the subsampled PDB file.
+        skip : int
+          Frame stride for analysis.
+        ligand_A_indices : list[int]
+          Atom indices of ligand A in the subsampled system.
+        ligand_B_indices : list[int]
+          Atom indices of ligand B in the subsampled system.
+        rdmol_A : Chem.Mol
+          RDKit molecule for ligand A, used for symmetry-corrected RMSD.
+        rdmol_B : Chem.Mol
+          RDKit molecule for ligand B, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations.
+
+        Returns
+        -------
+        per_state_data : dict[str, list[np.ndarray]]
+          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        per_state_data: dict[str, list[np.ndarray]] = {
+            "ligand_A_RMSD": [],
+            "ligand_B_RMSD": [],
+        }
+        time_ps: np.ndarray | None = None
+        # Read the PDB topology once and reuse across all lambda states.
+        # Passing u_top._topology to create_universe_single_state avoids
+        # reading the PDB file from disk for every lambda.
+        u_top = mda.Universe(pdb_file)
+        for state_idx in range(n_lambda):
+            for label, indices, rdmol in [
+                ("ligand_A", ligand_A_indices, rdmol_A),
+                ("ligand_B", ligand_B_indices, rdmol_B),
+            ]:
+                universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+                lig = universe.atoms[indices]
+                apply_ligand_alignment_transformations(universe, ligand=lig)
+
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+                per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+
+                if time_ps is None:
+                    time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
+        return per_state_data, time_ps
+
 
 class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
     """
@@ -1244,3 +1340,84 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
     """
 
     simtype = "complex"
+
+    @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        pdb_file: pathlib.Path,
+        skip: int,
+        ligand_A_indices: list[int],
+        ligand_B_indices: list[int],
+        rdmol_A: Chem.Mol,
+        rdmol_B: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run trjectory analysis for the complex phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        pdb_file : pathlib.Path
+          Path to the subsampled PDB file.
+        skip : int
+          Frame stride for analysis.
+        ligand_A_indices : list[int]
+          Atom indices of ligand A in the subsampled system.
+        ligand_B_indices : list[int]
+          Atom indices of ligand B in the subsampled system.
+        rdmol_A : Chem.Mol
+          RDKit molecule for ligand A, used for symmetry-corrected RMSD.
+        rdmol_B : Chem.Mol
+          RDKit molecule for ligand B, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations.
+
+        Returns
+        -------
+        per_state_data : dict[str, list[np.ndarray]]
+          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``,
+          ``ligand_A_COM_drift``, ``ligand_B_COM_drift``, and ``protein_2D_RMSD``.`.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        per_state_data: dict[str, list[np.ndarray]] = {
+            "ligand_A_RMSD": [],
+            "ligand_B_RMSD": [],
+            "ligand_A_COM_drift": [],
+            "ligand_B_COM_drift": [],
+            "protein_2D_RMSD": [],
+        }
+        time_ps: np.ndarray | None = None
+        # Read the PDB topology once and reuse across all lambda states.
+        # Passing u_top._topology to create_universe_single_state avoids
+        # reading the PDB file from disk for every lambda.
+        u_top = mda.Universe(pdb_file)
+        prot_indices = u_top.select_atoms(protein_selection).indices
+        for state_idx in range(n_lambda):
+            universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+            prot = universe.atoms[prot_indices]
+            lig_A = universe.atoms[ligand_A_indices]
+            lig_B = universe.atoms[ligand_B_indices]
+            apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig_A, lig_B])
+
+            if prot:
+                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
+                per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+
+            for label, lig, rdmol in [
+                ("ligand_A", lig_A, rdmol_A),
+                ("ligand_B", lig_B, rdmol_B),
+            ]:
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+                per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+
+                lig_drift = LigandCOMDrift(lig).run(step=skip)
+                per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
+
+            if time_ps is None:
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+        return per_state_data, time_ps

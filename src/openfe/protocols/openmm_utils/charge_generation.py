@@ -525,27 +525,36 @@ def bulk_assign_partial_charges(
         "generate_n_conformers": generate_n_conformers,
         "nagl_model": nagl_model,
     }
-    charged_ligands = []
 
     if processors > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
 
+        charged_ligands: list[SmallMoleculeComponent | None] = [None] * len(molecules)
         with ProcessPoolExecutor(max_workers=processors) as pool:
-            work_list = [
+            # track the input ordering as multiprocessing can shuffle the order of the ligands
+            future_to_index = {
                 pool.submit(
                     assign_offmol_partial_charges,
                     m.to_openff(),
                     **charge_keywords,  # type: ignore
-                )
-                for m in molecules
-            ]
+                ): i
+                for i, m in enumerate(molecules)
+            }
 
             for work in tqdm.tqdm(
-                as_completed(work_list), desc="Generating charges", ncols=80, total=len(molecules)
+                as_completed(future_to_index),
+                desc="Generating charges",
+                ncols=80,
+                total=len(molecules),
             ):
-                charged_ligands.append(SmallMoleculeComponent.from_openff(work.result()))
+                i = future_to_index[work]
+                charged_ligands[i] = SmallMoleculeComponent.from_openff(work.result())
+
+        # fix the typing
+        charged_ligands = [mol for mol in charged_ligands if mol is not None]
 
     else:
+        charged_ligands = []
         for m in tqdm.tqdm(molecules, desc="Generating charges", ncols=80, total=len(molecules)):
             mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords)  # type: ignore
             charged_ligands.append(SmallMoleculeComponent.from_openff(mol_with_charge))

@@ -4,6 +4,7 @@ import itertools
 import json
 import math
 import pathlib
+from collections import Counter
 from unittest import mock
 
 import gufe
@@ -44,6 +45,7 @@ from openfe.protocols.openmm_septop import (
 )
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
+from openfe.protocols.restraint_utils.settings import BoreschRestraintSettings
 from openfe.tests.protocols.conftest import compute_energy
 from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
     _assert_num_forces,
@@ -381,6 +383,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     )
     pdb = md.load_pdb(tmp_path / "topology.pdb")
     assert pdb.n_atoms == 1762
+    assert solv_setup_output["alchemical_resnames"] == ["LIG", "LIG"]
     central_atoms = np.array([[2, 19]], dtype=np.int32)
     distance = md.compute_distances(pdb, central_atoms)[0][0]
     assert np.isclose(distance, 0.8661)
@@ -421,6 +424,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmp_path):
     complex_setup_output = complex_setup_unit[0].run(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
     )
+    assert complex_setup_output["alchemical_resnames"] == ["LIG", "LIG"]
     pdb_file = openmm.app.pdbfile.PDBFile(str(complex_setup_output["topology"]))
     alchem_system = deserialize(complex_setup_output["system"])
     complex_sampler = complex_run_unit[0].run(
@@ -467,8 +471,8 @@ def test_dry_run_methods(
 ):
     protocol_dry_settings.solvent_simulation_settings.sampler_method = method
     protocol_dry_settings.complex_simulation_settings.sampler_method = method
-    protocol_dry_settings.complex_output_settings.output_indices = "resname UNK"
-    protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
+    protocol_dry_settings.complex_output_settings.output_indices = "resname LIG"
+    protocol_dry_settings.solvent_output_settings.output_indices = "resname LIG"
 
     protocol = SepTopProtocol(
         settings=protocol_dry_settings,
@@ -487,6 +491,13 @@ def test_dry_run_methods(
         dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
     )
     pdb_file = openmm.app.pdbfile.PDBFile(str(solv_setup_output["topology"]))
+    # Check for the residue names
+    residue_names = {res.name for res in pdb_file.topology.residues()}
+    assert "LIG" in residue_names
+    assert "UNK" not in residue_names
+    residue_counts = Counter(res.name for res in pdb_file.topology.residues())
+    assert residue_counts["LIG"] == 2
+    assert residue_counts["UNK"] == 0
     alchem_system = deserialize(solv_setup_output["system"])
     solv_sampler = sol_run_unit[0].run(
         alchem_system,
@@ -899,6 +910,58 @@ def test_bad_sampler():
             platform=None,
             restart=False,
         )
+
+
+def test_user_restraint_complex(
+    benzene_complex_system,
+    toluene_complex_system,
+    protocol_dry_settings,
+    tmp_path,
+):
+    host_ids = [1383, 1384, 1398]
+    protocol_dry_settings.complex_restraint_settings_A = BoreschRestraintSettings(
+        guest_restraint_ids=[0, 1, 2],
+        host_restraint_ids=host_ids,
+    )
+    # For toluene pick the atoms that are overlapping with the three benzene atoms
+    protocol_dry_settings.complex_restraint_settings_B = BoreschRestraintSettings(
+        guest_restraint_ids=[4, 5, 6],
+        host_restraint_ids=host_ids,
+    )
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
+
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    complex_setup_unit = [u for u in dag.protocol_units if isinstance(u, SepTopComplexSetupUnit)]
+    assert len(complex_setup_unit) == 1
+
+    results = complex_setup_unit[0].run(
+        dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+    )
+
+    geom_A = BoreschRestraintGeometry.model_validate(results["restraint_geometry_A"])
+    geom_B = BoreschRestraintGeometry.model_validate(results["restraint_geometry_B"])
+
+    assert geom_A.host_atoms == host_ids
+    assert geom_B.host_atoms == host_ids
+
+    assert len(geom_A.guest_atoms) == 3
+    assert len(geom_B.guest_atoms) == 3
+    assert geom_A.guest_atoms != geom_B.guest_atoms
+
+    assert geom_A.guest_atoms == [2613, 2614, 2615]
+    assert geom_B.guest_atoms == [24162, 24163, 24164]
+
+    for geom in [geom_A, geom_B]:
+        assert pytest.approx(geom.r_aA0.to("nanometer").m, rel=1e-4) == 0.510798
+        assert pytest.approx(geom.theta_A0.to("radians").m, rel=1e-4) == 1.20278
+        assert pytest.approx(geom.theta_B0.to("radians").m, rel=1e-4) == 1.25705
+        assert pytest.approx(geom.phi_A0.to("radians").m, rel=1e-4) == 0.86035
+        assert pytest.approx(geom.phi_B0.to("radians").m, rel=1e-4) == 1.59444
+        assert pytest.approx(geom.phi_C0.to("radians").m, rel=1e-4) == 2.92365
 
 
 @pytest.fixture
