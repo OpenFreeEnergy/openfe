@@ -162,7 +162,7 @@ def lomap_basic_test_files_dir(tmp_path_factory):
     lomap_basic = "openfe.tests.data.lomap_basic"
 
     for f in resources.contents(lomap_basic):
-        if not f.endswith("mol2"):
+        if not f.endswith("sdf"):
             continue
         stuff = resources.read_binary(lomap_basic, f)
 
@@ -188,10 +188,9 @@ def atom_mapping_basic_test_files():
         "toluene",
     ]:
         with resources.as_file(resources.files("openfe.tests.data.lomap_basic")) as d:
-            fn = str(d / (f + ".mol2"))
+            fn = str(d / (f + ".sdf"))
             # go via openff to make sure the partial charges are pulled
-            mol = Molecule.from_file(fn)
-            files[f] = SmallMoleculeComponent.from_openff(mol, name=f)
+            files[f] = SmallMoleculeComponent.from_sdf_file(fn)
 
     return files
 
