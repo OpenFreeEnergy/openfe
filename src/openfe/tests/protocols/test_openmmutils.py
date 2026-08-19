@@ -1294,7 +1294,7 @@ class TestOFFPartialCharge:
 
     def test_forcefield_missing_ff(self, uncharged_mol):
         # Make sure an error is raised if we forget to pass a force field to charge with
-        with pytest.raises(ValueError, match="The forcefield method requires a list of force fields to be provided via `force_fields`."):
+        with pytest.raises(ValueError, match="The forcefield method requires a force field or list of force fields' to be provided via `forcefields`."):
             charge_generation.assign_offmol_partial_charges(
                 uncharged_mol,
                 overwrite=False,

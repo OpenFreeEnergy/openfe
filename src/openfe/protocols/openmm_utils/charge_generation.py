@@ -352,13 +352,13 @@ def assign_offmol_partial_charges(
     if method.lower() == "forcefield":
         if forcefields is None:
             errmsg = (
-                "The forcefield method requires a list of force fields to be provided "
-                "via `force_fields`."
+                "The forcefield method requires a force field or list of force fields' to be provided "
+                "via `forcefields`."
             )
             raise ValueError(errmsg)
 
         if isinstance(forcefields, str):
-            force_fields = [force_ields]
+            forcefields = [forcefields]
 
         # this expects the full file name of the force field offxml file, e.g. "openff-2.0.0.offxml"
         # which is different to how settings work which can leave off the .offxml extension
