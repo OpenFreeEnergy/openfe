@@ -20,7 +20,6 @@ from openff.toolkit.utils.toolkits import (
     RDKitToolkitWrapper,
 )
 from openff.units import unit
-from sympy.codegen.ast import continue_
 from threadpoolctl import threadpool_limits
 
 try:
