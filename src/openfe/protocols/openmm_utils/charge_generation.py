@@ -287,11 +287,11 @@ def _generate_offmol_conformers(
 def assign_offmol_partial_charges(
     offmol: OFFMol,
     overwrite: bool,
-    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"],
+    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"],
     toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
     generate_n_conformers: int | None,
     nagl_model: str | None,
-    force_field: list[str] | None = None,
+    forcefields: list[str] | None = None,
 ) -> OFFMol:
     """
     Assign partial charges to an OpenFF Molecule based on a selected method.
@@ -303,9 +303,9 @@ def assign_offmol_partial_charges(
     overwrite : bool
       Whether to overwrite any existing non-zero partial charges.
       Note that zeroed charges will always be overwritten.
-    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
+    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma', 'forcefield']
       Partial charge assignment method.
-      Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
+      Supported methods include; am1bcc, am1bccelf10, nagl, espaloma and forcefield.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
       OpenFF toolkit backend employed for charge generation.
       Supported options:
@@ -321,15 +321,15 @@ def assign_offmol_partial_charges(
     nagl_model : str | None
       The NAGL model to use for charge assignment if method is ``nagl``.
       If ``None``, the latest am1bcc NAGL charge model is used.
-    force_field : list[str] | None, default None
+    forcefields : list[str] | None, default None
         An optional list of SMIRNOFF style force field offxml paths or strings which should be used to assign partial charges.
 
     Notes
     -----
     Charges are applied based on the following source preferences:
      - Charges already present on the ligand are retained if overwrite is ``False``
-     - Charges are applied as defined by the method in the given SMIRNOFF style force field if present and the handler is not ``ToolkitAM1BCCHandler``
      - Charges are applied using the input method and settings
+     - the forcefield option will apply the default charges as intended by the force field.
 
     Raises
     ------
@@ -350,19 +350,24 @@ def assign_offmol_partial_charges(
         if not overwrite:
             return offmol
 
-    if force_field is not None:
-        ff = ForceField(force_field)
-        if "ToolkitAM1BCC" in ff.registered_parameter_handlers:
-            ff.deregister_parameter_handler("ToolkitAM1BCC")
+    if method.lower() == "forcefield":
+        if forcefields is None:
+            errmsg = (
+                "The forcefield method requires a list of force fields to be provided "
+                "via `force_fields`."
+            )
+            raise ValueError(errmsg)
 
-        try:
-            # let the force field resolve the partial charge assignment
-            charges = ff.get_partial_charges(offmol)
-            offmol.partial_charges = charges
-            return offmol
-        except RuntimeError:
-            # this has failed to assign charges fall back to the user specified method
-            pass
+        if isinstance(forcefields, str):
+            force_fields = [force_ields]
+
+        # this expects the full file name of the force field offxml file, e.g. "openff-2.0.0.offxml"
+        # which is different to how settings work which can leave off the .offxml extension
+        ff = ForceField(*forcefields)
+        # let the force field resolve the partial charge assignment
+        charges = ff.get_partial_charges(offmol)
+        offmol.partial_charges = charges
+        return offmol
 
     # Dictionary for each available charge method
     # The idea of this pattern is to allow for maximum flexibility by
@@ -466,11 +471,12 @@ def assign_offmol_partial_charges(
 def bulk_assign_partial_charges(
     molecules: list[SmallMoleculeComponent],
     overwrite: bool,
-    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"],
+    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"],
     toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
     generate_n_conformers: int | None,
     nagl_model: str | None,
     processors: int = 1,
+    forcefields: list[str] | None = None,
 ) -> list[SmallMoleculeComponent]:
     """
     Assign partial charges to a list of SmallMoleculeComponents using multiprocessing.
@@ -482,7 +488,7 @@ def bulk_assign_partial_charges(
     overwrite : bool
       Whether or not to overwrite any existing non-zero partial charges.
       Note that zeroed charges will always be overwritten.
-    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
+    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma', 'forcefield]
       Partial charge assignment method.
       Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
@@ -502,6 +508,8 @@ def bulk_assign_partial_charges(
       If ``None``, the latest am1bcc NAGL charge model is used.
     processors: int, default 1
         The number of processors which should be used to generate the charges.
+    forcefields : list[str] | None, default None
+        An optional list of SMIRNOFF style force field offxml paths or strings which should be used to assign partial charges.
 
     Raises
     ------
@@ -524,6 +532,7 @@ def bulk_assign_partial_charges(
         "toolkit_backend": toolkit_backend,
         "generate_n_conformers": generate_n_conformers,
         "nagl_model": nagl_model,
+        "forcefields": forcefields,
     }
 
     if processors > 1:

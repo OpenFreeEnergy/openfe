@@ -15,6 +15,7 @@ from gufe.components.errors import ComponentValidationError
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
 from openff.toolkit import Molecule as OFFMol
+from openff.toolkit import ForceField
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
@@ -1290,6 +1291,61 @@ class TestOFFPartialCharge:
                 generate_n_conformers=None,
                 nagl_model=None,
             )
+
+    def test_forcefield_missing_ff(self, uncharged_mol):
+        # Make sure an error is raised if we forget to pass a force field to charge with
+        with pytest.raises(ValueError, match="The forcefield method requires a list of force fields to be provided via `force_fields`."):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method="forcefield",
+                toolkit_backend="rdkit",
+                generate_n_conformers=None,
+                nagl_model=None,
+            )
+
+    def test_forcefield_charges_library(self, uncharged_mol):
+        # Make sure that the forcefield method can assign charges from a library
+        # Create a force field with a charge library for the molecule using a force field with an AM1BCC handler as well
+        ff = ForceField("openff-2.0.0.offxml")
+        lib_handler = ff.get_parameter_handler("LibraryCharges")
+        # add the new parameter
+        charged_mol = copy.deepcopy(uncharged_mol)
+        dummy_charges = np.zeros(charged_mol.n_atoms) * unit.e
+        # no other method should assign all zero charges
+        charged_mol.partial_charges = dummy_charges
+        lib_param = lib_handler._INFOTYPE.from_molecule(charged_mol)
+        lib_handler.add_parameter(parameter=lib_param)
+        del charged_mol
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=False,
+            method="forcefield",
+            toolkit_backend="rdkit",
+            generate_n_conformers=None,
+            nagl_model=None,
+            forcefields=ff.to_string(),
+        )
+
+        assert_allclose(uncharged_mol.partial_charges.m, dummy_charges.m)
+
+    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    def test_forcefield_nagl_charges(self, uncharged_mol):
+        # Make sure that the forcefield method can assign charges from a NAGL model
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=False,
+            method="forcefield",
+            toolkit_backend="rdkit",
+            generate_n_conformers=None,
+            # set the model to none this should use the model define in the force field.
+            nagl_model=None,
+            # use a force field that has a NAGL handler and another redundant force field file
+            forcefields=["openff-2.3.0.offxml", "opc-1.0.0.offxml"],
+        )
+
+        assert uncharged_mol.partial_charges is not None
+        assert np.any(uncharged_mol.partial_charges)
 
 
 @pytest.mark.slow
