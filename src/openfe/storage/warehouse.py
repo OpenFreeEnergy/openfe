@@ -95,6 +95,7 @@ class WarehouseBaseClass:
         MissingExternalResourceError
             Thrown if the object you are trying to delete, can't delete from the store
         """
+        # TODO: how to guard deleting an object that is needed by another GufeTokenizable?
         store: ExternalStorage = self.stores[store_name]
         store.delete(location)
 
@@ -104,7 +105,7 @@ class WarehouseBaseClass:
     def load_task(self, obj: GufeKey) -> ProtocolUnit:
         unit = self._load_gufe_tokenizable(obj)
         if not isinstance(unit, ProtocolUnit):
-            raise ValueError("Unable to load ProtocolUnit")
+            raise ValueError(f"Unable to load {unit} as ProtocolUnit.")
         return unit
 
     def store_setup_tokenizable(self, obj: GufeTokenizable):
@@ -172,7 +173,9 @@ class WarehouseBaseClass:
             If `dag` is not a ProtocolDAG instance.
         """
         if not isinstance(dag, ProtocolDAG):
-            raise ValueError("Only ProtocolDAGs may be written to the 'protocol_dags' store.")
+            raise ValueError(
+                f"Unable to write {dag}. Only ProtocolDAGs may be written to the 'protocol_dags' store."
+            )
         self._store_gufe_tokenizable("protocol_dags", dag)
 
     def load_protocol_dag(self, gufe_key=GufeKey) -> GufeTokenizable:
@@ -190,7 +193,7 @@ class WarehouseBaseClass:
         """
         obj = self._load_gufe_tokenizable(gufe_key=gufe_key)
         if not isinstance(obj, ProtocolDAG):
-            raise ValueError(f"Attempted to load ProtocolDAG, but received {type(obj)}")
+            raise ValueError(f"Unable to load {obj} as ProtocolDAG.")
         return obj
 
     def exists(self, key: GufeKey) -> bool:
