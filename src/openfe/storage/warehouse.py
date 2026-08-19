@@ -392,30 +392,45 @@ class WarehouseBaseClass:
             ProtocolResults and their corresponding ProtocolDAGResults
         """
 
+        def construct_results_edge(
+            protocol_dag: ProtocolDAG,
+            dags_to_purs: dict[str, list[ProtocolUnitResult]],
+        ) -> ProtocolDAGResult:
+
+            # TODO: should we store the transformation as well for completeness?
+            transformation = self.load_setup_tokenizable(protocol_dag.transformation_key)
+            purs = dags_to_purs[str(protocol_dag.key)]
+            dag_result = ProtocolDAGResult(
+                protocol_units=protocol_dag.protocol_units,
+                protocol_unit_results=purs,
+                transformation_key=protocol_dag.transformation_key,
+                extends_key=protocol_dag.extends_key,
+            )
+            protocol_result = transformation.gather([dag_result])
+            return protocol_result, dag_result
+
         # construct a map of all the ProtocolDAGs and their corresponding ProtocolUnitResults
         dags_to_purs = self._construct_dags_to_purs(
-            self.get_protocol_dags(), self.get_unit_results()
+            dags=self.get_protocol_dags(),
+            purs=self.get_unit_results(),
         )
-        # load all dags
+        # load all dags that we have results for
         dags_with_results = [
             self.load_protocol_dag(d) for d in dags_to_purs if dags_to_purs[d] != []
         ]
 
         result_edges: list[tuple[ProtocolResult, ProtocolDAGResult]] = []
         for dag in dags_with_results:
-            prot_dag_result: ProtocolDAGResult = self._construct_protocol_dag_result(
-                protocol_dag=dag, dags_to_purs=dags_to_purs
-            )
-            prot_result: ProtocolResult = self.gather_result(
-                protocol_dag=dag, dags_to_purs=dags_to_purs
-            )
-            result_edges.append((prot_result, prot_dag_result))
+            result_edge = construct_results_edge(protocol_dag=dag, dags_to_purs=dags_to_purs)
+            result_edges.append(result_edge)
 
         return result_edges
 
     @staticmethod
     def _construct_dags_to_purs(dags: Iterable[ProtocolDAG], purs: Iterable[ProtocolUnitResult]):
-        """Creating a mapping of protocolDAGs to their corresponding ProtocolUnitResults"""
+        """Given a set of ProtocolDAGs and a set of ProtocolUnitResults,
+        create a mapping of protocolDAGs to their corresponding ProtocolUnitResults
+        """
         pur_pu_keys = {str(pur.source_key): pur for pur in purs}
         dag_map = {}
         for dag in dags:
@@ -425,44 +440,6 @@ class WarehouseBaseClass:
                     dag_purs.append(pur_pu_keys[unit.key])
             dag_map[str(dag.key)] = dag_purs
         return dag_map
-
-    @staticmethod
-    def _construct_protocol_dag_result(
-        protocol_dag: ProtocolDAG,
-        dags_to_purs: dict[str, list[ProtocolUnitResult]],
-    ) -> ProtocolDAGResult:
-        """Create a ProtocolDAGResult from the ProtocolDAG and its corresponding ProtocolUnitResults
-
-        Parameters
-        ----------
-        protocol_dag : ProtocolDAG
-            The ProtocolDAG to construct a ProtocolDAGResult for.
-        dags_to_purs : dict[str, list[ProtocolUnitResult]]
-            Mapping of all ProtocolDAG keys and their ProtocolUnitResults
-
-        Returns
-        -------
-        ProtocolDAGResult
-        """
-        purs = dags_to_purs[str(protocol_dag.key)]
-        dag_result = ProtocolDAGResult(
-            protocol_units=protocol_dag.protocol_units,
-            protocol_unit_results=purs,
-            transformation_key=protocol_dag.transformation_key,
-            extends_key=protocol_dag.extends_key,
-        )
-        return dag_result
-
-    def gather_result(
-        self,
-        protocol_dag: ProtocolDAG,
-        dags_to_purs: dict[str, list[ProtocolUnitResult]],
-    ) -> ProtocolResult:
-
-        protocol_dag_result = self._construct_protocol_dag_result(protocol_dag, dags_to_purs)
-        transformation = self.load_setup_tokenizable(protocol_dag.transformation_key)
-        result = transformation.gather([protocol_dag_result])
-        return result
 
     @staticmethod
     def output_in_quickrun_format(
