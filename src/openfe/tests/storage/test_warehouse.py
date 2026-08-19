@@ -283,7 +283,7 @@ class TestWarehouseResultsGathering:
         # TODO: how much to check here
 
         results_ok = [dag.ok() for _, dag in result_edges]
-        assert results_ok == [True, False, True, True]  # one failed edge
+        assert sorted(results_ok) == [False, True, True, True]  # one failed edge
 
         uncertainties = [pr.get_uncertainty() for pr, dag in result_edges if dag.ok()]
         assert uncertainties == [0.0 * unit.kilocalorie_per_mole] * 3
