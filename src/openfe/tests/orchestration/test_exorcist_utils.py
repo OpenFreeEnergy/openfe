@@ -268,5 +268,5 @@ def test_get_task_df(benzene_star_map_task_db):
 def test_get_dependency_df(benzene_star_map_task_db):
     df = get_dependency_df(benzene_star_map_task_db)
     assert isinstance(df, pd.DataFrame)
-    assert list(df.columns) == ["to", "from", "blocking"]
+    assert list(df.columns) == ["from", "to", "blocking"]
     assert len(df) == 504
