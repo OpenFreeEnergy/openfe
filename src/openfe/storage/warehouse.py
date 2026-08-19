@@ -188,8 +188,10 @@ class WarehouseBaseClass:
         GufeTokenizable
             The loaded object.
         """
-        # TODO: type check that it is a protocol dag before returning?
-        return self._load_gufe_tokenizable(gufe_key=gufe_key)
+        obj = self._load_gufe_tokenizable(gufe_key=gufe_key)
+        if not isinstance(obj, ProtocolDAG):
+            raise ValueError(f"Attempted to load ProtocolDAG, but received {type(obj)}")
+        return obj
 
     def exists(self, key: GufeKey) -> bool:
         """Check if an object with the given key exists in any store that holds tokenizables.
@@ -350,12 +352,9 @@ class WarehouseBaseClass:
         Generator[ProtocolDAG]
             The ProtocolDAGs found in this Warehouse's 'protocol_dags' store.
         """
-        # NOTE: this can be made more robust (but slower) by using isinstance(obj, openfe.ProtocolDAG)
-        # _after_ loading each item, rather than filtering by name
         for item in self.stores["protocol_dags"]:
-            if item.startswith("ProtocolDAG"):
-                dag = self.load_protocol_dag(item)
-                yield dag
+            dag = self.load_protocol_dag(item)
+            yield dag
 
     def get_unit_results(self) -> Generator[ProtocolUnitResult]:
         """Yield all ProtocolUnitResult(s) stored in the Warehouse's 'result' store.
