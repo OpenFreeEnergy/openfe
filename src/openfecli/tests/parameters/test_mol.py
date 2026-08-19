@@ -27,7 +27,7 @@ def test_get_molecule_sdf():
 
 
 def test_get_molecule_mol2():
-    with resources.as_file(resources.files("openfe.tests.data.lomap_basic")) as d:
+    with resources.as_file(resources.files("openfecli.tests.data")) as d:
         f = d / "toluene.mol2"
         mol = get_molecule(str(f))
 
