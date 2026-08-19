@@ -8,6 +8,7 @@ import openfe
 from openfe import SmallMoleculeComponent
 from openfecli.parameters.molecules import load_molecules
 
+
 def test_load_molecules_sdf_file():
     files = resources.files("openfe.tests.data")
     ref = files / "benzene_modifications.sdf"
