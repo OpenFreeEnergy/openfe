@@ -396,15 +396,15 @@ class WarehouseBaseClass:
 
         def construct_results_edge(
             protocol_dag: ProtocolDAG,
-            dags_to_purs: dict[str, list[ProtocolUnitResult]],
+            dags_to_unit_results: dict[str, list[ProtocolUnitResult]],
         ) -> ProtocolDAGResult:
 
             # TODO: should we store the transformation as well for completeness?
             transformation = self.load_setup_tokenizable(protocol_dag.transformation_key)
-            purs = dags_to_purs[str(protocol_dag.key)]
+            unit_results = dags_to_unit_results[str(protocol_dag.key)]
             dag_result = ProtocolDAGResult(
                 protocol_units=protocol_dag.protocol_units,
-                protocol_unit_results=purs,
+                protocol_unit_results=unit_results,
                 transformation_key=protocol_dag.transformation_key,
                 extends_key=protocol_dag.extends_key,
             )
@@ -412,35 +412,39 @@ class WarehouseBaseClass:
             return protocol_result, dag_result
 
         # construct a map of all the ProtocolDAGs and their corresponding ProtocolUnitResults
-        dags_to_purs = self._construct_dags_to_purs(
+        dags_to_unit_results = self._construct_dags_to_unit_results(
             dags=self.get_protocol_dags(),
-            purs=self.get_unit_results(),
+            unit_results=self.get_unit_results(),
         )
         # load all dags that we have results for
         dags_with_results = [
-            self.load_protocol_dag(d) for d in dags_to_purs if dags_to_purs[d] != []
+            self.load_protocol_dag(d) for d in dags_to_unit_results if dags_to_unit_results[d] != []
         ]
 
         result_edges: list[tuple[ProtocolResult, ProtocolDAGResult]] = []
         for dag in dags_with_results:
-            result_edge = construct_results_edge(protocol_dag=dag, dags_to_purs=dags_to_purs)
+            result_edge = construct_results_edge(
+                protocol_dag=dag, dags_to_unit_results=dags_to_unit_results
+            )
             result_edges.append(result_edge)
 
         return result_edges
 
     @staticmethod
-    def _construct_dags_to_purs(dags: Iterable[ProtocolDAG], purs: Iterable[ProtocolUnitResult]):
+    def _construct_dags_to_unit_results(
+        dags: Iterable[ProtocolDAG], unit_results: Iterable[ProtocolUnitResult]
+    ):
         """Given a set of ProtocolDAGs and a set of ProtocolUnitResults,
         create a mapping of protocolDAGs to their corresponding ProtocolUnitResults
         """
-        pur_pu_keys = {str(pur.source_key): pur for pur in purs}
+        pur_pu_keys = {str(pur.source_key): pur for pur in unit_results}
         dag_map = {}
         for dag in dags:
-            dag_purs = []
+            dag_unit_results = []
             for unit in dag.protocol_units:
                 if unit.key in pur_pu_keys:
-                    dag_purs.append(pur_pu_keys[unit.key])
-            dag_map[str(dag.key)] = dag_purs
+                    dag_unit_results.append(pur_pu_keys[unit.key])
+            dag_map[str(dag.key)] = dag_unit_results
         return dag_map
 
     @staticmethod
