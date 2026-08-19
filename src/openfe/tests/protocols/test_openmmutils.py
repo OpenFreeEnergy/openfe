@@ -14,8 +14,8 @@ import pytest
 from gufe.components.errors import ComponentValidationError
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
-from openff.toolkit import Molecule as OFFMol
 from openff.toolkit import ForceField
+from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
@@ -1294,7 +1294,10 @@ class TestOFFPartialCharge:
 
     def test_forcefield_missing_ff(self, uncharged_mol):
         # Make sure an error is raised if we forget to pass a force field to charge with
-        with pytest.raises(ValueError, match="The forcefield method requires a force field or list of force fields' to be provided via `forcefields`."):
+        with pytest.raises(
+            ValueError,
+            match="The forcefield method requires a force field or list of force fields' to be provided via `forcefields`.",
+        ):
             charge_generation.assign_offmol_partial_charges(
                 uncharged_mol,
                 overwrite=False,

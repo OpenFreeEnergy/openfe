@@ -11,7 +11,8 @@ from typing import Callable, Literal
 
 import numpy as np
 from gufe import SmallMoleculeComponent
-from openff.toolkit import Molecule as OFFMol, ForceField
+from openff.toolkit import ForceField
+from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.base_wrapper import ToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import (
