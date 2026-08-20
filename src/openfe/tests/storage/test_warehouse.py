@@ -124,6 +124,27 @@ class TestWarehouseBaseClass:
         assert loaded is not None
         assert isinstance(loaded, GufeTokenizable)
 
+    def test_load_task_wrong_type(self, absolute_transformation):
+        transformation = absolute_transformation
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, name="test_warehouse")
+
+        client.store_setup_tokenizable(transformation)
+        with pytest.raises(TypeError, match="as ProtocolUnit"):
+            _ = client.load_task(transformation.key)
+
+    def test_store_load_protocol_dag_wrong_type(self, absolute_transformation):
+        transformation = absolute_transformation
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, name="test_warehouse")
+
+        with pytest.raises(TypeError, match="Unable to write"):
+            client.store_protocol_dag(absolute_transformation)
+        client.store_setup_tokenizable(absolute_transformation)
+
+        with pytest.raises(TypeError, match="Unable to load"):
+            client.load_protocol_dag(absolute_transformation.key)
+
     @pytest.mark.parametrize(
         "fixture",
         ["absolute_transformation", "complex_equilibrium"],
@@ -251,7 +272,7 @@ class TestFileSystemWarehouse:
             # store some data so files are created
             client.stores["shared"].store_bytes("sentinel", b"shared-data")
 
-            with pytest.raises(ValueError, match="already exists"):
+            with pytest.raises(FileExistsError, match="already exists"):
                 _ = FileSystemWarehouse(wh_dir)
 
             reloaded_client = FileSystemWarehouse.from_dir(root_dir=wh_dir)
