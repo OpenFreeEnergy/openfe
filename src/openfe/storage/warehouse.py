@@ -28,7 +28,7 @@ class WarehouseStores(TypedDict):
     ----------
     setup : ExternalStorage
         Storage location for setup-related objects and configurations.
-    result : ExternalStorage
+    results : ExternalStorage
         Storage location for result-related object.
     shared : ExternalStorage
         Storage location for non-permanent shared data.
@@ -43,7 +43,7 @@ class WarehouseStores(TypedDict):
     """
 
     setup: ExternalStorage
-    result: ExternalStorage
+    results: ExternalStorage
     shared: ExternalStorage
     tasks: ExternalStorage
     protocol_dags: ExternalStorage
@@ -80,12 +80,12 @@ class WarehouseBaseClass:
         # probably should include repr of external store, too
         return f"{self.__class__.__name__}({self.stores})"
 
-    def delete(self, store_name: Literal["setup", "result"], location: str):
+    def delete(self, store_name: Literal["setup", "results"], location: str):
         """Delete an object from a specific store.
 
         Parameters
         ----------
-        store_name : Literal["setup"]
+        store_name : Literal["setup", "results"]
             Name of the store to delete from.
         location : str
             Location/path of the object to delete.
@@ -134,17 +134,17 @@ class WarehouseBaseClass:
         """
         return self._load_gufe_tokenizable(gufe_key=obj)
 
-    def store_result_tokenizable(self, obj: GufeTokenizable):
-        """Store a GufeTokenizable object from the result store.
+    def store_results_tokenizable(self, obj: GufeTokenizable):
+        """Store a GufeTokenizable object to the results store.
 
         Parameters
         ----------
         obj : GufeKey
             The key of the object to store.
         """
-        return self._store_gufe_tokenizable("result", obj)
+        return self._store_gufe_tokenizable("results", obj)
 
-    def load_result_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
+    def load_results_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
         # TODO: this doesn't actually look specifically in the result store, which is misleading
         """Load a GufeTokenizable object from the result store.
 
@@ -239,7 +239,7 @@ class WarehouseBaseClass:
 
     def _store_gufe_tokenizable(
         self,
-        store_name: Literal["setup", "result", "tasks", "protocol_dags"],
+        store_name: Literal["setup", "results", "tasks", "protocol_dags"],
         obj: GufeTokenizable,
         name: str | None = None,
     ):
@@ -273,6 +273,7 @@ class WarehouseBaseClass:
                 else:
                     target.store_bytes(gufe_key, data)
 
+    # TODO: we should also be able to load from JSON, without knowing the gufe key in advance.
     def _load_gufe_tokenizable(self, gufe_key: GufeKey) -> GufeTokenizable:
         """Load a deduplicated object from a GufeKey.
 
@@ -372,8 +373,8 @@ class WarehouseBaseClass:
         RuntimeError
             If any object in the result store is not a ProtocolUnitResult
         """
-        for i in self.stores["result"]:
-            obj = self.load_result_tokenizable(i)
+        for i in self.stores["results"]:
+            obj = self.load_results_tokenizable(i)
             if isinstance(obj, ProtocolUnitResult):
                 yield obj
             else:
@@ -437,6 +438,7 @@ class WarehouseBaseClass:
         """Given a set of ProtocolDAGs and a set of ProtocolUnitResults,
         create a mapping of protocolDAGs to their corresponding ProtocolUnitResults
         """
+        # protocol unit source key mapped to unit results
         pur_pu_keys = {str(pur.source_key): pur for pur in unit_results}
         dag_map = {}
         for dag in dags:
@@ -494,7 +496,7 @@ class WarehouseBaseClass:
         ExternalStorage
             The result storage location
         """
-        return self.stores["result"]
+        return self.stores["results"]
 
     @property
     def shared_store(self):
@@ -534,13 +536,13 @@ class FileSystemWarehouse(WarehouseBaseClass):
             )
         self.root_dir.mkdir(exist_ok=exist_ok)  # make parents?
         setup_store = FileStorage(f"{self.root_dir}/setup", exist_ok=exist_ok)
-        result_store = FileStorage(f"{self.root_dir}/result", exist_ok=exist_ok)
+        result_store = FileStorage(f"{self.root_dir}/results", exist_ok=exist_ok)
         shared_store = FileStorage(f"{self.root_dir}/shared", exist_ok=exist_ok)
         tasks_store = FileStorage(f"{self.root_dir}/tasks", exist_ok=exist_ok)
         protocol_dag_store = FileStorage(f"{self.root_dir}/protocol_dags", exist_ok=exist_ok)
         stores = WarehouseStores(
             setup=setup_store,
-            result=result_store,
+            results=result_store,
             shared=shared_store,
             tasks=tasks_store,
             protocol_dags=protocol_dag_store,

@@ -25,7 +25,7 @@ class TestWarehouseBaseClass:
     def _build_stores() -> WarehouseStores:
         return WarehouseStores(
             setup=MemoryStorage(),
-            result=MemoryStorage(),
+            results=MemoryStorage(),
             shared=MemoryStorage(),
             tasks=MemoryStorage(),
             protocol_dags=MemoryStorage(),
@@ -41,14 +41,14 @@ class TestWarehouseBaseClass:
         obj,
         store_func_name,
         load_func_name,
-        store_name: Literal["setup", "result", "tasks"],
+        store_name: Literal["setup", "results", "tasks"],
     ):
         stores = TestWarehouseBaseClass._build_stores()
         client = WarehouseBaseClass(stores=stores, name="test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
-        assert stores["result"]._data == {}
+        assert stores["results"]._data == {}
         assert stores["shared"]._data == {}
         assert stores["tasks"]._data == {}
         store_func(obj)
@@ -63,14 +63,14 @@ class TestWarehouseBaseClass:
         obj: GufeTokenizable,
         store_func_name,
         load_func_name,
-        store_name: Literal["setup", "result", "tasks"],
+        store_name: Literal["setup", "results", "tasks"],
     ):
         stores = TestWarehouseBaseClass._build_stores()
         client = WarehouseBaseClass(stores=stores, name="test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
-        assert stores["result"]._data == {}
+        assert stores["results"]._data == {}
         assert stores["shared"]._data == {}
         assert stores["tasks"]._data == {}
         store_func(obj)
@@ -101,7 +101,7 @@ class TestWarehouseBaseClass:
 
         assert stores["tasks"]._data != {}
         assert stores["setup"]._data == {}
-        assert stores["result"]._data == {}
+        assert stores["results"]._data == {}
         assert stores["shared"]._data == {}
 
     def test_exists_finds_task_key(self, absolute_transformation):
@@ -128,7 +128,7 @@ class TestWarehouseBaseClass:
         "fixture",
         ["absolute_transformation", "complex_equilibrium"],
     )
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_transformation_same_process(self, request, fixture, store):
         transformation = request.getfixturevalue(fixture)
         store_func_name = f"store_{store}_tokenizable"
@@ -139,7 +139,7 @@ class TestWarehouseBaseClass:
         "fixture",
         ["absolute_transformation", "complex_equilibrium"],
     )
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_transformation_different_process(self, request, fixture, store):
         transformation = request.getfixturevalue(fixture)
         store_func_name = f"store_{store}_tokenizable"
@@ -149,7 +149,7 @@ class TestWarehouseBaseClass:
         )
 
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_network_same_process(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
         assert isinstance(network, GufeTokenizable)
@@ -158,7 +158,7 @@ class TestWarehouseBaseClass:
         self._test_store_load_same_process(network, store_func_name, load_func_name, store)
 
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_network_different_process(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
         assert isinstance(network, GufeTokenizable)
@@ -167,7 +167,7 @@ class TestWarehouseBaseClass:
         self._test_store_load_different_process(network, store_func_name, load_func_name, store)
 
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_delete(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
         store_func_name = f"store_{store}_tokenizable"
