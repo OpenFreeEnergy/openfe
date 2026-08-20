@@ -105,7 +105,7 @@ class WarehouseBaseClass:
     def load_task(self, obj: GufeKey) -> ProtocolUnit:
         unit = self._load_gufe_tokenizable(obj)
         if not isinstance(unit, ProtocolUnit):
-            raise ValueError(f"Unable to load {unit} as ProtocolUnit.")
+            raise TypeError(f"Unable to load {unit} as ProtocolUnit.")
         return unit
 
     def store_setup_tokenizable(self, obj: GufeTokenizable):
@@ -169,11 +169,11 @@ class WarehouseBaseClass:
 
         Raises
         ------
-        ValueError
+        TypeError
             If `dag` is not a ProtocolDAG instance.
         """
         if not isinstance(dag, ProtocolDAG):
-            raise ValueError(
+            raise TypeError(
                 f"Unable to write {dag}. Only ProtocolDAGs may be written to the 'protocol_dags' store."
             )
         self._store_gufe_tokenizable("protocol_dags", dag)
@@ -190,10 +190,15 @@ class WarehouseBaseClass:
         -------
         GufeTokenizable
             The loaded object.
+
+        Raises
+        ------
+        TypeError
+            If `gufe_key` does not corresponds to an object that is not a ProtocolDAG instance.
         """
         obj = self._load_gufe_tokenizable(gufe_key=gufe_key)
         if not isinstance(obj, ProtocolDAG):
-            raise ValueError(f"Unable to load {obj} as ProtocolDAG.")
+            raise TypeError(f"Unable to load {obj} as ProtocolDAG.")
         return obj
 
     def exists(self, key: GufeKey) -> bool:
@@ -531,7 +536,7 @@ class FileSystemWarehouse(WarehouseBaseClass):
     def __init__(self, root_dir: pathlib.Path, exist_ok=False):
         self.root_dir = pathlib.Path(root_dir)
         if self.root_dir.is_dir() and not exist_ok:
-            raise ValueError(
+            raise FileExistsError(
                 "`root_dir` already exists. To load an existing Warehouse, use FileSystemWarehouse.from_dir(`root_dir`)"
             )
         self.root_dir.mkdir(exist_ok=exist_ok)  # make parents?
@@ -565,12 +570,12 @@ class FileSystemWarehouse(WarehouseBaseClass):
 
         Raises
         ------
-        ValueError
+        FileNotFoundError
             If `root_dir` is not an existing directory.
         """
         root_dir = pathlib.Path(root_dir)
         if not root_dir.is_dir():
-            raise ValueError(
+            raise FileNotFoundError(
                 "`root_dir` must be an existing filepath. To create a new Warehouse, use FileSystemWarehouse(`root_dir`)"
             )
         return cls(root_dir=root_dir, exist_ok=True)
