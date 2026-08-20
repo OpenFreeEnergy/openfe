@@ -242,9 +242,7 @@ def benzene_star_map_task_db(benzene_variants_star_map, tmp_path):
     global_task_dag = _alchemical_network_to_task_graph(
         network, cast(WarehouseBaseClass, warehouse)
     )
-    db = exorcist.TaskStatusDB.from_filename(
-        ":memory:"
-    )  # TODO: how to make a barebones db that doesn't write to disk?
+    db = exorcist.TaskStatusDB.from_filename(":memory:")
     db.add_task_network(global_task_dag, 5)
     return db
 
