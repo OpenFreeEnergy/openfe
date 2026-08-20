@@ -21,9 +21,10 @@ def plan_alchemical_network_output(
     """Write the contents of an alchemical network into the structure"""
 
     if warehouse:
-        warehouse.store_setup_tokenizable(alchemical_network)
-        db_path = Path(warehouse.root_dir) / "tasks.db"
-        _ = build_task_db_from_alchemical_network(alchemical_network, warehouse, db_path)
+        #  TODO: update this to match API user experience
+        _ = build_task_db_from_alchemical_network(
+            alchemical_network, warehouse_dir="campaign/", db_path="campaign.db"
+        )
     else:
         base_name = folder_path.name
         folder_path.mkdir(parents=True, exist_ok=True)

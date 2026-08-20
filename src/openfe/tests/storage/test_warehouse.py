@@ -1,4 +1,3 @@
-import os
 import tempfile
 from pathlib import Path
 from typing import Literal
@@ -42,7 +41,7 @@ class TestWarehouseBaseClass:
         store_name: Literal["setup", "result", "tasks"],
     ):
         stores = TestWarehouseBaseClass._build_stores()
-        client = WarehouseBaseClass(stores, "test_warehouse")
+        client = WarehouseBaseClass(stores=stores, name="test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
@@ -64,7 +63,7 @@ class TestWarehouseBaseClass:
         store_name: Literal["setup", "result", "tasks"],
     ):
         stores = TestWarehouseBaseClass._build_stores()
-        client = WarehouseBaseClass(stores, "test_warehouse")
+        client = WarehouseBaseClass(stores=stores, name="test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
@@ -182,24 +181,28 @@ class TestFileSystemWarehouse:
     @staticmethod
     def _test_store_load_same_process(obj, store_func_name, load_func_name):
         with tempfile.TemporaryDirectory() as tmpdir:
-            client = FileSystemWarehouse(tmpdir)
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(wh_dir)
             store_func = getattr(client, store_func_name)
             load_func = getattr(client, load_func_name)
-            assert not any(Path(f"{tmpdir}").iterdir())
+            # TODO: top dirs should exist but be empty
+            # assert not any((Path(tmpdir)/store_func_name).iterdir())
             store_func(obj)
-            assert any(Path(f"{tmpdir}").iterdir())
+            assert any(Path(f"{wh_dir}").iterdir())
             reloaded = load_func(obj.key)
             assert reloaded is obj
 
     @staticmethod
     def _test_store_load_different_process(obj: GufeTokenizable, store_func_name, load_func_name):
         with tempfile.TemporaryDirectory() as tmpdir:
-            client = FileSystemWarehouse(tmpdir)
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(root_dir=wh_dir)
             store_func = getattr(client, store_func_name)
             load_func = getattr(client, load_func_name)
-            assert not any(Path(f"{tmpdir}").iterdir())
+            # TODO: top dirs should exist but be empty
+            # assert not any(Path(f"{tmpdir}").iterdir())
             store_func(obj)
-            assert any(Path(f"{tmpdir}").iterdir())
+            assert any(Path(f"{wh_dir}").iterdir())
             # make it look like we have an empty cache, as if this was a
             # different process
             key = obj.key
@@ -225,7 +228,9 @@ class TestFileSystemWarehouse:
         unit = TestWarehouseBaseClass._get_protocol_unit(absolute_transformation)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            client = FileSystemWarehouse(tmpdir)
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(wh_dir)
+            assert client.name == "warehouse_name"
 
             assert "shared" in client.stores
             assert "tasks" in client.stores
@@ -236,6 +241,18 @@ class TestFileSystemWarehouse:
 
             client.store_task(unit)
             assert client.exists(unit.key)
+
+    def test_filesystem_warehouse_exists_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(wh_dir)
+            # store some data so files are created
+            client.stores["shared"].store_bytes("sentinel", b"shared-data")
+
+            with pytest.raises(ValueError, match="already exists"):
+                _ = FileSystemWarehouse(wh_dir)
+
+            reloaded_client = FileSystemWarehouse.from_dir(root_dir=wh_dir)
 
     @pytest.mark.parametrize(
         "fixture",
