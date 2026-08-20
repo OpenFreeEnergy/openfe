@@ -55,10 +55,9 @@ def _get_dependency_free_unit(absolute_transformation):
 @pytest.fixture
 def worker_with_real_db(tmp_path, absolute_transformation):
     warehouse_root = tmp_path / "warehouse"
-    db_path = warehouse_root / "tasks.db"
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    db_path = tmp_path / "tasks.db"
     network = gufe.AlchemicalNetwork([absolute_transformation])
-    db = build_task_db_from_alchemical_network(network, warehouse, db_path=db_path)
+    db, warehouse = build_task_db_from_alchemical_network(network, warehouse_root, db_path=db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
     return worker, warehouse, db
 
@@ -85,12 +84,14 @@ def worker_with_executable_task_db(tmp_path, absolute_transformation):
 def test_get_task_uses_default_db_path_without_patching(
     tmp_path, monkeypatch, absolute_transformation
 ):
+    # TODO: tasks.db shouldn't exist _within_ the warehouse
     monkeypatch.chdir(tmp_path)
-    warehouse = FileSystemWarehouse("warehouse")
+    warehouse_root = "warehouse"
     db_path = Path("warehouse/tasks.db")
     network = gufe.AlchemicalNetwork([absolute_transformation])
-    db = build_task_db_from_alchemical_network(network, warehouse, db_path=db_path)
+    db, warehouse = build_task_db_from_alchemical_network(network, warehouse_root, db_path=db_path)
 
+    warehouse = FileSystemWarehouse.from_dir("warehouse")
     worker = Worker(warehouse=warehouse)
     taskid, loaded = worker._get_task()
 
@@ -156,7 +157,7 @@ def test_checkout_task_returns_none_when_no_available_tasks(tmp_path):
     warehouse_root = tmp_path / "warehouse"
     db_path = warehouse_root / "tasks.db"
     warehouse_root.mkdir(parents=True, exist_ok=True)
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    warehouse = FileSystemWarehouse.from_dir(str(warehouse_root))
     exorcist.TaskStatusDB.from_filename(db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
 
@@ -167,7 +168,7 @@ def test_execute_unit_returns_none_when_no_available_tasks(tmp_path):
     warehouse_root = tmp_path / "warehouse"
     db_path = warehouse_root / "tasks.db"
     warehouse_root.mkdir(parents=True, exist_ok=True)
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    warehouse = FileSystemWarehouse.from_dir(str(warehouse_root))
     exorcist.TaskStatusDB.from_filename(db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
 

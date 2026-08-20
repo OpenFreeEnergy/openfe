@@ -18,8 +18,10 @@ from gufe.tokenization import GufeKey
 from openfe.storage.warehouse import FileSystemWarehouse
 
 from .exorcist_utils import (
-    alchemical_network_to_task_graph,
+    _alchemical_network_to_task_graph,
     build_task_db_from_alchemical_network,
+    get_dependency_df,
+    get_task_df,
 )
 
 
@@ -189,7 +191,7 @@ class Worker:
         db, taskid, unit = task
         return taskid, unit
 
-    def execute_unit(self, scratch: Path) -> tuple[str, ProtocolUnitResult] | None:
+    def execute_unit(self, scratch: Path | str) -> tuple[str, ProtocolUnitResult] | None:
         """Execute one checked-out protocol unit and persist its result.
 
         Parameters
@@ -209,7 +211,7 @@ class Worker:
             Re-raises any exception thrown during protocol unit execution after
             marking the task as failed.
         """
-
+        scratch = Path(scratch)
         # 1. Get task/unit
         task = self._checkout_task()
         if task is None:

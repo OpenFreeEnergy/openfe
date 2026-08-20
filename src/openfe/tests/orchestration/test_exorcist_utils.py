@@ -1,18 +1,21 @@
-from pathlib import Path
 from typing import cast
 from unittest import mock
 
 import exorcist
 import networkx as nx
+import pandas as pd
 import pytest
 import sqlalchemy as sqla
+from gufe import AlchemicalNetwork
 from gufe.tokenization import GufeKey
 
-from openfe.orchestration.exorcist_utils import (
-    alchemical_network_to_task_graph,
+from openfe.orchestration import (
+    _alchemical_network_to_task_graph,
     build_task_db_from_alchemical_network,
+    get_dependency_df,
+    get_task_df,
 )
-from openfe.storage.warehouse import FileSystemWarehouse, WarehouseBaseClass
+from openfe.storage.warehouse import WarehouseBaseClass
 
 
 class _RecordingWarehouse:
@@ -42,7 +45,7 @@ def test_alchemical_network_to_task_graph_stores_all_units(request, fixture):
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
     expected_units = _network_units(network)
-    alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     stored_unit_names = [str(unit.name) for unit in warehouse.stored_tasks]
     expected_unit_names = [str(unit.name) for unit in expected_units]
@@ -56,7 +59,7 @@ def test_alchemical_network_to_task_graph_uses_canonical_task_ids(request, fixtu
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
 
-    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     expected_protocol_unit_keys = sorted(str(unit.key) for unit in warehouse.stored_tasks)
     observed_protocol_unit_keys = []
@@ -73,7 +76,7 @@ def test_alchemical_network_to_task_graph_edges_reference_existing_nodes(request
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
 
-    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
 
     assert len(graph.edges) > 0
     for u, v in graph.edges:
@@ -86,7 +89,7 @@ def test_alchemical_network_to_task_graph_edge_direction_matches_dependencies(re
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
 
-    graph = alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
     units_by_key = {str(unit.key): unit for unit in warehouse.stored_tasks}
 
     for upstream_id, downstream_id in graph.edges:
@@ -118,23 +121,24 @@ def test_alchemical_network_to_task_graph_raises_for_cycle():
             dag.graph.add_edges_from([(unit_a, unit_b), (unit_b, unit_a)])
             return dag
 
-    network = mock.Mock()
+    network = mock.Mock(AlchemicalNetwork)
     network.edges = [_Transformation()]
     warehouse = mock.Mock()
 
     with pytest.raises(ValueError, match="not a DAG"):
-        alchemical_network_to_task_graph(network, warehouse)
+        _alchemical_network_to_task_graph(network, warehouse)
 
 
+# TODO: slow test
 @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
 def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixture):
     network = request.getfixturevalue(fixture)
-    warehouse = FileSystemWarehouse(str(tmp_path / "warehouse"))
     # Build the real sqlite task DB from a real alchemical network fixture.
-    db = build_task_db_from_alchemical_network(
+    wh_dir = tmp_path / "campaign"
+    db, warehouse = build_task_db_from_alchemical_network(
         network,
-        warehouse,
-        db_path=tmp_path / "tasks.db",
+        warehouse_dir=wh_dir,
+        db_path=tmp_path / "campaign.db",
     )
 
     # Read task IDs and dependency edges from the persisted DB state.
@@ -147,6 +151,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     checkout_order = []
     # Hard upper bound prevents infinite checkout loops.
     max_checkouts = len(graph_taskids)
+
     for _ in range(max_checkouts):
         taskid = db.check_out_task()
         if taskid is None:
@@ -175,42 +180,42 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     assert {row.status for row in task_rows} == {exorcist.TaskStatus.COMPLETED.value}
 
 
-@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
-def test_build_task_db_default_path(request, fixture):
-    network = request.getfixturevalue(fixture)
-    warehouse = mock.Mock()
-    fake_graph = nx.DiGraph()
-    fake_db = mock.Mock()
+# TODO: revisit this after deciding how we want to handle defaults
+# @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+# def test_build_task_db_default_path(request, fixture):
+#     network = request.getfixturevalue(fixture)
+#     warehouse = mock.Mock()
+#     fake_graph = nx.DiGraph()
+#     fake_db = mock.Mock()
 
-    with (
-        mock.patch(
-            "openfe.orchestration.exorcist_utils.alchemical_network_to_task_graph",
-            return_value=fake_graph,
-        ) as task_graph_mock,
-        mock.patch(
-            "openfe.orchestration.exorcist_utils.exorcist.TaskStatusDB.from_filename",
-            return_value=fake_db,
-        ) as db_ctor,
-    ):
-        result = build_task_db_from_alchemical_network(network, warehouse)
+#     with (
+#         mock.patch(
+#             "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
+#             return_value=fake_graph,
+#         ) as task_graph_mock,
+#         mock.patch(
+#             "openfe.orchestration.exorcist_utils.exorcist.TaskStatusDB.from_filename",
+#             return_value=fake_db,
+#         ) as db_ctor,
+#     ):
+#         result = build_task_db_from_alchemical_network(network, warehouse)
 
-    task_graph_mock.assert_called_once_with(network, warehouse)
-    db_ctor.assert_called_once_with(Path(f"{warehouse.name}.db"))
-    fake_db.add_task_network.assert_called_once_with(fake_graph, 1)
-    assert result is fake_db
+#     task_graph_mock.assert_called_once_with(network, warehouse)
+#     db_ctor.assert_called_once_with(Path(f"{warehouse.name}.db"))
+#     fake_db.add_task_network.assert_called_once_with(fake_graph, 1)
+#     assert result is fake_db
 
 
 @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
 def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
     network = request.getfixturevalue(fixture)
-    warehouse = mock.Mock()
     fake_graph = nx.DiGraph()
     fake_db = mock.Mock()
-    db_path = tmp_path / "custom_tasks.db"
-
+    db_path = tmp_path / "tmp_campaign.db"
+    wh_path = tmp_path / "tmp_campaign"
     with (
         mock.patch(
-            "openfe.orchestration.exorcist_utils.alchemical_network_to_task_graph",
+            "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
             return_value=fake_graph,
         ) as task_graph_mock,
         mock.patch(
@@ -218,14 +223,48 @@ def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
             return_value=fake_db,
         ) as db_ctor,
     ):
-        result = build_task_db_from_alchemical_network(
+        db, warehouse = build_task_db_from_alchemical_network(
             network,
-            warehouse,
+            wh_path,
             db_path=db_path,
             max_tries=7,
         )
-
     task_graph_mock.assert_called_once_with(network, warehouse)
     db_ctor.assert_called_once_with(db_path)
     fake_db.add_task_network.assert_called_once_with(fake_graph, 7)
-    assert result is fake_db
+    assert db is fake_db
+
+
+@pytest.fixture()
+def benzene_star_map_task_db(benzene_variants_star_map, tmp_path):
+    warehouse = _RecordingWarehouse()
+    network = benzene_variants_star_map
+    global_task_dag = _alchemical_network_to_task_graph(
+        network, cast(WarehouseBaseClass, warehouse)
+    )
+    db = exorcist.TaskStatusDB.from_filename(":memory:")
+    db.add_task_network(global_task_dag, 5)
+    return db
+
+
+def test_get_task_df(benzene_star_map_task_db):
+    df = get_task_df(benzene_star_map_task_db)
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == [
+        "taskid",
+        "status",
+        "last_modified",
+        "tries",
+        "max_tries",
+        "task_type",
+    ]
+    assert len(df) == 276
+    assert len(df[df.status == "AVAILABLE"]) == 12
+    assert len(df[df.status == "BLOCKED"]) == 264
+
+
+def test_get_dependency_df(benzene_star_map_task_db):
+    df = get_dependency_df(benzene_star_map_task_db)
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["from", "to", "blocking"]
+    assert len(df) == 504

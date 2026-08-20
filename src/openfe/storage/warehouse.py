@@ -1,5 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/gufe
+from __future__ import annotations
+
 import json
 import pathlib
 import re
@@ -12,8 +14,6 @@ from gufe.tokenization import (
     JSON_HANDLER,
     GufeKey,
     GufeTokenizable,
-    from_dict,
-    get_all_gufe_objs,
     key_decode_dependencies,
 )
 
@@ -398,8 +398,8 @@ class FileSystemWarehouse(WarehouseBaseClass):
 
     Parameters
     ----------
-    root_dir : str, optional
-        Root directory for the warehouse storage, by default "warehouse".
+    root_dir : pathlib.Path, optional
+        Root directory in which to create the warehouse storage.
 
     Notes
     -----
@@ -408,15 +408,18 @@ class FileSystemWarehouse(WarehouseBaseClass):
     for results and other data types.
     """
 
-    def __init__(self, name):
-        # TODO: should name and location be different?
-        self.root_dir = pathlib.Path(f"{name}")
-        setup_store = FileStorage(f"{self.root_dir}/setup")
-        result_store = FileStorage(f"{self.root_dir}/result")
-        shared_store = FileStorage(f"{self.root_dir}/shared")
-        tasks_store = FileStorage(f"{self.root_dir}/tasks")
-        # TODO: we can store dags in setup if we have a performant way of accessing them
-        protocol_dag_store = FileStorage(f"{self.root_dir}/protocol_dags")
+    def __init__(self, root_dir: pathlib.Path, exist_ok=False):
+        self.root_dir = pathlib.Path(root_dir)
+        if self.root_dir.is_dir() and not exist_ok:
+            raise ValueError(
+                "`root_dir` already exists. To load an existing Warehouse, use FileSystemWarehouse.from_dir(`root_dir`)"
+            )
+        self.root_dir.mkdir(exist_ok=exist_ok)  # make parents?
+        setup_store = FileStorage(f"{self.root_dir}/setup", exist_ok=exist_ok)
+        result_store = FileStorage(f"{self.root_dir}/result", exist_ok=exist_ok)
+        shared_store = FileStorage(f"{self.root_dir}/shared", exist_ok=exist_ok)
+        tasks_store = FileStorage(f"{self.root_dir}/tasks", exist_ok=exist_ok)
+        protocol_dag_store = FileStorage(f"{self.root_dir}/protocol_dags", exist_ok=exist_ok)
         stores = WarehouseStores(
             setup=setup_store,
             result=result_store,
@@ -424,4 +427,30 @@ class FileSystemWarehouse(WarehouseBaseClass):
             tasks=tasks_store,
             protocol_dags=protocol_dag_store,
         )
-        super().__init__(stores, name)
+        name = self.root_dir.resolve().name
+        super().__init__(stores=stores, name=name)
+
+    @classmethod
+    def from_dir(cls, root_dir: pathlib.Path) -> FileSystemWarehouse:
+        """Initialize a FileSystemWarehouse from an existing directory.
+
+        Parameters
+        ----------
+        root_dir : pathlib.Path
+            Root directory of the Warehouse.
+
+        Returns
+        -------
+        FileSystemWarehouse
+
+        Raises
+        ------
+        ValueError
+            If `root_dir` is not an existing directory.
+        """
+        root_dir = pathlib.Path(root_dir)
+        if not root_dir.is_dir():
+            raise ValueError(
+                "`root_dir` must be an existing filepath. To create a new Warehouse, use FileSystemWarehouse(`root_dir`)"
+            )
+        return cls(root_dir=root_dir, exist_ok=True)
