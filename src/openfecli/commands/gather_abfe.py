@@ -13,8 +13,8 @@ from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
     load_json,
-    rich_print_to_stdout,
 )
+from openfecli.utils import rich_print_to_stdout
 
 
 def _get_name(result: dict) -> str:
