@@ -105,6 +105,7 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     ----------
     task_db : exorcist.TaskStatusDB
         A task database.
+
     Returns
     -------
     pd.DataFrame
