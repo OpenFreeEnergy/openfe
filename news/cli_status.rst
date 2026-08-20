@@ -1,6 +1,6 @@
 **Added:**
 
-* Added ``openfe status`` command (`PR #2156 <https://github.com/OpenFreeEnergy/openfe/pull/2156>`_).
+* Added ``openfe status`` command (`PR #2156 <https://github.com/OpenFreeEnergy/openfe/pull/2156>`_) that shows the status of all tasks in a worker task database.
 
 **Changed:**
 
