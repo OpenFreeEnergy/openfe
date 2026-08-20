@@ -1671,7 +1671,6 @@ def tyk2_reference_xml():
     return ET.fromstring(xmldata)
 
 
-@pytest.mark.slow
 class TestTyk2XmlRegression:
     """Generates Hybrid system XML and performs regression test"""
 
