@@ -11,6 +11,7 @@ import pandas as pd
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
+from openfecli.utils import rich_print_to_stdout
 
 FAIL_STR = "Error"  # string used to indicate a failed run in output tables.
 
@@ -693,26 +694,6 @@ def _get_legs_from_result_jsons(
                     ]
                 legs[names][simtype].extend(dGs)
     return legs
-
-
-def rich_print_to_stdout(df: pd.DataFrame) -> None:
-    """Use rich to pretty print a table to stdout."""
-
-    from rich import box
-    from rich.console import Console
-    from rich.table import Table
-
-    table = Table(box=box.SQUARE)
-
-    for col in df.columns:
-        table.add_column(col)
-
-    for row_values in df.values:
-        row = [str(val) for val in row_values]
-        table.add_row(*row)
-
-    console = Console()
-    console.print(table)
 
 
 @click.command(
