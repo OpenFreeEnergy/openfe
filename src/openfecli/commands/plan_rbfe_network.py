@@ -2,7 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import click
 
-from openfe.storage.warehouse import FileSystemWarehouse
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
     COFACTORS,
@@ -182,6 +181,7 @@ def plan_rbfe_network(
     write("______________________")
     write("")
 
+    from openfe.storage.warehouse import FileSystemWarehouse
     from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
     write("Parsing in Files: ")
