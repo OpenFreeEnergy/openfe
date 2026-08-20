@@ -288,7 +288,7 @@ class TestWarehouseResultsGathering:
         uncertainties = [pr.get_uncertainty() for pr, dag in result_edges if dag.ok()]
         assert uncertainties == [0.0 * unit.kilocalorie_per_mole] * 3
 
-        expected_estimates = [-0.658, 5.547, 5.769]
-        estimates = [round(pr.get_estimate().m, 3) for pr, dag in result_edges if dag.ok()]
+        expected_estimates = {-0.658, 5.547, 5.769}
+        estimates = {round(pr.get_estimate().m, 3) for pr, dag in result_edges if dag.ok()}
         assert expected_estimates == estimates
         assert len(result_edges) == 4
