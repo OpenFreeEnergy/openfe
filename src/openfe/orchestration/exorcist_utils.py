@@ -100,6 +100,7 @@ def build_task_db_from_alchemical_network(
 
 def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """Create a pandas Dataframe from task_db.
+
     Parameters
     ----------
     task_db : exorcist.TaskStatusDB
