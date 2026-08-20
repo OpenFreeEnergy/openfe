@@ -9,7 +9,7 @@ from ..utils import assert_click_success
 
 
 @pytest.fixture
-def single_task_graph():
+def simple_task_graph():
     task_graph = nx.DiGraph()
     node_ids = ["HybridTopologySetupUnit-123", "HybridTopologySetupUnit-456"]
 
@@ -19,10 +19,10 @@ def single_task_graph():
     return task_graph, node_ids
 
 
-def test_status(single_task_graph):
+def test_status(simple_task_graph):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        task_graph, node_ids = single_task_graph
+        task_graph, node_ids = simple_task_graph
         db_path = "test.db"
         db = exorcist.TaskStatusDB.from_filename(db_path)
         db.add_task_network(task_graph, max_tries=6)
