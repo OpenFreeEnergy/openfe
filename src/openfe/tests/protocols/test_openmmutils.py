@@ -1458,6 +1458,17 @@ class TestChargeValidation:
             name="mixed charges",
         )
 
+    @pytest.fixture
+    def many_no_charge_system(self, benzene_modifications_uncharged):
+        return ChemicalSystem(
+            {
+                "benzene": benzene_modifications_uncharged["benzene"],
+                "toluene": benzene_modifications_uncharged["toluene"],
+                "phenol": benzene_modifications_uncharged["phenol"],
+            },
+            name="many no charges",
+        )
+
     def test_gaff_with_molecule_charges(self, benzene_charged_system):
         system_validation.validate_nondeterministic_charges(
             benzene_charged_system, small_molecule_forcefield="gaff-2.11"
@@ -1467,7 +1478,7 @@ class TestChargeValidation:
         with pytest.raises(
             ProtocolValidationError,
             match=re.escape(
-                "SmallMoleculeComponent(name=benzene) from system no charges would have am1bcc charges"
+                "The following Components are affected: SmallMoleculeComponent(name=benzene)"
             ),
         ):
             system_validation.validate_nondeterministic_charges(
@@ -1483,7 +1494,7 @@ class TestChargeValidation:
         with pytest.raises(
             ProtocolValidationError,
             match=re.escape(
-                "SmallMoleculeComponent(name=benzene) from system no charges would have am1bcc charges"
+                "The following Components are affected: SmallMoleculeComponent(name=benzene)"
             ),
         ):
             system_validation.validate_nondeterministic_charges(
@@ -1499,7 +1510,7 @@ class TestChargeValidation:
         with pytest.raises(
             ProtocolValidationError,
             match=re.escape(
-                "SmallMoleculeComponent(name=benzene) from system no charges would have am1bcc charges"
+                "The following Components are affected: SmallMoleculeComponent(name=benzene)"
             ),
         ):
             system_validation.validate_nondeterministic_charges(
@@ -1531,11 +1542,25 @@ class TestChargeValidation:
         with pytest.raises(
             ProtocolValidationError,
             match=re.escape(
-                "SmallMoleculeComponent(name=toluene) from system mixed charges would have am1bcc charges"
+                "The following Components are affected: SmallMoleculeComponent(name=toluene)"
             ),
         ):
             system_validation.validate_nondeterministic_charges(
                 # pick a force field with an am1bcc handler
                 mixed_charge_system,
+                small_molecule_forcefield="openff-2.2.0.offxml",
+            )
+
+    def test_openff_many_missing_charges(self, many_no_charge_system):
+        # make sure an error is raised if not all smcs would have deterministic charges and all smcs are listed in the error message
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "The following Components are affected: SmallMoleculeComponent(name=benzene), SmallMoleculeComponent(name=toluene), SmallMoleculeComponent(name=phenol)"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                # pick a force field with an am1bcc handler
+                many_no_charge_system,
                 small_molecule_forcefield="openff-2.2.0.offxml",
             )

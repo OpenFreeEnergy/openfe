@@ -752,7 +752,6 @@ def test_setup_charge_backends(
     # make sure an error is raised if a nondeterministic charge method would be used at run time
     vac_settings.partial_charge_settings.partial_charge_method = "am1bcc"
     vac_settings.partial_charge_settings.off_toolkit_backend = "ambertools"
-    vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=vac_settings,
@@ -761,7 +760,7 @@ def test_setup_charge_backends(
     # make stateB molecule
     offmolB = Molecule.from_smiles("CCN")
     offmolB.generate_conformers()
-    molB = openfe.SmallMoleculeComponent.from_openff(offmolB)
+    molB = openfe.SmallMoleculeComponent.from_openff(offmolB, name="CCN")
     mapping = LigandAtomMapping(
         componentA=CN_molecule, componentB=molB, componentA_to_componentB={0: 1}
     )
@@ -771,7 +770,8 @@ def test_setup_charge_backends(
     with pytest.raises(
         ProtocolValidationError,
         match=re.escape(
-            "SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic."
+            # this is the CN failing as it has no name
+            "The following Components are affected: SmallMoleculeComponent(name=)"
         ),
     ):
         _ = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)

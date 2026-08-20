@@ -408,6 +408,7 @@ def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_for
                 errmsg = f"Could not load force field {small_molecule_forcefield} or {small_molecule_forcefield}.offxml: {e}"
                 raise ProtocolValidationError(errmsg)
 
+    errors = []
     for smc in smcs:
         offmol = smc.to_openff()
         if offmol.partial_charges is not None and np.any(offmol.partial_charges):
@@ -423,8 +424,12 @@ def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_for
         # We count library and nagl charges as deterministic
         # While users could use a deterministic charge method with increments we don't currently support this
         if not labels["LibraryCharges"] and "NAGLCharges" not in labels:
-            errmsg = (
-                f"{smc} from system {system.name} would have am1bcc charges generated at runtime which is non-deterministic. "
-                f"Please provide a molecule with pre-computed charges or use library charges instead."
-            )
-            raise ProtocolValidationError(errmsg)
+            errors.append(smc)
+
+    if errors:
+        errmsg = (
+            f"System: '{system.name}' contains SmallMoleculeComponents which would have am1bcc charges generated at runtime which is non-deterministic. "
+            f"Please provide a molecule with pre-computed charges or use library charges instead. "
+            f"The following Components are affected: {', '.join([str(smc) for smc in errors])}"
+        )
+        raise ProtocolValidationError(errmsg)
