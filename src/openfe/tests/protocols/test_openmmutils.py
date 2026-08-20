@@ -1526,7 +1526,7 @@ class TestChargeValidation:
             benzene_no_charge_system, small_molecule_forcefield=ff.to_string()
         )
 
-    def test_openff_nagl_mixed_charges(self, mixed_charge_system):
+    def test_openff_mixed_charges(self, mixed_charge_system):
         # make sure an error is raised if not all smcs would have deterministic charges
         with pytest.raises(
             ProtocolValidationError,
