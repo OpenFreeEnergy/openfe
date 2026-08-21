@@ -11,6 +11,7 @@ from typing import Callable, Literal
 
 import numpy as np
 from gufe import SmallMoleculeComponent
+from openff.toolkit import ForceField
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.base_wrapper import ToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
@@ -286,10 +287,11 @@ def _generate_offmol_conformers(
 def assign_offmol_partial_charges(
     offmol: OFFMol,
     overwrite: bool,
-    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"],
+    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"],
     toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
     generate_n_conformers: int | None,
     nagl_model: str | None,
+    forcefields: list[str] | None = None,
 ) -> OFFMol:
     """
     Assign partial charges to an OpenFF Molecule based on a selected method.
@@ -299,11 +301,11 @@ def assign_offmol_partial_charges(
     offmol : openff.toolkit.Molecule
       The Molecule to assign partial charges to.
     overwrite : bool
-      Whether or not to overwrite any existing non-zero partial charges.
+      Whether to overwrite any existing non-zero partial charges.
       Note that zeroed charges will always be overwritten.
-    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
+    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma', 'forcefield']
       Partial charge assignment method.
-      Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
+      Supported methods include; am1bcc, am1bccelf10, nagl, espaloma and forcefield.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
       OpenFF toolkit backend employed for charge generation.
       Supported options:
@@ -319,6 +321,14 @@ def assign_offmol_partial_charges(
     nagl_model : str | None
       The NAGL model to use for charge assignment if method is ``nagl``.
       If ``None``, the latest am1bcc NAGL charge model is used.
+    forcefields : list[str] | None, default None
+        An optional list of SMIRNOFF style force field offxml paths or strings which should be used to assign partial charges.
+
+    Notes
+    -----
+    Charges are applied based on the following source preferences:
+     - Charges already present on the ligand are retained if overwrite is ``False``.
+     - Charges are applied using the input method and settings.
 
     Raises
     ------
@@ -338,6 +348,40 @@ def assign_offmol_partial_charges(
     if offmol.partial_charges is not None and np.any(offmol.partial_charges):
         if not overwrite:
             return offmol
+
+    if method.lower() == "forcefield":
+        if forcefields is None:
+            errmsg = (
+                "The forcefield method requires a force field or list of force fields' to be provided "
+                "via `forcefields`."
+            )
+            raise ValueError(errmsg)
+
+        if isinstance(forcefields, str):
+            forcefields = [forcefields]
+
+        try:
+            # try to parse what the user has provided, due to supporting dropping the offxml extension,
+            # we need to try and catch the OSError and add the extension if needed
+            ff = ForceField(*forcefields)
+        except OSError:
+            # try adding the offxml extension if not present and it's a possible file path
+            forcefields_with_ext = []
+            for _ff in forcefields:
+                # if the string of the force field is passed it should start with the xml header
+                if not _ff.endswith(".offxml") and not _ff.startswith("<?xml"):
+                    ff_with_ext = f"{_ff}.offxml"
+                    forcefields_with_ext.append(ff_with_ext)
+                else:
+                    forcefields_with_ext.append(_ff)
+
+            # try again to load the force field with the added extension, if we fail let it raise the error
+            ff = ForceField(*forcefields_with_ext)
+
+        # let the force field resolve the partial charge assignment
+        charges = ff.get_partial_charges(offmol)
+        offmol.partial_charges = charges
+        return offmol
 
     # Dictionary for each available charge method
     # The idea of this pattern is to allow for maximum flexibility by
@@ -441,11 +485,12 @@ def assign_offmol_partial_charges(
 def bulk_assign_partial_charges(
     molecules: list[SmallMoleculeComponent],
     overwrite: bool,
-    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"],
+    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"],
     toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
     generate_n_conformers: int | None,
     nagl_model: str | None,
     processors: int = 1,
+    forcefields: list[str] | None = None,
 ) -> list[SmallMoleculeComponent]:
     """
     Assign partial charges to a list of SmallMoleculeComponents using multiprocessing.
@@ -457,7 +502,7 @@ def bulk_assign_partial_charges(
     overwrite : bool
       Whether or not to overwrite any existing non-zero partial charges.
       Note that zeroed charges will always be overwritten.
-    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
+    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma', 'forcefield]
       Partial charge assignment method.
       Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
@@ -477,6 +522,8 @@ def bulk_assign_partial_charges(
       If ``None``, the latest am1bcc NAGL charge model is used.
     processors: int, default 1
         The number of processors which should be used to generate the charges.
+    forcefields : list[str] | None, default None
+        An optional list of SMIRNOFF style force field offxml paths or strings which should be used to assign partial charges.
 
     Raises
     ------
@@ -499,6 +546,7 @@ def bulk_assign_partial_charges(
         "toolkit_backend": toolkit_backend,
         "generate_n_conformers": generate_n_conformers,
         "nagl_model": nagl_model,
+        "forcefields": forcefields,
     }
 
     if processors > 1:
