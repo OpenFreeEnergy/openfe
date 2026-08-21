@@ -409,10 +409,10 @@ class FileSystemWarehouse(WarehouseBaseClass):
     """
 
     def __init__(self, root_dir: pathlib.Path, exist_ok=False):
-        self.root_dir = pathlib.Path(root_dir)
+        self.root_dir = pathlib.Path(root_dir).resolve()
         if self.root_dir.is_dir() and not exist_ok:
             raise ValueError(
-                "`root_dir` already exists. To load an existing Warehouse, use FileSystemWarehouse.from_dir(`root_dir`)"
+                f"Warehouse directory '{self.root_dir}' already exists. To load an existing Warehouse, use FileSystemWarehouse.from_dir(`root_dir`)"
             )
         self.root_dir.mkdir(exist_ok=exist_ok)  # make parents?
         setup_store = FileStorage(f"{self.root_dir}/setup", exist_ok=exist_ok)
