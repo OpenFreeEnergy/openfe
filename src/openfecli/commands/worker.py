@@ -130,4 +130,4 @@ def worker(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
     worker_main(warehouse_path=warehouse_path, scratch=scratch)
 
 
-PLUGIN = OFECommandPlugin(command=worker, section="Quickrun Executor", requires_ofe=(0, 3))
+PLUGIN = OFECommandPlugin(command=worker, section="Execution", requires_ofe=(1, 12))
