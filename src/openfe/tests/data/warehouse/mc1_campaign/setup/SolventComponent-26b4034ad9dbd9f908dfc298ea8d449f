@@ -1,0 +1,1 @@
+{":version:": 1, "__module__": "gufe.components.solventcomponent", "__qualname__": "SolventComponent", "ion_concentration": "0.15 molar", "negative_ion": "Cl-", "neutralize": true, "positive_ion": "Na+", "smiles": "O"}
