@@ -11,6 +11,7 @@ from openfecli.utils import print_duration, write
 def build_warehouse_main(alchemical_network: AlchemicalNetwork, name: str | None = None):
     from openfe.orchestration.exorcist_utils import build_task_db_from_alchemical_network
 
+    write("Creating Warehouse and TaskDB from AlchemicalNetwork...")
     db_path = Path(f"{name}.db")
     # TODO: add progress bar
     _, wh = build_task_db_from_alchemical_network(
@@ -18,8 +19,8 @@ def build_warehouse_main(alchemical_network: AlchemicalNetwork, name: str | None
         warehouse_dir=Path(name),
         db_path=db_path,
     )
-    write(f"created Warehouse at {wh.root_dir}")
-    write(f"created TaskDB at {db_path}")
+    write(f"Warehouse written to: {wh.root_dir}")
+    write(f"TaskDB written to: {db_path}")
 
 
 @click.command(
