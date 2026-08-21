@@ -363,5 +363,5 @@ def gather_abfe(
 PLUGIN = OFECommandPlugin(
     command=gather_abfe,
     section="Quickrun Executor",
-    requires_ofe=(0, 6),
+    requires_ofe=(1, 8),
 )
