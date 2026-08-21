@@ -14,7 +14,7 @@ import openmm
 import pandas as pd
 import pytest
 from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
-from openff.toolkit import ForceField
+from openff.toolkit import ForceField, Molecule
 from openff.units import unit as offunit
 from openmm import unit as ommunit
 from rdkit import Chem
@@ -162,7 +162,7 @@ def lomap_basic_test_files_dir(tmp_path_factory):
     lomap_basic = "openfe.tests.data.lomap_basic"
 
     for f in resources.contents(lomap_basic):
-        if not f.endswith("mol2"):
+        if not f.endswith("sdf"):
             continue
         stuff = resources.read_binary(lomap_basic, f)
 
@@ -188,9 +188,9 @@ def atom_mapping_basic_test_files():
         "toluene",
     ]:
         with resources.as_file(resources.files("openfe.tests.data.lomap_basic")) as d:
-            fn = str(d / (f + ".mol2"))
-            mol = Chem.MolFromMol2File(fn, removeHs=False)
-            files[f] = SmallMoleculeComponent(mol, name=f)
+            fn = str(d / (f + ".sdf"))
+            # go via openff to make sure the partial charges are pulled
+            files[f] = SmallMoleculeComponent.from_sdf_file(fn)
 
     return files
 
@@ -379,17 +379,12 @@ def fepplus_network():
 
 
 @pytest.fixture()
-def CN_molecule() -> list[SmallMoleculeComponent]:
+def CN_molecule():
     """
     A basic CH3NH2 molecule for quick testing.
     """
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        fn = str(d / "CN.sdf")
-        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
-
-        smc = [SmallMoleculeComponent(i) for i in supp][0]
-
-    return smc
+        yield SmallMoleculeComponent.from_sdf_file(d / "CN.sdf")
 
 
 @pytest.fixture(scope="function")

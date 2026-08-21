@@ -22,6 +22,8 @@ from gufe import (
     SolventComponent,
 )
 from gufe.components.errors import ComponentValidationError
+from gufe.protocols.errors import ProtocolValidationError
+from openff.toolkit import ForceField
 from openff.toolkit import Molecule as OFFMol
 
 logger = logging.getLogger(__name__)
@@ -371,3 +373,63 @@ def validate_chemical_system(system: ChemicalSystem):
         except ComponentValidationError as e:
             errmsg = f"Component {entry} from ChemicalSystem {system.name} failed validation: {e}"
             raise ComponentValidationError(errmsg)
+
+
+def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_forcefield: str):
+    """
+    Validate that the SmallMoleculeComponents of the system will have deterministic partial charges.
+
+    This is determined by checking for charges on the molecules before checking what would be assigned by the force field.
+
+    Parameters
+    ----------
+    system : ChemicalSystem
+        The ChemicalSystem to validate with SmallMoleculeComponents.
+    small_molecule_forcefield : str
+        The force field to be used for the SmallMoleculeComponents.
+
+    Raises
+    ------
+    ProtocolValidationError
+        If any SmallMoleculeComponents in the system would have am1bcc charges generated at runtime.
+    """
+    smcs: list[SmallMoleculeComponent] = system.get_components_of_type(SmallMoleculeComponent)
+    if "espaloma" in small_molecule_forcefield or "gaff" in small_molecule_forcefield:
+        # this will always generate charges at runtime, so raise an error for missing charges
+        ff = None
+    else:
+        try:
+            ff = ForceField(small_molecule_forcefield)
+        except OSError:
+            # try again but adding offxml to the end of the force field name if the user passed one of the installed force fields without the extension
+            try:
+                ff = ForceField(small_molecule_forcefield + ".offxml")
+            except OSError as e:
+                errmsg = f"Could not load force field {small_molecule_forcefield} or {small_molecule_forcefield}.offxml: {e}"
+                raise ProtocolValidationError(errmsg)
+
+    errors = []
+    for smc in smcs:
+        offmol = smc.to_openff()
+        if offmol.partial_charges is not None and np.any(offmol.partial_charges):
+            continue
+
+        # check the labels assigned for an openff force field
+        if ff is not None:
+            labels = ff.label_molecules(offmol.to_topology())[0]
+        else:
+            # return a dummy label as the gaff and espaloma should always give am1bcc charges
+            labels = {"LibraryCharges": {}}
+
+        # We count library and nagl charges as deterministic
+        # While users could use a deterministic charge method with increments we don't currently support this
+        if not labels.get("LibraryCharges", {}) and "NAGLCharges" not in labels:
+            errors.append(smc)
+
+    if errors:
+        errmsg = (
+            f"System: '{system.name}' contains SmallMoleculeComponents which would have am1bcc charges generated at runtime which is non-deterministic. "
+            f"Please provide a molecule with pre-computed charges or use library charges instead. "
+            f"The following Components are affected: {', '.join([str(smc) for smc in errors])}"
+        )
+        raise ProtocolValidationError(errmsg)
