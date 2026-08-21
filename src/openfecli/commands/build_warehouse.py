@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 from gufe import AlchemicalNetwork
 
@@ -10,7 +12,7 @@ def build_warehouse_main(alchemical_network: AlchemicalNetwork):
     from openfe.orchestration.exorcist_utils import build_task_db_from_alchemical_network
 
     task_db, wh = build_task_db_from_alchemical_network(
-        alchemical_network, warehouse_dir="campaign/", db_path="campaign.db"
+        alchemical_network=alchemical_network, warehouse_dir="campaign/", db_path="campaign.db"
     )
     write(f"created Warehouse at {wh.root_dir}")
     # write('created TaskDB at {}')
@@ -20,10 +22,11 @@ def build_warehouse_main(alchemical_network: AlchemicalNetwork):
     "build-warehouse",
     short_help="Build a Warehouse and corresponding TaskDB from an AlchemicalNetwork.",
 )
-@ALCHEMICAL_NETWORK.parameter(help=ALCHEMICAL_NETWORK.kwargs["help"], required=True)
+@ALCHEMICAL_NETWORK.parameter(multiple=False, required=True, help=ALCHEMICAL_NETWORK.kwargs["help"])
 @print_duration
-def build_warehouse(alchemical_network: AlchemicalNetwork):
-    build_warehouse_main(alchemical_network)
+def build_warehouse(alchemical_network: str | Path):
+    loaded_alch_net = ALCHEMICAL_NETWORK.get(alchemical_network)
+    build_warehouse_main(loaded_alch_net)
 
 
 PLUGIN = OFECommandPlugin(command=build_warehouse, section="Network Planning", requires_ofe=(1, 12))
