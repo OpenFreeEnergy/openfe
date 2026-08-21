@@ -30,6 +30,7 @@ def build_warehouse_main(alchemical_network: AlchemicalNetwork, name: str | None
 @ALCHEMICAL_NETWORK.parameter(multiple=False, required=True, help=ALCHEMICAL_NETWORK.kwargs["help"])
 @print_duration
 def build_warehouse(alchemical_network: str | Path):
+    # TODO: allow user-supplied name and out_dir
     name = Path(alchemical_network).stem
     loaded_alch_net = ALCHEMICAL_NETWORK.get(alchemical_network)
     build_warehouse_main(alchemical_network=loaded_alch_net, name=name)
