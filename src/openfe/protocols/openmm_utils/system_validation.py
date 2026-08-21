@@ -423,7 +423,7 @@ def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_for
 
         # We count library and nagl charges as deterministic
         # While users could use a deterministic charge method with increments we don't currently support this
-        if not labels["LibraryCharges"] and "NAGLCharges" not in labels:
+        if not labels.get("LibraryCharges", {}) and "NAGLCharges" not in labels:
             errors.append(smc)
 
     if errors:

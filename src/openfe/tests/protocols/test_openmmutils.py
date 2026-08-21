@@ -1506,7 +1506,9 @@ class TestChargeValidation:
             benzene_charged_system, small_molecule_forcefield="openff-2.2.0.offxml"
         )
 
-    def test_openff_no_charges(self, benzene_no_charge_system):
+    @pytest.mark.parametrize("forcefield", ["openff-1.0.0.offxml", "openff-2.2.0.offxml", "openff-2.2.0"])
+    def test_openff_no_charges(self, benzene_no_charge_system, forcefield):
+        # Test ffs with/out LibraryCharges handler, and with/out .offxml extension
         with pytest.raises(
             ProtocolValidationError,
             match=re.escape(
@@ -1514,7 +1516,7 @@ class TestChargeValidation:
             ),
         ):
             system_validation.validate_nondeterministic_charges(
-                benzene_no_charge_system, small_molecule_forcefield="openff-2.2.0.offxml"
+                benzene_no_charge_system, small_molecule_forcefield=forcefield
             )
 
     def test_openff_nagl_no_charges(self, benzene_no_charge_system):
