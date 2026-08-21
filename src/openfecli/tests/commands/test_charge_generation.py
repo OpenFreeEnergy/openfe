@@ -16,6 +16,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_OPENEYE,
 )
 from openfecli.commands.generate_partial_charges import charge_molecules
+import yaml
 
 
 @pytest.fixture
@@ -188,3 +189,66 @@ def test_charge_settings(
             output_order.append(smc.name)
 
         assert input_order == output_order
+
+
+def test_charge_molecules_missing_force_fields(methane, tmp_path):
+    # make sure an error is raised if we try to use forcefield charges without specifying a forcefield
+    runner = CliRunner()
+    mol_path = tmp_path / "methane.sdf"
+    methane.to_file(str(mol_path), "sdf")
+    out_path = str(tmp_path / "charged_methane.sdf")
+
+    settings = {
+        "partial_charge": {
+            "method": "forcefield",
+        }
+    }
+
+    settings_path = tmp_path / "settings.yaml"
+    yaml.safe_dump(settings, open(settings_path, "w"))
+
+    with runner.isolated_filesystem():
+        # # check an error is raised if we try to overwrite the input
+        with pytest.raises(ValueError, match="The forcefield method requires a force field or list of force fields' to be provided via `forcefields`."):
+            _ = runner.invoke(
+                charge_molecules, ["-M", mol_path, "-o", out_path, "-s", settings_path], catch_exceptions=False
+            )
+
+
+@pytest.mark.skipif(
+    not HAS_NAGL,
+    reason="needs NAGL",
+)
+@pytest.mark.skipif(
+    HAS_OPENEYE, reason="cannot use NAGL with rdkit backend when OpenEye is installed"
+)
+def test_charge_molecules_from_forcefield(methane, tmp_path):
+    # make sure we can use forcefield charges if we specify a forcefield
+    runner = CliRunner()
+    mol_path = tmp_path / "methane.sdf"
+    methane.to_file(str(mol_path), "sdf")
+    out_path = str(tmp_path / "charged_methane.sdf")
+
+    settings = {
+        "partial_charge": {
+            "method": "forcefield",
+            "settings": {
+                "forcefields": ["openff_unconstrained-2.3.0"]
+            }
+        }
+    }
+
+    settings_path = tmp_path / "settings.yaml"
+    yaml.safe_dump(settings, open(settings_path, "w"))
+
+    with runner.isolated_filesystem():
+        result = runner.invoke(
+            charge_molecules, ["-M", mol_path, "-o", out_path, "-s", settings_path], catch_exceptions=False
+        )
+        assert result.exit_code == 0
+        assert "Partial Charge Generation: forcefield" in result.output
+
+        # make sure the charges have been saved
+        methane_out = SmallMoleculeComponent.from_sdf_file(filename=out_path)
+        off_methane_out = methane_out.to_openff()
+        assert off_methane_out.partial_charges is not None

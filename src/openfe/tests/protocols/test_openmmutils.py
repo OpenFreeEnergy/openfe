@@ -1335,6 +1335,7 @@ class TestOFFPartialCharge:
     @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
     def test_forcefield_nagl_charges(self, uncharged_mol):
         # Make sure that the forcefield method can assign charges from a NAGL model
+        opc = ForceField("opc-1.0.0.offxml")
         charge_generation.assign_offmol_partial_charges(
             uncharged_mol,
             overwrite=False,
@@ -1344,11 +1345,20 @@ class TestOFFPartialCharge:
             # set the model to none this should use the model define in the force field.
             nagl_model=None,
             # use a force field that has a NAGL handler and another redundant force field file
-            forcefields=["openff-2.3.0.offxml", "opc-1.0.0.offxml"],
+            # this is also testing that missing the file extension doesn't break the code
+            forcefields=["openff-2.3.0", opc.to_string()],
         )
 
         assert uncharged_mol.partial_charges is not None
-        assert np.any(uncharged_mol.partial_charges)
+
+        # get the reference charges to compare with
+        ff = ForceField("openff-2.3.0.offxml")
+        nagl_model = ff.get_parameter_handler("NAGLCharges").model_file
+        copy_mol = copy.deepcopy(uncharged_mol)
+        copy_mol.partial_charges = None
+        copy_mol.assign_partial_charges(partial_charge_method=nagl_model)
+
+        assert_allclose(uncharged_mol.partial_charges.m, copy_mol.partial_charges.m, rtol=1e-4)
 
 
 @pytest.mark.slow

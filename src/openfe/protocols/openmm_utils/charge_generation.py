@@ -327,9 +327,8 @@ def assign_offmol_partial_charges(
     Notes
     -----
     Charges are applied based on the following source preferences:
-     - Charges already present on the ligand are retained if overwrite is ``False``
-     - Charges are applied using the input method and settings
-     - the forcefield option will apply the default charges as intended by the force field.
+     - Charges already present on the ligand are retained if overwrite is ``False``.
+     - Charges are applied using the input method and settings.
 
     Raises
     ------
@@ -361,9 +360,24 @@ def assign_offmol_partial_charges(
         if isinstance(forcefields, str):
             forcefields = [forcefields]
 
-        # this expects the full file name of the force field offxml file, e.g. "openff-2.0.0.offxml"
-        # which is different to how settings work which can leave off the .offxml extension
-        ff = ForceField(*forcefields)
+        try:
+            # try to parse what the user has provided, due to supporting dropping the offxml extension,
+            # we need to try and catch the OSError and add the extension if needed
+            ff = ForceField(*forcefields)
+        except OSError:
+            # try adding the offxml extension if not present and it's a possible file path
+            forcefields_with_ext = []
+            for _ff in forcefields:
+                # if the string of the force field is passed it should start with the xml header
+                if not _ff.endswith(".offxml") and not _ff.startswith("<?xml"):
+                    ff_with_ext = f"{_ff}.offxml"
+                    forcefields_with_ext.append(ff_with_ext)
+                else:
+                    forcefields_with_ext.append(_ff)
+
+            # try again to load the force field with the added extension, if we fail let it raise the error
+            ff = ForceField(*forcefields_with_ext)
+
         # let the force field resolve the partial charge assignment
         charges = ff.get_partial_charges(offmol)
         offmol.partial_charges = charges
