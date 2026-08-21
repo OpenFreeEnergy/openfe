@@ -3,6 +3,7 @@ from importlib import resources
 
 import numpy as np
 import pytest
+import yaml
 from click import ClickException
 from click.testing import CliRunner
 from gufe import SmallMoleculeComponent
@@ -16,7 +17,6 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_OPENEYE,
 )
 from openfecli.commands.generate_partial_charges import charge_molecules
-import yaml
 
 
 @pytest.fixture
@@ -209,9 +209,14 @@ def test_charge_molecules_missing_force_fields(methane, tmp_path):
 
     with runner.isolated_filesystem():
         # # check an error is raised if we try to overwrite the input
-        with pytest.raises(ValueError, match="The forcefield method requires a force field or list of force fields' to be provided via `forcefields`."):
+        with pytest.raises(
+            ValueError,
+            match="The forcefield method requires a force field or list of force fields' to be provided via `forcefields`.",
+        ):
             _ = runner.invoke(
-                charge_molecules, ["-M", mol_path, "-o", out_path, "-s", settings_path], catch_exceptions=False
+                charge_molecules,
+                ["-M", mol_path, "-o", out_path, "-s", settings_path],
+                catch_exceptions=False,
             )
 
 
@@ -232,9 +237,7 @@ def test_charge_molecules_from_forcefield(methane, tmp_path):
     settings = {
         "partial_charge": {
             "method": "forcefield",
-            "settings": {
-                "forcefields": ["openff_unconstrained-2.3.0"]
-            }
+            "settings": {"forcefields": ["openff_unconstrained-2.3.0"]},
         }
     }
 
@@ -243,7 +246,9 @@ def test_charge_molecules_from_forcefield(methane, tmp_path):
 
     with runner.isolated_filesystem():
         result = runner.invoke(
-            charge_molecules, ["-M", mol_path, "-o", out_path, "-s", settings_path], catch_exceptions=False
+            charge_molecules,
+            ["-M", mol_path, "-o", out_path, "-s", settings_path],
+            catch_exceptions=False,
         )
         assert result.exit_code == 0
         assert "Partial Charge Generation: forcefield" in result.output
