@@ -73,4 +73,4 @@ def status(task_db_path: pathlib.Path):
     status_main(task_db_path=task_db_path)
 
 
-PLUGIN = OFECommandPlugin(command=status, section="Execution", requires_ofe=(1, 12))
+PLUGIN = OFECommandPlugin(command=status, section="Execution", requires_ofe=(1, 13))
