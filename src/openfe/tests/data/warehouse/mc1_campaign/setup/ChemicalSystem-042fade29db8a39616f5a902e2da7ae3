@@ -1,0 +1,1 @@
+{":version:": 1, "__module__": "gufe.chemicalsystem", "__qualname__": "ChemicalSystem", "components": {"ligand": {":gufe-key:": "SmallMoleculeComponent-e5a4596e9d800367c6832564a93877f3"}, "solvent": {":gufe-key:": "SolventComponent-26b4034ad9dbd9f908dfc298ea8d449f"}}, "name": "ligand_1_solvent"}
