@@ -11,8 +11,7 @@ import networkx as nx
 import pandas as pd
 from gufe import AlchemicalNetwork, ProtocolDAG
 
-from openfe.orchestration import FileSystemWarehouse
-from openfe.storage.warehouse import WarehouseBaseClass
+from ..storage.warehouse import FileSystemWarehouse, WarehouseBaseClass
 
 
 def _alchemical_network_to_task_graph(
