@@ -451,8 +451,4 @@ def gather_septop(
         rich_print_to_stdout(df)
 
 
-PLUGIN = OFECommandPlugin(
-    command=gather_septop,
-    section="Quickrun Executor",
-    requires_ofe=(0, 6),
-)
+PLUGIN = OFECommandPlugin(command=gather_septop, section="Results Gathering", requires_ofe=(0, 6))
