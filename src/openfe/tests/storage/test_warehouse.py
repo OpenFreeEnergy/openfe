@@ -1,4 +1,5 @@
 import tempfile
+from importlib import resources
 from pathlib import Path
 from typing import Literal
 from unittest import mock
@@ -6,7 +7,10 @@ from unittest import mock
 import pytest
 from gufe.storage.externalresource import MemoryStorage
 from gufe.tokenization import GufeTokenizable
+from openff.units import unit
 
+from openfe.orchestration import Worker, exorcist_utils
+from openfe.storage.utils import convert_to_quickrun_output
 from openfe.storage.warehouse import (
     FileSystemWarehouse,
     WarehouseBaseClass,
@@ -22,7 +26,7 @@ class TestWarehouseBaseClass:
     def _build_stores() -> WarehouseStores:
         return WarehouseStores(
             setup=MemoryStorage(),
-            result=MemoryStorage(),
+            results=MemoryStorage(),
             shared=MemoryStorage(),
             tasks=MemoryStorage(),
             protocol_dags=MemoryStorage(),
@@ -38,14 +42,14 @@ class TestWarehouseBaseClass:
         obj,
         store_func_name,
         load_func_name,
-        store_name: Literal["setup", "result", "tasks"],
+        store_name: Literal["setup", "results", "tasks"],
     ):
         stores = TestWarehouseBaseClass._build_stores()
         client = WarehouseBaseClass(stores=stores, name="test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
-        assert stores["result"]._data == {}
+        assert stores["results"]._data == {}
         assert stores["shared"]._data == {}
         assert stores["tasks"]._data == {}
         store_func(obj)
@@ -60,14 +64,14 @@ class TestWarehouseBaseClass:
         obj: GufeTokenizable,
         store_func_name,
         load_func_name,
-        store_name: Literal["setup", "result", "tasks"],
+        store_name: Literal["setup", "results", "tasks"],
     ):
         stores = TestWarehouseBaseClass._build_stores()
         client = WarehouseBaseClass(stores=stores, name="test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert stores["setup"]._data == {}
-        assert stores["result"]._data == {}
+        assert stores["results"]._data == {}
         assert stores["shared"]._data == {}
         assert stores["tasks"]._data == {}
         store_func(obj)
@@ -98,7 +102,7 @@ class TestWarehouseBaseClass:
 
         assert stores["tasks"]._data != {}
         assert stores["setup"]._data == {}
-        assert stores["result"]._data == {}
+        assert stores["results"]._data == {}
         assert stores["shared"]._data == {}
 
     def test_exists_finds_task_key(self, absolute_transformation):
@@ -121,11 +125,32 @@ class TestWarehouseBaseClass:
         assert loaded is not None
         assert isinstance(loaded, GufeTokenizable)
 
+    def test_load_task_wrong_type(self, absolute_transformation):
+        transformation = absolute_transformation
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, name="test_warehouse")
+
+        client.store_setup_tokenizable(transformation)
+        with pytest.raises(TypeError, match="as ProtocolUnit"):
+            _ = client.load_task(transformation.key)
+
+    def test_store_load_protocol_dag_wrong_type(self, absolute_transformation):
+        transformation = absolute_transformation
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, name="test_warehouse")
+
+        with pytest.raises(TypeError, match="Unable to write"):
+            client.store_protocol_dag(absolute_transformation)
+        client.store_setup_tokenizable(absolute_transformation)
+
+        with pytest.raises(TypeError, match="Unable to load"):
+            client.load_protocol_dag(absolute_transformation.key)
+
     @pytest.mark.parametrize(
         "fixture",
         ["absolute_transformation", "complex_equilibrium"],
     )
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_transformation_same_process(self, request, fixture, store):
         transformation = request.getfixturevalue(fixture)
         store_func_name = f"store_{store}_tokenizable"
@@ -136,7 +161,7 @@ class TestWarehouseBaseClass:
         "fixture",
         ["absolute_transformation", "complex_equilibrium"],
     )
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_transformation_different_process(self, request, fixture, store):
         transformation = request.getfixturevalue(fixture)
         store_func_name = f"store_{store}_tokenizable"
@@ -145,9 +170,8 @@ class TestWarehouseBaseClass:
             transformation, store_func_name, load_func_name, store
         )
 
-    #
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_network_same_process(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
         assert isinstance(network, GufeTokenizable)
@@ -156,7 +180,7 @@ class TestWarehouseBaseClass:
         self._test_store_load_same_process(network, store_func_name, load_func_name, store)
 
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_network_different_process(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
         assert isinstance(network, GufeTokenizable)
@@ -165,7 +189,7 @@ class TestWarehouseBaseClass:
         self._test_store_load_different_process(network, store_func_name, load_func_name, store)
 
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
-    @pytest.mark.parametrize("store", ["setup", "result"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
     def test_delete(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
         store_func_name = f"store_{store}_tokenizable"
@@ -249,7 +273,7 @@ class TestFileSystemWarehouse:
             # store some data so files are created
             client.stores["shared"].store_bytes("sentinel", b"shared-data")
 
-            with pytest.raises(ValueError, match="already exists"):
+            with pytest.raises(FileExistsError, match="already exists"):
                 _ = FileSystemWarehouse(wh_dir)
 
             reloaded_client = FileSystemWarehouse.from_dir(root_dir=wh_dir)
@@ -265,3 +289,37 @@ class TestFileSystemWarehouse:
             "store_setup_tokenizable",
             "load_setup_tokenizable",
         )
+
+
+@pytest.fixture
+def warehouse_partial_failure():
+    with resources.path("openfe.tests.data.warehouse", "mc1_campaign") as d:
+        warehouse = FileSystemWarehouse.from_dir(root_dir=d)
+        return warehouse
+
+
+class TestWarehouseResultsGathering:
+    def test_gather_results(self, warehouse_partial_failure):
+        wh = warehouse_partial_failure
+        result_edges = wh.gather_all_results()
+        # TODO: how much to check here
+
+        results_ok = [dag.ok() for _, dag in result_edges]
+        assert sorted(results_ok) == [False, True, True, True]  # one failed edge
+
+        uncertainties = [pr.get_uncertainty() for pr, dag in result_edges if dag.ok()]
+        assert uncertainties == [0.0 * unit.kilocalorie_per_mole] * 3
+
+        expected_estimates = {-0.658, 5.547, 5.769}
+        estimates = {round(pr.get_estimate().m, 3) for pr, dag in result_edges if dag.ok()}
+        assert expected_estimates == estimates
+        assert len(result_edges) == 4
+
+    def test_convert_to_quickrun_output(self, warehouse_partial_failure, tmp_path):
+        wh = warehouse_partial_failure
+        result_edges = wh.gather_all_results()
+        out_dir = tmp_path / "quickrun_style_output"
+        convert_to_quickrun_output(result_edges, out_dir=out_dir)
+        assert out_dir.is_dir()
+        out_files = [str(p.name) for p in out_dir.rglob("Trans*")]
+        assert len(out_files) == 4
