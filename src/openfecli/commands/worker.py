@@ -37,7 +37,6 @@ def _write_failure_result_details(taskid: str, result) -> None:
 
 def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
     import logging
-    import os
     import sys
     import traceback
 
