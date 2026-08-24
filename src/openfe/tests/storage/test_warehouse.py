@@ -10,6 +10,7 @@ from gufe.tokenization import GufeTokenizable
 from openff.units import unit
 
 from openfe.orchestration import Worker, exorcist_utils
+from openfe.storage.utils import convert_to_quickrun_output
 from openfe.storage.warehouse import (
     FileSystemWarehouse,
     WarehouseBaseClass,
@@ -313,3 +314,12 @@ class TestWarehouseResultsGathering:
         estimates = {round(pr.get_estimate().m, 3) for pr, dag in result_edges if dag.ok()}
         assert expected_estimates == estimates
         assert len(result_edges) == 4
+
+    def test_convert_to_quickrun_output(self, warehouse_partial_failure, tmp_path):
+        wh = warehouse_partial_failure
+        result_edges = wh.gather_all_results()
+        out_dir = tmp_path / "quickrun_style_output"
+        convert_to_quickrun_output(result_edges, out_dir=out_dir)
+        assert out_dir.is_dir()
+        out_files = [str(p.name) for p in out_dir.rglob("Trans*")]
+        assert len(out_files) == 4
