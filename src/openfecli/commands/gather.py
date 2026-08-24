@@ -803,11 +803,7 @@ def gather(
         rich_print_to_stdout(df)
 
 
-PLUGIN = OFECommandPlugin(
-    command=gather,
-    section="Quickrun Executor",
-    requires_ofe=(0, 6),
-)
+PLUGIN = OFECommandPlugin(command=gather, section="Results Gathering", requires_ofe=(0, 6))
 
 if __name__ == "__main__":
     gather()
