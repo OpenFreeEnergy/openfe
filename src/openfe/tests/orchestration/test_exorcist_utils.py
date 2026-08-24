@@ -10,11 +10,11 @@ from gufe import AlchemicalNetwork
 from gufe.tokenization import GufeKey
 
 from openfe.orchestration import (
-    _alchemical_network_to_task_graph,
     build_task_db_from_alchemical_network,
     get_dependency_df,
     get_task_df,
 )
+from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph
 from openfe.storage.warehouse import WarehouseBaseClass
 
 
