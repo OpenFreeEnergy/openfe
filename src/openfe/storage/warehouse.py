@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import pathlib
 import re
-from typing import Generator, Literal, TypedDict
+from typing import Generator, Iterable, Literal, TypedDict
 
-from gufe.protocols.protocoldag import ProtocolDAG
-from gufe.protocols.protocolunit import ProtocolUnit
+from gufe.protocols import ProtocolResult
+from gufe.protocols.protocoldag import ProtocolDAG, ProtocolDAGResult
+from gufe.protocols.protocolunit import ProtocolUnit, ProtocolUnitResult
 from gufe.storage.externalresource import ExternalStorage, FileStorage
 from gufe.tokenization import (
     JSON_HANDLER,
@@ -27,7 +28,7 @@ class WarehouseStores(TypedDict):
     ----------
     setup : ExternalStorage
         Storage location for setup-related objects and configurations.
-    result : ExternalStorage
+    results : ExternalStorage
         Storage location for result-related object.
     shared : ExternalStorage
         Storage location for non-permanent shared data.
@@ -42,7 +43,7 @@ class WarehouseStores(TypedDict):
     """
 
     setup: ExternalStorage
-    result: ExternalStorage
+    results: ExternalStorage
     shared: ExternalStorage
     tasks: ExternalStorage
     protocol_dags: ExternalStorage
@@ -79,12 +80,12 @@ class WarehouseBaseClass:
         # probably should include repr of external store, too
         return f"{self.__class__.__name__}({self.stores})"
 
-    def delete(self, store_name: Literal["setup", "result"], location: str):
+    def delete(self, store_name: Literal["setup", "results"], location: str):
         """Delete an object from a specific store.
 
         Parameters
         ----------
-        store_name : Literal["setup"]
+        store_name : Literal["setup", "results"]
             Name of the store to delete from.
         location : str
             Location/path of the object to delete.
@@ -94,6 +95,7 @@ class WarehouseBaseClass:
         MissingExternalResourceError
             Thrown if the object you are trying to delete, can't delete from the store
         """
+        # TODO: how to guard deleting an object that is needed by another GufeTokenizable?
         store: ExternalStorage = self.stores[store_name]
         store.delete(location)
 
@@ -103,7 +105,7 @@ class WarehouseBaseClass:
     def load_task(self, obj: GufeKey) -> ProtocolUnit:
         unit = self._load_gufe_tokenizable(obj)
         if not isinstance(unit, ProtocolUnit):
-            raise ValueError("Unable to load ProtocolUnit")
+            raise TypeError(f"Unable to load {unit} as ProtocolUnit.")
         return unit
 
     def store_setup_tokenizable(self, obj: GufeTokenizable):
@@ -132,17 +134,17 @@ class WarehouseBaseClass:
         """
         return self._load_gufe_tokenizable(gufe_key=obj)
 
-    def store_result_tokenizable(self, obj: GufeTokenizable):
-        """Store a GufeTokenizable object from the result store.
+    def store_results_tokenizable(self, obj: GufeTokenizable):
+        """Store a GufeTokenizable object to the results store.
 
         Parameters
         ----------
         obj : GufeKey
             The key of the object to store.
         """
-        return self._store_gufe_tokenizable("result", obj)
+        return self._store_gufe_tokenizable("results", obj)
 
-    def load_result_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
+    def load_results_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
         # TODO: this doesn't actually look specifically in the result store, which is misleading
         """Load a GufeTokenizable object from the result store.
 
@@ -167,11 +169,13 @@ class WarehouseBaseClass:
 
         Raises
         ------
-        ValueError
+        TypeError
             If `dag` is not a ProtocolDAG instance.
         """
         if not isinstance(dag, ProtocolDAG):
-            raise ValueError("Only ProtocolDAGs may be written to the 'protocol_dags' store.")
+            raise TypeError(
+                f"Unable to write {dag}. Only ProtocolDAGs may be written to the 'protocol_dags' store."
+            )
         self._store_gufe_tokenizable("protocol_dags", dag)
 
     def load_protocol_dag(self, gufe_key=GufeKey) -> GufeTokenizable:
@@ -186,9 +190,16 @@ class WarehouseBaseClass:
         -------
         GufeTokenizable
             The loaded object.
+
+        Raises
+        ------
+        TypeError
+            If `gufe_key` does not corresponds to an object that is not a ProtocolDAG instance.
         """
-        # TODO: type check that it is a protocol dag before returning?
-        return self._load_gufe_tokenizable(gufe_key=gufe_key)
+        obj = self._load_gufe_tokenizable(gufe_key=gufe_key)
+        if not isinstance(obj, ProtocolDAG):
+            raise TypeError(f"Unable to load {obj} as ProtocolDAG.")
+        return obj
 
     def exists(self, key: GufeKey) -> bool:
         """Check if an object with the given key exists in any store that holds tokenizables.
@@ -233,7 +244,7 @@ class WarehouseBaseClass:
 
     def _store_gufe_tokenizable(
         self,
-        store_name: Literal["setup", "result", "tasks", "protocol_dags"],
+        store_name: Literal["setup", "results", "tasks", "protocol_dags"],
         obj: GufeTokenizable,
         name: str | None = None,
     ):
@@ -267,6 +278,7 @@ class WarehouseBaseClass:
                 else:
                     target.store_bytes(gufe_key, data)
 
+    # TODO: we should also be able to load from JSON, without knowing the gufe key in advance.
     def _load_gufe_tokenizable(self, gufe_key: GufeKey) -> GufeTokenizable:
         """Load a deduplicated object from a GufeKey.
 
@@ -349,12 +361,98 @@ class WarehouseBaseClass:
         Generator[ProtocolDAG]
             The ProtocolDAGs found in this Warehouse's 'protocol_dags' store.
         """
-        # NOTE: this can be made more robust (but slower) by using isinstance(obj, openfe.ProtocolDAG)
-        # _after_ loading each item, rather than filtering by name
         for item in self.stores["protocol_dags"]:
-            if item.startswith("ProtocolDAG"):
-                dag = self.load_protocol_dag(item)
-                yield dag
+            dag = self.load_protocol_dag(item)
+            yield dag
+
+    def get_unit_results(self) -> Generator[ProtocolUnitResult]:
+        """Yield all ProtocolUnitResult(s) stored in the Warehouse's 'result' store.
+
+        Yields
+        ------
+        Generator[ProtocolUnitResult]
+            The ProtocolUnitResults found in this Warehouse's 'result' store
+
+        Raises
+        ------
+        RuntimeError
+            If any object in the result store is not a ProtocolUnitResult
+        """
+        for i in self.stores["results"]:
+            obj = self.load_results_tokenizable(i)
+            if isinstance(obj, ProtocolUnitResult):
+                yield obj
+            else:
+                raise RuntimeError(
+                    f"gufe tokenizable {obj} found in result store, but is not a ProtocolUnitResult."
+                )
+
+    def gather_all_results(self) -> list[tuple[ProtocolResult, ProtocolDAGResult]]:
+        """From this warehouse, gather all ProtocolDAGResults corresponding to the recorded
+        ProtocolDAGs, and return all (ProtocolResult, ProtocolDAGResult) pairs.
+
+        Note: this requires the Warehouse to explicitly have stored the ProtocolDAGs and
+        their ProtocolUnits when constructing the task graph.
+
+        Returns
+        -------
+        list[tuple[ProtocolResult, ProtocolDAGResult]]
+            ProtocolResults and their corresponding ProtocolDAGResults
+        """
+
+        def construct_results_edge(
+            protocol_dag: ProtocolDAG,
+            dags_to_unit_results: dict[str, list[ProtocolUnitResult]],
+        ) -> ProtocolDAGResult:
+
+            # TODO: should we store the transformation as well for completeness?
+            transformation = self.load_setup_tokenizable(protocol_dag.transformation_key)
+            unit_results = dags_to_unit_results[str(protocol_dag.key)]
+            dag_result = ProtocolDAGResult(
+                protocol_units=protocol_dag.protocol_units,
+                protocol_unit_results=unit_results,
+                transformation_key=protocol_dag.transformation_key,
+                extends_key=protocol_dag.extends_key,
+            )
+            protocol_result = transformation.gather([dag_result])
+            return protocol_result, dag_result
+
+        # construct a map of all the ProtocolDAGs and their corresponding ProtocolUnitResults
+        dags_to_unit_results = self._construct_dags_to_unit_results(
+            dags=self.get_protocol_dags(),
+            unit_results=self.get_unit_results(),
+        )
+        # load all dags that we have results for
+        dags_with_results = [
+            self.load_protocol_dag(d) for d in dags_to_unit_results if dags_to_unit_results[d] != []
+        ]
+
+        result_edges: list[tuple[ProtocolResult, ProtocolDAGResult]] = []
+        for dag in dags_with_results:
+            result_edge = construct_results_edge(
+                protocol_dag=dag, dags_to_unit_results=dags_to_unit_results
+            )
+            result_edges.append(result_edge)
+
+        return result_edges
+
+    @staticmethod
+    def _construct_dags_to_unit_results(
+        dags: Iterable[ProtocolDAG], unit_results: Iterable[ProtocolUnitResult]
+    ):
+        """Given a set of ProtocolDAGs and a set of ProtocolUnitResults,
+        create a mapping of protocolDAGs to their corresponding ProtocolUnitResults
+        """
+        # protocol unit source key mapped to unit results
+        pur_pu_keys = {str(pur.source_key): pur for pur in unit_results}
+        dag_map = {}
+        for dag in dags:
+            dag_unit_results = []
+            for unit in dag.protocol_units:
+                if unit.key in pur_pu_keys:
+                    dag_unit_results.append(pur_pu_keys[unit.key])
+            dag_map[str(dag.key)] = dag_unit_results
+        return dag_map
 
     @property
     def setup_store(self):
@@ -376,7 +474,7 @@ class WarehouseBaseClass:
         ExternalStorage
             The result storage location
         """
-        return self.stores["result"]
+        return self.stores["results"]
 
     @property
     def shared_store(self):
@@ -411,18 +509,18 @@ class FileSystemWarehouse(WarehouseBaseClass):
     def __init__(self, root_dir: pathlib.Path, exist_ok=False):
         self.root_dir = pathlib.Path(root_dir)
         if self.root_dir.is_dir() and not exist_ok:
-            raise ValueError(
-                "`root_dir` already exists. To load an existing Warehouse, use FileSystemWarehouse.from_dir(`root_dir`)"
+            raise FileExistsError(
+                f"Warehouse directory '{self.root_dir}' already exists. To load an existing Warehouse, use FileSystemWarehouse.from_dir(`root_dir`)"
             )
         self.root_dir.mkdir(exist_ok=exist_ok)  # make parents?
         setup_store = FileStorage(f"{self.root_dir}/setup", exist_ok=exist_ok)
-        result_store = FileStorage(f"{self.root_dir}/result", exist_ok=exist_ok)
+        result_store = FileStorage(f"{self.root_dir}/results", exist_ok=exist_ok)
         shared_store = FileStorage(f"{self.root_dir}/shared", exist_ok=exist_ok)
         tasks_store = FileStorage(f"{self.root_dir}/tasks", exist_ok=exist_ok)
         protocol_dag_store = FileStorage(f"{self.root_dir}/protocol_dags", exist_ok=exist_ok)
         stores = WarehouseStores(
             setup=setup_store,
-            result=result_store,
+            results=result_store,
             shared=shared_store,
             tasks=tasks_store,
             protocol_dags=protocol_dag_store,
@@ -445,12 +543,12 @@ class FileSystemWarehouse(WarehouseBaseClass):
 
         Raises
         ------
-        ValueError
+        FileNotFoundError
             If `root_dir` is not an existing directory.
         """
         root_dir = pathlib.Path(root_dir)
         if not root_dir.is_dir():
-            raise ValueError(
+            raise FileNotFoundError(
                 "`root_dir` must be an existing filepath. To create a new Warehouse, use FileSystemWarehouse(`root_dir`)"
             )
         return cls(root_dir=root_dir, exist_ok=True)
