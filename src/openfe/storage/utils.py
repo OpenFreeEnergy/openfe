@@ -12,6 +12,26 @@ def convert_to_quickrun_output(
     result_edges: list[tuple[ProtocolResult, ProtocolDAGResult]],
     out_dir: pathlib.Path | str,
 ) -> None:
+    """Given pairs of ProtocolResult/ProtocolDAGResult, write results to JSON
+    file in the same output format as ``openfe quickrun``.
+
+    Results will be written to ``out_dir`` in files named by Transformation key.
+
+    Notice: this is a helper function meant to aid analysis of results
+    alongside quickrun output, and is not meant for production use!
+
+    Parameters
+    ----------
+    result_edges : list[tuple[ProtocolResult, ProtocolDAGResult]]
+        Results to write in ``openfe quickrun`` results format
+    out_dir : pathlib.Path | str
+        Directory in which to write output.
+
+    Raises
+    ------
+    FileExistsError
+        If a JSON output file already exists.
+    """
     # TODO: this is copied from quickrun, refactor to avoid duplication
     for prot_result, dagresult in result_edges:
         if dagresult.ok():
