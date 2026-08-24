@@ -85,7 +85,7 @@ class Worker:
         with shared_store.load_stream(location) as stream:
             result_key = stream.read().decode("utf-8").strip()
 
-        loaded = self.warehouse.load_result_tokenizable(GufeKey(result_key))
+        loaded = self.warehouse.load_results_tokenizable(GufeKey(result_key))
         if isinstance(loaded, ProtocolUnitResult):
             return loaded
 
@@ -100,7 +100,7 @@ class Worker:
             if len(found) == len(source_keys):
                 break
 
-            loaded = self.warehouse.load_result_tokenizable(GufeKey(location))
+            loaded = self.warehouse.load_results_tokenizable(GufeKey(location))
             if not isinstance(loaded, ProtocolUnitResult):
                 continue
 
@@ -235,6 +235,6 @@ class Worker:
         db.mark_task_completed(taskid, success=result.ok())
         # 4. output result to warehouse
         # TODO: we may need to end up handling namespacing on the warehouse side for tokenizables
-        self.warehouse.store_result_tokenizable(result)
+        self.warehouse.store_results_tokenizable(result)
         self._store_result_index(result)
         return taskid, result
