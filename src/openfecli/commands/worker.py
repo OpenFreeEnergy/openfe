@@ -9,12 +9,12 @@ from openfecli import OFECommandPlugin
 from openfecli.utils import configure_logger, print_duration, write
 
 
-def _build_worker(warehouse_path: pathlib.Path, db_path: pathlib.Path):
+def _build_worker(warehouse_path: pathlib.Path, task_db_path: pathlib.Path):
     from openfe.orchestration import Worker
     from openfe.storage.warehouse import FileSystemWarehouse
 
     warehouse = FileSystemWarehouse(str(warehouse_path))
-    return Worker(warehouse=warehouse, task_db_path=db_path)
+    return Worker(warehouse=warehouse, task_db_path=task_db_path)
 
 
 def _write_failure_result_details(taskid: str, result) -> None:
@@ -35,7 +35,7 @@ def _write_failure_result_details(taskid: str, result) -> None:
         write(traceback_text)
 
 
-def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
+def worker_main(warehouse_path: pathlib.Path, task_db_path: pathlib.Path, scratch: pathlib.Path):
     import logging
     import sys
     import traceback
@@ -64,16 +64,12 @@ def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
     )
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
-    db_path = warehouse_path / "tasks.db"
-    if not db_path.is_file():
-        raise click.ClickException(f"Task database not found at: {db_path}")
-
-    if scratch is None:
-        scratch = pathlib.Path.cwd()
+    if not task_db_path.is_file():
+        raise click.ClickException(f"Task database not found at: {task_db_path}")
 
     scratch.mkdir(parents=True, exist_ok=True)
 
-    worker = _build_worker(warehouse_path, db_path)
+    worker = _build_worker(warehouse_path, task_db_path)
 
     try:
         write("Executing unit...")
@@ -105,28 +101,40 @@ def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
         dir_okay=True,
         path_type=pathlib.Path,
     ),
+    # help="Path to a FileSystemWarehouse.",
+)
+@click.argument(
+    "task_db_path",
+    type=click.Path(
+        exists=True,
+        readable=True,
+        file_okay=True,
+        dir_okay=False,
+        path_type=pathlib.Path,
+    ),
+    # help="Path to a TaskDB instance.",
 )
 @click.option(
     "--scratch",
     "-s",
-    default=None,
+    default=pathlib.Path("scratch/"),
     type=click.Path(
         writable=True,
         file_okay=False,
         dir_okay=True,
         path_type=pathlib.Path,
     ),
-    help="Directory for scratch files. Defaults to current working directory.",
+    help="Directory for scratch files. Defaults to 'scratch/' in the current working directory.",
 )
 @print_duration
-def worker(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
+def worker(warehouse_path: pathlib.Path, task_db_path: pathlib.Path, scratch: pathlib.Path):
     """
     Execute one available task from a warehouse task graph.
 
     The warehouse directory must contain a ``tasks.db`` task database and task
     payloads under ``tasks/`` created via OpenFE orchestration setup.
     """
-    worker_main(warehouse_path=warehouse_path, scratch=scratch)
+    worker_main(warehouse_path=warehouse_path, task_db_path=task_db_path, scratch=scratch)
 
 
 PLUGIN = OFECommandPlugin(command=worker, section="Execution", requires_ofe=(1, 13))
