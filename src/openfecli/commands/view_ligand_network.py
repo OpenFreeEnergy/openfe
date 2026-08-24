@@ -33,6 +33,6 @@ def view_ligand_network(ligand_network: os.PathLike):
 
 PLUGIN = OFECommandPlugin(
     command=view_ligand_network,
-    section="Network Planning",
+    section="Planning & Setup",
     requires_ofe=(0, 7, 0),
 )
