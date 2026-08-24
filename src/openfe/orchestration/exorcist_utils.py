@@ -29,7 +29,7 @@ def _alchemical_network_to_task_graph(
     Parameters
     ----------
     alchemical_network : AlchemicalNetwork
-        Network containing alchemical transformations to be executed.
+        Network containing alchemical Transformations to be executed.
     warehouse : WarehouseBaseClass
         Warehouse used to store data used by the execution and simulation engines.
 
