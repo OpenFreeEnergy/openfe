@@ -28,6 +28,7 @@ class Worker:
         Path to the Exorcist SQLite task database.
     """
 
+    # TODO: should these both be instances or both paths?
     warehouse: FileSystemWarehouse
     task_db_path: Path = Path("./warehouse/tasks.db")
 
