@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+from .alchemical_network import ALCHEMICAL_NETWORK
 from .mapper import MAPPER
 from .misc import N_PROTOCOL_REPEATS, NCORES, OVERWRITE
 from .mol import MOL
