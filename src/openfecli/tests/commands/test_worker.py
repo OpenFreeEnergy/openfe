@@ -5,6 +5,8 @@ from click.testing import CliRunner
 
 from openfecli.commands.worker import worker
 
+from ..utils import assert_click_success
+
 
 class _SuccessfulResult:
     def ok(self):
@@ -30,8 +32,8 @@ def test_worker_requires_task_database():
     with runner.isolated_filesystem():
         Path("warehouse").mkdir()
         result = runner.invoke(worker, ["warehouse"])
-        assert result.exit_code == 1
-        assert "Task database not found at" in result.output
+        assert result.exit_code == 2
+        assert "Missing argument 'TASK_DB_PATH'" in result.output
 
 
 def test_worker_no_available_task_exits_zero():
@@ -39,7 +41,8 @@ def test_worker_no_available_task_exits_zero():
     with runner.isolated_filesystem():
         warehouse_path = Path("warehouse")
         warehouse_path.mkdir()
-        (warehouse_path / "tasks.db").touch()
+        taskdb_path = Path("tasks.db")
+        taskdb_path.touch()
 
         mock_worker = mock.Mock()
         mock_worker.execute_unit.return_value = None
@@ -47,13 +50,13 @@ def test_worker_no_available_task_exits_zero():
         with mock.patch(
             "openfecli.commands.worker._build_worker", return_value=mock_worker
         ) as build_worker:
-            result = runner.invoke(worker, ["warehouse"])
+            result = runner.invoke(worker, ["warehouse", "tasks.db"])
 
-        assert result.exit_code == 0
+        assert_click_success(result)
         assert "No available task in task graph." in result.output
-        build_worker.assert_called_once_with(warehouse_path, warehouse_path / "tasks.db")
+        build_worker.assert_called_once_with(warehouse_path, taskdb_path)
         kwargs = mock_worker.execute_unit.call_args.kwargs
-        assert kwargs["scratch"] == Path.cwd()
+        assert kwargs["scratch"] == Path("scratch")
 
 
 def test_worker_executes_one_task_and_reports_completion():
@@ -61,7 +64,8 @@ def test_worker_executes_one_task_and_reports_completion():
     with runner.isolated_filesystem():
         warehouse_path = Path("warehouse")
         warehouse_path.mkdir()
-        (warehouse_path / "tasks.db").touch()
+        taskdb_path = Path("tasks.db")
+        taskdb_path.touch()
 
         mock_worker = mock.Mock()
         mock_worker.execute_unit.return_value = (
@@ -70,7 +74,7 @@ def test_worker_executes_one_task_and_reports_completion():
         )
 
         with mock.patch("openfecli.commands.worker._build_worker", return_value=mock_worker):
-            result = runner.invoke(worker, ["warehouse", "--scratch", "scratch"])
+            result = runner.invoke(worker, ["warehouse", "tasks.db", "--scratch", "scratch"])
 
         assert result.exit_code == 0
         assert "Completed task: Transformation-abc:ProtocolUnit-def" in result.output
@@ -84,7 +88,7 @@ def test_worker_raises_when_result_is_failure():
     with runner.isolated_filesystem():
         warehouse_path = Path("warehouse")
         warehouse_path.mkdir()
-        (warehouse_path / "tasks.db").touch()
+        Path("tasks.db").touch()
 
         mock_worker = mock.Mock()
         mock_worker.execute_unit.return_value = (
@@ -93,7 +97,7 @@ def test_worker_raises_when_result_is_failure():
         )
 
         with mock.patch("openfecli.commands.worker._build_worker", return_value=mock_worker):
-            result = runner.invoke(worker, ["warehouse"])
+            result = runner.invoke(worker, ["warehouse", "tasks.db"])
 
         assert result.exit_code == 1
         assert "returned a failure result" in result.output
@@ -104,7 +108,7 @@ def test_worker_prints_failure_result_details_when_available():
     with runner.isolated_filesystem():
         warehouse_path = Path("warehouse")
         warehouse_path.mkdir()
-        (warehouse_path / "tasks.db").touch()
+        Path("tasks.db").touch()
 
         mock_worker = mock.Mock()
         mock_worker.execute_unit.return_value = (
@@ -113,7 +117,7 @@ def test_worker_prints_failure_result_details_when_available():
         )
 
         with mock.patch("openfecli.commands.worker._build_worker", return_value=mock_worker):
-            result = runner.invoke(worker, ["warehouse"])
+            result = runner.invoke(worker, ["warehouse", "tasks.db"])
 
         assert result.exit_code == 1
         assert (
@@ -129,13 +133,13 @@ def test_worker_raises_when_execution_throws():
     with runner.isolated_filesystem():
         warehouse_path = Path("warehouse")
         warehouse_path.mkdir()
-        (warehouse_path / "tasks.db").touch()
+        Path("tasks.db").touch()
 
         mock_worker = mock.Mock()
         mock_worker.execute_unit.side_effect = RuntimeError("boom")
 
         with mock.patch("openfecli.commands.worker._build_worker", return_value=mock_worker):
-            result = runner.invoke(worker, ["warehouse"])
+            result = runner.invoke(worker, ["warehouse", "tasks.db"])
 
         assert result.exit_code == 1
         assert "Traceback (most recent call last):" in result.output
