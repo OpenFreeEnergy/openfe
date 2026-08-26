@@ -281,6 +281,8 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     off_toolkit_backend: Literal["ambertools", "openeye", "rdkit"] = "ambertools"
     """
     The OpenFF toolkit registry backend to use for partial charge generation.
+    
+    This is always respected regardless of the ``partial_charge_method``.
 
 
     OpenFF backend selection options
@@ -322,7 +324,7 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     """
     forcefields: list[str] | None = None
     """
-    An optional list of SMIRNOFF style force field offxml paths or strings which should be used to assign partial
+    An optional list of SMIRNOFF style force field offxml paths or raw force field contents strings which should be used to assign partial
     charges if the ``partial_charge_method`` is set to ``forcefield``.
     """
 

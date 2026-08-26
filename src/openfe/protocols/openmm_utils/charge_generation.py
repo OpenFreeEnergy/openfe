@@ -378,8 +378,10 @@ def assign_offmol_partial_charges(
             # try again to load the force field with the added extension, if we fail let it raise the error
             ff = ForceField(*forcefields_with_ext)
 
-        # let the force field resolve the partial charge assignment
-        charges = ff.get_partial_charges(offmol)
+        # make the toolkit registry based on the selected backend
+        toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]])
+        # let the force field resolve the partial charge assignment method
+        charges = ff.get_partial_charges(offmol, toolkit_registry=toolkits)
         offmol.partial_charges = charges
         return offmol
 
