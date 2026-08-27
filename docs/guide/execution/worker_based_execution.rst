@@ -3,30 +3,35 @@
 Worker-based Execution
 =======================
 
-.. This tutorial demonstrates how to setup a campaign, run simulations, and gather results using **openfe**'s worker-based CLI execution.
+In contrast to quickrun execution, worker-based execution does not require that you explicitly define the Transformation to be executed.
+In worker-based execution, an OpenFE ``Worker`` is pointed to a ``Warehouse`` and ``TaskStatusDB`` which handle storage and orchestration, respectively.
+This means that you can execute an entire ``AlchemicalNetwork``'s campaign just by calling the ``openfe worker`` command iteratively until all tasks are complete!
 
+
+See below for details on how to run an openfe campaign using worker-based execution using either the CLI.
 
 Setting up a Campaign
 ---------------------
 
-If you are used to using the existing ``openfe plan-rbfe-network`` or ``openfe plan-rhfe-network``, you can simply add the ``--warehouse`` argument, and a directory and task db will be created.
+If you are accustomed to using the existing ``openfe plan-rbfe-network`` or ``openfe plan-rhfe-network`` CLI commands, you can simply add the ``--warehouse`` argument to your existing call, and the Warehouse and TaskStatusDB needed for Worker-based execution will be created.
 
 .. code:: bash
 
     > openfe plan-rbfe-network --warehouse
 
+Alternatively, you can pass any ``AlchemicalNetwork`` (as a JSON file) to the ``setup-warehouse-db`` CLI command, and a Warehouse and TaskDB will be created with the same name.
+This allows for more flexibility, as you can use any protocol (such as Separated Topologies).
 
-Alternatively, you pass any ``AlchemicalNetwork`` (as a JSON file) to the ``setup-warehouse-db`` CLI command, and a Warehouse and TaskDB will be created with the same name.
-
-OR
 
 .. code:: bash
 
     > openfe setup-warehouse-db --alchemical-network tyk2_alchemical_network.json
 
 
+Either way, you should see a ``Warehouse`` directory and a ``TaskStatusDB`` file.
+
 Running the Campaign
-------------------------
+--------------------
 
 To execute a single ``task`` (where a ``task`` is one ``ProtocolUnit``), you can simply run:
 
@@ -35,25 +40,27 @@ To execute a single ``task`` (where a ``task`` is one ``ProtocolUnit``), you can
     > openfe run-worker tyk2.db tyk2.db
 
 
-But, to run an entire campaign you would have to run this single command _many_ times.
+However, to run an entire campaign you would have to run this single command _many_ times.
 
 In practice, you will likely be submitting many workers simultaneously using SLURM or similar.
 You can call this command loop to automatically run a new worker after the previous has completed.
 
 To run multiple workers in parallel, submit ``run_worker.sh`` multiple times.
 
-... insert run_worker.sh
+.. literalinclude:: run_worker.sh
+    :caption: Example SLURM submission script for worker-based execution
+    :linenos:
+    :language: bash
 
 Gathering Results
 -----------------
 
-.. note::
+The ``Warehouse`` directory contains every ``ProtocolUnitResult`` created during execution.
 
-    Because Worker-based execution is currently under development, there is not yet a
+Because Worker-based execution is currently under development, there is not yet a direct command to output the results.
+To enable complete workflows in the meantime, we provide the ``output-as-legacy-json`` CLI command that takes in a Warehouse directory and outputs the results in a format identical to the format used by ``openfe quickrun``.
 
-The `Warehouse` directory contains all the ``ProtocolUnitResult``s created during execution.
-To enable use of ``openfe gather`` (and ``openfe gather-septop``, ``openfe gather-abfe``), we provide a helper functionality that takes in a Warehouse and outputs the results in a format identical to the format used by ``openfe quickrun``.
-
+This enables use of ``openfe gather`` (and ``openfe gather-septop``, ``openfe gather-abfe``).
 
 .. code:: bash
 
