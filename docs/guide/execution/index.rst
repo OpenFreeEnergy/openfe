@@ -11,4 +11,5 @@ then :ref:`reading on the available Python functions<reference_execution>`.
 
 .. toctree::
    quickrun_execution
+   worker_based_execution
    execution_theory
