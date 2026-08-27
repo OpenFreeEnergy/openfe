@@ -148,7 +148,6 @@ html_theme_options = {
     ],
     "accent_color": "cantina-purple",
     "navigation_with_keys": False,
-    "announcement": "The OpenFE team is conducting user interviews until August 15th! <a href=https://app.reclaim.ai/m/james-omsf/openfe-user-interview>Click here</a> to schedule an interview.",
 }
 html_logo = "_static/OFE-color-icon.svg"
 html_favicon = "_static/OFE-color-icon.svg"
