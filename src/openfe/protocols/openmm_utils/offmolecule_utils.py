@@ -111,7 +111,7 @@ def _get_offmol_resname(offmol: OFFMolecule) -> str | None:
     return _get_offmol_metadata(offmol, "residue_name")
 
 
-def _get_used_offmol_property(offmols: list[OFFMolecule], offmol_property: str) -> list[str]:
+def _get_used_offmol_property(offmols: list[OFFMolecule], offmol_property: str) -> set[str]:
     used_property: set[str] = set()
     for mol in offmols:
         prop = _get_offmol_metadata(mol, offmol_property)
