@@ -5,6 +5,7 @@ import pathlib
 import pytest
 from gufe.protocols import execute_DAG
 from openff.units import unit
+import MDAnalysis as mda
 
 from openfe.protocols import openmm_md
 
@@ -74,6 +75,11 @@ def test_vacuum_sim(
     assert pur.outputs["last_checkpoint"] == unit_shared / "checkpoint.xml"
     assert pur.outputs["npt_equil_pdb"] == unit_shared / "equil_npt.pdb"
     assert pur.outputs["nvt_equil_pdb"] is None
+
+    # Check that the residue name is correct
+    univ = mda.Universe(pur.outputs["npt_equil_pdb"])
+    assert univ.atoms.resnames[0] == "LIG"
+    assert univ.atoms.resnums[0] == 1
 
 
 @pytest.mark.integration
