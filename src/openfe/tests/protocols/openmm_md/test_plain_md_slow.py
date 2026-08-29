@@ -2,10 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pathlib
 
+import MDAnalysis as mda
 import pytest
 from gufe.protocols import execute_DAG
 from openff.units import unit
-import MDAnalysis as mda
 
 from openfe.protocols import openmm_md
 
