@@ -205,7 +205,9 @@ def validate_barostat(state: ChemicalSystem, barostat: str):
         logger.warning(wmsg)
 
 
-def get_components(state: ChemicalSystem) -> tuple[
+def get_components(
+    state: ChemicalSystem,
+) -> tuple[
     SolventComponent | None,
     ProteinComponent | None,
     list[SmallMoleculeComponent] | None,

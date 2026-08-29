@@ -57,16 +57,16 @@ from openfe.protocols.openmm_utils import (
     system_creation,
     system_validation,
 )
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_metadata,
+    _get_unique_name,
+    _get_used_offmol_property,
+    _next_available_number,
+    _set_offmol_metadata,
+)
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
     FemtosecondQuantity,
-)
-from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_used_offmol_property,
-    _get_unique_name,
-    _get_offmol_metadata,
-    _set_offmol_metadata,
-    _next_available_number,
 )
 from openfe.utils import log_system_probe, without_oechem_backend
 
@@ -469,7 +469,7 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         }
 
         # We assign everything LIG unless LIG is already a name
-        resname =  _get_unique_name("LIG", "LG", used_names)
+        resname = _get_unique_name("LIG", "LG", used_names)
 
         # Now we assign all the residue names & numbers
         for offmol in smc_components.values():

@@ -163,8 +163,7 @@ def assign_offmol_residue_metadata(
 
     used_names = _get_used_offmol_property(list(small_mols.values()), "residue_name")
     used_resnums = {
-        int(i)
-        for i in _get_used_offmol_property(list(small_mols.values()), "residue_number")
+        int(i) for i in _get_used_offmol_property(list(small_mols.values()), "residue_number")
     }
 
     lig_name = _get_unique_name(ligand_resname, ligand_stem, used_names)
