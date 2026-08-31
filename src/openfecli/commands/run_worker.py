@@ -91,7 +91,7 @@ def run_worker_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
     return result
 
 
-@click.command("run-worker", short_help="Execute one available task from a filesystem warehouse")
+@click.command("run-task", short_help="Execute one available task from a filesystem warehouse")
 @click.argument(
     "warehouse_path",
     type=click.Path(
