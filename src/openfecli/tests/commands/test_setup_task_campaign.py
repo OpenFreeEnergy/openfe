@@ -4,7 +4,7 @@ from importlib import resources
 import pytest
 from click.testing import CliRunner
 
-from openfecli.commands.build_warehouse import build_warehouse
+from openfecli.commands.setup_task_campaign import setup_task_campaign
 
 from ..utils import assert_click_success
 
@@ -17,11 +17,11 @@ def alchemical_network_mcl1_path() -> pathlib.Path:
         return fspath
 
 
-def test_build_warehouse(alchemical_network_mcl1_path):
+def test_setup_task_campaign(alchemical_network_mcl1_path):
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(
-            build_warehouse, ["--alchemical-network", str(alchemical_network_mcl1_path)]
+            setup_task_campaign, ["--alchemical-network", str(alchemical_network_mcl1_path)]
         )
         assert_click_success(result)
         assert pathlib.Path("alchemicalNetwork_mc1_small").is_dir()

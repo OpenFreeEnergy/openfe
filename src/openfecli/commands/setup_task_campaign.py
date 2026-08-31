@@ -8,7 +8,7 @@ from openfecli.parameters import ALCHEMICAL_NETWORK
 from openfecli.utils import print_duration, write
 
 
-def build_warehouse_main(alchemical_network: AlchemicalNetwork, name: str | None = None):
+def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str | None = None):
     from openfe.orchestration.exorcist_utils import build_task_db_from_alchemical_network
 
     write("Creating Warehouse and TaskDB from AlchemicalNetwork...")
@@ -24,16 +24,18 @@ def build_warehouse_main(alchemical_network: AlchemicalNetwork, name: str | None
 
 
 @click.command(
-    "build-warehouse",
+    "setup-task-campaign",
     short_help="Build a Warehouse and corresponding TaskDB from an AlchemicalNetwork.",
 )
 @ALCHEMICAL_NETWORK.parameter(multiple=False, required=True, help=ALCHEMICAL_NETWORK.kwargs["help"])
 @print_duration
-def build_warehouse(alchemical_network: str | Path):
+def setup_task_campaign(alchemical_network: str | Path):
     # TODO: allow user-supplied name and out_dir
     name = Path(alchemical_network).stem
     loaded_alch_net = ALCHEMICAL_NETWORK.get(alchemical_network)
-    build_warehouse_main(alchemical_network=loaded_alch_net, name=name)
+    setup_task_campaign_main(alchemical_network=loaded_alch_net, name=name)
 
 
-PLUGIN = OFECommandPlugin(command=build_warehouse, section="Network Planning", requires_ofe=(1, 12))
+PLUGIN = OFECommandPlugin(
+    command=setup_task_campaign, section="Planning & Setup", requires_ofe=(1, 12)
+)

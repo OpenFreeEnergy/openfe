@@ -3,8 +3,8 @@ from pathlib import Path
 import click
 
 from openfecli import OFECommandPlugin
-from openfecli.parameters import OUTPUT_DIR, OVERWRITE, WAREHOUSE
-from openfecli.utils import configure_logger, print_duration, write
+from openfecli.parameters import OUTPUT_DIR  #  OVERWRITE, WAREHOUSE
+from openfecli.utils import print_duration, write
 
 
 def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
@@ -23,7 +23,10 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
     )
 
 
-@click.command("run-worker", short_help="Execute one available task from a filesystem warehouse")
+@click.command(
+    "to-legacy-json",
+    short_help="Write out the results from a Warehouse directory to JSON files compatible with openfe gather.",
+)
 @click.argument(
     "warehouse_path",
     type=click.Path(
@@ -47,4 +50,4 @@ def to_legacy_json(warehouse_path: str, output_dir: str):
     to_legacy_json_main(warehouse_path=warehouse_path, output_dir=output_dir)
 
 
-PLUGIN = OFECommandPlugin(command=to_legacy_json, section="Execution", requires_ofe=(1, 13))
+PLUGIN = OFECommandPlugin(command=to_legacy_json, section="Results Gathering", requires_ofe=(1, 13))
