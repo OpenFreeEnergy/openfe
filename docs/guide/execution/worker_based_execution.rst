@@ -1,9 +1,9 @@
 .. _userguide_worker:
 
-Worker-based Execution
-=======================
+Task-based Execution
+====================
 
-In contrast to quickrun execution, worker-based execution does not require that you explicitly define the Transformation to be executed.
+In contrast to quickrun execution, task-based execution does not require that you explicitly define the Transformation to be executed.
 In worker-based execution, an OpenFE ``Worker`` is pointed to a ``Warehouse`` and ``TaskStatusDB`` which handle storage and orchestration, respectively.
 This means that you can execute an entire ``AlchemicalNetwork``'s campaign just by calling the ``openfe worker`` command iteratively until all tasks are complete!
 
@@ -33,11 +33,11 @@ Either way, you should see a ``Warehouse`` directory and a ``TaskStatusDB`` file
 Running the Campaign
 --------------------
 
-To execute a single ``task`` (where a ``task`` is one ``ProtocolUnit``), you can simply run:
+To execute a single ``task`` (where here a ``task`` is one ``ProtocolUnit``), you can simply run:
 
 .. code:: bash
 
-    > openfe run-worker tyk2.db tyk2.db
+    > openfe run-task tyk2/ tyk2.db
 
 
 However, to run an entire campaign you would have to run this single command _many_ times.
