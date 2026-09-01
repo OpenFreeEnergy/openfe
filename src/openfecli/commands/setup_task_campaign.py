@@ -8,6 +8,7 @@ from openfecli.parameters import ALCHEMICAL_NETWORK
 from openfecli.utils import print_duration, write
 
 
+# TODO: add n_repeats
 def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str | None = None):
     from openfe.orchestration.exorcist_utils import build_task_db_from_alchemical_network
 
