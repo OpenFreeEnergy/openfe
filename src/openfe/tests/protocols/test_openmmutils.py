@@ -1338,7 +1338,7 @@ class TestAssignOffmolResidueMetadata:
     _RESIDUE_METADATA_CASES = {
         "single ligand": (
             [("benzene", True, None, None)],
-            [("LIG", 1)],
+            [("LIG", "1")],
         ),
         "ligand and cofactors": (
             [
@@ -1346,7 +1346,7 @@ class TestAssignOffmolResidueMetadata:
                 ("toluene", False, None, None),
                 ("phenol", False, None, None),
             ],
-            [("LIG", 1), ("COF", 2), ("COF", 3)],
+            [("LIG", "1"), ("COF", "2"), ("COF", "3")],
         ),
         "two ligands pool to LIG": (
             [
@@ -1354,15 +1354,15 @@ class TestAssignOffmolResidueMetadata:
                 ("toluene", True, None, None),
                 ("phenol", False, None, None),
             ],
-            [("LIG", 1), ("LIG", 2), ("COF", 3)],
+            [("LIG", "1"), ("LIG", "2"), ("COF", "3")],
         ),
         "custom cofactor name kept": (
             [("benzene", True, None, None), ("toluene", False, "NAD", None)],
-            [("LIG", 1), ("NAD", 2)],
+            [("LIG", "1"), ("NAD", "2")],
         ),
         "custom ligand name kept": (
             [("benzene", True, "BNZ", None), ("toluene", False, None, None)],
-            [("BNZ", 1), ("COF", 2)],
+            [("BNZ", "1"), ("COF", "2")],
         ),
         "cofactor named LIG, ligands fall back to LG1": (
             [
@@ -1371,7 +1371,7 @@ class TestAssignOffmolResidueMetadata:
                 ("phenol", False, "LIG", None),
                 ("benzonitrile", False, None, None),
             ],
-            [("LG1", 1), ("LG1", 2), ("LIG", 3), ("COF", 4)],
+            [("LG1", "1"), ("LG1", "2"), ("LIG", "3"), ("COF", "4")],
         ),
         "ligand named COF, cofactors fall back to CF1": (
             [
@@ -1379,19 +1379,19 @@ class TestAssignOffmolResidueMetadata:
                 ("toluene", False, None, None),
                 ("phenol", False, None, None),
             ],
-            [("COF", 1), ("CF1", 2), ("CF1", 3)],
+            [("COF", "1"), ("CF1", "2"), ("CF1", "3")],
         ),
         "pinned residue number respected": (
-            [("benzene", True, None, None), ("toluene", False, None, 5)],
-            [("LIG", 1), ("COF", 5)],
+            [("benzene", True, None, None), ("toluene", False, None, "5")],
+            [("LIG", "1"), ("COF", "5")],
         ),
         "auto residue number steps past a pinned one": (
             [
                 ("benzene", True, None, None),
-                ("toluene", False, None, 2),
+                ("toluene", False, None, "2"),
                 ("phenol", False, None, None),
             ],
-            [("LIG", 1), ("COF", 2), ("COF", 3)],
+            [("LIG", "1"), ("COF", "2"), ("COF", "3")],
         ),
     }
 
