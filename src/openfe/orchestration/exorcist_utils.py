@@ -123,7 +123,10 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
         A dataframe of the tasks and their statuses
     """
     status_name_encoding = {e.value: e.name for e in exorcist.TaskStatus}
-    task_table = pd.read_sql_table("tasks", task_db.engine)
+    # TODO: add task_type back in once it's used
+    task_table = pd.read_sql_table(
+        "tasks", task_db.engine, columns=["taskid", "status", "last_modified", "tries", "max_tries"]
+    )
     task_table.replace({"status": status_name_encoding}, inplace=True)
     return task_table
 
