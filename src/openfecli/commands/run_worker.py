@@ -13,7 +13,7 @@ def _build_worker(warehouse_path: Path, task_db_path: Path):
     from openfe.orchestration import Worker
     from openfe.storage.warehouse import FileSystemWarehouse
 
-    warehouse = FileSystemWarehouse(str(warehouse_path))
+    warehouse = FileSystemWarehouse(str(warehouse_path), exist_ok=True)
     return Worker(warehouse=warehouse, task_db_path=task_db_path)
 
 
