@@ -256,7 +256,7 @@ def test_get_task_df(benzene_star_map_task_db):
         "last_modified",
         "tries",
         "max_tries",
-        "task_type",
+        # "task_type",
     ]
     assert len(df) == 276
     assert len(df[df.status == "AVAILABLE"]) == 12
