@@ -72,7 +72,7 @@ def run_worker_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
     worker = _build_worker(warehouse_path, task_db_path)
 
     try:
-        write("Executing unit...")
+        write("Attempting to execute unit ...")
         execution = worker.execute_unit(scratch=scratch)
     except Exception as exc:
         write(traceback.format_exc())

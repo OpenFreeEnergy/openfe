@@ -14,6 +14,7 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
     write("Loading results from Warehouse ...")
     warehouse = FileSystemWarehouse.from_dir(warehouse_path)
     result_edges = warehouse.gather_all_results()
+
     if len(result_edges) == 0:
         write(f"No results found in {warehouse_path}.")
     else:
