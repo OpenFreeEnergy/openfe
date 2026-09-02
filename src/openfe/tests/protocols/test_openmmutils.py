@@ -1307,6 +1307,22 @@ class TestOFFPartialCharge:
                 nagl_model=None,
             )
 
+    def test_forcefields_wrong_method(self, uncharged_mol):
+        # Make sure an error is raised if we pass in some forcefields but the method isn't forcefield
+        with pytest.raises(
+            ValueError,
+            match="The `forcefields` option is only valid with the `forcefield` charge method, but got am1bcc.",
+        ):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method="am1bcc",
+                toolkit_backend="rdkit",
+                generate_n_conformers=None,
+                nagl_model=None,
+                forcefields=["openff-2.0.0.offxml"],
+        )
+
     def test_forcefield_charges_library(self, uncharged_mol):
         # Make sure that the forcefield method can assign charges from a library
         # Create a force field with a charge library for the molecule using a force field with an AM1BCC handler as well
@@ -1327,7 +1343,7 @@ class TestOFFPartialCharge:
             toolkit_backend="rdkit",
             generate_n_conformers=None,
             nagl_model=None,
-            forcefields=ff.to_string(),
+            forcefields=[ff.to_string()],
         )
 
         assert_allclose(uncharged_mol.partial_charges.m, dummy_charges.m)

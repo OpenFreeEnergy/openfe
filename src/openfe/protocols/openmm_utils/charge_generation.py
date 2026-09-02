@@ -70,6 +70,12 @@ BACKEND_OPTIONS: dict[str, list[ToolkitWrapper]] = {
     "openeye": [OpenEyeToolkitWrapper],
     "rdkit": [RDKitToolkitWrapper],
 }
+# If the user wants to use NAGL to assign charges via the force field option
+# then we need to add it to the backend options if it is available
+if HAS_NAGL:
+    BACKEND_OPTIONS["ambertools"].append(NAGLToolkitWrapper)
+    BACKEND_OPTIONS["openeye"].append(NAGLToolkitWrapper)
+    BACKEND_OPTIONS["rdkit"].append(NAGLToolkitWrapper)
 
 
 def assign_offmol_espaloma_charges(offmol: OFFMol, toolkit_registry: ToolkitRegistry) -> None:
@@ -343,23 +349,27 @@ def assign_offmol_partial_charges(
     -------
      The Molecule with partial charges assigned.
     """
+    method_name = method.lower()
+    toolkit_name = toolkit_backend.lower()
 
-    # If you have non-zero charges and not overwriting, just return
-    if offmol.partial_charges is not None and np.any(offmol.partial_charges):
-        if not overwrite:
-            return offmol
-
-    if method.lower() == "forcefield":
+    # validate the input combination first
+    if method_name == "forcefield":
         if forcefields is None:
             errmsg = (
                 "The forcefield method requires a force field or list of force fields' to be provided "
                 "via `forcefields`."
             )
             raise ValueError(errmsg)
+    elif forcefields is not None:
+        errmsg = f"The `forcefields` option is only valid with the `forcefield` charge method, but got {method_name}."
+        raise ValueError(errmsg)
 
-        if isinstance(forcefields, str):
-            forcefields = [forcefields]
+    # If you have non-zero charges and not overwriting, just return
+    if offmol.partial_charges is not None and np.any(offmol.partial_charges):
+        if not overwrite:
+            return offmol
 
+    if method_name == "forcefield":
         try:
             # try to parse what the user has provided, due to supporting dropping the offxml extension,
             # we need to try and catch the OSError and add the extension if needed
@@ -379,7 +389,7 @@ def assign_offmol_partial_charges(
             ff = ForceField(*forcefields_with_ext)
 
         # make the toolkit registry based on the selected backend
-        toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]])
+        toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_name]])
         # let the force field resolve the partial charge assignment method
         charges = ff.get_partial_charges(offmol, toolkit_registry=toolkits)
         offmol.partial_charges = charges
@@ -430,13 +440,13 @@ def assign_offmol_partial_charges(
 
     # Grab the backends and also check our method
     try:
-        backends = CHARGE_METHODS[method.lower()]["backends"]
+        backends = CHARGE_METHODS[method_name]["backends"]
     except KeyError:
         errmsg = f"Unknown partial charge method {method}"
         raise ValueError(errmsg)
 
     # Check our method actually supports the toolkit backend selected
-    if toolkit_backend.lower() not in backends:  # type: ignore
+    if toolkit_name not in backends:  # type: ignore
         errmsg = (
             f"Selected toolkit_backend ({toolkit_backend}) cannot "
             f"be used with the selected method ({method}). "
@@ -445,26 +455,26 @@ def assign_offmol_partial_charges(
         raise ValueError(errmsg)
 
     # OpenEye is the only optional dependency in the toolkit backends
-    if toolkit_backend.lower() == "openeye" and not HAS_OPENEYE:
+    if toolkit_name == "openeye" and not HAS_OPENEYE:
         errmsg = "OpenEye is not available and cannot be selected as a backend"
         raise ImportError(errmsg)
 
     # Issue 1760
-    if HAS_OPENEYE and method.lower() == "nagl":
-        if toolkit_backend.lower() != "openeye":
+    if HAS_OPENEYE and method_name == "nagl":
+        if toolkit_name != "openeye":
             errmsg = "OpenEye toolkit is installed but not used in the OpenFF toolkit registry backend. This is not possible with NAGL charges."
             raise ValueError(errmsg)
 
-    toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]])
+    toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_name]])
 
     # We make a copy of the molecule since we're going to modify conformers
     offmol_copy = copy.deepcopy(offmol)
 
     # Generate conformers - note this method may differ based on the partial
     # charge method employed
-    CHARGE_METHODS[method.lower()]["confgen_func"](
+    CHARGE_METHODS[method_name]["confgen_func"](
         offmol=offmol_copy,
-        max_conf=CHARGE_METHODS[method.lower()]["max_conf"],
+        max_conf=CHARGE_METHODS[method_name]["max_conf"],
         toolkit_registry=toolkits,
         generate_n_conformers=generate_n_conformers,
     )  # type: ignore
@@ -473,10 +483,10 @@ def assign_offmol_partial_charges(
     # <https://github.com/openforcefield/openff-toolkit/issues/1831>
     with threadpool_limits(limits=1):
         # Call selected method to assign partial charges
-        CHARGE_METHODS[method.lower()]["charge_func"](
+        CHARGE_METHODS[method_name]["charge_func"](
             offmol=offmol_copy,
             toolkit_registry=toolkits,
-            **CHARGE_METHODS[method.lower()]["charge_extra_kwargs"],
+            **CHARGE_METHODS[method_name]["charge_extra_kwargs"],
         )  # type: ignore
 
     # Copy partial charges back

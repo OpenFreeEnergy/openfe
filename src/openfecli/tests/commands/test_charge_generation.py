@@ -237,7 +237,7 @@ def test_charge_molecules_from_forcefield(methane, tmp_path):
     settings = {
         "partial_charge": {
             "method": "forcefield",
-            "settings": {"forcefields": ["openff_unconstrained-2.3.0"]},
+            "settings": {"forcefields": ["openff-2.3.0"]},
         }
     }
 
