@@ -69,7 +69,6 @@ from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import log_system_probe, without_oechem_backend
 
 from ..openmm_utils import (
-    charge_generation,
     multistate_analysis,
     settings_validation,
     system_creation,
@@ -456,32 +455,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 has_solvent=solvent_comp is not None,
             )
         return system_generator
-
-    @staticmethod
-    def _assign_partial_charges(
-        partial_charge_settings: OpenFFPartialChargeSettings,
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
-    ) -> None:
-        """
-        Assign partial charges to OFFMolecules inplace.
-
-        Parameters
-        ----------
-        charge_settings : OpenFFPartialChargeSettings
-          Settings for controlling how the partial charges are assigned.
-        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
-          Dictionary of OpenFF Molecules to add, keyed by
-          SmallMoleculeComponent.
-        """
-        for mol in smc_components.values():
-            charge_generation.assign_offmol_partial_charges(
-                offmol=mol,
-                overwrite=False,
-                method=partial_charge_settings.partial_charge_method,
-                toolkit_backend=partial_charge_settings.off_toolkit_backend,
-                generate_n_conformers=partial_charge_settings.number_of_conformers,
-                nagl_model=partial_charge_settings.nagl_model,
-            )
 
     def _get_modeller(
         self,

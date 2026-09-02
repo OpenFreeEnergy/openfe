@@ -711,9 +711,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # 3. Get settings
         settings = self._get_settings()
 
-        # 4. Assign partial charges
-        self._assign_partial_charges(settings["charge_settings"], smc_comps_AB)
-
         # 5. Get the OpenMM systems
         omm_system_A, omm_topology_A, positions_A, modeller_A, comp_resids_A = (
             self.get_system(
@@ -1079,9 +1076,6 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 2. Get settings
         settings = self._get_settings()
-
-        # 3. Assign partial charges
-        self._assign_partial_charges(settings["charge_settings"], smc_comps_AB)
 
         # 4. Update the positions of ligand B:
         #    - solvent: Offset ligand B with respect to ligand A

@@ -159,15 +159,21 @@ def test_mbar_overlap_plot():
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
-@pytest.mark.parametrize("num", [i for i in range(1, 30)])
-def test_plot_2D_rmsd(num):
+def test_plot_2D_rmsd():
     """
     Smoke test:
       Loop through and test plotting fictitious 2D data
     """
+    num = 29
     points = num * (num - 1) // 2
-    data = [[0.5 for x in range(points)] for i in range(num)]
+    data = [[0.5 for _ in range(points)] for _ in range(num)]
+
     fig = plot_2D_rmsd(data)
+    # check the number of axes and their titles
+    assert len(fig.axes) == 32
+    axis_names = [ax.get_title() for ax in fig.axes if ax.get_title()]
+    assert axis_names == [f"State {i}" for i in range(num)]
+    assert fig._suptitle.get_text() == "Protein 2D RMSD"
     plt.close(fig)
 
 

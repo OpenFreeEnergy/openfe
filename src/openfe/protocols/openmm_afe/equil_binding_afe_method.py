@@ -403,6 +403,11 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
+        # validate small molecule charges
+        small_ff = self.settings.forcefield_settings.small_molecule_forcefield
+        system_validation.validate_nondeterministic_charges(stateA, small_ff)
+        system_validation.validate_nondeterministic_charges(stateB, small_ff)
+
         # Validate the complex lambda schedule
         self._validate_lambda_schedule(
             self.settings.complex_lambda_settings,

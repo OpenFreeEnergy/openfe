@@ -50,7 +50,6 @@ from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings,
 )
 from openfe.protocols.openmm_utils import (
-    charge_generation,
     omm_compute,
     serialization,
     settings_validation,
@@ -197,6 +196,10 @@ class PlainMDProtocol(gufe.Protocol):
         # Validate the ChemicalSystem
         system_validation.validate_chemical_system(stateA)
 
+        # Validate small molecule charges
+        small_ff = self.settings.forcefield_settings.small_molecule_forcefield
+        system_validation.validate_nondeterministic_charges(stateA, small_ff)
+
         # Validate solvent component if present
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
@@ -333,32 +336,6 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
     Protocol setup unit for plain MD simulations which handles charging, system building and solvation.
     """
 
-    @staticmethod
-    def _assign_partial_charges(
-        charge_settings: OpenFFPartialChargeSettings,
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
-    ) -> None:
-        """
-        Assign partial charges to SMCs.
-
-        Parameters
-        ----------
-        charge_settings : OpenFFPartialChargeSettings
-          Settings for controlling how the partial charges are assigned.
-        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
-          Dictionary of OpenFF Molecules to add, keyed by
-          SmallMoleculeComponent.
-        """
-        for mol in smc_components.values():
-            charge_generation.assign_offmol_partial_charges(
-                offmol=mol,
-                overwrite=False,
-                method=charge_settings.partial_charge_method,
-                toolkit_backend=charge_settings.off_toolkit_backend,
-                generate_n_conformers=charge_settings.number_of_conformers,
-                nagl_model=charge_settings.nagl_model,
-            )
-
     def run(
         self,
         *,
@@ -449,9 +426,6 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         smc_components: dict[SmallMoleculeComponent, OFFMolecule] = {
             i: i.to_openff() for i in small_mols
         }
-
-        # a. assign partial charges to smcs
-        self._assign_partial_charges(charge_settings, smc_components)
 
         # b. get a system generator
         if output_settings.forcefield_cache is not None:
