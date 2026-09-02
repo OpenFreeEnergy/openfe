@@ -1321,7 +1321,7 @@ class TestOFFPartialCharge:
                 generate_n_conformers=None,
                 nagl_model=None,
                 forcefields=["openff-2.0.0.offxml"],
-        )
+            )
 
     def test_forcefield_charges_library(self, uncharged_mol):
         # Make sure that the forcefield method can assign charges from a library
