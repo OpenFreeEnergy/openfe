@@ -6,6 +6,7 @@ Reusable utilities for assigning partial charges to ChemicalComponents.
 
 import copy
 import sys
+import typing
 import warnings
 from typing import Callable, Literal
 
@@ -370,6 +371,8 @@ def assign_offmol_partial_charges(
             return offmol
 
     if method_name == "forcefield":
+        # mypy can't tell we have already validated that forcefields is not None
+        forcefields = typing.cast(list[str], forcefields)
         try:
             # try to parse what the user has provided, due to supporting dropping the offxml extension,
             # we need to try and catch the OSError and add the extension if needed
