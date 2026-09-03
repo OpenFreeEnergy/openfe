@@ -70,47 +70,6 @@ def _get_offmol_metadata(offmol: OFFMolecule, key: Any) -> Any | None:
     return value
 
 
-def _set_offmol_resname(
-    offmol: OFFMolecule,
-    resname: str | None,
-) -> None:
-    """
-    Helper method to set offmol residue names
-
-    Parameters
-    ----------
-    offmol : openff.toolkit.Molecule
-      Molecule to assign a residue name to.
-    resname : str | None
-      Residue name to be set. Set to None to clear it.
-
-    Returns
-    -------
-    None
-    """
-    _set_offmol_metadata(offmol, "residue_name", resname)
-
-
-def _get_offmol_resname(offmol: OFFMolecule) -> str | None:
-    """
-    Helper method to get an offmol's residue name and make sure it is
-    consistent across all atoms in the Molecule.
-
-    Parameters
-    ----------
-    offmol : openff.toolkit.Molecule
-      Molecule to get the residue name from.
-
-    Returns
-    -------
-    resname : Optional[str]
-      Residue name of the molecule. ``None`` if the Molecule
-      does not have a residue name, or if the residue name is
-      inconsistent across all the atoms.
-    """
-    return _get_offmol_metadata(offmol, "residue_name")
-
-
 def _get_used_offmol_property(offmols: list[OFFMolecule], offmol_property: str) -> set[str]:
     used_property: set[str] = set()
     for mol in offmols:
@@ -172,10 +131,10 @@ def assign_offmol_residue_metadata(
 
     assigned: dict[SmallMoleculeComponent, str] = {}
     for smc, offmol in small_mols.items():
-        name = _get_offmol_resname(offmol)
+        name = _get_offmol_metadata(offmol, "residue_name")
         if name is None:
             name = lig_name if smc in alchemical else cof_name
-            _set_offmol_resname(offmol, name)
+            _set_offmol_metadata(offmol, "residue_name", name)
         if _get_offmol_metadata(offmol, "residue_number") is None:
             resnum = _next_available_number(used_resnums)
             _set_offmol_metadata(offmol, "residue_number", str(resnum))

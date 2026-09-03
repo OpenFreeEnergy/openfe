@@ -45,9 +45,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
 )
 from openfe.protocols.openmm_utils.offmolecule_utils import (
     _get_offmol_metadata,
-    _get_offmol_resname,
     _set_offmol_metadata,
-    _set_offmol_resname,
     assign_offmol_residue_metadata,
 )
 
@@ -1405,7 +1403,7 @@ class TestAssignOffmolResidueMetadata:
             off = copy.deepcopy(smc.to_openff())
 
             if resname is not None:
-                _set_offmol_resname(off, resname)
+                _set_offmol_metadata(off, "residue_name", resname)
             if residue_number is not None:
                 _set_offmol_metadata(off, "residue_number", residue_number)
 
@@ -1426,6 +1424,6 @@ class TestAssignOffmolResidueMetadata:
         assigned = assign_offmol_residue_metadata(small, alchemical)
 
         for smc, off, (resname, residue_number) in zip(small.keys(), small.values(), expected):
-            assert _get_offmol_resname(off) == resname
+            assert _get_offmol_metadata(off, "residue_name") == resname
             assert _get_offmol_metadata(off, "residue_number") == residue_number
             assert assigned[smc] == resname
