@@ -8,11 +8,11 @@ from openfecli.parameters import (
     MOL_DIR,
     N_PROTOCOL_REPEATS,
     NCORES,
+    NETWORKS_ONLY,
     OUTPUT_DIR,
     OVERWRITE,
     PROTEIN,
     PROTEIN_MEMBRANE,
-    WAREHOUSE,
     YAML_OPTIONS,
 )
 from openfecli.utils import print_duration, write
@@ -134,7 +134,7 @@ def plan_rbfe_network_main(
 @N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])  # fmt: skip
 @NCORES.parameter(help=NCORES.kwargs["help"], default=1)
 @OVERWRITE.parameter(help=OVERWRITE.kwargs["help"], default=OVERWRITE.kwargs["default"], is_flag=True)  # fmt: skip
-@WAREHOUSE.parameter(help=WAREHOUSE.kwargs["help"], is_flag=True)
+@NETWORKS_ONLY.parameter(help=NETWORKS_ONLY.kwargs["help"], is_flag=True)
 @print_duration
 def plan_rbfe_network(
     molecules: list[str],
@@ -146,7 +146,7 @@ def plan_rbfe_network(
     n_protocol_repeats: int,
     n_cores: int,
     overwrite_charges: bool,
-    warehouse: bool,
+    networks_only: bool,
 ):
     """
     Plan a relative binding free energy AlchemicalNetwork, saved as JSON files for use by the quickrun command.
@@ -181,7 +181,6 @@ def plan_rbfe_network(
     write("______________________")
     write("")
 
-    from openfe.storage.warehouse import FileSystemWarehouse
     from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
     write("Parsing in Files: ")
@@ -250,15 +249,16 @@ def plan_rbfe_network(
     # OUTPUT
     write("Output:")
     write("\tSaving to: " + str(output_dir))
-    warehouse_object = None
-    if warehouse:
-        warehouse_object = FileSystemWarehouse()
+    if networks_only:
+        write(
+            "Creating networks only. No Transformation JSONs will be created. To execute the output AlchemicalNetwork, use openfe setup-task-campaign."
+        )
 
     plan_alchemical_network_output(
         alchemical_network=alchemical_network,
         ligand_network=ligand_network,
         folder_path=OUTPUT_DIR.get(output_dir),
-        warehouse=warehouse_object,
+        networks_only=networks_only,
     )
 
 
