@@ -45,9 +45,9 @@ However, to run an entire campaign you would have to run this single command _ma
 In practice, you will likely be submitting many workers simultaneously using SLURM or similar.
 You can call this command loop to automatically run a new worker after the previous has completed.
 
-To run multiple workers in parallel, submit ``run_worker.sh`` multiple times.
+To run multiple workers in parallel, submit ``run_tasks.sh`` multiple times.
 
-.. literalinclude:: run_worker.sh
+.. literalinclude:: run_tasks.sh
     :caption: Example SLURM submission script for worker-based execution
     :linenos:
     :language: bash
