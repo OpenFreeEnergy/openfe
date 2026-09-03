@@ -35,7 +35,7 @@ def _write_failure_result_details(taskid: str, result) -> None:
         write(traceback_text)
 
 
-def run_worker_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
+def run_task_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
     import logging
     import sys
     import traceback
@@ -127,14 +127,14 @@ def run_worker_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
     help="Directory for scratch files. Defaults to 'scratch/' in the current working directory.",
 )
 @print_duration
-def run_worker(warehouse_path: Path, task_db_path: Path, scratch: Path):
+def run_task(warehouse_path: Path, task_db_path: Path, scratch: Path):
     """
     Execute one available task from a warehouse task graph.
 
     The warehouse directory must contain a ``tasks.db`` task database and task
     payloads under ``tasks/`` created via OpenFE orchestration setup.
     """
-    run_worker_main(warehouse_path=warehouse_path, task_db_path=task_db_path, scratch=scratch)
+    run_task_main(warehouse_path=warehouse_path, task_db_path=task_db_path, scratch=scratch)
 
 
-PLUGIN = OFECommandPlugin(command=run_worker, section="Execution", requires_ofe=(1, 13))
+PLUGIN = OFECommandPlugin(command=run_task, section="Execution", requires_ofe=(1, 13))
