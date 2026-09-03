@@ -94,4 +94,4 @@ def charge_molecules(molecules, yaml_settings, output, n_cores, overwrite_charge
             output.write(mol.to_sdf())
 
 
-PLUGIN = OFECommandPlugin(command=charge_molecules, section="Miscellaneous", requires_ofe=(0, 3))
+PLUGIN = OFECommandPlugin(command=charge_molecules, section="Planning & Setup", requires_ofe=(1, 3))

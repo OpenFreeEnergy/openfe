@@ -13,8 +13,8 @@ from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
     load_json,
-    rich_print_to_stdout,
 )
+from openfecli.utils import rich_print_to_stdout
 
 
 def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
@@ -451,8 +451,4 @@ def gather_septop(
         rich_print_to_stdout(df)
 
 
-PLUGIN = OFECommandPlugin(
-    command=gather_septop,
-    section="Quickrun Executor",
-    requires_ofe=(0, 6),
-)
+PLUGIN = OFECommandPlugin(command=gather_septop, section="Results Gathering", requires_ofe=(0, 6))
