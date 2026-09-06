@@ -175,7 +175,7 @@ def handle_alchemical_waters(
     system_mapping: dict,
     charge_difference: int,
     forcefield: app.ForceField,
-):
+) -> set[int]:
     """
     Add alchemical waters from a pre-defined list.
 
@@ -197,6 +197,11 @@ def handle_alchemical_waters(
     forcefield : app.ForceField
       The forcefield to use for ion parameterization.
 
+    Returns
+    -------
+    set[int]
+      Old-system atom indices of the waters converted into ions.
+
     Raises
     ------
     ValueError
@@ -217,7 +222,7 @@ def handle_alchemical_waters(
         raise ValueError(errmsg)
 
     if charge_difference == 0:
-        return None
+        return set()
 
     # get the nonbonded forces
     nbfrcs = [i for i in system.getForces()
@@ -248,12 +253,14 @@ def handle_alchemical_waters(
 
     # Loop through residues, check if they match the residue index
     # mutate the atom as necessary
+    alchemical_water_atoms: set[int] = set()
     for res in topology.residues():
         if res.index in water_resids:
             for at in res.atoms():
                 idx = at.index
                 charge, sigma, epsilon = nbf.getParticleParameters(idx)
                 _fix_alchemical_water_atom_mapping(system_mapping, idx)
+                alchemical_water_atoms.add(system_mapping['new_to_old_atom_map'][idx])
 
                 if charge == o_charge:
                     nbf.setParticleParameters(
@@ -266,6 +273,8 @@ def handle_alchemical_waters(
                         raise ValueError(errmsg)
 
                     nbf.setParticleParameters(idx, 0.0, sigma, epsilon)
+
+    return alchemical_water_atoms
 
 
 def get_alchemical_waters(
