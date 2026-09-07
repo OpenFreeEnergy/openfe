@@ -2286,6 +2286,73 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, 
     assert len(htf._atom_classes["unique_old_atoms"]) == 1
 
 
+@pytest.mark.parametrize(
+    "mapping_name",
+    [
+        "benzene_to_benzoic_mapping",  # 0 -> -1: charge appears on state B (anion)
+        "benzoic_to_benzene_mapping",  # -1 -> 0: charge disappears from state A (anion)
+        "benzene_to_aniline_mapping",  # 0 -> +1: charge appears on state B (cation)
+        "aniline_to_benzene_mapping",  # +1 -> 0: charge disappears from state A (cation)
+    ],
+)
+def test_dry_run_alchemwater_solvent_directionality(mapping_name, solv_settings, tmp_path, request):
+    """
+    Regression test for the alchemical-water net-charge correction: the hybrid
+    system must stay exactly neutral at every lambda window regardless of
+    whether the net formal charge sits on state A or state B, and regardless
+    of its sign.
+    """
+    mapping = request.getfixturevalue(mapping_name)
+    assert abs(mapping.get_alchemical_charge_difference()) == 1
+
+    stateA_system = openfe.ChemicalSystem(
+        {"ligand": mapping.componentA, "solvent": openfe.SolventComponent()}
+    )
+    stateB_system = openfe.ChemicalSystem(
+        {"ligand": mapping.componentB, "solvent": openfe.SolventComponent()}
+    )
+    solv_settings.alchemical_settings.explicit_charge_correction = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+    dag = protocol.create(stateA=stateA_system, stateB=stateB_system, mapping=mapping)
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+
+    _assert_neutral_all_windows(htf.hybrid_system)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "mapping_name",
+    ["benzene_to_benzoic_mapping", "benzoic_to_benzene_mapping"],
+)
+def test_setup_complex_alchemwater_directionality(
+    mapping_name, solv_settings, tmp_path, request, T4_protein_component,
+):
+    """
+    As test_dry_run_alchemwater_solvent_directionality, but in a complex
+    (protein+solvent) system.
+    """
+    mapping = request.getfixturevalue(mapping_name)
+    solvent = openfe.SolventComponent()
+    stateA_system = openfe.ChemicalSystem(
+        {"ligand": mapping.componentA, "solvent": solvent, "protein": T4_protein_component}
+    )
+    stateB_system = openfe.ChemicalSystem(
+        {"ligand": mapping.componentB, "solvent": solvent, "protein": T4_protein_component}
+    )
+    solv_settings.solvation_settings.solvent_padding = "0.9 nm"
+    solv_settings.solvation_settings.box_shape = "dodecahedron"
+    solv_settings.alchemical_settings.explicit_charge_correction = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+    dag = protocol.create(stateA=stateA_system, stateB=stateB_system, mapping=mapping)
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+
+    _assert_neutral_all_windows(htf.hybrid_system)
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize(
     "mapping_name,chgA,chgB,correction,core_atoms,new_uniq,old_uniq",
