@@ -11,9 +11,9 @@ from openfecli.parameters import (
     MOL_DIR,
     N_PROTOCOL_REPEATS,
     NCORES,
+    NETWORKS_ONLY,
     OUTPUT_DIR,
     OVERWRITE,
-    WAREHOUSE,
     YAML_OPTIONS,
 )
 from openfecli.utils import print_duration, write
@@ -106,7 +106,7 @@ def plan_rhfe_network_main(
 @N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])  # fmt: skip
 @NCORES.parameter(help=NCORES.kwargs["help"], default=1)
 @OVERWRITE.parameter(help=OVERWRITE.kwargs["help"], default=OVERWRITE.kwargs["default"], is_flag=True)  # fmt: skip
-@WAREHOUSE.parameter(help=WAREHOUSE.kwargs["help"], is_flag=True)
+@NETWORKS_ONLY.parameter(help=NETWORKS_ONLY.kwargs["help"], is_flag=True)
 @print_duration
 def plan_rhfe_network(
     molecules: List[str],
@@ -115,7 +115,7 @@ def plan_rhfe_network(
     n_cores: int,
     overwrite_charges: bool,
     n_protocol_repeats: int,
-    warehouse: bool,
+    networks_only: bool,
 ):
     # TODO: make this match the rbfe network docstring, or vice-versa?
     """
@@ -156,7 +156,6 @@ def plan_rhfe_network(
     write("______________________")
     write("")
 
-    from openfe.storage.warehouse import FileSystemWarehouse
     from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
     write("Parsing in Files: ")
@@ -211,14 +210,11 @@ def plan_rhfe_network(
     # OUTPUT
     write("Output:")
     write("\tSaving to: " + output_dir)
-    warehouse_object = None
-    if warehouse:
-        warehouse_object = FileSystemWarehouse()
     plan_alchemical_network_output(
         alchemical_network=alchemical_network,
         ligand_network=ligand_network,
         folder_path=OUTPUT_DIR.get(output_dir),
-        warehouse=warehouse_object,
+        networks_only=networks_only,
     )
 
 

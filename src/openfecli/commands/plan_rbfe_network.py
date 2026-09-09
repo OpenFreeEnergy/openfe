@@ -249,10 +249,6 @@ def plan_rbfe_network(
     # OUTPUT
     write("Output:")
     write("\tSaving to: " + str(output_dir))
-    if networks_only:
-        write(
-            "Creating networks only. No Transformation JSONs will be created. To execute the output AlchemicalNetwork, use openfe setup-task-campaign."
-        )
 
     plan_alchemical_network_output(
         alchemical_network=alchemical_network,

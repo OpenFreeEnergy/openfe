@@ -28,7 +28,11 @@ def plan_alchemical_network_output(
     write("\t\t- " + base_name + ".json")
 
     ln_fname = "ligand_network.graphml"
-    if not networks_only:
+    if networks_only:
+        write(
+            "Creating networks only. No Transformation JSONs will be created. To execute the output AlchemicalNetwork, use ``openfe setup-task-campaign``."
+        )
+    else:
         with open(folder_path / ln_fname, mode="w") as f:
             f.write(ligand_network.to_graphml())
         write(f"\t\t- {ln_fname}")
