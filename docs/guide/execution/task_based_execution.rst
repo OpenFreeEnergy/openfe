@@ -53,7 +53,7 @@ To execute a single ``task`` (where here a ``task`` is one ``ProtocolUnit``), yo
 
 .. code:: bash
 
-    > openfe run-task --warehouse tyk2/ --task-db tyk2.db
+    > openfe run-task --warehouse warehouse_tyk2/ --task-db tasks_tyk2.db
 
 
 However, to run an entire campaign you would have to run this single command _many_ times.
@@ -68,6 +68,14 @@ You can call this command in a loop, so that after a ``task`` is completed, the 
     :language: bash
 
 To run multiple workers in parallel, submit ``run_tasks.sh`` multiple times as separate jobs.
+
+At any time, you can query the execution status of the campaign using ``openfe status``.
+All task status information is stored in the ``TaskStatusDB``:
+
+.. code:: bash
+
+    > openfe status tasks_ty2k.db
+
 
 
 Gathering Results
