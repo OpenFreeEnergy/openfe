@@ -487,6 +487,10 @@ def bulk_assign_partial_charges(
       If the number of conformers passed or generated exceeds the number
       of conformers selected by the partial charge ``method``.
 
+    RuntimeError
+      If any of the molecules fail to have charges assigned, a RuntimeError
+      will be raised with details of the molecules which failed.
+
     Returns
     -------
         A list of SmallMoleculeComponents with the charges assigned.
@@ -547,8 +551,8 @@ def bulk_assign_partial_charges(
             f"Partial charge generation failed for {len(error_ligands)} molecules. "
             "See the following for details:\n"
         )
-        for m, e in error_ligands:
-            errmsg += f"\t{m.name}/{m.smiles}: {e}\n"
+        for m, err in error_ligands:
+            errmsg += f"\t{m.name}/{m.smiles}: {err}\n"
         raise RuntimeError(errmsg)
 
     return charged_ligands

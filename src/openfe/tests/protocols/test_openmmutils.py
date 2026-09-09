@@ -1291,9 +1291,6 @@ class TestOFFPartialCharge:
                 nagl_model=None,
             )
 
-    @pytest.mark.skipif(
-        HAS_OPENEYE, reason="NAGL does not work with OpenEye when using the rdkit backend"
-    )
     def test_bulk_caches_errors(self, bodipy_molecules):
         # Make sure that bulk charge assignment caches errors and returns a helpful error message when it fails
         with pytest.raises(
@@ -1303,13 +1300,13 @@ class TestOFFPartialCharge:
             charge_generation.bulk_assign_partial_charges(
                 bodipy_molecules,
                 overwrite=False,
-                method="nagl",
-                toolkit_backend="rdkit",
+                # there should be no bcc for Boron, so this should fail for all molecules
+                method="am1bcc",
+                toolkit_backend="ambertools",
                 generate_n_conformers=None,
                 nagl_model=None,
                 processors=1,
             )
-
 
 @pytest.mark.slow
 @pytest.mark.skipif(
