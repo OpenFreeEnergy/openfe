@@ -1289,7 +1289,7 @@ class TestOFFPartialCharge:
                 nagl_model=None,
             )
 
-    def test_bulk_caches_errors(self, bodipy_molecules):
+    def test_bulk_raise_errors(self, bodipy_molecules):
         # Make sure that bulk charge assignment caches errors and returns a helpful error message when it fails
         with pytest.raises(
             RuntimeError,
@@ -1304,7 +1304,24 @@ class TestOFFPartialCharge:
                 generate_n_conformers=None,
                 nagl_model=None,
                 processors=1,
+                raise_errors=True,
             )
+
+    def test_bulk_ignore_errors(self, bodipy_molecules):
+        # Make sure errors are ignored when raise_errors=False
+        results = charge_generation.bulk_assign_partial_charges(
+            bodipy_molecules,
+            overwrite=False,
+            # there should be no bcc for Boron, so this should fail for all molecules
+            method="am1bcc",
+            toolkit_backend="ambertools",
+            generate_n_conformers=None,
+            nagl_model=None,
+            processors=1,
+            raise_errors=False,
+        )
+        # it should be an empty list since all molecules failed to generate charges
+        assert not results
 
 @pytest.mark.slow
 @pytest.mark.skipif(

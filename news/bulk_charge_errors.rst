@@ -1,6 +1,6 @@
 **Added:**
 
-* <news item>
+* ``raise_errors`` argument added to ``bulk_assign_partial_charges`` method to allow to skip raising a ``RuntimeError`` with the details of any molecules which fail to have partial charges assigned, by default this is set to ``True`` to maintain the previous behavior.
 
 **Changed:**
 

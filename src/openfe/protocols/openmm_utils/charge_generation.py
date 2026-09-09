@@ -446,6 +446,7 @@ def bulk_assign_partial_charges(
     generate_n_conformers: int | None,
     nagl_model: str | None,
     processors: int = 1,
+    raise_errors: bool = True,
 ) -> list[SmallMoleculeComponent]:
     """
     Assign partial charges to a list of SmallMoleculeComponents using multiprocessing.
@@ -477,6 +478,9 @@ def bulk_assign_partial_charges(
       If ``None``, the latest am1bcc NAGL charge model is used.
     processors: int, default 1
         The number of processors which should be used to generate the charges.
+    raise_errors: bool, default True
+        If ``True``, any errors encountered during charge generation will be raised.
+        If ``False``, errors will be ignored and the failed molecules will be excluded from the returned list.
 
     Raises
     ------
@@ -489,7 +493,7 @@ def bulk_assign_partial_charges(
 
     RuntimeError
       If any of the molecules fail to have charges assigned, a RuntimeError
-      will be raised with details of the molecules which failed.
+      will be raised with details of the molecules which failed if ``raise_errors`` is ``True``.
 
     Returns
     -------
@@ -546,7 +550,7 @@ def bulk_assign_partial_charges(
             except Exception as e:
                 error_ligands.append((m, e))
 
-    if error_ligands:
+    if error_ligands and raise_errors:
         errmsg = (
             f"Partial charge generation failed for {len(error_ligands)} molecules. "
             "See the following for details:\n"
