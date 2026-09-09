@@ -1,4 +1,4 @@
-.. _userguide_worker:
+.. _userguide_task_based_execution:
 
 Task-based Execution
 ====================
@@ -75,7 +75,6 @@ All task status information is stored in the ``TaskStatusDB``:
 .. code:: bash
 
     > openfe status tasks_ty2k.db
-
 
 
 Gathering Results
