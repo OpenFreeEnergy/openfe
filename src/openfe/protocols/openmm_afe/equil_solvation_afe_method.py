@@ -433,21 +433,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         )
 
         # make sure the solvent and vacuum force field settings match
-        vac_settings = self.settings.vacuum_forcefield_settings.model_dump(
-            exclude={"nonbonded_method"}
-        )
-        solvent_settings = self.settings.solvent_forcefield_settings.model_dump(
-            exclude={"nonbonded_method"}
-        )
-        if vac_settings != solvent_settings:
-            errmsg = (
-                "The vacuum and solvent force field settings must match "
-                "except for the nonbonded_method. The following settings differ:\n"
-            )
-            for k in vac_settings.keys():
-                if vac_settings[k] != solvent_settings[k]:
-                    errmsg += f"  {k}: vacuum={vac_settings[k]}, solvent={solvent_settings[k]}\n"
-            raise ValueError(errmsg)
+        self.settings.model_validate(self.settings)
 
     def _create(
         self,

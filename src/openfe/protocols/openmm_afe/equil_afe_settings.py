@@ -246,6 +246,31 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
     vacuum_forcefield_settings: OpenMMSystemGeneratorFFSettings
     """Parameters to set up the force field with OpenMM Force Fields"""
+
+    @model_validator(mode="after")
+    def vacuum_and_solvent_forcefield_settings_must_match(self):
+        vac_settings = self.vacuum_forcefield_settings.model_dump(
+            exclude={"nonbonded_method"}
+        )
+        solvent_settings = self.solvent_forcefield_settings.model_dump(
+            exclude={"nonbonded_method"}
+        )
+
+        if vac_settings != solvent_settings:
+            errmsg = (
+                "The vacuum and solvent force field settings must match "
+                "except for the nonbonded_method. The following settings differ:\n"
+            )
+            for k in vac_settings.keys():
+                if vac_settings[k] != solvent_settings[k]:
+                    errmsg += (
+                        f"  {k}: vacuum={vac_settings[k]}, "
+                        f"solvent={solvent_settings[k]}\n"
+                    )
+            raise ValueError(errmsg)
+
+        return self
+
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
 
