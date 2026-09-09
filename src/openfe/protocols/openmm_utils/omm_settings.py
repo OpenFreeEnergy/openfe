@@ -238,7 +238,9 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     Settings for controlling partial charge assignment using the OpenFF tooling
     """
 
-    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"] = "am1bcc"
+    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"] = (
+        "am1bcc"
+    )
     """
     Selection of method for partial charge generation.
 
@@ -271,10 +273,16 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
       Only ``ambertools`` and ``rdkit`` `off_toolkit_backend`` options
       are supported. A maximum of one conformer is allowed.
 
+    ``forcefield``:
+        Assign partial charges using the OpenFF force field's defined charge model, this is useful to get the correct
+        NAGL(AshGC) model for a specific force field or to use LibraryCharges.
+
     """
     off_toolkit_backend: Literal["ambertools", "openeye", "rdkit"] = "ambertools"
     """
     The OpenFF toolkit registry backend to use for partial charge generation.
+
+    This is always respected regardless of the ``partial_charge_method``.
 
 
     OpenFF backend selection options
@@ -313,6 +321,11 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
 
     If ``None`` (default) and ``partial_charge_method`` is set to ``nagl``,
     the latest available production am1bcc charge model will be used.
+    """
+    forcefields: list[str] | None = None
+    """
+    An optional list of SMIRNOFF style force field offxml paths or raw force field contents strings which should be used to assign partial
+    charges if the ``partial_charge_method`` is set to ``forcefield``.
     """
 
 

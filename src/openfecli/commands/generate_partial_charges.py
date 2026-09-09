@@ -14,6 +14,7 @@ Supported partial charge method choices are:
     - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` is ``openeye``)
     - ``nagl`` (must have openff-nagl installed)
     - ``espaloma`` (must have espaloma_charge installed)
+    - ``forcefield`` (must supply the chosen force field files via the ``forcefields`` keyword argument.)
 
 ``settings`` allows for passing in any keyword arguments of the method's corresponding Python API.
 
@@ -80,6 +81,7 @@ def charge_molecules(molecules, yaml_settings, output, n_cores, overwrite_charge
         generate_n_conformers=partial_charge.number_of_conformers,
         nagl_model=partial_charge.nagl_model,
         processors=n_cores,
+        forcefields=partial_charge.forcefields,
     )
 
     write("\tDone")

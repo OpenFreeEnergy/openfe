@@ -223,6 +223,7 @@ DEFAULT_YAML = """
             off_toolkit_backend: ambertools
             number_of_conformers: None
             nagl_model: None
+            forcefields: None
 """
 
 _yaml_help = """
@@ -245,6 +246,7 @@ Supported partial charge method choices are:
     - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` is ``openeye``)
     - ``nagl`` (must have openff-nagl installed)
     - ``espaloma`` (must have espaloma_charge installed)
+    - ``forcefield`` (must supply the chosen force field files via the ``forcefields`` keyword argument. This is useful to get the correct AshGC model or LibraryCharges for a OpenFF force field.)
 
 ``settings:`` allows for passing in any keyword arguments of the method's corresponding Python API.
 
