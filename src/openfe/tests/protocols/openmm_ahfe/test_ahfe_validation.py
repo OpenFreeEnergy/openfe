@@ -324,13 +324,15 @@ def test_validate_forcefield_settings(stateA, stateB):
     # make sure the default settings with a different nonbonded method still works
     settings = AbsoluteSolvationProtocol.default_settings()
     assert settings.vacuum_forcefield_settings.nonbonded_method == "nocutoff"
-    
+
     protocol = AbsoluteSolvationProtocol(settings=settings)
     protocol.validate(stateA=stateA, stateB=stateB, mapping=None)
 
     # change some other forcefield settings and make sure an error is raised
     settings.solvent_forcefield_settings.small_molecule_forcefield = "gaff-2.11"
     protocol = AbsoluteSolvationProtocol(settings=settings)
-    with pytest.raises(ValueError, match="The following settings differ:\n  small_molecule_forcefield: vacuum=openff-2.2.1, solvent=gaff-2.11"):
+    with pytest.raises(
+        ValueError,
+        match="The following settings differ:\n  small_molecule_forcefield: vacuum=openff-2.2.1, solvent=gaff-2.11",
+    ):
         protocol.validate(stateA=stateA, stateB=stateB, mapping=None)
-    
