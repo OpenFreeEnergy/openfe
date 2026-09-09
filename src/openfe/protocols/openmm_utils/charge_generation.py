@@ -446,6 +446,7 @@ def bulk_assign_partial_charges(
     generate_n_conformers: int | None,
     nagl_model: str | None,
     processors: int = 1,
+    raise_errors: bool = True,
 ) -> list[SmallMoleculeComponent]:
     """
     Assign partial charges to a list of SmallMoleculeComponents using multiprocessing.
@@ -477,6 +478,9 @@ def bulk_assign_partial_charges(
       If ``None``, the latest am1bcc NAGL charge model is used.
     processors: int, default 1
         The number of processors which should be used to generate the charges.
+    raise_errors: bool, default True
+        If ``True``, any errors encountered during charge generation will be raised.
+        If ``False``, errors will be ignored and the failed molecules will be excluded from the returned list.
 
     Raises
     ------
@@ -486,6 +490,10 @@ def bulk_assign_partial_charges(
       has no associated conformers.
       If the number of conformers passed or generated exceeds the number
       of conformers selected by the partial charge ``method``.
+
+    RuntimeError
+      If any of the molecules fail to have charges assigned, a RuntimeError
+      will be raised with details of the molecules which failed if ``raise_errors`` is ``True``.
 
     Returns
     -------
@@ -505,6 +513,7 @@ def bulk_assign_partial_charges(
         from concurrent.futures import ProcessPoolExecutor, as_completed
 
         charged_ligands: list[SmallMoleculeComponent | None] = [None] * len(molecules)
+        error_ligands = []
         with ProcessPoolExecutor(max_workers=processors) as pool:
             # track the input ordering as multiprocessing can shuffle the order of the ligands
             future_to_index = {
@@ -523,15 +532,31 @@ def bulk_assign_partial_charges(
                 total=len(molecules),
             ):
                 i = future_to_index[work]
-                charged_ligands[i] = SmallMoleculeComponent.from_openff(work.result())
+                try:
+                    charged_ligands[i] = SmallMoleculeComponent.from_openff(work.result())
+                except Exception as e:
+                    error_ligands.append((molecules[i], e))
 
         # fix the typing
         charged_ligands = [mol for mol in charged_ligands if mol is not None]
 
     else:
         charged_ligands = []
+        error_ligands = []
         for m in tqdm.tqdm(molecules, desc="Generating charges", ncols=80, total=len(molecules)):
-            mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords)  # type: ignore
-            charged_ligands.append(SmallMoleculeComponent.from_openff(mol_with_charge))
+            try:
+                mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords)  # type: ignore
+                charged_ligands.append(SmallMoleculeComponent.from_openff(mol_with_charge))
+            except Exception as e:
+                error_ligands.append((m, e))
+
+    if error_ligands and raise_errors:
+        errmsg = (
+            f"Partial charge generation failed for {len(error_ligands)} molecules. "
+            "See the following for details:\n"
+        )
+        for m, err in error_ligands:
+            errmsg += f"\t{m.name}/{m.smiles}: {err}\n"
+        raise RuntimeError(errmsg)
 
     return charged_ligands
