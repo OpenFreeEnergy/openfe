@@ -1323,6 +1323,7 @@ class TestOFFPartialCharge:
         # it should be an empty list since all molecules failed to generate charges
         assert not results
 
+
 @pytest.mark.slow
 @pytest.mark.skipif(
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
