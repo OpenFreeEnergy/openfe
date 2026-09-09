@@ -355,13 +355,13 @@ def assign_offmol_partial_charges(
 
     # validate the input combination first
     if method_name == "forcefield":
-        if forcefields is None:
+        if forcefields is None or not forcefields:
             errmsg = (
                 "The forcefield method requires a force field or list of force fields' to be provided "
                 "via `forcefields`."
             )
             raise ValueError(errmsg)
-    elif forcefields is not None:
+    elif forcefields is not None and forcefields:
         errmsg = f"The `forcefields` option is only valid with the `forcefield` charge method, but got {method_name}."
         raise ValueError(errmsg)
 
