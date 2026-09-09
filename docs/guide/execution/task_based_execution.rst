@@ -74,7 +74,7 @@ All task status information is stored in the ``TaskStatusDB``:
 
 .. code:: bash
 
-    > openfe status tasks_ty2k.db
+    > openfe status --task-db tasks_ty2k.db
 
 
 Gathering Results
@@ -83,13 +83,13 @@ Gathering Results
 In addition to the input data, the ``Warehouse`` directory contains every ``ProtocolUnitResult`` created during execution.
 
 Because task-based execution is currently under development, there is not yet a direct command to output the results.
-To enable complete workflows in the meantime, we provide the ``output-as-legacy-json`` CLI command that takes in a Warehouse directory and outputs the results in a format identical to the format used by ``openfe quickrun``.
+To enable complete workflows in the meantime, we provide the ``to-legacy-json`` CLI command that takes in a Warehouse directory and outputs the results in a format identical to the format used by ``openfe quickrun``.
 
 This enables use of ``openfe gather`` (and ``openfe gather-septop``, ``openfe gather-abfe``).
 
 .. code:: bash
 
-    > openfe output-as-legacy-json warehouse
+    > openfe to-legacy-json warehouse_tyk2/ -o tyk2_result_jsons
 
 
 The ``results`` directory may now be used as input to ``openfe gather``.
