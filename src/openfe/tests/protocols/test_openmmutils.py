@@ -1290,10 +1290,7 @@ class TestOFFPartialCharge:
                 nagl_model=None,
             )
 
-    @pytest.mark.parametrize("forcefields", [
-        None,
-        []
-    ])
+    @pytest.mark.parametrize("forcefields", [None, []])
     def test_forcefield_missing_ff(self, uncharged_mol, forcefields):
         # Make sure an error is raised if we forget to pass a force field to charge with
         with pytest.raises(
@@ -1307,7 +1304,7 @@ class TestOFFPartialCharge:
                 toolkit_backend="rdkit",
                 generate_n_conformers=None,
                 nagl_model=None,
-                forcefields=forcefields
+                forcefields=forcefields,
             )
 
     def test_forcefields_wrong_method(self, uncharged_mol):
