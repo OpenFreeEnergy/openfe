@@ -52,8 +52,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_OPENEYE,
 )
 from openfe.protocols.openmm_utils.offmolecule_utils import (
-    _get_offmol_resname,
-    _set_offmol_resname,
+    _set_offmol_metadata,
 )
 
 
@@ -2429,7 +2428,7 @@ def _run_setup_dry(stateA, stateB, mapping, settings, tmp_path):
 
 def _named_smc(smc, resname):
     off = Molecule.from_rdkit(copy.deepcopy(smc.to_rdkit()))
-    _set_offmol_resname(off, resname)
+    _set_offmol_metadata(off, "residue_name", resname)
     return openfe.SmallMoleculeComponent.from_openff(off)
 
 
