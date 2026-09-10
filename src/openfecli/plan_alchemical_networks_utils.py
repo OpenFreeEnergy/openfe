@@ -16,24 +16,23 @@ def plan_alchemical_network_output(
     alchemical_network: AlchemicalNetwork,
     ligand_network: LigandNetwork,
     folder_path: pathlib.Path,
-    warehouse: Optional[FileSystemWarehouse] = None,
+    networks_only: bool,
 ):
     """Write the contents of an alchemical network into the structure"""
 
-    if warehouse:
-        #  TODO: update this to match API user experience
-        _ = build_task_db_from_alchemical_network(
-            alchemical_network, warehouse_dir="campaign/", db_path="campaign.db"
+    base_name = folder_path.name
+    folder_path.mkdir(parents=True, exist_ok=True)
+
+    an_json = folder_path / f"{base_name}.json"
+    alchemical_network.to_json(an_json)
+    write("\t\t- " + base_name + ".json")
+
+    ln_fname = "ligand_network.graphml"
+    if networks_only:
+        write(
+            "Creating networks only. No Transformation JSONs will be created. To execute the output AlchemicalNetwork, use ``openfe setup-task-campaign``."
         )
     else:
-        base_name = folder_path.name
-        folder_path.mkdir(parents=True, exist_ok=True)
-
-        an_json = folder_path / f"{base_name}.json"
-        alchemical_network.to_json(an_json)
-        write("\t\t- " + base_name + ".json")
-
-        ln_fname = "ligand_network.graphml"
         with open(folder_path / ln_fname, mode="w") as f:
             f.write(ligand_network.to_graphml())
         write(f"\t\t- {ln_fname}")

@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import pathlib
+from pathlib import Path
 
 import click
 
@@ -9,12 +9,12 @@ from openfecli import OFECommandPlugin
 from openfecli.utils import configure_logger, print_duration, write
 
 
-def _build_worker(warehouse_path: pathlib.Path, db_path: pathlib.Path):
+def _build_worker(warehouse_path: Path, task_db_path: Path):
     from openfe.orchestration import Worker
     from openfe.storage.warehouse import FileSystemWarehouse
 
-    warehouse = FileSystemWarehouse(str(warehouse_path))
-    return Worker(warehouse=warehouse, task_db_path=db_path)
+    warehouse = FileSystemWarehouse(str(warehouse_path), exist_ok=True)
+    return Worker(warehouse=warehouse, task_db_path=task_db_path)
 
 
 def _write_failure_result_details(taskid: str, result) -> None:
@@ -35,9 +35,8 @@ def _write_failure_result_details(taskid: str, result) -> None:
         write(traceback_text)
 
 
-def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
+def run_task_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
     import logging
-    import os
     import sys
     import traceback
 
@@ -65,19 +64,15 @@ def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
     )
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
-    db_path = warehouse_path / "tasks.db"
-    if not db_path.is_file():
-        raise click.ClickException(f"Task database not found at: {db_path}")
-
-    if scratch is None:
-        scratch = pathlib.Path.cwd()
+    if not task_db_path.is_file():
+        raise click.ClickException(f"Task database not found at: {task_db_path}")
 
     scratch.mkdir(parents=True, exist_ok=True)
 
-    worker = _build_worker(warehouse_path, db_path)
+    worker = _build_worker(warehouse_path, task_db_path)
 
     try:
-        write("Executing unit...")
+        write("Attempting to execute unit ...")
         execution = worker.execute_unit(scratch=scratch)
     except Exception as exc:
         write(traceback.format_exc())
@@ -96,38 +91,52 @@ def worker_main(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
     return result
 
 
-@click.command("worker", short_help="Execute one available task from a filesystem warehouse")
-@click.argument(
-    "warehouse_path",
+@click.command("run-task", short_help="Execute one available task from a filesystem warehouse")
+@click.option(
+    "--warehouse",
     type=click.Path(
         exists=True,
         readable=True,
         file_okay=False,
         dir_okay=True,
-        path_type=pathlib.Path,
+        path_type=Path,
     ),
+    required=True,
+    help="Path to a Warehouse directory.",
+)
+@click.option(  # TODO: refactor this out into parameters/
+    "--task-db",
+    type=click.Path(
+        exists=True,
+        readable=True,
+        file_okay=True,
+        dir_okay=False,
+        path_type=Path,
+    ),
+    required=True,
+    help="Path to a TaskDB file.",
 )
 @click.option(
     "--scratch",
     "-s",
-    default=None,
+    default=Path("scratch/"),
     type=click.Path(
         writable=True,
         file_okay=False,
         dir_okay=True,
-        path_type=pathlib.Path,
+        path_type=Path,
     ),
-    help="Directory for scratch files. Defaults to current working directory.",
+    help="Directory for scratch files. Defaults to 'scratch/' in the current working directory.",
 )
 @print_duration
-def worker(warehouse_path: pathlib.Path, scratch: pathlib.Path | None):
+def run_task(warehouse: Path, task_db: Path, scratch: Path):
     """
     Execute one available task from a warehouse task graph.
 
     The warehouse directory must contain a ``tasks.db`` task database and task
     payloads under ``tasks/`` created via OpenFE orchestration setup.
     """
-    worker_main(warehouse_path=warehouse_path, scratch=scratch)
+    run_task_main(warehouse_path=warehouse, task_db_path=task_db, scratch=scratch)
 
 
-PLUGIN = OFECommandPlugin(command=worker, section="Execution", requires_ofe=(1, 13))
+PLUGIN = OFECommandPlugin(command=run_task, section="Execution", requires_ofe=(1, 13))

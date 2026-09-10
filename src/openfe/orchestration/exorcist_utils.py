@@ -72,6 +72,7 @@ def _alchemical_network_to_task_graph(
     return global_task_dag
 
 
+# TODO: add n_repeats
 def build_task_db_from_alchemical_network(
     alchemical_network: AlchemicalNetwork,
     warehouse_dir: Path,  # TODO: make optional?
@@ -122,7 +123,10 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
         A dataframe of the tasks and their statuses
     """
     status_name_encoding = {e.value: e.name for e in exorcist.TaskStatus}
-    task_table = pd.read_sql_table("tasks", task_db.engine)
+    # TODO: add task_type back in once it's used
+    task_table = pd.read_sql_table(
+        "tasks", task_db.engine, columns=["taskid", "status", "last_modified", "tries", "max_tries"]
+    )
     task_table.replace({"status": status_name_encoding}, inplace=True)
     return task_table
 

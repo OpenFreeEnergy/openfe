@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import pathlib
+from pathlib import Path
 
 import click
 
@@ -10,7 +10,7 @@ from openfecli.utils import rich_print_to_stdout
 
 
 def status_main(
-    task_db_path: pathlib.Path,
+    task_db_path: Path,
 ):
     """
     Parameters
@@ -43,34 +43,35 @@ def status_main(
 
     from exorcist import TaskStatusDB
 
-    from openfe.orchestration import get_task_df
+    from openfe.orchestration.exorcist_utils import get_task_df
 
-    # TODO: rewrite this using just sql and rich table
+    # # TODO: rewrite this using just sql and rich table?
     task_db = TaskStatusDB.from_filename(task_db_path)
     task_df = get_task_df(task_db)
     task_df["last_modified"] = task_df["last_modified"].dt.floor("s")
-    # TODO: add task_type back in once it's used
-    rich_print_to_stdout(task_df.drop("task_type", axis=1))
+    rich_print_to_stdout(task_df)
 
 
 @click.command("status", short_help="Output the status of the task database as a table.")
-@click.argument(
-    "task_db_path",
+@click.option(
+    "--task-db",
     type=click.Path(
         exists=True,
         readable=True,
         file_okay=True,
         dir_okay=False,
-        path_type=pathlib.Path,
+        path_type=Path,
     ),
+    required=True,
+    help="Path to a TaskDB file.",
 )
-def status(task_db_path: pathlib.Path):
+def status(task_db: Path):
     """
     Show the status of a task.db as a table.
 
 
     """
-    status_main(task_db_path=task_db_path)
+    status_main(task_db_path=task_db)
 
 
 PLUGIN = OFECommandPlugin(command=status, section="Execution", requires_ofe=(1, 13))
