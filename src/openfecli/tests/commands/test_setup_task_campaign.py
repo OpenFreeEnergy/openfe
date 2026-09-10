@@ -24,5 +24,5 @@ def test_setup_task_campaign(alchemical_network_mcl1_path):
             setup_task_campaign, ["--alchemical-network", str(alchemical_network_mcl1_path)]
         )
         assert_click_success(result)
-        assert pathlib.Path("alchemicalNetwork_mc1_small").is_dir()
-        assert pathlib.Path("alchemicalNetwork_mc1_small.db").is_file()
+        assert pathlib.Path("warehouse_alchemicalNetwork_mc1_small").is_dir()
+        assert pathlib.Path("tasks_alchemicalNetwork_mc1_small.db").is_file()

@@ -1,4 +1,3 @@
-import json
 import shutil
 from importlib import resources
 from unittest import mock
@@ -166,6 +165,9 @@ def test_plan_rhfe_network(mol_dir_args, tmp_path, yaml_nagl_settings):
 
             for l1, l2 in zip(expected_output_1, expected_output_2):
                 assert l1 in result.output or l2 in result.output
+
+
+# TODO: add --networks-only test
 
 
 @pytest.fixture
