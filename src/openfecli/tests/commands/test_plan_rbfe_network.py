@@ -478,6 +478,9 @@ def test_plan_rbfe_invalid_membrane(eg5_files):
         _ = runner.invoke(plan_rbfe_network, args, catch_exceptions=False)
 
 
+# TODO: add --networks-only test
+
+
 def test_plan_rbfe_missing_protein_args(eg5_files):
     args = ["-M", eg5_files[1]]
 
