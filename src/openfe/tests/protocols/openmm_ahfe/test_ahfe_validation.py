@@ -7,11 +7,7 @@ from openff.units import unit as offunit
 
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
-from openfe.protocols.openmm_afe import (
-    AbsoluteSolvationProtocol,
-    AbsoluteSolvationSettings
-)
-from openfe.protocols.openmm_utils import system_validation
+from openfe.protocols.openmm_afe import AbsoluteSolvationProtocol, AbsoluteSolvationSettings
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings,
     AlchemicalSettings,
@@ -25,6 +21,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
 )
+from openfe.protocols.openmm_utils import system_validation
 
 
 @pytest.fixture()
@@ -356,8 +353,8 @@ def test_validate_forcefield_settings(stateA, stateB):
 def test_settings_validation():
     # make sure an error is raised if invalid settings are initialized
     with pytest.raises(
-            ValueError,
-            match="The following settings differ:\n  small_molecule_forcefield: vacuum=openff-2.2.1, solvent=gaff-2.11"
+        ValueError,
+        match="The following settings differ:\n  small_molecule_forcefield: vacuum=openff-2.2.1, solvent=gaff-2.11",
     ):
         _ = AbsoluteSolvationSettings(
             protocol_repeats=3,
@@ -374,14 +371,53 @@ def test_settings_validation():
             alchemical_settings=AlchemicalSettings(),
             lambda_settings=LambdaSettings(
                 lambda_elec=[
-                    0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                    0.0,
+                    0.25,
+                    0.5,
+                    0.75,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                ],
                 lambda_vdw=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
-                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.12,
+                    0.24,
+                    0.36,
+                    0.48,
+                    0.6,
+                    0.7,
+                    0.77,
+                    0.85,
+                    1.0,
+                ],
                 lambda_restraints=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),

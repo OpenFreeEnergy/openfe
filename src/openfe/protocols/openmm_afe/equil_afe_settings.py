@@ -249,12 +249,8 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
 
     @model_validator(mode="after")
     def vacuum_and_solvent_forcefield_settings_must_match(self):
-        vac_settings = self.vacuum_forcefield_settings.model_dump(
-            exclude={"nonbonded_method"}
-        )
-        solvent_settings = self.solvent_forcefield_settings.model_dump(
-            exclude={"nonbonded_method"}
-        )
+        vac_settings = self.vacuum_forcefield_settings.model_dump(exclude={"nonbonded_method"})
+        solvent_settings = self.solvent_forcefield_settings.model_dump(exclude={"nonbonded_method"})
 
         if vac_settings != solvent_settings:
             errmsg = (
@@ -263,10 +259,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
             )
             for k in vac_settings.keys():
                 if vac_settings[k] != solvent_settings[k]:
-                    errmsg += (
-                        f"  {k}: vacuum={vac_settings[k]}, "
-                        f"solvent={solvent_settings[k]}\n"
-                    )
+                    errmsg += f"  {k}: vacuum={vac_settings[k]}, solvent={solvent_settings[k]}\n"
             raise ValueError(errmsg)
 
         return self
