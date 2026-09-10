@@ -3,7 +3,7 @@
 Task-based Execution
 ====================
 
-In contrast to quickrun execution, task-based execution does not require that you explicitly define the Transformation to be executed.
+In contrast to :ref:`quickrun execution <userguide_quickrun>`, task-based execution does not require that you explicitly define the Transformation to be executed.
 In task-based execution, an OpenFE ``Worker`` is given a ``Warehouse`` and a ``TaskStatusDB`` which handle storage and orchestration, respectively.
 The ``Worker`` finds the next available ``task`` in the ``TaskStatusDB`` and retrieves the necessary data from the ``Warehouse`` to execute the task.
 
@@ -41,6 +41,12 @@ Once you have an AlchemicalNetwork, use the following command to set up the task
 
 You should see a ``Warehouse`` in the form of a directory and a ``TaskStatusDB`` file as output.
 
+.. code:: bash
+
+    > ls
+    warehouse_tyk2/    tasks_tyk2.db
+
+
 .. note::
 
     If you're migrating from Transformation-based execution with quickrun, know that the ``Warehouse`` directory contains all the information that a directory of transformation.json files store, just in a different structure.
@@ -49,12 +55,48 @@ You should see a ``Warehouse`` in the form of a directory and a ``TaskStatusDB``
 Running the Campaign
 ~~~~~~~~~~~~~~~~~~~~
 
+At any time, you can query the execution status of the campaign using ``openfe status``.
+All task status information is stored in the ``TaskStatusDB``:
+
+.. code:: bash
+
+    > openfe status --task-db tasks_ty2k.db
+    ┌─────────────────────────────────┬───────────┬───────────────┬───────┬───────────┐
+    │ taskid                          │ status    │ last_modified │ tries │ max_tries │
+    ├─────────────────────────────────┼───────────┼───────────────┼───────┼───────────┤
+    │ HybridTopologySetupUnit-025f3a… │ AVAILABLE │ NaT           │ 0     │ 1         │
+    │ HybridTopologySetupUnit-70535a… │ AVAILABLE │ NaT           │ 0     │ 1         │
+    │ HybridTopologySetupUnit-4eb000… │ AVAILABLE │ NaT           │ 0     │ 1         │
+    │ HybridTopologySetupUnit-016551… │ AVAILABLE │ NaT           │ 0     │ 1         │
+    │ HybridTopologyMultiStateSimula… │ BLOCKED   │ NaT           │ 0     │ 1         │
+    │ HybridTopologyMultiStateSimula… │ BLOCKED   │ NaT           │ 0     │ 1         │
+    ...
+
+.. TODO: explain task dag? maybe save that for developer docs?
+
 To execute a single ``task`` (where here a ``task`` is one ``ProtocolUnit``), you can simply run:
 
 .. code:: bash
 
     > openfe run-task --warehouse warehouse_tyk2/ --task-db tasks_tyk2.db
 
+
+You'll now see that one task has been completed, and a new task has been unblocked:
+
+.. code:: bash
+
+    > openfe status --task-db tasks_ty2k.db
+
+    ┌───────────────────────────┬───────────┬─────────────────────┬───────┬───────────┐
+    │ taskid                    │ status    │ last_modified       │ tries │ max_tries │
+    ├───────────────────────────┼───────────┼─────────────────────┼───────┼───────────┤
+    │ HybridTopologySetupUnit-… │ COMPLETED │ 2026-09-09 18:02:13 │ 1     │ 1         │
+    │ HybridTopologySetupUnit-… │ AVAILABLE │ NaT                 │ 0     │ 1         │
+    │ HybridTopologySetupUnit-… │ AVAILABLE │ NaT                 │ 0     │ 1         │
+    │ HybridTopologySetupUnit-… │ AVAILABLE │ NaT                 │ 0     │ 1         │
+    │ HybridTopologyMultiState… │ AVAILABLE │ 2026-09-09 18:02:13 │ 0     │ 1         │
+    │ HybridTopologyMultiState… │ BLOCKED   │ NaT                 │ 0     │ 1         │
+    ...
 
 However, to run an entire campaign you would have to run this single command _many_ times.
 
@@ -68,13 +110,6 @@ You can call this command in a loop, so that after a ``task`` is completed, the 
     :language: bash
 
 To run multiple workers in parallel, submit ``run_tasks.sh`` multiple times as separate jobs.
-
-At any time, you can query the execution status of the campaign using ``openfe status``.
-All task status information is stored in the ``TaskStatusDB``:
-
-.. code:: bash
-
-    > openfe status --task-db tasks_ty2k.db
 
 
 Gathering Results
