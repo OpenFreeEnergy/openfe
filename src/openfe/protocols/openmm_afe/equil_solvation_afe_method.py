@@ -432,6 +432,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             self.settings.integrator_settings.timestep,
         )
 
+        # make sure the solvent and vacuum force field settings match
+        self.settings.model_validate(self.settings)
+
     def _create(
         self,
         stateA: ChemicalSystem,
