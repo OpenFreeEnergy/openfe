@@ -12,11 +12,11 @@ from openfecli.utils import print_duration, write
 def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str | None = None):
     from openfe.orchestration.exorcist_utils import build_task_db_from_alchemical_network
 
-    db_path = Path(f"{name}.db")
+    db_path = Path(f"tasks_{name}.db")
     # TODO: add progress bar
     _, wh = build_task_db_from_alchemical_network(
         alchemical_network=alchemical_network,
-        warehouse_dir=Path(name),
+        warehouse_dir=Path(f"warehouse_{name}"),
         db_path=db_path,
     )
     write(f"Warehouse written to: {wh.root_dir}")

@@ -92,8 +92,8 @@ def run_task_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
 
 
 @click.command("run-task", short_help="Execute one available task from a filesystem warehouse")
-@click.argument(
-    "warehouse_path",
+@click.option(
+    "--warehouse",
     type=click.Path(
         exists=True,
         readable=True,
@@ -101,10 +101,11 @@ def run_task_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
         dir_okay=True,
         path_type=Path,
     ),
-    # help="Path to a FileSystemWarehouse.",
+    required=True,
+    help="Path to a Warehouse directory.",
 )
-@click.argument(
-    "task_db_path",
+@click.option(  # TODO: refactor this out into parameters/
+    "--task-db",
     type=click.Path(
         exists=True,
         readable=True,
@@ -112,7 +113,8 @@ def run_task_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
         dir_okay=False,
         path_type=Path,
     ),
-    # help="Path to a TaskDB instance.",
+    required=True,
+    help="Path to a TaskDB file.",
 )
 @click.option(
     "--scratch",
@@ -127,14 +129,14 @@ def run_task_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
     help="Directory for scratch files. Defaults to 'scratch/' in the current working directory.",
 )
 @print_duration
-def run_task(warehouse_path: Path, task_db_path: Path, scratch: Path):
+def run_task(warehouse: Path, task_db: Path, scratch: Path):
     """
     Execute one available task from a warehouse task graph.
 
     The warehouse directory must contain a ``tasks.db`` task database and task
     payloads under ``tasks/`` created via OpenFE orchestration setup.
     """
-    run_task_main(warehouse_path=warehouse_path, task_db_path=task_db_path, scratch=scratch)
+    run_task_main(warehouse_path=warehouse, task_db_path=task_db, scratch=scratch)
 
 
 PLUGIN = OFECommandPlugin(command=run_task, section="Execution", requires_ofe=(1, 13))
