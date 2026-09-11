@@ -133,6 +133,40 @@ class LambdaSettings(SettingsBaseModel):
     Zero means no restraints are applied and 1 means restraints are fully applied.
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
+    # fmt: off
+    lambda_dihedral_restraints_A: list[float] = [
+        0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ]
+    # fmt: on
+    """
+    List of floats of lambda values for the dihedral conformational restraints
+    of ligand A. Zero means no restraints are applied and 1 means restraints
+    are fully applied.
+
+    These are ramped on whilst ligand A is still fully interacting, so that the
+    restraint work is small and the ligand cannot change conformer at any point
+    along the alchemical path. The restraints stay on through the
+    non-interacting end state; their free energy contribution cancels against
+    the solvent leg and needs no correction, provided the same schedule and the
+    same restraint geometry are used in both legs.
+
+    Length of this list needs to match length of lambda_vdw and lambda_elec.
+    """
+    # fmt: off
+    lambda_dihedral_restraints_B: list[float] = [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 0.75, 0.5, 0.25, 0.0,
+    ]
+    # fmt: on
+    """
+    List of floats of lambda values for the dihedral conformational restraints
+    of ligand B. Zero means no restraints are applied and 1 means restraints
+    are fully applied.
+    Length of this list needs to match length of lambda_vdw and lambda_elec.
+    """
 
     @field_validator(
         "lambda_elec_A",
@@ -141,6 +175,8 @@ class LambdaSettings(SettingsBaseModel):
         "lambda_vdw_B",
         "lambda_restraints_A",
         "lambda_restraints_B",
+        "lambda_dihedral_restraints_A",
+        "lambda_dihedral_restraints_B",
     )
     def must_be_between_0_and_1(cls, v):
         for window in v:
@@ -155,6 +191,7 @@ class LambdaSettings(SettingsBaseModel):
         "lambda_elec_A",
         "lambda_vdw_A",
         "lambda_restraints_A",
+        "lambda_dihedral_restraints_A",
     )
     def must_be_monotonically_increasing_A(cls, v):
         difference = np.diff(v)
@@ -174,6 +211,7 @@ class LambdaSettings(SettingsBaseModel):
         "lambda_elec_B",
         "lambda_vdw_B",
         "lambda_restraints_B",
+        "lambda_dihedral_restraints_B",
     )
     def must_be_monotonically_decreasing_B(cls, v):
         difference = np.diff(v)
@@ -370,6 +408,16 @@ class SepTopSettings(SettingsBaseModel):
     complex_restraint_settings_B: BaseRestraintSettings
     """
     Settings for the Boresch restraint applied to ligand B in the complex.
+    """
+    dihedral_restraint_settings_A: BaseRestraintSettings
+    """
+    Settings for the conformational (dihedral) restraints on ligand A, applied
+    identically in the complex and solvent legs.
+    """
+    dihedral_restraint_settings_B: BaseRestraintSettings
+    """
+    Settings for the conformational (dihedral) restraints on ligand B, applied
+    identically in the complex and solvent legs.
     """
     analysis_settings: MultiStateAnalysisSettings = Field(
         default_factory=MultiStateAnalysisSettings

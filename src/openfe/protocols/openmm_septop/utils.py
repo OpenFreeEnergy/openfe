@@ -21,6 +21,9 @@ class SepTopParameterState(GlobalParameterState):
     lambda_restraints_A : Optional[float]
       The strength of the restraint for ligand A.
       If defined, must be between 0 and 1.
+    lambda_dihedral_restraints_A : Optional[float]
+      The strength of the dihedral conformational restraints for ligand A.
+      If defined, must be between 0 and 1.
     lambda_bonds_A : Optional[float]
       The value for modifying bonds for ligand A.
       If defined, must be between 0 and 1.
@@ -38,6 +41,9 @@ class SepTopParameterState(GlobalParameterState):
       If defined, must be between 0 and 1.
     lambda_restraints_B : Optional[float]
       The strength of the restraint for ligand B.
+      If defined, must be between 0 and 1.
+    lambda_dihedral_restraints_B : Optional[float]
+      The strength of the dihedral conformational restraints for ligand B.
       If defined, must be between 0 and 1.
     lambda_bonds_B : Optional[float]
       The value for modifying bonds for ligand B.
@@ -69,6 +75,7 @@ class SepTopParameterState(GlobalParameterState):
     lambda_sterics_A = _LambdaParameter("lambda_sterics_A")
     lambda_electrostatics_A = _LambdaParameter("lambda_electrostatics_A")
     lambda_restraints_A = _LambdaParameter("lambda_restraints_A")
+    lambda_dihedral_restraints_A = _LambdaParameter("lambda_dihedral_restraints_A")
     lambda_bonds_A = _LambdaParameter("lambda_bonds_A")
     lambda_angles_A = _LambdaParameter("lambda_angles_A")
     lambda_torsions_A = _LambdaParameter("lambda_torsions_A")
@@ -77,9 +84,7 @@ class SepTopParameterState(GlobalParameterState):
     lambda_sterics_B = _LambdaParameter("lambda_sterics_B")
     lambda_electrostatics_B = _LambdaParameter("lambda_electrostatics_B")
     lambda_restraints_B = _LambdaParameter("lambda_restraints_B")
+    lambda_dihedral_restraints_B = _LambdaParameter("lambda_dihedral_restraints_B")
     lambda_bonds_B = _LambdaParameter("lambda_bonds_B")
     lambda_angles_B = _LambdaParameter("lambda_angles_B")
     lambda_torsions_B = _LambdaParameter("lambda_torsions_B")
-
-    # # Restraints solvent
-    # lambda_restraints = _LambdaParameter('lambda_restraints')

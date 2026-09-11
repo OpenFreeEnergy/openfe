@@ -34,12 +34,14 @@ from openmmtools.states import GlobalParameterState, ThermodynamicState
 from openfe.protocols.restraint_utils.geometry import (
     BaseRestraintGeometry,
     BoreschRestraintGeometry,
+    DihedralRestraintGeometry,
     DistanceRestraintGeometry,
     FlatBottomDistanceGeometry,
     HostGuestRestraintGeometry,
 )
 from openfe.protocols.restraint_utils.settings import (
     BoreschRestraintSettings,
+    DihedralRestraintSettings,
     DistanceRestraintSettings,
     FlatBottomRestraintSettings,
 )
@@ -48,6 +50,8 @@ from .omm_forces import (
     add_force_in_separate_group,
     get_boresch_energy_function,
     get_custom_compound_bond_force,
+    get_custom_torsion_force,
+    get_flat_bottom_dihedral_energy_function,
 )
 
 
@@ -88,17 +92,13 @@ class RestraintParameterState(GlobalParameterState):
         return new_value
 
 
-class BaseHostGuestRestraints(abc.ABC):
+class BaseRestraints(abc.ABC):
     """
-    An abstract base class for defining objects that apply a restraint between
-    two entities (referred to as a Host and a Guest).
+    An abstract base class for defining objects that apply a restraint to an
+    OpenMM System.
 
     The following class variables must be set to the intended class to allow for type validation during the
     instantiation of the restraints.
-
-    TODO
-    ----
-    Add some developer examples here.
     """
 
     _settings_cls: type[SettingsBaseModel]
@@ -126,6 +126,16 @@ class BaseHostGuestRestraints(abc.ABC):
         if not isinstance(geometry, self._geometry_cls):
             errmsg = f"Incorrect geometry class type {geometry.__class__.__qualname__} passed through expected a `{self._geometry_cls.__qualname__}` instance"
             raise ValueError(errmsg)
+
+class BaseHostGuestRestraints(BaseRestraints):
+    """
+    An abstract base class for defining objects that apply a restraint between
+    two entities (referred to as a Host and a Guest).
+
+    TODO
+    ----
+    Add some developer examples here.
+    """
 
     @abc.abstractmethod
     def add_force(
@@ -683,3 +693,140 @@ class BoreschRestraint(BaseHostGuestRestraints):
         dG = -kt * np.log((numerator1 / denum1) * (numerator2 / denum2))
 
         return dG
+
+class DihedralRestraint(BaseRestraints):
+    """
+    A class to add flat-bottomed harmonic restraints on a ligand's own
+    dihedrals to an OpenMM System.
+
+    The restraint is intended to be off in the interacting end state and on in
+    the non-interacting end state, holding the decoupled ligand in the
+    conformation of its input pose so that it cannot sample conformers the
+    interacting end state never visits.
+
+    Note
+    ----
+    There is no standard state correction to apply. The restraint acts only on
+    internal coordinates and is off in the interacting end state, and the free
+    energy of applying it to a decoupled ligand depends only on the isolated
+    molecule. Applied identically in the complex and solvent legs, its
+    contribution cancels in the resulting ddG.
+
+    This cancellation assumes the decoupled ligand is genuinely
+    non-interacting with its environment, and that no restrained dihedral is
+    also acted on by a Boresch restraint on the same ligand. See
+    :func:`openfe.protocols.restraint_utils.geometry.dihedral.validate_against_boresch_geometry`.
+    """
+
+    _settings_cls = DihedralRestraintSettings
+    _geometry_cls = DihedralRestraintGeometry
+
+    def add_force(
+            self,
+            thermodynamic_state: ThermodynamicState,
+            geometry: DihedralRestraintGeometry,
+            controlling_parameter_name: str,
+    ) -> None:
+        """
+        Method for in-place adding the dihedral restraint CustomTorsionForce
+        to the System of the given ThermodynamicState.
+
+        Parameters
+        ----------
+        thermodynamic_state : ThermodynamicState
+          The ThermodynamicState with a System to inplace modify with the
+          new force.
+        geometry : DihedralRestraintGeometry
+          A geometry object defining the restrained dihedrals and their
+          target angles.
+        controlling_parameter_name : str
+          The name of the controlling parameter for the Force.
+        """
+        # Note .system is a call to get_system() so it's returning a copy
+        system = thermodynamic_state.system
+        self.add_force_to_system(
+            system=system,
+            geometry=geometry,
+            controlling_parameter_name=controlling_parameter_name,
+            is_periodic=thermodynamic_state.is_periodic,
+        )
+        thermodynamic_state.system = system
+
+    def add_force_to_system(
+            self,
+            system: openmm.System,
+            geometry: DihedralRestraintGeometry,
+            controlling_parameter_name: str,
+            is_periodic: bool,
+    ) -> None:
+        """
+        Method for in-place adding the dihedral restraint CustomTorsionForce
+        directly to an OpenMM System.
+
+        The solvent leg builds its System without going through a
+        ThermodynamicState, so this is the entry point there; :meth:`add_force`
+        delegates to it.
+
+        Parameters
+        ----------
+        system : openmm.System
+          The System to inplace modify with the new force.
+        geometry : DihedralRestraintGeometry
+          A geometry object defining the restrained dihedrals and their
+          target angles.
+        controlling_parameter_name : str
+          The name of the controlling parameter for the Force.
+        is_periodic : bool
+          Whether the System is periodic.
+        """
+        self._verify_geometry(geometry)
+        force = self._get_force(geometry, controlling_parameter_name)
+        force.setUsesPeriodicBoundaryConditions(is_periodic)
+        add_force_in_separate_group(system, force)
+
+    def _get_force(
+        self,
+        geometry: DihedralRestraintGeometry,
+        controlling_parameter_name: str,
+    ) -> openmm.CustomTorsionForce:
+        """
+        Get the CustomTorsionForce with a flat-bottomed dihedral restraint
+        energy function given an input geometry.
+        """
+        efunc = get_flat_bottom_dihedral_energy_function(controlling_parameter_name)
+        force = get_custom_torsion_force(efunc)
+        force.addGlobalParameter(controlling_parameter_name, 1.0)
+        force.setName(controlling_parameter_name)
+
+        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit(
+            omm_unit.kilojoule_per_mole / omm_unit.radians**2
+        )
+        half_width = to_openmm(self.settings.half_width).value_in_unit(omm_unit.radians)
+
+        for atoms, target_angle in zip(
+            geometry.torsion_atoms,
+            geometry.target_angles,
+            strict=True,
+        ):
+            force.addTorsion(
+                *atoms,
+                [spring_constant, target_angle, half_width],
+            )
+        return force
+
+    @staticmethod
+    def get_standard_state_correction(
+        thermodynamic_state: ThermodynamicState,
+        geometry: DihedralRestraintGeometry,
+    ) -> Quantity:
+        """
+        Get the standard state correction for the dihedral restraint, which is
+        zero.
+
+        The restraint does not restrict the ligand's translational or
+        rotational freedom, so it carries no standard state correction. Its
+        conformational contribution is not zero, but it is identical in the
+        complex and solvent legs and cancels there rather than being corrected
+        for here.
+        """
+        return 0.0 * unit.kilojoule_per_mole

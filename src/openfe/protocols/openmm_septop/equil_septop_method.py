@@ -69,7 +69,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
 )
 
 from ..openmm_utils import settings_validation, system_validation
-from ..restraint_utils.settings import BoreschRestraintSettings
+from ..restraint_utils.settings import BoreschRestraintSettings, DihedralRestraintSettings
 from .septop_protocol_results import SepTopProtocolResult
 from .septop_units import (
     SepTopComplexAnalysisUnit,
@@ -208,6 +208,16 @@ class SepTopProtocol(gufe.Protocol):
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                 ],
+                lambda_dihedral_restraints_A=[
+                    0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                ],
+                lambda_dihedral_restraints_B=[
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 0.75, 0.5, 0.25, 0.0,
+                ],
             ),
             complex_lambda_settings=LambdaSettings(),
             partial_charge_settings=OpenFFPartialChargeSettings(),
@@ -265,6 +275,8 @@ class SepTopProtocol(gufe.Protocol):
 
             complex_restraint_settings_A=BoreschRestraintSettings(),
             complex_restraint_settings_B=BoreschRestraintSettings(),
+            dihedral_restraint_settings_A=DihedralRestraintSettings(),
+            dihedral_restraint_settings_B=DihedralRestraintSettings(),
             analysis_settings=MultiStateAnalysisSettings(),
         )  # fmt: skip
 
@@ -412,6 +424,8 @@ class SepTopProtocol(gufe.Protocol):
         lambda_vdw_B = lambda_settings.lambda_vdw_B
         lambda_restraints_A = lambda_settings.lambda_restraints_A
         lambda_restraints_B = lambda_settings.lambda_restraints_B
+        lambda_dihedral_restraints_A = lambda_settings.lambda_dihedral_restraints_A
+        lambda_dihedral_restraints_B = lambda_settings.lambda_dihedral_restraints_B
         n_replicas = simulation_settings.n_replicas
 
         # Ensure that all lambda components have equal amount of windows
@@ -422,6 +436,8 @@ class SepTopProtocol(gufe.Protocol):
             lambda_elec_B,
             lambda_restraints_A,
             lambda_restraints_B,
+            lambda_dihedral_restraints_A,
+            lambda_dihedral_restraints_B,
         ]
         lengths = {len(lam) for lam in lambda_components}
         if len(lengths) != 1:

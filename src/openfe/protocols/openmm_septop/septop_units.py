@@ -162,6 +162,8 @@ class SepTopComplexMixin:
             * output_settings: MultiStateOutputSettings
             * restraint_settings_A: BoreschRestraintSettings
             * restraint_settings_B: BoreschRestraintSettings
+            * dihedral_restraint_settings_A: DihedralRestraintSettings
+            * dihedral_restraint_settings_B: DihedralRestraintSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore
 
@@ -180,6 +182,8 @@ class SepTopComplexMixin:
             "output_settings": prot_settings.complex_output_settings,
             "restraint_settings_A": prot_settings.complex_restraint_settings_A,
             "restraint_settings_B": prot_settings.complex_restraint_settings_B,
+            "dihedral_restraint_settings_A": prot_settings.dihedral_restraint_settings_A,
+            "dihedral_restraint_settings_B": prot_settings.dihedral_restraint_settings_B,
             "analysis_settings": prot_settings.analysis_settings,
         }
 
@@ -250,6 +254,8 @@ class SepTopSolventMixin:
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintsSettings
+            * dihedral_restraint_settings_A: DihedralRestraintSettings
+            * dihedral_restraint_settings_B: DihedralRestraintSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore
 
@@ -267,6 +273,8 @@ class SepTopSolventMixin:
             "simulation_settings": prot_settings.solvent_simulation_settings,
             "output_settings": prot_settings.solvent_output_settings,
             "restraint_settings": prot_settings.solvent_restraint_settings,
+            "dihedral_restraint_settings_A": prot_settings.dihedral_restraint_settings_A,
+            "dihedral_restraint_settings_B": prot_settings.dihedral_restraint_settings_B,
             "analysis_settings": prot_settings.analysis_settings,
         }
 
@@ -542,12 +550,15 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         ligand_B_inxs_B: list[int],
         protein_inxs: list[int],
         settings: dict[str, SettingsBaseModel],
-    ) -> tuple[
+        ) -> tuple[
         Quantity,
         Quantity,
         openmm.System,
+        geometry.DihedralRestraintGeometry,
+        geometry.DihedralRestraintGeometry,
         geometry.HostGuestRestraintGeometry,
         geometry.HostGuestRestraintGeometry,
+
     ]:
         """
         Adds Boresch restraints to the system.
@@ -663,6 +674,39 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             rest_geom_B,
             controlling_parameter_name="lambda_restraints_B",
         )
+        # Add the ligand conformational restraints. Target angles come from
+        # the input pose, so the complex and solvent legs restrain the same
+        # dihedrals to the same angles without either leg depending on the
+        # other, which is what makes the contribution cancel between them.
+        dihedral_geom_A, dihedral_restraint_A = self._get_dihedral_restraint(
+            rdmol = rdmol_A,
+            ligand_idxs = ligand_A_inxs,
+            restraint_settings = settings["dihedral_restraint_settings_A"],
+            boresch_guest_atoms = rest_geom_A.guest_atoms,
+        )
+        dihedral_geom_B, dihedral_restraint_B = self._get_dihedral_restraint(
+            rdmol = rdmol_B,
+            ligand_idxs = ligand_B_inxs,
+            restraint_settings = settings["dihedral_restraint_settings_B"],
+            boresch_guest_atoms = rest_geom_B.guest_atoms,
+        )
+        dihedral_restraint_A.add_force(
+            thermodynamic_state,
+            dihedral_geom_A,
+            controlling_parameter_name = "lambda_dihedral_restraints_A",
+        )
+        dihedral_restraint_B.add_force(
+            thermodynamic_state,
+            dihedral_geom_B,
+            controlling_parameter_name = "lambda_dihedral_restraints_B",
+        )
+
+        if self.verbose:
+            self.logger.info(
+                f"ligand A dihedral restraints:\n{dihedral_geom_A.summarise()}"
+            )
+            self.logger.info(f"ligand B dihedral restraints:\n{dihedral_geom_B.summarise()}")
+
         # Get the standard state correction as a unit.Quantity
         correction_A = restraint_A.get_standard_state_correction(
             thermodynamic_state,
@@ -685,6 +729,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             correction_A,
             correction_B,
             restrained_system,
+            dihedral_geom_A,
+            dihedral_geom_B,
             rest_geom_A,
             rest_geom_B,
         )
@@ -850,7 +896,15 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         )
 
         # 10. Apply Restraints
-        corr_A, corr_B, system, restraint_geom_A, restraint_geom_B = self._add_restraints(
+        (
+            corr_A,
+            corr_B,
+            system,
+            dihedral_geom_A,
+            dihedral_geom_B,
+            restraint_geom_A,
+            restraint_geom_B,
+        ) = self._add_restraints(
             alchemical_system,
             omm_topology_A,
             omm_topology_B,
@@ -912,6 +966,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
             "restraint_geometry_A": restraint_geom_A.model_dump(),
             "restraint_geometry_B": restraint_geom_B.model_dump(),
+            "dihedral_restraint_geometry_A": dihedral_geom_A.model_dump(),
+            "dihedral_restraint_geometry_B": dihedral_geom_B.model_dump(),
             "selection_indices": selection_indices,
             "alchemical_resnames": alchem_resnames,
             "subsampled_pdb_structure": sub_pdb_structure,
@@ -994,6 +1050,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         np.ndarray,
         BoreschRestraintGeometry,
         BoreschRestraintGeometry,
+        geometry.DihedralRestraintGeometry,
+        geometry.DihedralRestraintGeometry,
     ]:
         """
         Apply Boresch restraints for both ligands using analytically-placed
@@ -1051,7 +1109,49 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 f"Standard state corrections: A={corr_A:.3f}, B={corr_B:.3f}"
             )
 
-        return corr_A, corr_B, system, positions_AB, geom_A, geom_B
+        # Add the ligand conformational restraints. These must match the ones
+        # applied in the complex leg exactly, otherwise their contribution no
+        # longer cancels between the two legs.
+        dihedral_geom_A, dihedral_restraint_A = self._get_dihedral_restraint(
+            rdmol=rdmol_A,
+            ligand_idxs=ligand_A_idxs,
+            restraint_settings=settings["dihedral_restraint_settings_A"],
+            boresch_guest_atoms=geom_A.guest_atoms,
+        )
+        dihedral_geom_B, dihedral_restraint_B = self._get_dihedral_restraint(
+            rdmol=rdmol_B,
+            ligand_idxs=ligand_B_idxs,
+            restraint_settings=settings["dihedral_restraint_settings_B"],
+            boresch_guest_atoms=geom_B.guest_atoms,
+        )
+        is_periodic = system.usesPeriodicBoundaryConditions()
+        dihedral_restraint_A.add_force_to_system(
+            system=system,
+            geometry=dihedral_geom_A,
+            controlling_parameter_name="lambda_dihedral_restraints_A",
+            is_periodic=is_periodic,
+        )
+        dihedral_restraint_B.add_force_to_system(
+            system=system,
+            geometry=dihedral_geom_B,
+            controlling_parameter_name="lambda_dihedral_restraints_B",
+            is_periodic=is_periodic,
+        )
+
+        if self.verbose:
+            self.logger.info(f"ligand A dihedral restraints:\n{dihedral_geom_A.summarise()}")
+            self.logger.info(f"ligand B dihedral restraints:\n{dihedral_geom_B.summarise()}")
+
+        return (
+            corr_A,
+            corr_B,
+            system,
+            positions_AB,
+            geom_A,
+            geom_B,
+            dihedral_geom_A,
+            dihedral_geom_B,
+        )
 
     def run(
         self, dry=False, verbose=True, scratch_basepath=None, shared_basepath=None
@@ -1145,16 +1245,23 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # positions_AB is extended by 6 rows (3 dummies per ligand)
         positions_AB_ang = np.array(positions_AB.value_in_unit(openmm.unit.angstrom))
-        corr_A, corr_B, system, positions_AB_ang, restraint_geom_A, restraint_geom_B = (
-            self._add_restraints(
-                alchemical_system,
-                rdmol_A,
-                rdmol_B,
-                atom_indices_AB_A,
-                atom_indices_AB_B,
-                settings,
-                positions_AB_ang,
-            )
+        (
+            corr_A,
+            corr_B,
+            system,
+            positions_AB_ang,
+            restraint_geom_A,
+            restraint_geom_B,
+            dihedral_geom_A,
+            dihedral_geom_B,
+        ) = self._add_restraints(
+            alchemical_system,
+            rdmol_A,
+            rdmol_B,
+            atom_indices_AB_A,
+            atom_indices_AB_B,
+            settings,
+            positions_AB_ang,
         )
         positions_AB = positions_AB_ang * openmm.unit.angstrom
 
@@ -1196,6 +1303,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 "standard_state_correction_B": corr_B.to("kilocalorie_per_mole"),
                 "restraint_geometry_A": restraint_geom_A.model_dump(),
                 "restraint_geometry_B": restraint_geom_B.model_dump(),
+                "dihedral_restraint_geometry_A": dihedral_geom_A.model_dump(),
+                "dihedral_restraint_geometry_B": dihedral_geom_B.model_dump(),
                 "selection_indices": selection_indices,
                 "alchemical_resnames": alchem_resnames,
                 "subsampled_pdb_structure": sub_pdb_structure,
@@ -1253,6 +1362,13 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
         lambdas["lambda_restraints_A"] = [1.0] * n_windows
         lambdas["lambda_restraints_B"] = [1.0] * n_windows
 
+        lambdas["lambda_dihedral_restraints_A"] = settings[
+            "lambda_settings"
+        ].lambda_dihedral_restraints_A
+        lambdas["lambda_dihedral_restraints_B"] = settings[
+            "lambda_settings"
+        ].lambda_dihedral_restraints_B
+
         return lambdas
 
 
@@ -1288,6 +1404,13 @@ class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
         lambdas["lambda_sterics_B"] = lambda_vdw_B
         lambdas["lambda_restraints_A"] = lambda_restraints_A
         lambdas["lambda_restraints_B"] = lambda_restraints_B
+
+        lambdas["lambda_dihedral_restraints_A"] = settings[
+            "lambda_settings"
+        ].lambda_dihedral_restraints_A
+        lambdas["lambda_dihedral_restraints_B"] = settings[
+            "lambda_settings"
+        ].lambda_dihedral_restraints_B
 
         return lambdas
 
