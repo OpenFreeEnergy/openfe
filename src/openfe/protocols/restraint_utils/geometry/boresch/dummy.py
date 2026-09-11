@@ -40,7 +40,7 @@ import numpy as np
 # ---------------------------------------------------------------------------
 
 #: Distance (Å) from G0 to D0.
-_DUMMY_BOND_LENGTH_A: float = 5.0
+_DUMMY_BOND_LENGTH_A: float = 1.0
 
 #: Minimum safe angle (radians) away from 0 or pi.
 _ANGLE_WARN_THRESHOLD_RAD: float = np.deg2rad(10.0)
