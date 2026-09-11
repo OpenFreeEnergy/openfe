@@ -33,6 +33,43 @@ Below are the settings which can be tweaked in the protocol. The default setting
 
 .. module:: openfe.protocols.openmm_afe.equil_afe_settings
 
+
+.. autopydantic_model:: openfe.protocols.openmm_afe.equil_afe_settings.AlchemicalSettings
+   :model-show-json: False
+   :model-show-field-summary: False
+   :model-show-config-member: False
+   :model-show-config-summary: False
+   :model-show-validator-members: False
+   :model-show-validator-summary: False
+   :field-list-validators: False
+   :inherited-members: SettingsBaseModel
+   :exclude-members: get_defaults
+   :member-order: bysource
+
+.. autopydantic_model:: openfe.protocols.openmm_afe.equil_afe_settings.LambdaSettings
+   :model-show-json: False
+   :model-show-field-summary: False
+   :model-show-config-member: False
+   :model-show-config-summary: False
+   :model-show-validator-members: False
+   :model-show-validator-summary: False
+   :field-list-validators: False
+   :inherited-members: SettingsBaseModel
+   :exclude-members: get_defaults
+   :member-order: bysource
+
+.. autopydantic_model:: ABFEPreEquilOutputSettings
+   :model-show-json: False
+   :model-show-field-summary: False
+   :model-show-config-member: False
+   :model-show-config-summary: False
+   :model-show-validator-members: False
+   :model-show-validator-summary: False
+   :field-list-validators: False
+   :inherited-members: SettingsBaseModel
+   :exclude-members: get_defaults
+   :member-order: bysource
+
 .. autopydantic_model:: AbsoluteBindingSettings
    :model-show-json: False
    :model-show-field-summary: False

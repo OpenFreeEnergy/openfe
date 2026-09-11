@@ -100,6 +100,7 @@ def compare_energies(alchemical_system, positions):
     )
 
 
+@pytest.mark.slow
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 def test_lambda_energies(
     eg5_ligands,

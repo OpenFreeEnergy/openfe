@@ -249,11 +249,23 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
         # Take the minimum of the two possible force constants to check against
         frc_const = min(settings.K_thetaA, settings.K_thetaB)
 
+        if settings.guest_restraint_ids is not None:
+            guest_restraint_atoms_idxs = list(settings.guest_restraint_ids)
+        else:
+            guest_restraint_atoms_idxs = None
+
+        if settings.host_restraint_ids is not None:
+            host_restraint_atoms_idxs = list(settings.host_restraint_ids)
+        else:
+            host_restraint_atoms_idxs = None
+
         geom = geometry.boresch.find_boresch_restraint(
             universe=universe,
             guest_rdmol=guest_rdmol,
             guest_idxs=guest_atom_ids,
             host_idxs=host_atom_ids,
+            guest_restraint_atoms_idxs=guest_restraint_atoms_idxs,
+            host_restraint_atoms_idxs=host_restraint_atoms_idxs,
             host_selection=settings.host_selection,
             anchor_finding_strategy=settings.anchor_finding_strategy,
             dssp_filter=settings.dssp_filter,

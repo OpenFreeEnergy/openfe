@@ -272,7 +272,9 @@ class SepTopProtocol(gufe.Protocol):
                 checkpoint_storage_filename="complex_checkpoint.nc",
             ),
             solvent_restraint_settings=BoreschRestraintSettings(),
-            complex_restraint_settings=BoreschRestraintSettings(),
+
+            complex_restraint_settings_A=BoreschRestraintSettings(),
+            complex_restraint_settings_B=BoreschRestraintSettings(),
             analysis_settings=MultiStateAnalysisSettings(),
         )  # fmt: skip
 

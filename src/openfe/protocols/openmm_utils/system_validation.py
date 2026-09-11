@@ -205,14 +205,13 @@ def validate_barostat(state: ChemicalSystem, barostat: str):
         logger.warning(wmsg)
 
 
-ParseCompRet = Tuple[
-    Optional[SolventComponent],
-    Optional[ProteinComponent],
+def get_components(
+    state: ChemicalSystem,
+) -> tuple[
+    SolventComponent | None,
+    ProteinComponent | None,
     list[SmallMoleculeComponent],
-]
-
-
-def get_components(state: ChemicalSystem) -> ParseCompRet:
+]:
     """
     Establish all necessary Components for the transformation.
 
@@ -223,11 +222,12 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
 
     Returns
     -------
-    solvent_comp : Optional[SolventComponent]
+    solvent_comp : SolventComponent | None
       If it exists, the SolventComponent for the state, otherwise None.
-    protein_comp : Optional[ProteinComponent]
+    protein_comp : ProteinComponent | None
       If it exists, the ProteinComponent for the state, otherwise None.
     small_mols : list[SmallMoleculeComponent]
+      List of SmallMoleculeComponent, if none exists, returns an empty list.
     """
 
     def _get_single_comps(state, comptype):

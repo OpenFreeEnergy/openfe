@@ -37,6 +37,9 @@ authors:
 - given-names: Alyssa
   family-names: Travitz
   orcid: 'https://orcid.org/0000-0001-5953-8807'
+- given-names: Benedict
+  family-names: Tan
+  orcid: 'https://orcid.org/0009-0003-5229-9251'
 title: "The Open Free Energy library"
 version: 1.7.0
 date-released: 2025-04-25

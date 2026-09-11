@@ -3,23 +3,23 @@
 """
 Tests for dummy-atom Boresch restraint geometry and system utilities.
 """
+
 from __future__ import annotations
 
 import numpy as np
 import openmm
 import pytest
-from MDAnalysis.lib.distances import calc_angles, calc_dihedrals, calc_bonds
+from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
 
 from openfe.protocols.restraint_utils.geometry.boresch.dummy import (
     _DUMMY_BOND_LENGTH_A,
-    find_dummy_atom_positions,
     _validate_dummy_geometry,
+    find_dummy_atom_positions,
 )
 from openfe.protocols.restraint_utils.openmm.omm_dummy import (
     DUMMY_MASS_AMU,
     add_dummy_atoms_to_system,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -28,21 +28,25 @@ from openfe.protocols.restraint_utils.openmm.omm_dummy import (
 
 def _angle_deg(a, b, c):
     """Angle at vertex b in degrees."""
-    return np.degrees(calc_angles(
-        np.array(a, dtype=float),
-        np.array(b, dtype=float),
-        np.array(c, dtype=float),
-    ))
+    return np.degrees(
+        calc_angles(
+            np.array(a, dtype=float),
+            np.array(b, dtype=float),
+            np.array(c, dtype=float),
+        )
+    )
 
 
 def _dihedral_deg(a, b, c, d):
     """Dihedral a-b-c-d in degrees."""
-    return np.degrees(calc_dihedrals(
-        np.array(a, dtype=float),
-        np.array(b, dtype=float),
-        np.array(c, dtype=float),
-        np.array(d, dtype=float),
-    ))
+    return np.degrees(
+        calc_dihedrals(
+            np.array(a, dtype=float),
+            np.array(b, dtype=float),
+            np.array(c, dtype=float),
+            np.array(d, dtype=float),
+        )
+    )
 
 
 def _bond_length(a, b):
@@ -52,14 +56,13 @@ def _bond_length(a, b):
 def _simple_ligand_positions():
     """Three non-collinear ligand anchor atoms in Angstroms."""
     return (
-        np.array([0.0, 0.0, 0.0]),   # G0
-        np.array([1.5, 0.0, 0.0]),   # G1
+        np.array([0.0, 0.0, 0.0]),  # G0
+        np.array([1.5, 0.0, 0.0]),  # G1
         np.array([0.75, 1.3, 0.0]),  # G2
     )
 
 
 class TestFindDummyAtomPositions:
-
     def test_returns_three_positions(self):
         p_g0, p_g1, p_g2 = _simple_ligand_positions()
         result = find_dummy_atom_positions(p_g0, p_g1, p_g2)
@@ -117,11 +120,13 @@ class TestFindDummyAtomPositions:
 
         # Rotate all positions by 45 deg around z
         angle = np.deg2rad(45)
-        R = np.array([
-            [np.cos(angle), -np.sin(angle), 0],
-            [np.sin(angle),  np.cos(angle), 0],
-            [0,              0,             1],
-        ])
+        R = np.array(
+            [
+                [np.cos(angle), -np.sin(angle), 0],
+                [np.sin(angle), np.cos(angle), 0],
+                [0, 0, 1],
+            ]
+        )
         g0r = R @ p_g0
         g1r = R @ p_g1
         g2r = R @ p_g2
@@ -138,10 +143,13 @@ class TestFindDummyAtomPositions:
         with pytest.warns(UserWarning, match="collinear"):
             find_dummy_atom_positions(p_g0, p_g1, p_g2)
 
-    @pytest.mark.parametrize("translation", [
-        np.array([10.0, 0.0, 0.0]),
-        np.array([0.0, -5.5, 3.2]),
-    ])
+    @pytest.mark.parametrize(
+        "translation",
+        [
+            np.array([10.0, 0.0, 0.0]),
+            np.array([0.0, -5.5, 3.2]),
+        ],
+    )
     def test_translation_invariance_of_angles(self, translation):
         """Translating the ligand should not change the Boresch angles."""
         p_g0, p_g1, p_g2 = _simple_ligand_positions()
@@ -184,7 +192,6 @@ def _make_simple_system(n_particles: int = 4) -> tuple[openmm.System, np.ndarray
 
 
 class TestAddDummyAtomsToSystem:
-
     def test_particle_count_increases(self):
         system, positions = _make_simple_system(4)
         system, new_pos, dummy_idxs = add_dummy_atoms_to_system(system, positions, n_dummies=3)
