@@ -16,12 +16,16 @@ standard state correction is required. See
 :class:`DihedralRestraintGeometry` for the conditions this relies on.
 """
 
+import logging
+
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
 from pydantic import field_validator, model_validator
 
 from .base import BaseRestraintGeometry
+
+logger = logging.getLogger(__name__)
 
 
 class DihedralRestraintGeometry(BaseRestraintGeometry):
@@ -56,6 +60,24 @@ class DihedralRestraintGeometry(BaseRestraintGeometry):
     The target angle for each restrained dihedral, in radians, in the range
     (-pi, pi].
     """
+
+    def summarise(self) -> str:
+        """
+        Render the restrained dihedrals and their target angles as a table.
+
+        The atom indices are indices into the full OpenMM System, matching
+        what the CustomTorsionForce is built with.
+        """
+        if not self.torsion_atoms:
+            return "no dihedrals restrained"
+
+        lines = [f"{'torsion (system indices)':>28}  {'target angle / degrees':>22}"]
+        for quartet, angle in zip(self.torsion_atoms, self.target_angles, strict=True):
+            lines.append(
+                f"{'-'.join(str(idx) for idx in quartet):>28}  "
+                f"{np.rad2deg(angle):>22.1f}"
+            )
+        return "\n".join(lines)
 
     @field_validator("torsion_atoms")
     def positive_idxs(cls, v):
@@ -105,8 +127,7 @@ def _is_conjugated_carbonyl_bond(bond: Chem.Bond) -> bool:
     """
     begin, end = bond.GetBeginAtom(), bond.GetEndAtom()
     for heteroatom, carbon in ((begin, end), (end, begin)):
-        if heteroatom.GetAtomicNum() not in (
-        7, 8, 16) or carbon.GetAtomicNum() != 6:
+        if heteroatom.GetAtomicNum() not in (7, 8, 16) or carbon.GetAtomicNum() != 6:
             continue
         for carbon_bond in carbon.GetBonds():
             if carbon_bond.GetBondType() != Chem.BondType.DOUBLE:
@@ -116,33 +137,21 @@ def _is_conjugated_carbonyl_bond(bond: Chem.Bond) -> bool:
     return False
 
 
-def _is_rotatable_bond(
-        bond: Chem.Bond,
-        exclude_conjugated_carbonyls: bool = True,
-) -> bool:
+def _has_heavy_substituents(bond: Chem.Bond) -> bool:
     """
-    Whether a bond is a non-terminal, acyclic, single bond with at least one
-    heavy substituent on each side, optionally excluding amide, ester and
-    thioester bonds.
+    Whether both ends of a bond carry at least one heavy substituent besides
+    each other, i.e. rotating about the bond moves heavy atoms on both sides.
     """
-    if bond.GetBondType() != Chem.BondType.SINGLE:
-        return False
-    if bond.IsInRing():
-        return False
-    if exclude_conjugated_carbonyls and _is_conjugated_carbonyl_bond(bond):
-        return False
-
     begin, end = bond.GetBeginAtom(), bond.GetEndAtom()
-    if not _heavy_neighbor_idxs(begin, end.GetIdx()):
-        return False
-    if not _heavy_neighbor_idxs(end, begin.GetIdx()):
-        return False
-    return True
+    return bool(
+        _heavy_neighbor_idxs(begin, end.GetIdx())
+        and _heavy_neighbor_idxs(end, begin.GetIdx())
+    )
 
 
 def _is_degenerate_rotor(
-        bond: Chem.Bond,
-        symmetry_classes: list[int],
+    bond: Chem.Bond,
+    symmetry_classes: list[int],
 ) -> bool:
     """
     Whether rotating about a bond maps the molecule onto an equivalent
@@ -164,8 +173,8 @@ def _is_degenerate_rotor(
 
 
 def _select_torsion_atoms(
-        bond: Chem.Bond,
-        canonical_ranks: list[int],
+    bond: Chem.Bond,
+    canonical_ranks: list[int],
 ) -> tuple[int, int, int, int]:
     """
     Pick a dihedral quartet spanning a rotatable bond.
@@ -188,11 +197,112 @@ def _select_torsion_atoms(
     return (outer_begin, begin_idx, end_idx, outer_end)
 
 
+def report_torsion_selection(
+    rdmol: Chem.Mol,
+    exclude_degenerate_rotors: bool = True,
+    exclude_conjugated_carbonyls: bool = True,
+    excluded_bonds: list[tuple[int, int]] | None = None,
+) -> list[dict]:
+    """
+    Report, for every acyclic single bond between heavy atoms, whether it
+    would be restrained and why.
+
+    This is the selection logic of :func:`select_restrained_torsions` with its
+    decisions kept rather than discarded, so that it can be logged, stored in
+    a Protocol's outputs, or inspected when tuning the heuristics.
+
+    Parameters
+    ----------
+    rdmol : Chem.Mol
+      The molecule to report on. Indices are indices into this molecule.
+    exclude_degenerate_rotors : bool
+      Whether to drop rotors related by symmetry, e.g. -CF3 or a
+      monosubstituted phenyl. Default True.
+    exclude_conjugated_carbonyls : bool
+      Whether to drop amide, ester and thioester bonds. Default True.
+    excluded_bonds : Optional[list[tuple[int, int]]]
+      Central bonds to skip, given as pairs of indices into ``rdmol``.
+
+    Returns
+    -------
+    list[dict]
+      One entry per candidate bond, each with the keys ``bond`` (the central
+      bond indices), ``torsion`` (the selected atom quartet, or ``None`` if
+      the bond was skipped), ``restrained`` (bool) and ``reason`` (a short
+      human readable explanation of the decision).
+    """
+    excluded = {frozenset(bond) for bond in (excluded_bonds or [])}
+    # breakTies=False gives symmetry classes, breakTies=True gives a unique
+    # deterministic ordering; we need both.
+    symmetry_classes = list(Chem.CanonicalRankAtoms(rdmol, breakTies=False))
+    canonical_ranks = list(Chem.CanonicalRankAtoms(rdmol, breakTies=True))
+
+    report = []
+    for bond in rdmol.GetBonds():
+        if bond.GetBondType() != Chem.BondType.SINGLE or bond.IsInRing():
+            continue
+        # bonds to hydrogen are not candidates and would swamp the report
+        if 1 in (bond.GetBeginAtom().GetAtomicNum(), bond.GetEndAtom().GetAtomicNum()):
+            continue
+
+        begin_idx, end_idx = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+        entry: dict = {"bond": (begin_idx, end_idx), "torsion": None}
+
+        if not _has_heavy_substituents(bond):
+            entry.update(
+                restrained=False,
+                reason="terminal rotor, no heavy substituent on one side",
+            )
+        elif exclude_conjugated_carbonyls and _is_conjugated_carbonyl_bond(bond):
+            entry.update(
+                restrained=False,
+                reason="amide, ester or thioester bond, barrier far above thermal energy",
+            )
+        elif frozenset((begin_idx, end_idx)) in excluded:
+            entry.update(restrained=False, reason="bond explicitly excluded")
+        elif exclude_degenerate_rotors and _is_degenerate_rotor(bond, symmetry_classes):
+            entry.update(
+                restrained=False,
+                reason="rotation is degenerate by symmetry, minima are indistinguishable",
+            )
+        else:
+            entry.update(
+                torsion=_select_torsion_atoms(bond, canonical_ranks),
+                restrained=True,
+                reason="non-degenerate acyclic rotor",
+            )
+        report.append(entry)
+    return report
+
+
+def format_torsion_selection_report(
+    rdmol: Chem.Mol,
+    report: list[dict],
+) -> str:
+    """
+    Render the output of :func:`report_torsion_selection` as a table, using
+    element symbols and indices to name the atoms.
+    """
+    def label(idxs) -> str:
+        return "-".join(
+            f"{rdmol.GetAtomWithIdx(idx).GetSymbol()}{idx}" for idx in idxs
+        )
+
+    lines = [f"{'bond':>12}  {'torsion':>20}  {'restrained':>10}  reason"]
+    for entry in report:
+        torsion = label(entry["torsion"]) if entry["torsion"] is not None else "-"
+        lines.append(
+            f"{label(entry['bond']):>12}  {torsion:>20}  "
+            f"{str(entry['restrained']):>10}  {entry['reason']}"
+        )
+    return "\n".join(lines)
+
+
 def select_restrained_torsions(
-        rdmol: Chem.Mol,
-        exclude_degenerate_rotors: bool = True,
-        exclude_conjugated_carbonyls: bool = True,
-        excluded_bonds: list[tuple[int, int]] | None = None,
+    rdmol: Chem.Mol,
+    exclude_degenerate_rotors: bool = True,
+    exclude_conjugated_carbonyls: bool = True,
+    excluded_bonds: list[tuple[int, int]] | None = None,
 ) -> list[tuple[int, int, int, int]]:
     """
     Heuristically select the dihedrals of a molecule worth restraining.
@@ -201,6 +311,9 @@ def select_restrained_torsions(
     degenerate by symmetry are all excluded: either they sample well on
     simulation timescales, or their minima are indistinguishable, so
     restraining them adds restraint work without removing any sampling error.
+
+    See :func:`report_torsion_selection` for the same selection with the
+    reason for each decision kept.
 
     Parameters
     ----------
@@ -222,38 +335,24 @@ def select_restrained_torsions(
     list[tuple[int, int, int, int]]
       An ordered list of atom index quartets.
     """
-    excluded = {frozenset(bond) for bond in (excluded_bonds or [])}
-    # breakTies=False gives symmetry classes, breakTies=True gives a unique
-    # deterministic ordering; we need both.
-    symmetry_classes = list(Chem.CanonicalRankAtoms(rdmol, breakTies=False))
-    canonical_ranks = list(Chem.CanonicalRankAtoms(rdmol, breakTies=True))
-
-    torsions = []
-    for bond in rdmol.GetBonds():
-        if not _is_rotatable_bond(
-                bond,
-                exclude_conjugated_carbonyls=exclude_conjugated_carbonyls,
-        ):
-            continue
-        if frozenset(
-                (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())) in excluded:
-            continue
-        if exclude_degenerate_rotors and _is_degenerate_rotor(bond,
-                                                              symmetry_classes):
-            continue
-        torsions.append(_select_torsion_atoms(bond, canonical_ranks))
-    return torsions
+    report = report_torsion_selection(
+        rdmol=rdmol,
+        exclude_degenerate_rotors=exclude_degenerate_rotors,
+        exclude_conjugated_carbonyls=exclude_conjugated_carbonyls,
+        excluded_bonds=excluded_bonds,
+    )
+    return [entry["torsion"] for entry in report if entry["restrained"]]
 
 
 def get_dihedral_restraint_geometry(
-        rdmol: Chem.Mol,
-        ligand_idxs: list[int],
-        torsion_atoms: list[tuple[int, int, int, int]] | None = None,
-        target_angles: list[float] | None = None,
-        exclude_degenerate_rotors: bool = True,
-        exclude_conjugated_carbonyls: bool = True,
-        excluded_bonds: list[tuple[int, int]] | None = None,
-        conformer_id: int = 0,
+    rdmol: Chem.Mol,
+    ligand_idxs: list[int],
+    torsion_atoms: list[tuple[int, int, int, int]] | None = None,
+    target_angles: list[float] | None = None,
+    exclude_degenerate_rotors: bool = True,
+    exclude_conjugated_carbonyls: bool = True,
+    excluded_bonds: list[tuple[int, int]] | None = None,
+    conformer_id: int = 0,
 ) -> DihedralRestraintGeometry:
     """
     Get a DihedralRestraintGeometry for a ligand.
@@ -294,11 +393,18 @@ def get_dihedral_restraint_geometry(
       An object defining the dihedral restraint geometry.
     """
     if torsion_atoms is None:
-        torsion_atoms = select_restrained_torsions(
+        report = report_torsion_selection(
             rdmol=rdmol,
             exclude_degenerate_rotors=exclude_degenerate_rotors,
             exclude_conjugated_carbonyls=exclude_conjugated_carbonyls,
             excluded_bonds=excluded_bonds,
+        )
+        torsion_atoms = [entry["torsion"] for entry in report if entry["restrained"]]
+        logger.info(
+            "Selected %d of %d candidate rotors for dihedral restraints:\n%s",
+            len(torsion_atoms),
+            len(report),
+            format_torsion_selection_report(rdmol, report),
         )
 
     if target_angles is None:
@@ -324,8 +430,8 @@ def get_dihedral_restraint_geometry(
 
 
 def validate_against_boresch_geometry(
-        dihedral_geometry: DihedralRestraintGeometry,
-        boresch_guest_atoms: list[int],
+    dihedral_geometry: DihedralRestraintGeometry,
+    boresch_guest_atoms: list[int],
 ) -> None:
     """
     Check that no restrained dihedral shares a central bond with one of the
