@@ -409,6 +409,16 @@ class SepTopSettings(SettingsBaseModel):
     """
     Settings for the Boresch restraint applied to ligand B in the complex.
     """
+    dihedral_restraint_settings_A: BaseRestraintSettings
+    """
+    Settings for the conformational (dihedral) restraints on ligand A, applied
+    identically in the complex and solvent legs.
+    """
+    dihedral_restraint_settings_B: BaseRestraintSettings
+    """
+    Settings for the conformational (dihedral) restraints on ligand B, applied
+    identically in the complex and solvent legs.
+    """
     analysis_settings: MultiStateAnalysisSettings = Field(
         default_factory=MultiStateAnalysisSettings
     )

@@ -722,10 +722,10 @@ class DihedralRestraint(BaseRestraints):
     _geometry_cls = DihedralRestraintGeometry
 
     def add_force(
-        self,
-        thermodynamic_state: ThermodynamicState,
-        geometry: DihedralRestraintGeometry,
-        controlling_parameter_name: str,
+            self,
+            thermodynamic_state: ThermodynamicState,
+            geometry: DihedralRestraintGeometry,
+            controlling_parameter_name: str,
     ) -> None:
         """
         Method for in-place adding the dihedral restraint CustomTorsionForce
@@ -742,13 +742,47 @@ class DihedralRestraint(BaseRestraints):
         controlling_parameter_name : str
           The name of the controlling parameter for the Force.
         """
-        self._verify_geometry(geometry)
-        force = self._get_force(geometry, controlling_parameter_name)
-        force.setUsesPeriodicBoundaryConditions(thermodynamic_state.is_periodic)
         # Note .system is a call to get_system() so it's returning a copy
         system = thermodynamic_state.system
-        add_force_in_separate_group(system, force)
+        self.add_force_to_system(
+            system=system,
+            geometry=geometry,
+            controlling_parameter_name=controlling_parameter_name,
+            is_periodic=thermodynamic_state.is_periodic,
+        )
         thermodynamic_state.system = system
+
+    def add_force_to_system(
+            self,
+            system: openmm.System,
+            geometry: DihedralRestraintGeometry,
+            controlling_parameter_name: str,
+            is_periodic: bool,
+    ) -> None:
+        """
+        Method for in-place adding the dihedral restraint CustomTorsionForce
+        directly to an OpenMM System.
+
+        The solvent leg builds its System without going through a
+        ThermodynamicState, so this is the entry point there; :meth:`add_force`
+        delegates to it.
+
+        Parameters
+        ----------
+        system : openmm.System
+          The System to inplace modify with the new force.
+        geometry : DihedralRestraintGeometry
+          A geometry object defining the restrained dihedrals and their
+          target angles.
+        controlling_parameter_name : str
+          The name of the controlling parameter for the Force.
+        is_periodic : bool
+          Whether the System is periodic.
+        """
+        self._verify_geometry(geometry)
+        force = self._get_force(geometry, controlling_parameter_name)
+        force.setUsesPeriodicBoundaryConditions(is_periodic)
+        add_force_in_separate_group(system, force)
 
     def _get_force(
         self,

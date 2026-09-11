@@ -69,7 +69,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
 )
 
 from ..openmm_utils import settings_validation, system_validation
-from ..restraint_utils.settings import BoreschRestraintSettings
+from ..restraint_utils.settings import BoreschRestraintSettings, DihedralRestraintSettings
 from .septop_protocol_results import SepTopProtocolResult
 from .septop_units import (
     SepTopComplexAnalysisUnit,
@@ -275,6 +275,8 @@ class SepTopProtocol(gufe.Protocol):
 
             complex_restraint_settings_A=BoreschRestraintSettings(),
             complex_restraint_settings_B=BoreschRestraintSettings(),
+            dihedral_restraint_settings_A=DihedralRestraintSettings(),
+            dihedral_restraint_settings_B=DihedralRestraintSettings(),
             analysis_settings=MultiStateAnalysisSettings(),
         )  # fmt: skip
 

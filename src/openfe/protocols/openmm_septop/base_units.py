@@ -50,6 +50,14 @@ from openmmtools.states import (
 )
 from rdkit import Chem
 
+from openfe.protocols.restraint_utils.geometry import (
+    DihedralRestraintGeometry,
+    get_dihedral_restraint_geometry,
+    validate_against_boresch_geometry,
+)
+from openfe.protocols.restraint_utils.openmm.omm_restraints import DihedralRestraint
+from openfe.protocols.restraint_utils.settings import DihedralRestraintSettings
+
 import openfe
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AlchemicalSettings,
@@ -323,6 +331,64 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
     """
     Base class for the setup of ligand SepTop RBFE free energy transformations.
     """
+
+    @staticmethod
+    def _get_dihedral_restraint(
+        rdmol: Chem.Mol,
+        ligand_idxs: list[int],
+        restraint_settings: DihedralRestraintSettings,
+        boresch_guest_atoms: list[int] | None = None,
+) -> tuple[DihedralRestraintGeometry, DihedralRestraint]:
+        """
+        Get a ligand conformational restraint Geometry and OpenMM restraint
+        force supplier.
+
+        The target angles are read from the ligand's input conformer rather
+        than from an equilibration trajectory, so that the complex and solvent
+        legs restrain the same dihedrals to the same angles without either leg
+        depending on the other. That identity is what makes the restraint's
+        free energy contribution cancel between the two legs.
+
+        Parameters
+        ----------
+        rdmol : Chem.Mol
+          An RDKit Molecule defining the ligand, with the conformer defining
+          its pose.
+        ligand_idxs : list[int]
+          The indices of the ligand's atoms in the full OpenMM System, ordered
+          to match ``rdmol``.
+        restraint_settings : DihedralRestraintSettings
+          The settings defining the restraint.
+        boresch_guest_atoms : Optional[list[int]]
+          The guest atoms of the Boresch restraint on the same ligand, if
+          there is one, so that an overlapping dihedral can be caught.
+
+        Returns
+        -------
+        tuple[DihedralRestraintGeometry, DihedralRestraint]
+          The restraint geometry and the restraint force supplier.
+        """
+
+        target_angles = None
+
+        if restraint_settings.target_angles is not None:
+            target_angles = [angle.to("radians").m for angle in restraint_settings.target_angles]
+
+        geom = get_dihedral_restraint_geometry(
+            rdmol = rdmol,
+            ligand_idxs = ligand_idxs,
+            torsion_atoms = restraint_settings.torsion_ids,
+            target_angles = target_angles,
+            exclude_degenerate_rotors = restraint_settings.exclude_degenerate_rotors,
+            exclude_conjugated_carbonyls = restraint_settings.exclude_conjugated_carbonyls,
+        )
+
+
+        if boresch_guest_atoms is not None:
+            validate_against_boresch_geometry(geom, boresch_guest_atoms)
+
+        return geom, DihedralRestraint(restraint_settings)
+
 
     def _get_alchemical_system(
         self,
