@@ -75,8 +75,8 @@ logger = logging.getLogger(__name__)
 
 
 def _add_dummy_atoms_to_topology(
-        topology: openmm.app.Topology,
-        n_dummies: int = 6,
+    topology: openmm.app.Topology,
+    n_dummies: int = 6,
 ) -> None:
     """
     Extend *topology* in-place with *n_dummies* dummy atoms.
@@ -979,14 +979,14 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         return Quantity(ligand_offset, "angstrom")
 
     def _add_restraints(
-            self,
-            system: openmm.System,
-            rdmol_A: Chem.rdchem.Mol,
-            rdmol_B: Chem.rdchem.Mol,
-            ligand_A_idxs: list[int],
-            ligand_B_idxs: list[int],
-            settings: dict[str, SettingsBaseModel],
-            positions_AB: np.ndarray,
+        self,
+        system: openmm.System,
+        rdmol_A: Chem.rdchem.Mol,
+        rdmol_B: Chem.rdchem.Mol,
+        ligand_A_idxs: list[int],
+        ligand_B_idxs: list[int],
+        settings: dict[str, SettingsBaseModel],
+        positions_AB: np.ndarray,
     ) -> tuple[
         Quantity,
         Quantity,
@@ -1103,12 +1103,12 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
 
         # 4. Update the positions of ligand B:
         #    - solvent: Offset ligand B with respect to ligand A
-#         offset = self._get_ligand_offset(
-#             alchem_comps["stateA"][0],
-#             alchem_comps["stateB"][0],
-#         )
+        #         offset = self._get_ligand_offset(
+        #             alchem_comps["stateA"][0],
+        #             alchem_comps["stateB"][0],
+        #         )
         off_B = smc_comps_AB[alchem_comps["stateB"][0]]
-#         off_B._conformers[0] = off_B._conformers[0] + offset
+        #         off_B._conformers[0] = off_B._conformers[0] + offset
         smc_off_B = {alchem_comps["stateB"][0]: off_B}
 
         # 5. Get the OpenMM systems
@@ -1144,8 +1144,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         Chem.SanitizeMol(rdmol_B)
 
         # positions_AB is extended by 6 rows (3 dummies per ligand)
-        positions_AB_ang = np.array(
-            positions_AB.value_in_unit(openmm.unit.angstrom))
+        positions_AB_ang = np.array(positions_AB.value_in_unit(openmm.unit.angstrom))
         corr_A, corr_B, system, positions_AB_ang, restraint_geom_A, restraint_geom_B = (
             self._add_restraints(
                 alchemical_system,
@@ -1169,8 +1168,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # not in omm_topology_AB. Slice back to the original atom count.
         topology_file = self.shared_basepath / "topology.pdb"
         openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_AB, positions_AB,
-            open(topology_file, "w")
+            omm_topology_AB, positions_AB, open(topology_file, "w")
         )
 
         # Subselect system based on user inputs & write initial subsampled PDB

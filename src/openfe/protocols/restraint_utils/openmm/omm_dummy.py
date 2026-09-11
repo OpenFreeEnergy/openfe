@@ -26,6 +26,7 @@ Usage
     )
     # positions_ang[dummy_idxs[i]] must then be filled in by the caller.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -89,9 +90,9 @@ def _add_dummy_to_nonbonded(
         Exclusions are created between the dummy and each of them.
     """
     force.addParticle(
-        0.0,                    # charge
-        _DUMMY_SIGMA_NM,        # sigma (nm)
-        0.0,                    # epsilon
+        0.0,  # charge
+        _DUMMY_SIGMA_NM,  # sigma (nm)
+        0.0,  # epsilon
     )
     for idx in existing_indices:
         force.addException(new_idx, idx, 0.0, _DUMMY_SIGMA_NM, 0.0)
@@ -258,18 +259,21 @@ def add_dummy_atoms_to_system(
 
             # Bond / angle / torsion forces: no entry needed for a particle
             # that is never part of any bonded term. Skip explicitly.
-            elif isinstance(force, (
-                openmm.HarmonicBondForce,
-                openmm.HarmonicAngleForce,
-                openmm.PeriodicTorsionForce,
-                openmm.CustomBondForce,
-                openmm.CustomAngleForce,
-                openmm.CustomTorsionForce,
-                openmm.CustomCompoundBondForce,
-                openmm.CMMotionRemover,
-                openmm.MonteCarloBarostat,
-                openmm.AndersenThermostat,
-            )):
+            elif isinstance(
+                force,
+                (
+                    openmm.HarmonicBondForce,
+                    openmm.HarmonicAngleForce,
+                    openmm.PeriodicTorsionForce,
+                    openmm.CustomBondForce,
+                    openmm.CustomAngleForce,
+                    openmm.CustomTorsionForce,
+                    openmm.CustomCompoundBondForce,
+                    openmm.CMMotionRemover,
+                    openmm.MonteCarloBarostat,
+                    openmm.AndersenThermostat,
+                ),
+            ):
                 pass
 
             else:
@@ -277,6 +281,7 @@ def add_dummy_atoms_to_system(
                 # In the worst case the dummy has zero parameters (from
                 # addParticle above) and no interaction terms, which is safe.
                 import warnings
+
                 warnings.warn(
                     f"Unknown force type {type(force).__name__} encountered "
                     "while adding dummy atoms. The dummy may not be correctly "

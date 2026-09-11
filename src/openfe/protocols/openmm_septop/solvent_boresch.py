@@ -23,30 +23,32 @@ The net contribution to the RBFE therefore cancels when taking the
 difference. We return it for bookkeeping but it should not be applied
 asymmetrically as in the complex leg.
 """
+
 from __future__ import annotations
 
+import MDAnalysis as mda
 import numpy as np
 import openmm
 import openmm.unit as omm_unit
-import MDAnalysis as mda
-from MDAnalysis.coordinates.memory import MemoryReader
 from gufe.settings.models import SettingsBaseModel
+from MDAnalysis.coordinates.memory import MemoryReader
 from openff.units import Quantity
 from openff.units.openmm import to_openmm
 from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
 from openfe.protocols.restraint_utils import geometry
-from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
-from openfe.protocols.restraint_utils.geometry.boresch import find_guest_atom_candidates
+from openfe.protocols.restraint_utils.geometry.boresch import (
+    BoreschRestraintGeometry,
+    find_guest_atom_candidates,
+)
+from openfe.protocols.restraint_utils.geometry.boresch.dummy import find_dummy_atom_positions
+from openfe.protocols.restraint_utils.openmm.omm_dummy import add_dummy_atoms_to_system
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
     add_force_in_separate_group,
 )
 from openfe.protocols.restraint_utils.settings import BoreschRestraintSettings
-
-from openfe.protocols.restraint_utils.geometry.boresch.dummy import find_dummy_atom_positions
-from openfe.protocols.restraint_utils.openmm.omm_dummy import add_dummy_atoms_to_system
 
 
 def add_solvent_boresch_restraints(
@@ -223,12 +225,8 @@ def add_solvent_boresch_restraints(
     #    In the solvent leg both ligands are restrained throughout, so
     #    corrections are equal in magnitude. We return them for
     #    bookkeeping; they cancel in the RBFE cycle.
-    correction_A = restraint_A.get_standard_state_correction(
-        thermodynamic_state, geom_A
-    )
-    correction_B = restraint_B.get_standard_state_correction(
-        thermodynamic_state, geom_B
-    )
+    correction_A = restraint_A.get_standard_state_correction(thermodynamic_state, geom_A)
+    correction_B = restraint_B.get_standard_state_correction(thermodynamic_state, geom_B)
 
     system = thermodynamic_state.get_system(remove_thermostat=True)
 

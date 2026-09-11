@@ -1009,7 +1009,9 @@ class TestT4LXmlRegression:
         assert particle_masses
 
         for a, b in zip(particle_masses, particle_masses_ref):
-            assert a == b + 6 # For now just adding the 6 dummy atoms like this, need to update ref XML
+            assert (
+                a == b + 6
+            )  # For now just adding the 6 dummy atoms like this, need to update ref XML
 
     @staticmethod
     def test_constraints(T4L_xml, T4L_septop_reference_xml):

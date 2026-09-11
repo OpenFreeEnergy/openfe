@@ -87,14 +87,14 @@ class SepTopProtocolResult(gufe.ProtocolResult):
                 (
                     pus[0].outputs["standard_state_correction_A"],
                     0 * offunit.kilocalorie_per_mole,
-                # correction has no error
+                    # correction has no error
                 )
             )
             solvent_correction_dGs_B.append(
                 (
                     pus[0].outputs["standard_state_correction_B"],
                     0 * offunit.kilocalorie_per_mole,
-                # correction has no error
+                    # correction has no error
                 )
             )
 
@@ -150,7 +150,6 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             combined_dG.append((comp[0] + corrA[0] + corrB[0], comp[1]))  # type: ignore[operator]
 
         return combined_dG
-
 
     def get_estimate(self) -> Quantity:
         """Get the difference in binding free energy estimate for this calculation.

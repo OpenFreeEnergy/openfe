@@ -23,6 +23,7 @@ Add these to test_septop_protocol.py, reusing the existing
 `benzene_complex_system`, `toluene_complex_system`, and
 `protocol_dry_settings` fixtures.
 """
+
 import numpy as np
 import openmm
 import openmm.unit
@@ -131,9 +132,9 @@ class TestSolventDummyBoreschGeometry:
 
         for name, angle in [("theta_A0", theta_A0_deg), ("theta_B0", theta_B0_deg)]:
             assert angle > _SINGULARITY_TOLERANCE_DEG, f"{name} too close to 0 deg: {angle}"
-            assert (
-                angle < 180.0 - _SINGULARITY_TOLERANCE_DEG
-            ), f"{name} too close to 180 deg: {angle}"
+            assert angle < 180.0 - _SINGULARITY_TOLERANCE_DEG, (
+                f"{name} too close to 180 deg: {angle}"
+            )
 
     @pytest.mark.parametrize("idx", [0, 1])
     def test_dihedrals_not_singular(self, geometries, idx):
@@ -151,9 +152,9 @@ class TestSolventDummyBoreschGeometry:
             ("phi_C0", phi_C0_deg),
         ]:
             assert angle > _SINGULARITY_TOLERANCE_DEG, f"{name} too close to 0 deg: {angle}"
-            assert (
-                angle < 180.0 - _SINGULARITY_TOLERANCE_DEG
-            ), f"{name} too close to 180 deg: {angle}"
+            assert angle < 180.0 - _SINGULARITY_TOLERANCE_DEG, (
+                f"{name} too close to 180 deg: {angle}"
+            )
 
     def test_dummy_atoms_are_appended_at_end_of_system(self, solvent_setup_output):
         """
@@ -218,9 +219,7 @@ class TestSolventDummyBoreschGeometry:
 
         for force in custom_nb_forces:
             n_params = force.getNumPerParticleParameters()
-            param_names = [
-                force.getPerParticleParameterName(i).lower() for i in range(n_params)
-            ]
+            param_names = [force.getPerParticleParameterName(i).lower() for i in range(n_params)]
             sigma_like_indices = [
                 i
                 for i, name in enumerate(param_names)
@@ -270,9 +269,7 @@ class TestSolventDummyBoreschEnergy:
         total_energy = 0.0
         for group in groups:
             state = context.getState(getEnergy=True, groups={group})
-            total_energy += state.getPotentialEnergy().value_in_unit(
-                openmm.unit.kilojoule_per_mole
-            )
+            total_energy += state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole)
 
         del context, integrator
         return total_energy

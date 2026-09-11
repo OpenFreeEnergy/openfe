@@ -29,6 +29,7 @@ D2 is placed so that phi_A (D2-D1-D0-G0) = 60 degrees.
 All angles are validated to be away from the singular values 0 and 180
 degrees.
 """
+
 from __future__ import annotations
 
 import warnings
