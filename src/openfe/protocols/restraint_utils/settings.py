@@ -14,7 +14,7 @@ from typing import Annotated, Literal, Optional, TypeAlias
 from gufe.settings import SettingsBaseModel
 from gufe.settings.typing import GufeQuantity, NanometerQuantity, specify_quantity_units
 from openff.units import unit
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator, model_validator
 
 SpringConstantLinearQuantity: TypeAlias = Annotated[
     GufeQuantity, specify_quantity_units("kilojoule_per_mole / nm ** 2")
@@ -22,6 +22,7 @@ SpringConstantLinearQuantity: TypeAlias = Annotated[
 SpringConstantAngularQuantity: TypeAlias = Annotated[
     GufeQuantity, specify_quantity_units("kilojoule_per_mole / radians ** 2")
 ]
+AngleQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("radians")]
 
 
 class BaseRestraintSettings(SettingsBaseModel):
@@ -201,3 +202,96 @@ class BoreschRestraintSettings(BaseRestraintSettings):
 #             errmsg = "negative indices passed"
 #             raise ValueError(errmsg)
 #         return v
+
+class DihedralRestraintSettings(BaseRestraintSettings):
+    """
+    Settings to define flat-bottomed harmonic restraints on a set of a
+    ligand's own dihedrals.
+
+    The restraint is intended to be fully off in the interacting end state and
+    fully on in the non-interacting end state, holding the decoupled ligand in
+    the conformation of its input pose. Because a decoupled ligand does not
+    interact with its environment, the free energy of applying the restraint
+    in the non-interacting end state is a property of the isolated molecule
+    alone. Applied identically in the complex and solvent legs, the
+    contribution therefore cancels in the resulting ddG and no standard state
+    correction is required.
+    """
+
+    spring_constant: SpringConstantAngularQuantity = (
+        334.72 * unit.kilojoule_per_mole / unit.radians**2
+    )
+    """
+    The dihedral restraint potential spring constant, applied beyond
+    ``half_width`` of the target angle.
+    """
+    half_width: AngleQuantity = 0.5235987755982988 * unit.radians
+    """
+    The half width of the flat-bottomed well, i.e. the dihedral is unrestrained
+    within this angle of its target. Set to zero for a purely harmonic
+    restraint. Default 30 degrees, which is wide enough to leave a typical
+    bound-state basin unperturbed whilst still blocking transitions to
+    neighbouring basins.
+    """
+    torsion_ids: Optional[list[tuple[int, int, int, int]]] = None
+    """
+    Explicit dihedrals to restrain, as ordered quartets of indices into the
+    ligand. If defined, these override the automatic selection.
+
+    Note: the same dihedrals must be restrained in the complex and solvent
+    legs for the restraint contribution to cancel.
+    """
+    target_angles: Optional[list[AngleQuantity]] = None
+    """
+    Explicit target angles, one per entry in ``torsion_ids``. If ``None``,
+    these are read from the ligand's input conformer. Can only be defined
+    alongside ``torsion_ids``.
+    """
+    exclude_degenerate_rotors: bool = True
+    """
+    Whether to skip rotors whose rotation maps the molecule onto an equivalent
+    structure, e.g. a -CF3 group or a monosubstituted phenyl. Such rotors may
+    be trapped in one of their minima, but the minima are indistinguishable so
+    there is no associated free energy error. Default True.
+    """
+    exclude_conjugated_carbonyls: bool = True
+    """
+    Whether to skip amide, ester and thioester bonds. Their barriers are far
+    above thermal energy so they do not interconvert on simulation timescales.
+    Default True.
+    """
+
+    @field_validator("spring_constant", "half_width")
+    def positive_value(cls, v):
+        if v.m < 0:
+            errmsg = f"negative value passed: {v}"
+            raise ValueError(errmsg)
+        return v
+
+    @field_validator("torsion_ids")
+    def valid_torsion_ids(cls, v):
+        if v is None:
+            return v
+        for quartet in v:
+            if any(idx < 0 for idx in quartet):
+                errmsg = "negative indices passed"
+                raise ValueError(errmsg)
+            if len(set(quartet)) != 4:
+                errmsg = f"repeated atom index in torsion definition {quartet}"
+                raise ValueError(errmsg)
+        return v
+
+    @model_validator(mode="after")
+    def check_target_angles(self):
+        if self.target_angles is None:
+            return self
+        if self.torsion_ids is None:
+            errmsg = "target_angles can only be defined alongside torsion_ids"
+            raise ValueError(errmsg)
+        if len(self.target_angles) != len(self.torsion_ids):
+            errmsg = (
+                f"got {len(self.torsion_ids)} torsion_ids but "
+                f"{len(self.target_angles)} target_angles, these must match"
+            )
+            raise ValueError(errmsg)
+        return self

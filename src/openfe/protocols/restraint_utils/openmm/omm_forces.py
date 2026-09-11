@@ -89,6 +89,55 @@ def get_custom_compound_bond_force(
     return openmm.CustomCompoundBondForce(n_particles, energy_function)
 
 
+def get_flat_bottom_dihedral_energy_function(
+    control_parameter: str,
+) -> str:
+    """
+    Return a flat-bottomed, periodic dihedral restraint energy function for a
+    CustomTorsionForce.
+
+    The restraint is zero whilst the dihedral lies within ``half_width`` of
+    ``theta0`` and harmonic with force constant ``K_phi`` beyond it. Setting
+    ``half_width`` to zero recovers a purely harmonic dihedral restraint.
+
+    A flat bottom wide enough to cover the bound-state basin leaves the
+    interacting end state essentially unperturbed whilst still preventing the
+    decoupled ligand from hopping into a different basin, which keeps the
+    restraint work small and well converged.
+
+    Parameters
+    ----------
+    control_parameter : str
+      A string for the lambda scaling control parameter
+
+    Returns
+    -------
+    str
+      The energy function string.
+    """
+    energy_function = (
+        f"{control_parameter} * (K_phi/2) * excess^2; "
+        "excess = max(0.0, abs(dphi) - half_width); "
+        "dphi = d - floor(d/(2.0*pi) + 0.5)*(2.0*pi); "
+        "d = theta - theta0; "
+        f"pi = {np.pi}; "
+    )
+    return energy_function
+
+
+def get_custom_torsion_force(
+    energy_function: str,
+    per_torsion_parameters: tuple[str, ...] = ("K_phi", "theta0", "half_width"),
+) -> openmm.CustomTorsionForce:
+    """
+    Return an OpenMM CustomTorsionForce with the given per-torsion parameters
+    registered.
+    """
+    force = openmm.CustomTorsionForce(energy_function)
+    for parameter in per_torsion_parameters:
+        force.addPerTorsionParameter(parameter)
+    return force
+
 def add_force_in_separate_group(
     system: openmm.System,
     force: openmm.Force,
