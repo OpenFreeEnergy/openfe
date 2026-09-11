@@ -148,6 +148,7 @@ html_theme_options = {
     ],
     "accent_color": "cantina-purple",
     "navigation_with_keys": False,
+    "announcement": "Please take our <a href=https://docs.google.com/forms/d/e/1FAIpQLScw-vxBzlzFQT_6JHO64tgRuvzN4hmkPYjkXoJKQEsiA2anFw/viewform>user survey</a> to help us improve our documentation and training materials!",
 }
 html_logo = "_static/OFE-color-icon.svg"
 html_favicon = "_static/OFE-color-icon.svg"

@@ -282,6 +282,147 @@ class MultistateEquilFEAnalysis:
 
         return DG, dDG
 
+    @staticmethod
+    def _get_ukln_from_uln(
+        u_ln: npt.NDArray,
+        n_states: int,
+        num_samples: int,
+    ) -> npt.NDArray:
+        """
+        Helper method to convert
+        a u_ln array of shape [L thermodynamic states, n_sampled_states * n_iterations]
+        to a u_kln array of shape [K replicas, L states, n_iterations].
+
+        Parameters
+        ----------
+        u_ln : npt.NDArray
+          A n_states x (n_sampled_states * n_iterations)
+          array of energies (in kT).
+        n_states : int
+          The number of thermodynamic states.
+        num_samples : int
+          The number of samples to use for each state.
+
+        Returns
+        -------
+        u_kln : npt.NDArray
+          The reformatted energy matrix of shape [K replicas, L states, n_iterations].
+        """
+        # We do some sanity checks here to make sure the u_ln matches our assumptions.
+        if u_ln.shape[0] != n_states:
+            errmsg = f"u_ln shape {u_ln.shape} is not compatible with n_states {n_states}"
+            raise ValueError(errmsg)
+
+        if u_ln.shape[1] != n_states * num_samples:
+            errmsg = (
+                f"u_ln shape {u_ln.shape} is not compatible with n_states {n_states} "
+                f"and num_samples {num_samples}"
+            )
+            raise ValueError(errmsg)
+
+        return u_ln.reshape((n_states, n_states, num_samples)).transpose(1, 0, 2)
+
+    @staticmethod
+    def _get_uln_from_ukln(
+        u_kln: npt.NDArray,
+    ) -> npt.NDArray:
+        """
+        Helper method to convert
+        a u_kln array of shape [K replicas, L states, n_iterations]
+        to a u_ln array of shape [L thermodynamic states, n_sampled_states * n_iterations].
+
+        Parameters
+        ----------
+        u_kln : npt.NDArray
+          The reformatted energy matrix of shape [K replicas, L states, n_iterations].
+
+        Returns
+        -------
+        u_ln : npt.NDArray
+          A n_states x (n_sampled_states * n_iterations)
+          array of energies (in kT).
+        """
+        return u_kln.transpose(1, 0, 2).reshape(u_kln.shape[1], u_kln.shape[0] * u_kln.shape[2])
+
+    def _get_fraction_free_energy(
+        self,
+        u_kln: npt.NDArray,
+        N_l: npt.NDArray,
+        chunk: int,
+        fraction: float,
+    ) -> tuple[Quantity, Quantity, Quantity, Quantity]:
+        """
+        Helper method to estimate the forward and reverse free energies for a
+        fraction of the uncorrelated samples.
+
+        Used by :meth:`get_forward_and_reverse_analysis` for each chunk. MBAR
+        can fail to converge at low fractions of uncorrelated samples. While
+        such a failure is directly caused by the estimator, it is more broadly
+        caused by too few (effective) data points at that fraction, so it is
+        not reasonable to trust either direction. Therefore, if MBAR fails for
+        *either* the forward or reverse estimate, NaN is recorded for *both*
+        directions (and a warning raised) and the analysis continues, so that
+        estimates at higher fractions are still reported.
+
+        Parameters
+        ----------
+        u_kln : npt.NDArray
+          The full energy matrix to sub-sample.
+        N_l : npt.NDArray
+          An array containing the number of samples drawn from each state.
+        chunk : int
+          The number of samples per state (i.e. final dimensions of u_kln) to
+          use for each estimate.
+        fraction : float
+          The fraction of uncorrelated samples this corresponds to. Only used
+          for the warning message.
+
+        Returns
+        -------
+        forward_DG : openff.units.Quantity
+          The forward free energy difference.
+        forward_dDG : openff.units.Quantity
+          The MBAR error estimate for the forward free energy difference.
+        reverse_DG : openff.units.Quantity
+          The reverse free energy difference.
+        reverse_dDG : openff.units.Quantity
+          The MBAR error estimate for the reverse free energy difference.
+        """
+        # pymbar has some side effects from being imported, so we only want to
+        # import it right when we need it
+        from pymbar.utils import ParameterError
+
+        # Slice out the first and last `chunk` iterations for the forward and reverse estimates, respectively.
+        # Then convert them to u_ln arrays of shape [L thermodynamic states, n_sampled_states * n_iterations] for MBAR.
+        forward_subsampled_u_ln = self._get_uln_from_ukln(u_kln[:, :, :chunk])
+        reverse_subsampled_u_ln = self._get_uln_from_ukln(u_kln[:, :, -chunk:])
+
+        try:
+            forward_DG, forward_dDG = self._get_free_energy(
+                self.analyzer,
+                forward_subsampled_u_ln,
+                N_l,
+                0,
+                self.units,
+            )
+            reverse_DG, reverse_dDG = self._get_free_energy(
+                self.analyzer,
+                reverse_subsampled_u_ln,
+                N_l,
+                0,
+                self.units,
+            )
+        except ParameterError:
+            wmsg = (
+                f"Could not obtain a free energy estimate at fraction "
+                f"{fraction:.2f} of the uncorrelated samples; recording NaN "
+                "for both the forward and reverse estimates."
+            )
+            warnings.warn(wmsg, stacklevel=2)
+            forward_DG = forward_dDG = reverse_DG = reverse_dDG = np.nan * self.units  # type: ignore[operator, assignment]
+
+        return forward_DG, forward_dDG, reverse_DG, reverse_dDG
+
     def get_forward_and_reverse_analysis(
         self, num_samples: int = 10
     ) -> Optional[dict[str, Union[npt.NDArray, Quantity]]]:
@@ -311,60 +452,57 @@ class MultistateEquilFEAnalysis:
         * This method does not currently use bootstrap uncertainties due to
           issues with the solver when using low amounts of data points. All
           uncertainties are MBAR analytical errors.
+        * If MBAR fails to obtain an estimate for a given sample fraction (a
+          ``ParameterError``, typically at low fractions of uncorrelated
+          samples), a NaN is recorded for that fraction in both the forward
+          and reverse directions and the analysis continues, so that estimates
+          at higher fractions are still returned.
+        * The exception is the final fraction (1.0, the full set of
+          uncorrelated samples): if MBAR fails there, the whole analysis is
+          discarded and None is returned, since that estimate is the reported
+          free energy and anchors the convergence plot.
         """
-        # pymbar has some side effects from being imported, so we only want to import
-        # it right when we need it
-        from pymbar.utils import ParameterError
+        u_ln = self.analyzer._unbiased_decorrelated_u_ln
+        N_l = self.analyzer._unbiased_decorrelated_N_l
+        n_states = len(N_l)
 
-        try:
-            u_ln = self.analyzer._unbiased_decorrelated_u_ln
-            N_l = self.analyzer._unbiased_decorrelated_N_l
-            n_states = len(N_l)
+        # Check that the N_l is the same across all states
+        if not np.all(N_l == N_l[0]):
+            errmsg = f"The number of samples is not equivalent across all states {N_l}"
+            raise ValueError(errmsg)
 
-            # Check that the N_l is the same across all states
-            if not np.all(N_l == N_l[0]):
-                errmsg = f"The number of samples is not equivalent across all states {N_l}"
-                raise ValueError(errmsg)
+        # convert u_ln to u_kln for slicing out the first and last
+        # n_iterations for the forward and reverse estimates
+        # Note: we can safely say n_samples = N_l[0] because we already checked
+        # that N_l is the same across all states.
+        u_kln = self._get_ukln_from_uln(u_ln, n_states, N_l[0])
 
-            # Get the chunks of N_l going from 10% to ~ 100%
-            # Note: you always lose out a few data points but it's fine
-            chunks = [max(int(N_l[0] / num_samples * i), 1) for i in range(1, num_samples + 1)]
+        # Get the chunks of N_l going from 10% to ~ 100%
+        # Note: you always lose out a few data points but it's fine
+        chunks = [max(int(N_l[0] / num_samples * i), 1) for i in range(1, num_samples + 1)]
 
-            forward_DGs = []
-            forward_dDGs = []
-            reverse_DGs = []
-            reverse_dDGs = []
-            fractions = []
+        forward_DGs = []
+        forward_dDGs = []
+        reverse_DGs = []
+        reverse_dDGs = []
+        fractions = []
 
-            for chunk in chunks:
-                new_N_l = np.array([chunk for _ in range(n_states)])
-                samples = chunk * n_states
+        for chunk in chunks:
+            new_N_l = np.array([chunk for _ in range(n_states)])
+            fraction = chunk / N_l[0]
 
-                # Forward
-                DG, dDG = self._get_free_energy(
-                    self.analyzer,
-                    u_ln[:, :samples],
-                    new_N_l,
-                    0,
-                    self.units,
-                )
-                forward_DGs.append(DG)
-                forward_dDGs.append(dDG)
+            # If MBAR fails for either the forward or reverse estimate, both
+            # are recorded as NaN (too few effective samples at this
+            # fraction to trust either direction).
+            forward_DG, forward_dDG, reverse_DG, reverse_dDG = self._get_fraction_free_energy(
+                u_kln, new_N_l, chunk, fraction
+            )
+            forward_DGs.append(forward_DG)
+            forward_dDGs.append(forward_dDG)
+            reverse_DGs.append(reverse_DG)
+            reverse_dDGs.append(reverse_dDG)
 
-                # Reverse
-                DG, dDG = self._get_free_energy(
-                    self.analyzer,
-                    u_ln[:, -samples:],
-                    new_N_l,
-                    0,
-                    self.units,
-                )
-                reverse_DGs.append(DG)
-                reverse_dDGs.append(dDG)
-
-                fractions.append(chunk / N_l[0])
-        except ParameterError:
-            return None
+            fractions.append(fraction)
 
         forward_reverse = {
             "fractions": np.array(fractions),
@@ -373,6 +511,22 @@ class MultistateEquilFEAnalysis:
             "reverse_DGs": Quantity.from_list(reverse_DGs),  # type: ignore
             "reverse_dDGs": Quantity.from_list(reverse_dDGs),  # type: ignore
         }
+
+        # The final fraction (1.0) uses the full set of uncorrelated samples.
+        # Its estimate is the reported free energy and anchors the error band in
+        # the convergence plot, so if MBAR failed for it (NaN) the whole
+        # analysis is not meaningful and we discard it by returning None.
+        final_forward = forward_reverse["forward_DGs"][-1].m
+        final_reverse = forward_reverse["reverse_DGs"][-1].m
+        if np.isnan(final_forward) or np.isnan(final_reverse):
+            wmsg = (
+                "MBAR could not obtain a free energy estimate using the full set "
+                "of uncorrelated samples (fraction 1.0); discarding the forward "
+                "and reverse convergence analysis."
+            )
+            warnings.warn(wmsg, stacklevel=2)
+            return None
+
         return forward_reverse
 
     def get_overlap_matrix(self) -> dict[str, npt.NDArray]:
