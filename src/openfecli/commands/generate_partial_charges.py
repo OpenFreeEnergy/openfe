@@ -80,6 +80,8 @@ def charge_molecules(molecules, yaml_settings, output, n_cores, overwrite_charge
         generate_n_conformers=partial_charge.number_of_conformers,
         nagl_model=partial_charge.nagl_model,
         processors=n_cores,
+        # make sure to raise errors if any molecule fails to charge, so the user can fix it
+        raise_errors=True,
     )
 
     write("\tDone")
