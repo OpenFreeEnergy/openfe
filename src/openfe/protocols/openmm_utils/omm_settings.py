@@ -356,7 +356,7 @@ class CLIPartialChargeSettings(OpenFFPartialChargeSettings):
     ``forcefield``:
         Assign partial charges using the OpenFF force field's defined charge model, this is useful to get the correct
         NAGL(AshGC) model for a specific force field or to use LibraryCharges.
-        
+
     """
     forcefields: list[str] | None = None
     """
