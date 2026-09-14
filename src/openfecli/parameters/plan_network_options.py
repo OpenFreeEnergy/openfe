@@ -106,7 +106,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 
     from gufe import SolventComponent
 
-    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
+    from openfe.protocols.openmm_utils.omm_settings import CLIPartialChargeSettings
     from openfe.setup import (
         KartografAtomMapper,
         LomapAtomMapper,
@@ -181,7 +181,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         ligand_network_planner = generate_minimal_spanning_network
 
     # We default to am1bcc on ambertools
-    partial_charge_settings = OpenFFPartialChargeSettings()
+    partial_charge_settings = CLIPartialChargeSettings()
     if opt and opt.partial_charge:
         partial_charge_settings.partial_charge_method = opt.partial_charge.method
         for setting in opt.partial_charge.settings:
