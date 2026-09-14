@@ -560,7 +560,13 @@ class TestSystemCreation:
         ffsets, intsets, thermosets = get_settings
         generator = system_creation.get_system_generator(ffsets, thermosets, intsets, None, False)
         assert generator.barostat is None
-        assert generator.template_generator._cache is None
+        # support openmmforcefields < 0.16.0
+        if hasattr(generator.template_generator, "_cache"):
+            generator_cache = generator.template_generator._cache
+        else:
+            # openmmforcefields >= 0.16.0
+            generator_cache = generator.template_generator._cache_path
+        assert generator_cache is None
         assert not generator.postprocess_system
 
         forcefield_kwargs = {
@@ -600,7 +606,13 @@ class TestSystemCreation:
         assert generator.barostat.getFrequency() == 200
 
         # Check cache file
-        assert generator.template_generator._cache == "db.json"
+        # support openmmforcefields < 0.16.0
+        if hasattr(generator.template_generator, "_cache"):
+            generator_cache = generator.template_generator._cache
+        else:
+            # openmmforcefields >= 0.16.0
+            generator_cache = generator.template_generator._cache_path
+        assert generator_cache == "db.json"
 
     def test_system_generator_membrane(self, get_settings):
         ffsets, intsets, thermosets = get_settings
