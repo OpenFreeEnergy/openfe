@@ -1,3 +1,4 @@
+import pathlib
 import shutil
 from importlib import resources
 from unittest import mock
@@ -225,11 +226,15 @@ def test_plan_rbfe_network(mol_dir_args, request, protein_fixture, tmp_path, yam
 def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat, expected_n_repeat):
     runner = CliRunner()
 
-    args = mol_dir_args + protein_args + input_n_repeat
+    args = mol_dir_args + protein_args + input_n_repeat + ["--networks-only"]
 
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, args)
         assert_click_success(result)
+
+        # make sure --networks-only works as expected
+        assert not pathlib.Path("alchemicalNetwork", "transformations").is_dir()
+        assert pathlib.Path("alchemicalNetwork", "ligand_network.graphml").is_file()
 
         # make sure the number of repeats is correct
         network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
