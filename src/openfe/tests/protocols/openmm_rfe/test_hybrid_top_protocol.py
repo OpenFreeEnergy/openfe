@@ -1277,7 +1277,7 @@ def test_setup_ligand_overlap_warning(
     with pytest.warns(
         UserWarning,
         match=r"old atom 0 \(residue LIG \d+, chain X, atom C1x\) to new "
-              r"atom 4 \(residue LIG \d+, chain 1, atom C2x\) deviates",
+        r"atom 4 \(residue LIG \d+, chain 1, atom C2x\) deviates",
     ):
         dag = protocol.create(
             stateA=sysA,
