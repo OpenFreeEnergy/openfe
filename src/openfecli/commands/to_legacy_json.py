@@ -16,7 +16,7 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
     result_edges = warehouse.gather_all_results()
 
     if len(result_edges) == 0:
-        write(f"No results found in {warehouse_path}.")
+        click.echo(f"No results found in {warehouse_path}.", err=True)
     else:
         warehouse_to_legacy_json(result_edges, out_dir=output_dir)
         write(

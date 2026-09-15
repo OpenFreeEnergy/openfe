@@ -11,7 +11,6 @@ from ..utils import assert_click_success
 def test_to_legacy_json(warehouse_partial_failure, tmp_path):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        warehouse = warehouse_partial_failure
         mocked_warehouse_path = tmp_path / "warehouse"
         mocked_warehouse_path.mkdir()
         out_dir = tmp_path / "my_results"
@@ -24,3 +23,16 @@ def test_to_legacy_json(warehouse_partial_failure, tmp_path):
         assert out_dir.is_dir()
         out_files = [str(p.name) for p in out_dir.rglob("Trans*")]
         assert len(out_files) == 4
+
+
+def test_to_legacy_json_empty(tmp_path):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        warehouse_path = tmp_path / "warehouse"
+        warehouse_path.mkdir()
+        out_dir = tmp_path / "my_results"
+
+        result = runner.invoke(to_legacy_json, [str(warehouse_path), "-o", str(out_dir)])
+        assert "Loading results" in result.stdout
+        assert "No results found" in result.stderr
+        assert not out_dir.is_dir()
