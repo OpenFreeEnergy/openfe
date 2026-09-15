@@ -38,6 +38,13 @@ Once tests pass, the PR is approved, and you're ready to merge:
 
 ## Contribution Guidelines
 
+### Rules for new / infrequent contributors
+
+New contributions to the `openfe` code are welcome. However, to ensure a good experience for all contributors, we ask that you do the following:
+  1. Tell us about your intentions to contribute as early as possible, definitely **before** you open any pull request. This means either opening a new issue (see "Issue-driven development" below), or by commenting on an existing issue. Pleases wait for a response from one of the core developers before you start any work, that way we can ensure that you are not duplicating existing efforts.
+  2. Do not have more than **2 pull requests** open at any time, unless previously agreed with one of the core developers. This ensures that we don't get overloaded with review requests and that we can concentrate on completing existing pull requests.
+  3. Avoid overwriting the pull request & issue templates. Failure to complete certain disclosures, e.g. the AI disclosure, will result in your pull request being automatically closed.
+
 ### Issue-driven development
 
 OpenFE adheres to issue-driven development, especially for external contributions. 
