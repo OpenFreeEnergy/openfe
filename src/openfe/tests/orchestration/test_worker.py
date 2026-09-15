@@ -92,7 +92,7 @@ def test_get_task_uses_default_db_path_without_patching(
     db, warehouse = setup_task_campaign(network, warehouse_root, db_path=db_path)
 
     warehouse = FileSystemWarehouse.from_dir("warehouse")
-    worker = Worker(warehouse=warehouse)
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
     taskid, loaded = worker._get_task()
 
     expected_keys = {task_row.taskid for task_row in db.get_all_tasks()}
