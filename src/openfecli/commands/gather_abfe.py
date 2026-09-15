@@ -13,8 +13,8 @@ from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
     load_json,
-    rich_print_to_stdout,
 )
+from openfecli.utils import rich_print_to_stdout
 
 
 def _get_name(result: dict) -> str:
@@ -360,8 +360,4 @@ def gather_abfe(
         rich_print_to_stdout(df)
 
 
-PLUGIN = OFECommandPlugin(
-    command=gather_abfe,
-    section="Quickrun Executor",
-    requires_ofe=(0, 6),
-)
+PLUGIN = OFECommandPlugin(command=gather_abfe, section="Results Gathering", requires_ofe=(0, 6))

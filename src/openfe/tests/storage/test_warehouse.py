@@ -1,0 +1,325 @@
+import tempfile
+from importlib import resources
+from pathlib import Path
+from typing import Literal
+from unittest import mock
+
+import pytest
+from gufe.storage.externalresource import MemoryStorage
+from gufe.tokenization import GufeTokenizable
+from openff.units import unit
+
+from openfe.orchestration import Worker, exorcist_utils
+from openfe.storage.utils import convert_to_quickrun_output
+from openfe.storage.warehouse import (
+    FileSystemWarehouse,
+    WarehouseBaseClass,
+    WarehouseStores,
+)
+
+
+class TestWarehouseBaseClass:
+    def test_store_protocol_dag_result(self):
+        pytest.skip("Not implemented yet")
+
+    @staticmethod
+    def _build_stores() -> WarehouseStores:
+        return WarehouseStores(
+            setup=MemoryStorage(),
+            results=MemoryStorage(),
+            shared=MemoryStorage(),
+            tasks=MemoryStorage(),
+            protocol_dags=MemoryStorage(),
+        )
+
+    @staticmethod
+    def _get_protocol_unit(transformation):
+        dag = transformation.create()
+        return next(iter(dag.protocol_units))
+
+    @staticmethod
+    def _test_store_load_same_process(
+        obj,
+        store_func_name,
+        load_func_name,
+        store_name: Literal["setup", "results", "tasks"],
+    ):
+        stores = TestWarehouseBaseClass._build_stores()
+        client = WarehouseBaseClass(stores=stores, name="test_warehouse")
+        store_func = getattr(client, store_func_name)
+        load_func = getattr(client, load_func_name)
+        assert stores["setup"]._data == {}
+        assert stores["results"]._data == {}
+        assert stores["shared"]._data == {}
+        assert stores["tasks"]._data == {}
+        store_func(obj)
+        store_under_test: MemoryStorage = stores[store_name]
+        assert store_under_test._data != {}
+        reloaded: GufeTokenizable = load_func(obj.key)
+        assert reloaded is obj
+        return reloaded, client
+
+    @staticmethod
+    def _test_store_load_different_process(
+        obj: GufeTokenizable,
+        store_func_name,
+        load_func_name,
+        store_name: Literal["setup", "results", "tasks"],
+    ):
+        stores = TestWarehouseBaseClass._build_stores()
+        client = WarehouseBaseClass(stores=stores, name="test_warehouse")
+        store_func = getattr(client, store_func_name)
+        load_func = getattr(client, load_func_name)
+        assert stores["setup"]._data == {}
+        assert stores["results"]._data == {}
+        assert stores["shared"]._data == {}
+        assert stores["tasks"]._data == {}
+        store_func(obj)
+        store_under_test: MemoryStorage = stores[store_name]
+        assert store_under_test._data != {}
+        # make it look like we have an empty cache, as if this was a
+        # different process
+        key = obj.key
+        registry_dict = "gufe.tokenization.TOKENIZABLE_REGISTRY"
+        with mock.patch.dict(registry_dict, {}, clear=True):
+            reload = load_func(key)
+            assert reload == obj
+            assert reload is not obj
+
+    def test_store_load_task_same_process(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        self._test_store_load_same_process(unit, "store_task", "load_task", "tasks")
+
+    def test_store_load_task_different_process(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        self._test_store_load_different_process(unit, "store_task", "load_task", "tasks")
+
+    def test_store_task_writes_to_tasks_store(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, name="test_warehouse")
+        client.store_task(unit)
+
+        assert stores["tasks"]._data != {}
+        assert stores["setup"]._data == {}
+        assert stores["results"]._data == {}
+        assert stores["shared"]._data == {}
+
+    def test_exists_finds_task_key(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, "test_warehouse")
+
+        client.store_task(unit)
+
+        assert client.exists(unit.key)
+
+    def test_load_task_returns_object(self, absolute_transformation):
+        unit = self._get_protocol_unit(absolute_transformation)
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, name="test_warehouse")
+
+        client.store_task(unit)
+        loaded = client.load_task(unit.key)
+
+        assert loaded is not None
+        assert isinstance(loaded, GufeTokenizable)
+
+    def test_load_task_wrong_type(self, absolute_transformation):
+        transformation = absolute_transformation
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, name="test_warehouse")
+
+        client.store_setup_tokenizable(transformation)
+        with pytest.raises(TypeError, match="as ProtocolUnit"):
+            _ = client.load_task(transformation.key)
+
+    def test_store_load_protocol_dag_wrong_type(self, absolute_transformation):
+        transformation = absolute_transformation
+        stores = self._build_stores()
+        client = WarehouseBaseClass(stores, name="test_warehouse")
+
+        with pytest.raises(TypeError, match="Unable to write"):
+            client.store_protocol_dag(absolute_transformation)
+        client.store_setup_tokenizable(absolute_transformation)
+
+        with pytest.raises(TypeError, match="Unable to load"):
+            client.load_protocol_dag(absolute_transformation.key)
+
+    @pytest.mark.parametrize(
+        "fixture",
+        ["absolute_transformation", "complex_equilibrium"],
+    )
+    @pytest.mark.parametrize("store", ["setup", "results"])
+    def test_store_load_transformation_same_process(self, request, fixture, store):
+        transformation = request.getfixturevalue(fixture)
+        store_func_name = f"store_{store}_tokenizable"
+        load_func_name = f"load_{store}_tokenizable"
+        self._test_store_load_same_process(transformation, store_func_name, load_func_name, store)
+
+    @pytest.mark.parametrize(
+        "fixture",
+        ["absolute_transformation", "complex_equilibrium"],
+    )
+    @pytest.mark.parametrize("store", ["setup", "results"])
+    def test_store_load_transformation_different_process(self, request, fixture, store):
+        transformation = request.getfixturevalue(fixture)
+        store_func_name = f"store_{store}_tokenizable"
+        load_func_name = f"load_{store}_tokenizable"
+        self._test_store_load_different_process(
+            transformation, store_func_name, load_func_name, store
+        )
+
+    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
+    def test_store_load_network_same_process(self, request, fixture, store):
+        network = request.getfixturevalue(fixture)
+        assert isinstance(network, GufeTokenizable)
+        store_func_name = f"store_{store}_tokenizable"
+        load_func_name = f"load_{store}_tokenizable"
+        self._test_store_load_same_process(network, store_func_name, load_func_name, store)
+
+    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
+    def test_store_load_network_different_process(self, request, fixture, store):
+        network = request.getfixturevalue(fixture)
+        assert isinstance(network, GufeTokenizable)
+        store_func_name = f"store_{store}_tokenizable"
+        load_func_name = f"load_{store}_tokenizable"
+        self._test_store_load_different_process(network, store_func_name, load_func_name, store)
+
+    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("store", ["setup", "results"])
+    def test_delete(self, request, fixture, store):
+        network = request.getfixturevalue(fixture)
+        store_func_name = f"store_{store}_tokenizable"
+        load_func_name = f"load_{store}_tokenizable"
+        obj, client = self._test_store_load_same_process(
+            network, store_func_name, load_func_name, store
+        )
+        client.delete(store, obj.key)
+        assert not client.exists(obj.key)
+
+
+class TestFileSystemWarehouse:
+    @staticmethod
+    def _test_store_load_same_process(obj, store_func_name, load_func_name):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(wh_dir)
+            store_func = getattr(client, store_func_name)
+            load_func = getattr(client, load_func_name)
+            # TODO: top dirs should exist but be empty
+            # assert not any((Path(tmpdir)/store_func_name).iterdir())
+            store_func(obj)
+            assert any(Path(f"{wh_dir}").iterdir())
+            reloaded = load_func(obj.key)
+            assert reloaded is obj
+
+    @staticmethod
+    def _test_store_load_different_process(obj: GufeTokenizable, store_func_name, load_func_name):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(root_dir=wh_dir)
+            store_func = getattr(client, store_func_name)
+            load_func = getattr(client, load_func_name)
+            # TODO: top dirs should exist but be empty
+            # assert not any(Path(f"{tmpdir}").iterdir())
+            store_func(obj)
+            assert any(Path(f"{wh_dir}").iterdir())
+            # make it look like we have an empty cache, as if this was a
+            # different process
+            key = obj.key
+            registry_dict = "gufe.tokenization.TOKENIZABLE_REGISTRY"
+            with mock.patch.dict(registry_dict, {}, clear=True):
+                reload = load_func(key)
+                assert reload == obj
+                assert reload is not obj
+
+    @pytest.mark.parametrize(
+        "fixture",
+        ["absolute_transformation", "complex_equilibrium"],
+    )
+    def test_store_load_transformation_same_process(self, request, fixture):
+        transformation = request.getfixturevalue(fixture)
+        self._test_store_load_same_process(
+            transformation,
+            "store_setup_tokenizable",
+            "load_setup_tokenizable",
+        )
+
+    def test_filesystemwarehouse_has_shared_and_tasks_stores(self, absolute_transformation):
+        unit = TestWarehouseBaseClass._get_protocol_unit(absolute_transformation)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(wh_dir)
+            assert client.name == "warehouse_name"
+
+            assert "shared" in client.stores
+            assert "tasks" in client.stores
+
+            client.stores["shared"].store_bytes("sentinel", b"shared-data")
+            with client.stores["shared"].load_stream("sentinel") as f:
+                assert f.read() == b"shared-data"
+
+            client.store_task(unit)
+            assert client.exists(unit.key)
+
+    def test_filesystem_warehouse_exists_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            wh_dir = Path(tmpdir) / "warehouse_name"
+            client = FileSystemWarehouse(wh_dir)
+            # store some data so files are created
+            client.stores["shared"].store_bytes("sentinel", b"shared-data")
+
+            with pytest.raises(FileExistsError, match="already exists"):
+                _ = FileSystemWarehouse(wh_dir)
+
+            reloaded_client = FileSystemWarehouse.from_dir(root_dir=wh_dir)
+
+    @pytest.mark.parametrize(
+        "fixture",
+        ["absolute_transformation", "complex_equilibrium"],
+    )
+    def test_store_load_transformation_different_process(self, request, fixture):
+        transformation = request.getfixturevalue(fixture)
+        self._test_store_load_different_process(
+            transformation,
+            "store_setup_tokenizable",
+            "load_setup_tokenizable",
+        )
+
+
+@pytest.fixture
+def warehouse_partial_failure():
+    with resources.path("openfe.tests.data.warehouse", "mc1_campaign") as d:
+        warehouse = FileSystemWarehouse.from_dir(root_dir=d)
+        return warehouse
+
+
+class TestWarehouseResultsGathering:
+    def test_gather_results(self, warehouse_partial_failure):
+        wh = warehouse_partial_failure
+        result_edges = wh.gather_all_results()
+        # TODO: how much to check here
+
+        results_ok = [dag.ok() for _, dag in result_edges]
+        assert sorted(results_ok) == [False, True, True, True]  # one failed edge
+
+        uncertainties = [pr.get_uncertainty() for pr, dag in result_edges if dag.ok()]
+        assert uncertainties == [0.0 * unit.kilocalorie_per_mole] * 3
+
+        expected_estimates = {-0.658, 5.547, 5.769}
+        estimates = {round(pr.get_estimate().m, 3) for pr, dag in result_edges if dag.ok()}
+        assert expected_estimates == estimates
+        assert len(result_edges) == 4
+
+    def test_convert_to_quickrun_output(self, warehouse_partial_failure, tmp_path):
+        wh = warehouse_partial_failure
+        result_edges = wh.gather_all_results()
+        out_dir = tmp_path / "quickrun_style_output"
+        convert_to_quickrun_output(result_edges, out_dir=out_dir)
+        assert out_dir.is_dir()
+        out_files = [str(p.name) for p in out_dir.rglob("Trans*")]
+        assert len(out_files) == 4
