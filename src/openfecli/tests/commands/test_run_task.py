@@ -44,19 +44,11 @@ def test_worker_no_available_task_exits_zero():
         taskdb_path = Path("tasks.db")
         taskdb_path.touch()
 
-        mock_worker = mock.Mock()
-        mock_worker.execute_unit.return_value = None
-
-        with mock.patch(
-            "openfecli.commands.run_task._build_worker", return_value=mock_worker
-        ) as build_worker:
-            result = runner.invoke(run_task, ["--warehouse", "warehouse", "--task-db", "tasks.db"])
+        result = runner.invoke(run_task, ["--warehouse", "warehouse", "--task-db", "tasks.db"])
 
         assert_click_success(result)
         assert "No available task in task graph." in result.output
-        build_worker.assert_called_once_with(warehouse_path, taskdb_path)
-        kwargs = mock_worker.execute_unit.call_args.kwargs
-        assert kwargs["scratch"] == Path("scratch")
+        assert Path("scratch").is_dir()
 
 
 def test_worker_executes_one_task_and_reports_completion():
