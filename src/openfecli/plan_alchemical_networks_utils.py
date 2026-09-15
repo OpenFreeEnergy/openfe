@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from openfe import AlchemicalNetwork, LigandNetwork
-from openfe.orchestration.exorcist_utils import build_task_db_from_alchemical_network
+from openfe.orchestration.exorcist_utils import setup_task_campaign
 from openfe.storage.warehouse import FileSystemWarehouse
 from openfecli.utils import write
 

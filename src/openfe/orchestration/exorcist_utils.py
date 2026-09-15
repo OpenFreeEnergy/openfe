@@ -73,7 +73,7 @@ def _alchemical_network_to_task_graph(
 
 
 # TODO: add n_repeats
-def build_task_db_from_alchemical_network(
+def setup_task_campaign(
     alchemical_network: AlchemicalNetwork,
     warehouse_dir: Path,  # TODO: make optional?
     db_path: Path,  # TODO: make optional?
