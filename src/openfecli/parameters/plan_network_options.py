@@ -276,3 +276,11 @@ YAML_OPTIONS = Option(
     help=_yaml_help,
     getter=load_yaml_planner_options,
 )
+
+
+NETWORKS_ONLY = Option(
+    "--networks-only",
+    type=click.BOOL,
+    help="Only output the AlchemicalNetwork JSON and LigandNetwork graphml. Do not output Transformation JSONs.",
+    default=False,
+)

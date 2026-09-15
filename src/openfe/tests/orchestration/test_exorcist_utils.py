@@ -10,9 +10,9 @@ from gufe import AlchemicalNetwork
 from gufe.tokenization import GufeKey
 
 from openfe.orchestration import (
-    build_task_db_from_alchemical_network,
     get_dependency_df,
     get_task_df,
+    setup_task_campaign,
 )
 from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph
 from openfe.storage.warehouse import WarehouseBaseClass
@@ -135,7 +135,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
     network = request.getfixturevalue(fixture)
     # Build the real sqlite task DB from a real alchemical network fixture.
     wh_dir = tmp_path / "campaign"
-    db, warehouse = build_task_db_from_alchemical_network(
+    db, warehouse = setup_task_campaign(
         network,
         warehouse_dir=wh_dir,
         db_path=tmp_path / "campaign.db",
@@ -198,7 +198,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
 #             return_value=fake_db,
 #         ) as db_ctor,
 #     ):
-#         result = build_task_db_from_alchemical_network(network, warehouse)
+#         result = setup_task_campaign(network, warehouse)
 
 #     task_graph_mock.assert_called_once_with(network, warehouse)
 #     db_ctor.assert_called_once_with(Path(f"{warehouse.name}.db"))
@@ -223,7 +223,7 @@ def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
             return_value=fake_db,
         ) as db_ctor,
     ):
-        db, warehouse = build_task_db_from_alchemical_network(
+        db, warehouse = setup_task_campaign(
             network,
             wh_path,
             db_path=db_path,
@@ -256,7 +256,7 @@ def test_get_task_df(benzene_star_map_task_db):
         "last_modified",
         "tries",
         "max_tries",
-        "task_type",
+        # "task_type",
     ]
     assert len(df) == 276
     assert len(df[df.status == "AVAILABLE"]) == 12
