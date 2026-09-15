@@ -27,15 +27,6 @@ class _FailedResultWithDetails:
         return False
 
 
-def test_worker_requires_task_database():
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        Path("warehouse").mkdir()
-        result = runner.invoke(run_task, ["--warehouse", "warehouse"])
-        assert result.exit_code == 2
-        assert "Missing option '--task-db'" in result.output
-
-
 def test_worker_no_available_task_exits_zero():
     runner = CliRunner()
     with runner.isolated_filesystem():

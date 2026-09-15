@@ -64,8 +64,6 @@ def run_task_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
     )
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
-    if not task_db_path.is_file():
-        raise click.ClickException(f"Task database not found at: {task_db_path}")
 
     scratch.mkdir(parents=True, exist_ok=True)
 
