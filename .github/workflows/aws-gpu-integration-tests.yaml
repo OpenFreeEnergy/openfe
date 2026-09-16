@@ -27,7 +27,11 @@ jobs:
           aws_root_device_size: 125
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-
+      - name: set CUDA version
+        run: |
+          "ls -l /usr/local/"
+          "rm /usr/local/cuda"
+          "ln -s /usr/local/cuda-12.9 /usr/local/cuda"
 
   self-hosted-test:
     runs-on: self-hosted
@@ -42,12 +46,6 @@ jobs:
       - start-aws-runner
     steps:
       - uses: actions/checkout@v4
-
-      - name: set CUDA version
-        run: |
-          "ls -l /usr/local/"
-          rm /usr/local/cuda
-          ln -s /usr/local/cuda-12.9 /usr/local/cuda
 
       - name: Print disk usage
         run: "df -h"
