@@ -563,11 +563,12 @@ def bulk_assign_partial_charges(
                 err.add_note(f"ligand name: {m.name}, smiles: {m.smiles}")
                 exceptions.append(err)
             raise ExceptionGroup(
-                f"Partial charge generation failed for {len(error_ligands)} molecules.",
-                exceptions
+                f"Partial charge generation failed for {len(error_ligands)} molecules.", exceptions
             )
         else:
-            failure_mols = "\t".join(f"ligand name: {m.name}, smiles: {m.smiles}\n" for m, _ in error_ligands)
+            failure_mols = "\t".join(
+                f"ligand name: {m.name}, smiles: {m.smiles}\n" for m, _ in error_ligands
+            )
             warnings.warn(
                 f"Partial charge generation failed for {len(error_ligands)} molecules, "
                 "these molecules will be excluded from the returned list. "
