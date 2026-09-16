@@ -48,9 +48,9 @@ jobs:
 
       - name: set CUDA version
         run: |
-          "ls -l"
-          "rm /usr/local/cuda"
-          "ln -s /usr/local/cuda-12.9 /usr/local/cuda"
+          ls -l
+          rm /usr/local/cuda
+          ln -s /usr/local/cuda-12.9 /usr/local/cuda
 
       - name: Print Docker details
         run: "docker version || true"
