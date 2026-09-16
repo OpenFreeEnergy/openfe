@@ -515,11 +515,11 @@ def bulk_assign_partial_charges(
         "nagl_model": nagl_model,
     }
 
+    error_ligands = []
     if processors > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
 
         charged_ligands: list[SmallMoleculeComponent | None] = [None] * len(molecules)
-        error_ligands = []
         with ProcessPoolExecutor(max_workers=processors) as pool:
             # track the input ordering as multiprocessing can shuffle the order of the ligands
             future_to_index = {
@@ -548,7 +548,6 @@ def bulk_assign_partial_charges(
 
     else:
         charged_ligands = []
-        error_ligands = []
         for m in tqdm.tqdm(molecules, desc="Generating charges", ncols=80, total=len(molecules)):
             try:
                 mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords)  # type: ignore
