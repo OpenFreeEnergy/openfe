@@ -519,7 +519,7 @@ def bulk_assign_partial_charges(
       Note that zeroed charges will always be overwritten.
     method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma', 'forcefield']
       Partial charge assignment method.
-      Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
+      Supported methods include; am1bcc, am1bccelf10, nagl, espaloma and forcefield.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
       OpenFF toolkit backend employed for charge generation.
       Supported options:
