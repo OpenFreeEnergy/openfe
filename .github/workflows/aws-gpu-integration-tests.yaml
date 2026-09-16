@@ -45,7 +45,7 @@ jobs:
 
       - name: set CUDA version
         run: |
-          "ls -l /usr/local/cuda-12.9"
+          "ls -l /usr/local/"
           rm /usr/local/cuda
           ln -s /usr/local/cuda-12.9 /usr/local/cuda
 
