@@ -18,7 +18,7 @@ jobs:
           aws-region: us-east-2
       - name: Create cloud runner
         id: aws-start
-        uses: omsf/start-aws-gha-runner@v1.0.0
+        uses: omsf/start-aws-gha-runner@v1.3.0
         with:
           aws_image_name: "Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 24.04)"
           aws_image_id: latest
@@ -27,6 +27,7 @@ jobs:
           aws_root_device_size: 125
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+
 
   self-hosted-test:
     runs-on: self-hosted
