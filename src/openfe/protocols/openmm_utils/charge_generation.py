@@ -517,7 +517,7 @@ def bulk_assign_partial_charges(
     overwrite : bool
       Whether or not to overwrite any existing non-zero partial charges.
       Note that zeroed charges will always be overwritten.
-    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma', 'forcefield]
+    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma', 'forcefield']
       Partial charge assignment method.
       Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
