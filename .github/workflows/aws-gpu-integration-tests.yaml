@@ -43,6 +43,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: set CUDA version
+        run: ls -l /usr/local/cuda-12.9
+
       - name: Print disk usage
         run: "df -h"
 
