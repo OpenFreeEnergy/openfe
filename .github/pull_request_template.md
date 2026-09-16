@@ -20,7 +20,7 @@ If yes, please provide details here:
 * [ ] All new code is appropriately documented (user-facing code _must_ have complete docstrings).
 * [ ] Added a ``news`` entry, or the changes are not user-facing.
 * [ ] Ran pre-commit: you can run [pre-commit](https://pre-commit.com) locally or comment on this PR with `pre-commit.ci autofix`.
-* [ ] Adhered to the [contribution guidelines](https://github.com/OpenFreeEnergy/openfe?tab=contributing-ov-file#contribution-guidelines)/
+* [ ] Adhered to the [contribution guidelines](https://github.com/OpenFreeEnergy/openfe?tab=contributing-ov-file#contribution-guidelines)
 * [ ] Filled in the AI generated code disclosure.
 
 Manual Tests: these are slow so don't need to be run every commit, only before merging and when relevant changes are made (generally at reviewer-discretion). 
