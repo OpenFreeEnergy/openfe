@@ -1376,6 +1376,22 @@ class TestOFFPartialCharge:
 
         assert_allclose(uncharged_mol.partial_charges.m, copy_mol.partial_charges.m, rtol=1e-4)
 
+    def test_forcefield_charges_vsites(self):
+        # Test assigning partial charges to a molecule with virtual sites using the forcefield method
+        offmol = OFFMol.from_smiles("O")
+        offmol.generate_conformers()
+        with pytest.warns(UserWarning, match="Found a VirtualSiteHandler: VirtualSites in the force field, base charges before applying the virtual site handler will be assigned to the molecule."):
+            charge_generation.assign_offmol_partial_charges(
+                offmol,
+                overwrite=False,
+                method="forcefield",
+                toolkit_backend="rdkit",
+                generate_n_conformers=None,
+                nagl_model=None,
+                forcefields=["tip4p_fb.offxml"]
+            )
+        # the libary charges for water in tip4p_fb.offxml are all zero, so we expect the charges to be zero
+        assert_allclose(offmol.partial_charges.m, np.array([0.0, 0.0, 0.0]), rtol=1e-4)
 
 @pytest.mark.slow
 @pytest.mark.skipif(

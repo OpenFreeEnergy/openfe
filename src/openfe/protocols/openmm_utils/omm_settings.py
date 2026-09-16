@@ -232,45 +232,6 @@ class BasePartialChargeSettings(SettingsBaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-
-class OpenFFPartialChargeSettings(BasePartialChargeSettings):
-    """
-    Settings for controlling partial charge assignment using the OpenFF tooling
-    """
-
-    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"] = "am1bcc"
-    """
-    Selection of method for partial charge generation.
-
-    Description of options
-    ----------------------
-    ``am1bcc``:
-      Generate partial charges using the AM1-BCC approach, as detailed
-      by Araz Jalkalian et al. J. Comp. Chem. 2000.
-      AM1-BCC charges are either assigned using AmberTools (via SQM)
-      if ``off_toolkit_backend`` is set to ``ambertools`, or
-      using the OpenEye Toolkit (via Quacpac) if ``off_toolkit_backend``
-      is set to ``openeye``. A maximum of one conformer is allowed.
-
-    ``am1bccelf10``:
-      Assign AM1-BCC partialk charges using the `ELF10 method
-      <https://docs.eyesopen.com/toolkits/python/quacpactk/molchargetheory.html#elf-conformer-selection>`_
-      This is only currently possible via the OpenEye toolkit
-      if setting ``off_toolkit_backend`` to ``openeye``.
-      We recommend setting ``number_of_conformers`` to at least `500`.
-
-    ``nagl``:
-      Assign partial charges using the `OpenFF NAGL ML method
-      <https://github.com/openforcefield/openff-nagl>`_
-      All ``off_toolkit_backend`` options are supported.
-      A maximum of one conformer is allowed.
-
-    ``espaloma``:
-      Assign partial charges using the `Espaloma Charge method
-      <https://github.com/choderalab/espaloma_charge>`_
-      Only ``ambertools`` and ``rdkit`` `off_toolkit_backend`` options
-      are supported. A maximum of one conformer is allowed.
-    """
     off_toolkit_backend: Literal["ambertools", "openeye", "rdkit"] = "ambertools"
     """
     The OpenFF toolkit registry backend to use for partial charge generation.
@@ -314,7 +275,47 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     """
 
 
-class CLIPartialChargeSettings(OpenFFPartialChargeSettings):
+class OpenFFPartialChargeSettings(BasePartialChargeSettings):
+    """
+    Settings for controlling partial charge assignment using the OpenFF tooling
+    """
+
+    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"] = "am1bcc"
+    """
+    Selection of method for partial charge generation.
+
+    Description of options
+    ----------------------
+    ``am1bcc``:
+      Generate partial charges using the AM1-BCC approach, as detailed
+      by Araz Jalkalian et al. J. Comp. Chem. 2000.
+      AM1-BCC charges are either assigned using AmberTools (via SQM)
+      if ``off_toolkit_backend`` is set to ``ambertools`, or
+      using the OpenEye Toolkit (via Quacpac) if ``off_toolkit_backend``
+      is set to ``openeye``. A maximum of one conformer is allowed.
+
+    ``am1bccelf10``:
+      Assign AM1-BCC partialk charges using the `ELF10 method
+      <https://docs.eyesopen.com/toolkits/python/quacpactk/molchargetheory.html#elf-conformer-selection>`_
+      This is only currently possible via the OpenEye toolkit
+      if setting ``off_toolkit_backend`` to ``openeye``.
+      We recommend setting ``number_of_conformers`` to at least `500`.
+
+    ``nagl``:
+      Assign partial charges using the `OpenFF NAGL ML method
+      <https://github.com/openforcefield/openff-nagl>`_
+      All ``off_toolkit_backend`` options are supported.
+      A maximum of one conformer is allowed.
+
+    ``espaloma``:
+      Assign partial charges using the `Espaloma Charge method
+      <https://github.com/choderalab/espaloma_charge>`_
+      Only ``ambertools`` and ``rdkit`` `off_toolkit_backend`` options
+      are supported. A maximum of one conformer is allowed.
+    """
+
+
+class CLIPartialChargeSettings(BasePartialChargeSettings):
     partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"] = (
         "am1bcc"
     )

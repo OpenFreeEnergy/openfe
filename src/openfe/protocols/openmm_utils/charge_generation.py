@@ -14,6 +14,7 @@ import numpy as np
 from gufe import SmallMoleculeComponent
 from openff.toolkit import ForceField
 from openff.toolkit import Molecule as OFFMol
+from openff.toolkit.typing.engines.smirnoff import ParameterHandler, VirtualSiteHandler
 from openff.toolkit.utils.base_wrapper import ToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import (
@@ -390,6 +391,15 @@ def assign_offmol_partial_charges(
 
             # try again to load the force field with the added extension, if we fail let it raise the error
             ff = ForceField(*forcefields_with_ext)
+
+        # strip out any VirtualSiteHandler from the force field since we don't want to add virtual sites to the molecule
+        for handler_name in ff.registered_parameter_handlers:
+            handler = ff.get_parameter_handler(handler_name)
+            if issubclass(handler.__class__, VirtualSiteHandler):
+                warnings.warn(
+                    f"Found a VirtualSiteHandler: {handler_name} in the force field, base charges before applying the virtual site handler will be assigned to the molecule.",
+                )
+                ff.deregister_parameter_handler(handler_name)
 
         # make the toolkit registry based on the selected backend
         toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_name]])
