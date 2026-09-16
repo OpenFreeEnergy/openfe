@@ -480,7 +480,8 @@ def bulk_assign_partial_charges(
         The number of processors which should be used to generate the charges.
     raise_errors: bool, default True
         If ``True``, any errors encountered during charge generation will be raised.
-        If ``False``, errors will be ignored and the failed molecules will be excluded from the returned list.
+        If ``False``, errors will be ignored and the failed molecules will be excluded from the returned list, a
+        RuntimeWarning will be raised listing the name and smiles of any molecules that failed to have charges assigned.
 
     Raises
     ------
@@ -491,13 +492,18 @@ def bulk_assign_partial_charges(
       If the number of conformers passed or generated exceeds the number
       of conformers selected by the partial charge ``method``.
 
-    RuntimeError
-      If any of the molecules fail to have charges assigned, a RuntimeError
-      will be raised with details of the molecules which failed if ``raise_errors`` is ``True``.
+    ExceptionGroup
+      Raised if one or more molecules fail to have charges assigned and
+      ``raise_errors`` is ``True``. The group contains the original
+      per-molecule exceptions, each annotated with a note containing the
+      ligand name and SMILES.
 
     Returns
     -------
-        A list of SmallMoleculeComponents with the charges assigned.
+    list[gufe.SmallMoleculeComponent]
+        A list of molecules with assigned partial charges. If
+      ``raise_errors`` is ``False``, molecules that fail charge assignment
+      are excluded from the returned list.
     """
     import tqdm
 
@@ -550,13 +556,24 @@ def bulk_assign_partial_charges(
             except Exception as e:
                 error_ligands.append((m, e))
 
-    if error_ligands and raise_errors:
-        errmsg = (
-            f"Partial charge generation failed for {len(error_ligands)} molecules. "
-            "See the following for details:\n"
-        )
-        for m, err in error_ligands:
-            errmsg += f"\t{m.name}/{m.smiles}: {err}\n"
-        raise RuntimeError(errmsg)
+    if error_ligands:
+        if raise_errors:
+            exceptions = []
+            for m, err in error_ligands:
+                err.add_note(f"ligand name: {m.name}, smiles: {m.smiles}")
+                exceptions.append(err)
+            raise ExceptionGroup(
+                f"Partial charge generation failed for {len(error_ligands)} molecules.",
+                exceptions
+            )
+        else:
+            failure_mols = "\t".join(f"ligand name: {m.name}, smiles: {m.smiles}\n" for m, _ in error_ligands)
+            warnings.warn(
+                f"Partial charge generation failed for {len(error_ligands)} molecules, "
+                "these molecules will be excluded from the returned list. "
+                "To raise errors instead, set `raise_errors=True`. "
+                f"Failed molecules: \n\t{failure_mols}",
+                RuntimeWarning,
+            )
 
     return charged_ligands

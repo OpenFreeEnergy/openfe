@@ -1292,8 +1292,8 @@ class TestOFFPartialCharge:
     def test_bulk_raise_errors(self, bodipy_molecules):
         # Make sure that bulk charge assignment caches errors and returns a helpful error message when it fails
         with pytest.raises(
-            RuntimeError,
-            match="Partial charge generation failed for 2 molecules. See the following for details:",
+            ExceptionGroup,
+            match="Partial charge generation failed for 2 molecules",
         ):
             charge_generation.bulk_assign_partial_charges(
                 bodipy_molecules,
@@ -1307,22 +1307,46 @@ class TestOFFPartialCharge:
                 raise_errors=True,
             )
 
+    @pytest.mark.slow
+    def test_bulk_raise_errors_multi_processors(self, bodipy_molecules):
+        # Make sure that bulk charge assignment caches errors and returns a helpful error message when it fails
+        # when using multiple processors
+        with pytest.raises(
+            ExceptionGroup,
+            match="Partial charge generation failed for 2 molecules",
+        ):
+            charge_generation.bulk_assign_partial_charges(
+                bodipy_molecules,
+                overwrite=False,
+                # there should be no bcc for Boron, so this should fail for all molecules
+                method="am1bcc",
+                toolkit_backend="ambertools",
+                generate_n_conformers=None,
+                nagl_model=None,
+                processors=2,
+                raise_errors=True,
+            )
+
     def test_bulk_ignore_errors(self, bodipy_molecules):
         # Make sure errors are ignored when raise_errors=False
-        results = charge_generation.bulk_assign_partial_charges(
-            bodipy_molecules,
-            overwrite=False,
-            # there should be no bcc for Boron, so this should fail for all molecules
-            method="am1bcc",
-            toolkit_backend="ambertools",
-            generate_n_conformers=None,
-            nagl_model=None,
-            processors=1,
-            raise_errors=False,
-        )
-        # it should be an empty list since all molecules failed to generate charges
-        assert not results
-
+        # and that a warning is used to indicate that some molecules failed to generate charges
+        with pytest.warns(
+            RuntimeWarning,
+            match="Partial charge generation failed for 2 molecules, ",
+        ):
+            results = charge_generation.bulk_assign_partial_charges(
+                bodipy_molecules,
+                overwrite=False,
+                # there should be no bcc for Boron, so this should fail for all molecules
+                method="am1bcc",
+                toolkit_backend="ambertools",
+                generate_n_conformers=None,
+                nagl_model=None,
+                processors=1,
+                raise_errors=False,
+            )
+            # it should be an empty list since all molecules failed to generate charges
+            assert not results
 
 @pytest.mark.slow
 @pytest.mark.skipif(
