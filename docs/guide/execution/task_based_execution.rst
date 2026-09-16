@@ -103,11 +103,23 @@ However, to run an entire campaign you would have to run this single command _ma
 In practice, you will likely be submitting many workers simultaneously using SLURM or similar.
 You can call this command in a loop, so that after a ``task`` is completed, the ``Worker`` automatically picks up a new ``task``, continuing to run tasks in serial until the walltime runs out.
 
+.. code:: bash
+   :caption: run_tasks.sh
 
-.. literalinclude:: run_tasks.sh
-    :caption: Example SLURM submission script for task-based execution
-    :linenos:
-    :language: bash
+    #!/bin/bash
+
+    #SBATCH --job-name="openfe job"
+    #SBATCH --mem-per-cpu=2G
+
+    # activate an appropriate conda environment, or any "module load" commands required
+    conda activate openfe_env
+
+    # continue submitting run-task in serial until the wall time is hit
+    # you may submit this *script* multiple times to have workers execute tasks in parallel
+    while true; do
+        openfe run-task --warehouse my_campaign/ --task-db my_campaign.db --scratch workdir/
+    done
+
 
 To run multiple workers in parallel, submit ``run_tasks.sh`` multiple times as separate jobs.
 
