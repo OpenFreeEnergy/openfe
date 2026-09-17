@@ -3,7 +3,7 @@ from pathlib import Path
 import click
 
 from openfecli import OFECommandPlugin
-from openfecli.parameters import OUTPUT_DIR  #  OVERWRITE, WAREHOUSE
+from openfecli.parameters import OUTPUT_DIR
 from openfecli.utils import print_duration, write
 
 
