@@ -535,3 +535,14 @@ def compute_energy(
     potential = state.getPotentialEnergy()
     del context, integrator, state
     return from_openmm(potential)
+
+
+@pytest.fixture
+def bodipy_molecules() -> list[openfe.SmallMoleculeComponent]:
+    molecules = []
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "bodipy_molecules.sdf")
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            molecules.append(openfe.SmallMoleculeComponent(rdmol))
+    return molecules
