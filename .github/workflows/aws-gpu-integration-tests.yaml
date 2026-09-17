@@ -50,17 +50,6 @@ jobs:
         run: |
           ls -ld /usr/local/cuda*
 
-      # TODO: make cuda version a variable
-      - name: check that required CUDA version exists
-        run: |
-          ls -ld /usr/local/cuda-12.9
-
-      # - name: set CUDA version
-      #   run:
-      #     rm /usr/local/cuda
-      #     ln -s /usr/local/cuda-12.9 /usr/local/cuda
-      #     ls -l /usr/local/cuda*
-
       - name: Print Docker details
         run: "docker version || true"
 
