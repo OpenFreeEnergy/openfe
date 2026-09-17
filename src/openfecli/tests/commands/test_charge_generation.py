@@ -218,7 +218,10 @@ def test_charge_molecules_missing_force_fields(methane, tmp_path):
                 ["-M", mol_path, "-o", out_path, "-s", settings_path],
                 catch_exceptions=False,
             )
-            assert "The forcefield method requires a force field or list of force fields' to be provided via `forcefields`." in str(excinfo.value)
+            assert (
+                "The forcefield method requires a force field or list of force fields' to be provided via `forcefields`."
+                in str(excinfo.value)
+            )
 
 
 @pytest.mark.skipif(
