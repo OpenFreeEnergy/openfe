@@ -30,11 +30,14 @@ If you are accustomed to using the existing ``openfe plan-rbfe-network`` or ``op
 
 
 Once you have an AlchemicalNetwork, use the following command to set up the task-based campaign.
+By default, the ``TaskDB`` and ``Warehouse`` will be created using the input file basename (here, ``tyk2``).
+
+.. TODO: The ``--name`` parameter lets us choose an identifier for the ``Warehouse`` and ``TaskDB`` file names.
 
 
 .. code:: bash
 
-    > openfe setup-task-campaign --alchemical-network tyk2_alchemical_network.json
+    > openfe setup-task-campaign --alchemical-network tyk2.json
 
 
 You should see a ``Warehouse`` in the form of a directory and a ``TaskStatusDB`` file as output.
