@@ -20,9 +20,7 @@ Setting up a Campaign
 ~~~~~~~~~~~~~~~~~~~~~
 
 An ``AlchemicalNetwork`` will be our input for executing a campaign.
-See the following examples for how to create an ``AlchemicalNetwork``:
-
-.. TODO
+Refer to the cookbook `Create an AlchemicalNetwork <../../cookbook/create_alchemical_network.nblink>`_ for guidance on getting to this step.
 
 If you are accustomed to using the existing ``openfe plan-rbfe-network`` or ``openfe plan-rhfe-network`` CLI commands to create, you can simply add the ``--networks-only`` argument to your existing call, and use the resulting ``alchemicalNetwork.json`` as a starting point.
 
