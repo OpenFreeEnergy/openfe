@@ -27,11 +27,17 @@ def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str | 
     "setup-task-campaign",
     short_help="Build a Warehouse and corresponding TaskDB from an AlchemicalNetwork.",
 )
-# TODO: add --name?
+# TODO: add --name and --amend options
 @ALCHEMICAL_NETWORK.parameter(multiple=False, required=True, help=ALCHEMICAL_NETWORK.kwargs["help"])
 @print_duration
 def setup_task_campaign(alchemical_network: str | Path):
-    # TODO: allow user-supplied name and out_dir
+    """From an AlchemicalNetwork, create the necessary objects for task-based execution:
+    - 'warehouse_{name}/': a Warehouse (on the local filesystem as a directory) that stores all setup, task, and results data.
+    - 'tasks_{name}.db': a sqlite TaskDB that tracks orchestration status of the tasks.
+    - 'scratch/': a local directory used as temporary storage during simulation execution.
+
+    """
+    # TODO: allow user-supplied name and out_dir?
     name = Path(alchemical_network).stem
     write("Loading AlchemicalNetwork ...")
     loaded_alch_net = ALCHEMICAL_NETWORK.get(alchemical_network)
