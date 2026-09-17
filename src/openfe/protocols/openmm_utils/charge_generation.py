@@ -570,6 +570,11 @@ def bulk_assign_partial_charges(
       per-molecule exceptions, each annotated with a note containing the
       ligand name and SMILES.
 
+    RuntimeWarning
+      Raised if one or more molecules fail to have charges assigned and
+      ``raise_errors`` is ``False``. The warning contains the ligand names
+      and SMILES of the failed molecules.
+
     Returns
     -------
     list[gufe.SmallMoleculeComponent]
