@@ -106,7 +106,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 
     from gufe import SolventComponent
 
-    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
+    from openfe.protocols.openmm_utils.omm_settings import CLIPartialChargeSettings
     from openfe.setup import (
         KartografAtomMapper,
         LomapAtomMapper,
@@ -181,7 +181,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         ligand_network_planner = generate_minimal_spanning_network
 
     # We default to am1bcc on ambertools
-    partial_charge_settings = OpenFFPartialChargeSettings()
+    partial_charge_settings = CLIPartialChargeSettings()
     if opt and opt.partial_charge:
         partial_charge_settings.partial_charge_method = opt.partial_charge.method
         for setting in opt.partial_charge.settings:
@@ -223,6 +223,7 @@ DEFAULT_YAML = """
             off_toolkit_backend: ambertools
             number_of_conformers: None
             nagl_model: None
+            forcefields: None
 """
 
 _yaml_help = """
@@ -245,6 +246,7 @@ Supported partial charge method choices are:
     - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` is ``openeye``)
     - ``nagl`` (must have openff-nagl installed)
     - ``espaloma`` (must have espaloma_charge installed)
+    - ``forcefield`` (must supply the chosen force field files via the ``forcefields`` keyword argument. This is useful to get the correct AshGC model or LibraryCharges for a OpenFF force field.)
 
 ``settings:`` allows for passing in any keyword arguments of the method's corresponding Python API.
 
