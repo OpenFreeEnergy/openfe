@@ -6,7 +6,7 @@ dependencies:
   - click >=8.2.0
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
-  - duecredit<0.10
+  - duecredit
   # - kartograf>=2.0.0  # temporary, until gufe v1.13 is released
   - dill  # temporary, needed by kartograf. remove when gufe v1.13 is released
   # - konnektor~=0.4.0  # temporary, until gufe v1.13 is released
