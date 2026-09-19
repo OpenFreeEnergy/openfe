@@ -4,8 +4,6 @@ Task-based Execution
 ====================
 
 In contrast to :ref:`quickrun execution <userguide_quickrun>`, task-based execution does not require that you explicitly define the Transformation to be executed.
-In task-based execution, an OpenFE ``Worker`` is given a ``Warehouse`` and a ``TaskStatusDB`` which handle storage and orchestration, respectively.
-The ``Worker`` finds the next available ``task`` in the ``TaskStatusDB`` and retrieves the necessary data from the ``Warehouse`` to execute the task.
 
 This means that you can execute an entire ``AlchemicalNetwork``'s campaign just by calling the ``openfe run-task`` command iteratively until all tasks are complete!
 
@@ -56,6 +54,8 @@ You should see a ``Warehouse`` in the form of a directory and a ``TaskStatusDB``
 Running the Campaign
 ~~~~~~~~~~~~~~~~~~~~
 
+To execute the campaign all we need is the ``Warehouse`` and a ``TaskStatusDB`` which handle storage and orchestration, respectively.
+
 At any time, you can query the execution status of the campaign using ``openfe status``.
 All task status information is stored in the ``TaskStatusDB``:
 
@@ -81,6 +81,7 @@ To execute a single ``task`` (where here a ``task`` is one ``ProtocolUnit``), yo
 
     > openfe run-task --warehouse warehouse_tyk2/ --task-db tasks_tyk2.db
 
+This finds next available ``task`` in the ``TaskStatusDB``, retrieves the necessary data from the ``Warehouse`` to execute the task, then executes the task.
 
 You'll now see that one task has been completed, and a new task has been unblocked:
 
