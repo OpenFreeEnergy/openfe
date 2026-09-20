@@ -8,7 +8,7 @@ from gufe.protocols.protocoldag import ProtocolDAGResult
 from gufe.tokenization import JSON_HANDLER
 
 
-def convert_to_quickrun_output(
+def warehouse_to_legacy_json(
     result_edges: list[tuple[ProtocolResult, ProtocolDAGResult]],
     out_dir: pathlib.Path | str,
 ) -> None:

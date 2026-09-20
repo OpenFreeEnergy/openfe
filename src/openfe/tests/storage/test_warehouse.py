@@ -9,8 +9,7 @@ from gufe.storage.externalresource import MemoryStorage
 from gufe.tokenization import GufeTokenizable
 from openff.units import unit
 
-from openfe.orchestration import Worker, exorcist_utils
-from openfe.storage.utils import convert_to_quickrun_output
+from openfe.storage.utils import warehouse_to_legacy_json
 from openfe.storage.warehouse import (
     FileSystemWarehouse,
     WarehouseBaseClass,
@@ -319,7 +318,7 @@ class TestWarehouseResultsGathering:
         wh = warehouse_partial_failure
         result_edges = wh.gather_all_results()
         out_dir = tmp_path / "quickrun_style_output"
-        convert_to_quickrun_output(result_edges, out_dir=out_dir)
+        warehouse_to_legacy_json(result_edges, out_dir=out_dir)
         assert out_dir.is_dir()
         out_files = [str(p.name) for p in out_dir.rglob("Trans*")]
         assert len(out_files) == 4
