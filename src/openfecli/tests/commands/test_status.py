@@ -26,6 +26,6 @@ def test_status(simple_task_graph):
         db_path = "test.db"
         db = exorcist.TaskStatusDB.from_filename(db_path)
         db.add_task_network(task_graph, max_tries=6)
-        result = runner.invoke(status, [db_path])
+        result = runner.invoke(status, ["--task-db", db_path])
         assert_click_success(result)
         assert all(id in result.stdout for id in node_ids)

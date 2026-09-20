@@ -1,12 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+from .alchemical_network import ALCHEMICAL_NETWORK
 from .mapper import MAPPER
 from .misc import N_PROTOCOL_REPEATS, NCORES, OVERWRITE
 from .mol import MOL
 from .molecules import COFACTORS, MOL_DIR
 from .output import OUTPUT_FILE_AND_EXT
 from .output_dir import OUTPUT_DIR
-from .plan_network_options import YAML_OPTIONS
+from .plan_network_options import NETWORKS_ONLY, YAML_OPTIONS
 from .protein import PROTEIN, PROTEIN_MEMBRANE
-from .warehouse import WAREHOUSE
