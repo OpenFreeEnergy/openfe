@@ -19,6 +19,9 @@ def status_main(
     task_db_path : pathlib.Path
         Path to a task.db
 
+    count: bool
+        If True, display a table containing the counts of each task type.
+
     Example
     -------
     > openfe status task.db
@@ -40,6 +43,19 @@ def status_main(
     │ MultiStateAnalysisUnit-72c… │ BLOCKED          │ NaT                 │ 0     │ 3         │
     └─────────────────────────────┴──────────────────┴─────────────────────┴───────┴───────────┘
 
+    > openfe status task.db --count
+
+    ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+    ┃ status           ┃ count ┃
+    ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+    │ BLOCKED          │     1 │
+    │ AVAILABLE        │     0 │
+    │ IN_PROGRESS      │     0 │
+    │ COMPLETED        │    10 │
+    │ TOO_MANY_RETRIES │     1 │
+    │ ERROR            │     0 │
+    └──────────────────┴───────┘
+
     """
 
     from exorcist import TaskStatusDB
@@ -57,24 +73,28 @@ def status_main(
         rich_print_to_stdout(task_df)
 
 
-def rich_print_counts(task_df):
+def rich_print_counts(task_counts: dict):
+    """Print number of tasks with each status type.
+
+    Parameters
+    ----------
+    task_counts : dict[TaskStatus, int]
+        dict containing the counts of each task status type
+    """
     from exorcist import TaskStatus
     from rich.console import Console
     from rich.table import Table
 
-    val_counts = task_df.status.value_counts()
-
+    # TODO: expose this to the python API
     table = Table()
     table.add_column("status", justify="left", no_wrap=True)
     table.add_column("count", justify="right", no_wrap=True)
 
     for status_type in TaskStatus:
         status_name = status_type.name
-        table.add_row(str(status_name), str(val_counts.get(status_name, 0)))
+        table.add_row(str(status_name), str(task_counts.get(status_name, 0)))
     console = Console()
     console.print(table)
-
-    pass
 
 
 @click.command("status", short_help="Output the status of the task database as a table.")
