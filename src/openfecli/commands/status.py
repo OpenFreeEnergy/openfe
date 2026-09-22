@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 
 from openfecli import OFECommandPlugin
-from openfecli.utils import rich_print_to_stdout
+from openfecli.utils import rich_print_to_stdout, write
 
 
 def status_main(
@@ -120,7 +120,9 @@ def status(task_db: Path, summary: bool):
     Show the status of a task.db as a table.
 
     """
+
     # TODO: add loading bar
+    write("Fetching task statuses ...")
     status_main(task_db_path=task_db, summary=summary)
 
 
