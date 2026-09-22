@@ -127,11 +127,10 @@ def print_duration(function: Callable) -> Callable:
 def rich_print_to_stdout(df: pd.DataFrame) -> None:
     """Use rich to pretty print a table to stdout."""
 
-    from rich import box
     from rich.console import Console
     from rich.table import Table
 
-    table = Table(box=box.SQUARE)
+    table = Table()
 
     for col in df.columns:
         table.add_column(col)

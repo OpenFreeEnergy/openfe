@@ -6,17 +6,21 @@ from pathlib import Path
 import click
 
 from openfecli import OFECommandPlugin
-from openfecli.utils import rich_print_to_stdout
+from openfecli.utils import rich_print_to_stdout, write
 
 
 def status_main(
     task_db_path: Path,
+    summary: bool,
 ):
     """
     Parameters
     ----------
     task_db_path : pathlib.Path
         Path to a task.db
+
+    summary: bool
+        If True, display a table containing the count of each task type.
 
     Example
     -------
@@ -39,6 +43,19 @@ def status_main(
     │ MultiStateAnalysisUnit-72c… │ BLOCKED          │ NaT                 │ 0     │ 3         │
     └─────────────────────────────┴──────────────────┴─────────────────────┴───────┴───────────┘
 
+    > openfe status task.db --summary
+
+    ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+    ┃ status           ┃ n_tasks ┃
+    ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+    │ BLOCKED          │       1 │
+    │ AVAILABLE        │       0 │
+    │ IN_PROGRESS      │       0 │
+    │ COMPLETED        │      10 │
+    │ TOO_MANY_RETRIES │       1 │
+    │ ERROR            │       0 │
+    └──────────────────┴─────────┘
+
     """
 
     from exorcist import TaskStatusDB
@@ -48,8 +65,39 @@ def status_main(
     # # TODO: rewrite this using just sql and rich table?
     task_db = TaskStatusDB.from_filename(task_db_path)
     task_df = get_task_df(task_db)
-    task_df["last_modified"] = task_df["last_modified"].dt.floor("s")
-    rich_print_to_stdout(task_df)
+
+    if summary:
+        val_counts = task_df.status.value_counts()
+        rich_print_summary(val_counts)
+    else:
+        task_df["last_modified"] = task_df["last_modified"].dt.floor("s")
+        rich_print_to_stdout(task_df)
+
+
+def rich_print_summary(task_counts: dict):
+    """Print number of tasks with each status type.
+
+    Parameters
+    ----------
+    task_counts : dict[TaskStatus, int]
+        dict containing the counts of each task status type.
+
+    """
+
+    from exorcist import TaskStatus
+    from rich.console import Console
+    from rich.table import Table
+
+    # TODO: expose this to the python API
+    table = Table()
+    table.add_column("status", justify="left", no_wrap=True)
+    table.add_column("n_tasks", justify="right", no_wrap=True)
+
+    for status_type in TaskStatus:
+        status_name = status_type.name
+        table.add_row(str(status_name), str(task_counts.get(status_name, 0)))
+    console = Console()
+    console.print(table)
 
 
 @click.command("status", short_help="Output the status of the task database as a table.")
@@ -65,13 +113,20 @@ def status_main(
     required=True,
     help="Path to a TaskDB file.",
 )
-def status(task_db: Path):
+@click.option(
+    "--summary",
+    flag_value=True,
+    default=False,
+)
+def status(task_db: Path, summary: bool):
     """
     Show the status of a task.db as a table.
 
-
     """
-    status_main(task_db_path=task_db)
+
+    # TODO: add loading bar
+    write("Fetching task statuses ...")
+    status_main(task_db_path=task_db, summary=summary)
 
 
 PLUGIN = OFECommandPlugin(command=status, section="Execution", requires_ofe=(1, 13))

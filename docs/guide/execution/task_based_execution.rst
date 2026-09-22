@@ -73,6 +73,23 @@ All task status information is stored in the ``TaskStatusDB``:
     │ HybridTopologyMultiStateSimula… │ BLOCKED   │ NaT           │ 0     │ 1         │
     ...
 
+
+**Tip**: you can use the ``--summary`` flag to show a summary table of the number of tasks with each status:
+
+.. code:: bash
+
+    > openfe status --task-db tasks_ty2k.db
+    ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+    ┃ status           ┃ n_tasks ┃
+    ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+    │ BLOCKED          │       1 │
+    │ AVAILABLE        │       0 │
+    │ IN_PROGRESS      │       0 │
+    │ COMPLETED        │      10 │
+    │ TOO_MANY_RETRIES │       1 │
+    │ ERROR            │       0 │
+    └──────────────────┴─────────┘
+
 .. TODO: explain task dag? maybe save that for developer docs?
 
 To execute a single ``task`` (where here a ``task`` is one ``ProtocolUnit``), you can simply run:
