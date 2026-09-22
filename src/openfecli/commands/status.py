@@ -11,7 +11,7 @@ from openfecli.utils import rich_print_to_stdout
 
 def status_main(
     task_db_path: Path,
-    count: bool,
+    summary: bool,
 ):
     """
     Parameters
@@ -19,8 +19,8 @@ def status_main(
     task_db_path : pathlib.Path
         Path to a task.db
 
-    count: bool
-        If True, display a table containing the counts of each task type.
+    summary: bool
+        If True, display a table containing the count of each task type.
 
     Example
     -------
@@ -43,18 +43,18 @@ def status_main(
     │ MultiStateAnalysisUnit-72c… │ BLOCKED          │ NaT                 │ 0     │ 3         │
     └─────────────────────────────┴──────────────────┴─────────────────────┴───────┴───────────┘
 
-    > openfe status task.db --count
+    > openfe status task.db --summary
 
-    ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
-    ┃ status           ┃ count ┃
-    ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
-    │ BLOCKED          │     1 │
-    │ AVAILABLE        │     0 │
-    │ IN_PROGRESS      │     0 │
-    │ COMPLETED        │    10 │
-    │ TOO_MANY_RETRIES │     1 │
-    │ ERROR            │     0 │
-    └──────────────────┴───────┘
+    ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+    ┃ status           ┃ n_tasks ┃
+    ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+    │ BLOCKED          │       1 │
+    │ AVAILABLE        │       0 │
+    │ IN_PROGRESS      │       0 │
+    │ COMPLETED        │      10 │
+    │ TOO_MANY_RETRIES │       1 │
+    │ ERROR            │       0 │
+    └──────────────────┴─────────┘
 
     """
 
@@ -66,14 +66,14 @@ def status_main(
     task_db = TaskStatusDB.from_filename(task_db_path)
     task_df = get_task_df(task_db)
 
-    if count:
-        rich_print_counts(task_df)
+    if summary:
+        rich_print_summarys(task_df)
     else:
         task_df["last_modified"] = task_df["last_modified"].dt.floor("s")
         rich_print_to_stdout(task_df)
 
 
-def rich_print_counts(task_counts: dict):
+def rich_print_summarys(task_counts: dict):
     """Print number of tasks with each status type.
 
     Parameters
@@ -88,7 +88,7 @@ def rich_print_counts(task_counts: dict):
     # TODO: expose this to the python API
     table = Table()
     table.add_column("status", justify="left", no_wrap=True)
-    table.add_column("count", justify="right", no_wrap=True)
+    table.add_column("n_tasks", justify="right", no_wrap=True)
 
     for status_type in TaskStatus:
         status_name = status_type.name
@@ -111,19 +111,17 @@ def rich_print_counts(task_counts: dict):
     help="Path to a TaskDB file.",
 )
 @click.option(
-    "--count",
-    "-c",
+    "--summary",
     flag_value=True,
     default=False,
 )
-def status(task_db: Path, count: bool):
+def status(task_db: Path, summary: bool):
     """
     Show the status of a task.db as a table.
 
-
     """
     # TODO: add loading bar
-    status_main(task_db_path=task_db, count=count)
+    status_main(task_db_path=task_db, summary=summary)
 
 
 PLUGIN = OFECommandPlugin(command=status, section="Execution", requires_ofe=(1, 13))

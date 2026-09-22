@@ -31,7 +31,7 @@ def test_status(simple_task_graph):
         assert all(id in result.stdout for id in node_ids)
 
 
-def test_status_count(simple_task_graph):
+def test_status_summary(simple_task_graph):
     expected_statuses = [
         "BLOCKED",
         "AVAILABLE",
@@ -46,6 +46,6 @@ def test_status_count(simple_task_graph):
         db_path = "test.db"
         db = exorcist.TaskStatusDB.from_filename(db_path)
         db.add_task_network(task_graph, max_tries=6)
-        result = runner.invoke(status, ["--task-db", db_path, "-c"])
+        result = runner.invoke(status, ["--task-db", db_path, "--summary"])
         assert_click_success(result)
         assert all(name in result.stdout for name in expected_statuses)
