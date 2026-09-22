@@ -67,20 +67,23 @@ def status_main(
     task_df = get_task_df(task_db)
 
     if summary:
-        rich_print_summarys(task_df)
+        val_counts = task_df.status.value_counts()
+        rich_print_summary(val_counts)
     else:
         task_df["last_modified"] = task_df["last_modified"].dt.floor("s")
         rich_print_to_stdout(task_df)
 
 
-def rich_print_summarys(task_counts: dict):
+def rich_print_summary(task_counts: dict):
     """Print number of tasks with each status type.
 
     Parameters
     ----------
     task_counts : dict[TaskStatus, int]
-        dict containing the counts of each task status type
+        dict containing the counts of each task status type.
+
     """
+
     from exorcist import TaskStatus
     from rich.console import Console
     from rich.table import Table
