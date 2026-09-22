@@ -29,3 +29,23 @@ def test_status(simple_task_graph):
         result = runner.invoke(status, ["--task-db", db_path])
         assert_click_success(result)
         assert all(id in result.stdout for id in node_ids)
+
+
+def test_status_count(simple_task_graph):
+    expected_statuses = [
+        "BLOCKED",
+        "AVAILABLE",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "TOO_MANY_RETRIES",
+        "ERROR",
+    ]
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        task_graph, _ = simple_task_graph
+        db_path = "test.db"
+        db = exorcist.TaskStatusDB.from_filename(db_path)
+        db.add_task_network(task_graph, max_tries=6)
+        result = runner.invoke(status, ["--task-db", db_path, "-c"])
+        assert_click_success(result)
+        assert all(name in result.stdout for name in expected_statuses)

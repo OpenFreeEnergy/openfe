@@ -11,6 +11,7 @@ from openfecli.utils import rich_print_to_stdout
 
 def status_main(
     task_db_path: Path,
+    count: bool,
 ):
     """
     Parameters
@@ -48,8 +49,32 @@ def status_main(
     # # TODO: rewrite this using just sql and rich table?
     task_db = TaskStatusDB.from_filename(task_db_path)
     task_df = get_task_df(task_db)
-    task_df["last_modified"] = task_df["last_modified"].dt.floor("s")
-    rich_print_to_stdout(task_df)
+
+    if count:
+        rich_print_counts(task_df)
+    else:
+        task_df["last_modified"] = task_df["last_modified"].dt.floor("s")
+        rich_print_to_stdout(task_df)
+
+
+def rich_print_counts(task_df):
+    from exorcist import TaskStatus
+    from rich.console import Console
+    from rich.table import Table
+
+    val_counts = task_df.status.value_counts()
+
+    table = Table()
+    table.add_column("status", justify="left", no_wrap=True)
+    table.add_column("count", justify="right", no_wrap=True)
+
+    for status_type in TaskStatus:
+        status_name = status_type.name
+        table.add_row(str(status_name), str(val_counts.get(status_name, 0)))
+    console = Console()
+    console.print(table)
+
+    pass
 
 
 @click.command("status", short_help="Output the status of the task database as a table.")
@@ -65,13 +90,20 @@ def status_main(
     required=True,
     help="Path to a TaskDB file.",
 )
-def status(task_db: Path):
+@click.option(
+    "--count",
+    "-c",
+    flag_value=True,
+    default=False,
+)
+def status(task_db: Path, count: bool):
     """
     Show the status of a task.db as a table.
 
 
     """
-    status_main(task_db_path=task_db)
+    # TODO: add loading bar
+    status_main(task_db_path=task_db, count=count)
 
 
 PLUGIN = OFECommandPlugin(command=status, section="Execution", requires_ofe=(1, 13))
