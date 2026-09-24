@@ -5,6 +5,8 @@ Task-based Execution
 
 In contrast to :ref:`quickrun execution <userguide_quickrun>`, task-based execution does not require that you explicitly define the Transformation to be executed.
 
+.. define "task" here
+
 This means that you can execute an entire ``AlchemicalNetwork``'s campaign just by calling the ``openfe run-task`` command iteratively until all tasks are complete!
 
 .. include that ``task`` == ProtocolUnit, or is that confusing to non-dev users?
@@ -119,9 +121,9 @@ You'll now see that one task has been completed, and a new task has been unblock
     │ HybridTopologyMultiState… │ BLOCKED   │ NaT                 │ 0     │ 1         │
     ...
 
-However, to run an entire campaign you would have to run this single command _many_ times.
+However, to run an entire campaign you would have to run ``openfe run-task`` _many_ times.
 
-In practice, you will likely be submitting many workers simultaneously using SLURM or similar.
+In practice, you will likely be submitting many workers simultaneously using Slurm or similar.
 You can call this command in a loop, so that after a ``task`` is completed, the ``Worker`` automatically picks up a new ``task``, continuing to run tasks in serial until the walltime runs out.
 
 .. code:: bash
@@ -142,7 +144,10 @@ You can call this command in a loop, so that after a ``task`` is completed, the 
     done
 
 
-To run multiple workers in parallel, submit ``run_tasks.sh`` multiple times as separate jobs.
+To run multiple workers in parallel, submit ``run_tasks.sh`` multiple times as separate jobs, for example using `Job Arrays on Slurm <https://slurm.schedmd.com/job_array.html>`_:
+
+..code:: bash
+    sbatch --array=1-50 run_tasks.sh
 
 
 Gathering Results
