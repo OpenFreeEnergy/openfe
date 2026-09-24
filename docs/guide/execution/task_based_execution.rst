@@ -24,18 +24,20 @@ If you are accustomed to using the existing ``openfe plan-rbfe-network`` or ``op
 
 .. code:: bash
 
-    > openfe plan-rbfe-network --networks-only
-
+    > openfe plan-rbfe-network -M ligands.sdf -p protein.pdb --networks-only -o tyk2
+    ...
+    > tree .
+    tyk2/
+    ├── ligand_network.graphml
+    └── tyk2.json
 
 Once you have an AlchemicalNetwork, use the following command to set up the task-based campaign.
-By default, the ``TaskDB`` and ``Warehouse`` will be created using the input file basename (here, ``tyk2``).
-
-.. TODO: The ``--name`` parameter lets us choose an identifier for the ``Warehouse`` and ``TaskDB`` file names.
+By default, the ``TaskDB`` and ``Warehouse`` will be created using the input file basename (here, ``tyk2``), but you can pass in the ``--name`` parameter to define the identifier for the ``Warehouse`` and ``TaskDB`` file names.
 
 
 .. code:: bash
 
-    > openfe setup-task-campaign --alchemical-network tyk2.json
+    > openfe setup-task-campaign --alchemical-network tyk2/tyk2.json
 
 
 You should see a ``Warehouse`` in the form of a directory and a ``TaskStatusDB`` file as output.
