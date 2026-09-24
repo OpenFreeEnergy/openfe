@@ -148,7 +148,8 @@ You can call this command in a loop, so that after a ``task`` is completed, the 
 
 To run multiple workers in parallel, submit ``run_tasks.sh`` multiple times as separate jobs, for example using `Job Arrays on Slurm <https://slurm.schedmd.com/job_array.html>`_:
 
-..code:: bash
+.. code:: bash
+
     sbatch --array=1-50 run_tasks.sh
 
 
