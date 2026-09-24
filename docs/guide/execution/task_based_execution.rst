@@ -104,6 +104,8 @@ To execute a single ``task`` (where here a ``task`` is one ``ProtocolUnit``), yo
 
 This finds next available ``task`` in the ``TaskStatusDB``, retrieves the necessary data from the ``Warehouse`` to execute the task, then executes the task.
 
+.. show what files are created here (shared/scratch dirs)
+
 You'll now see that one task has been completed, and a new task has been unblocked:
 
 .. code:: bash
