@@ -93,9 +93,9 @@ All task status information is stored in the ``TaskStatusDB``:
 
 At this stage, we can see that the following directories have been populated:
 
-- ``setup/``: Stores input ``AlchemicalNetwork``, deconstructed into its sub-components.
+- ``setup/``: Stores the input :class:`AlchemicalNetwork`, deconstructed into its sub-components.
 - ``tasks/``: Stores the :class:`ProtocolUnit` tasks that are to be executed by ``openfe run-task``.
-- ``protocol_dags/``: Stores the :class:`ProtocolDAG` s that the task ``ProtocolUnit``/s correspond to. These can be thought of as "bookkeeping" done by **openfe**.
+- ``protocol_dags/``: Stores the :class:`ProtocolDAG`\s that the task :class:`ProtocolUnit`/s correspond to. These can be thought of as "bookkeeping" done by **openfe**.
 
 Note that ``results/`` and ``shared/`` are empty, as no tasks have been executed yet.
 
@@ -220,7 +220,7 @@ As units are executed, you'll see rest of the ``Warehouse`` directories be popul
         ...
 
 
-To run an entire campaign this way, you would have to run ``openfe run-task`` _many_ times.
+To run an entire campaign this way, you would have to run ``openfe run-task`` *many* times.
 
 In practice, you will likely be submitting many workers simultaneously using Slurm or similar.
 You can call this command in a loop, so that after a ``task`` is completed, the ``Worker`` automatically picks up a new ``task``, continuing to run tasks in serial until the walltime runs out.
@@ -267,6 +267,7 @@ This enables use of ``openfe gather`` (and ``openfe gather-septop``, ``openfe ga
 
 The ``results`` directory may now be used as input to ``openfe gather``.
 
+.. TODO: how to cross-link to openfe gather?
 
 .. code:: bash
 
