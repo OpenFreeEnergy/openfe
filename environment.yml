@@ -7,9 +7,10 @@ dependencies:
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
   - duecredit
-  # - kartograf>=2.0.0  # temporary, until gufe v1.13 is released
+  - citeproc-py <0.10.3  # the default harvard1 style used by duecredit was changed in 0.10.3, this avoids needing an extra dependency on citeproc-py-styles
+  - kartograf~=2.0
   - dill  # temporary, needed by kartograf. remove when gufe v1.13 is released
-  # - konnektor~=0.4.0  # temporary, until gufe v1.13 is released
+  - konnektor>=0.4.0
   - lomap2>=3.2.1
   - networkx
   - numpy
@@ -53,8 +54,6 @@ dependencies:
   # Control blas/openmp threads
   - threadpoolctl
   - pip:
-    - git+https://github.com/OpenFreeEnergy/kartograf@main  # needs gufe which pins to pydantic < 2.13. update this once gufe v1.13 is released on conda-forge
-    - git+https://github.com/OpenFreeEnergy/konnektor@main
     - git+https://github.com/OpenFreeEnergy/gufe@main
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
