@@ -44,7 +44,7 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
         :link: guide/index
         :link-type: doc
 
-        Explanations of key concepts underlying the **openfe**.
+        Explanations of key concepts underlying **openfe**.
 
     .. grid-item-card:: :fas:`life-ring` Troubleshooting
         :text-align: center
