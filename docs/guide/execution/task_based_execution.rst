@@ -3,13 +3,13 @@
 Task-based Execution
 ====================
 
-In contrast to :ref:`quickrun execution <userguide_quickrun>`, task-based execution does not require that you explicitly define the Transformation to be executed.
+In contrast to :ref:`quickrun execution <userguide_quickrun>`, task-based execution does not require that you explicitly define the ``Transformation`` to be executed.
 
-.. define "task" here
+Instead, an ``AlchemicalNetwork`` is used to create a series of tasks corresponding to each transformation, with each task representing a single :ref:`ProtocolUnit` to be executed.
 
-This means that you can execute an entire ``AlchemicalNetwork``'s campaign just by calling the ``openfe run-task`` command iteratively until all tasks are complete!
+.. point to developer docs here at some point for more detail? or add a diagram?
 
-.. include that ``task`` == ProtocolUnit, or is that confusing to non-dev users?
+This means that you can execute an entire ``AlchemicalNetwork``\'s campaign just by calling the ``openfe run-task`` command iteratively until all tasks are complete, without needing to track specific Transformation JSON files.
 
 See below for details on how to run an openfe campaign using task-based execution using either the CLI or the Python API.
 
