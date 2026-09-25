@@ -1,11 +1,14 @@
 .. _userguide_task_based_execution:
 
+.. module:: openfe
+    :noindex:
+
 Task-based Execution
 ====================
 
 In contrast to :ref:`quickrun execution <userguide_quickrun>`, task-based execution does not require that you explicitly define the ``Transformation`` to be executed.
 
-Instead, an ``AlchemicalNetwork`` is used to create a series of tasks corresponding to each transformation, with each task representing a single :ref:`ProtocolUnit` to be executed.
+Instead, an :class:`AlchemicalNetwork` is used to create a series of tasks corresponding to each transformation, with each task representing a single :class:`ProtocolUnit` to be executed.
 
 .. point to developer docs here at some point for more detail? or add a diagram?
 
