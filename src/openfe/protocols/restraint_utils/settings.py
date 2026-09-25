@@ -225,3 +225,4 @@ class BoreschRestraintSettings(BaseRestraintSettings):
                 "either be defined or undefined"
             )
             raise ValueError(errmsg)
+        return self
