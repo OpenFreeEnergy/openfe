@@ -153,3 +153,30 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """
 
     return pd.read_sql_table("dependencies", task_db.engine)
+
+
+def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: int, task_id: str) -> None:
+    """Update the `max_tries` column of a TaskStatusDB
+
+    Parameters
+    ----------
+    task_db : exorcist.TaskStatusDB
+        TaskStatusDB to update
+    max_tries : int
+        new value of ``max_tries`` to assign row matching task_id
+    task_id : the task_id used to select the row to update
+    """
+
+    import sqlalchemy as sqla
+    from exorcist import TaskStatus
+
+    # TODO: update all rows if task_id==None
+    # TODO: bump all ``TOO_MANY_RETRIES``
+    if task_id:
+        update_task_max_tries = task_db._task_row_update_statement(
+            task_id,
+            max_tries=max_tries,
+        )
+    with task_db.engine.begin() as conn:
+        result = conn.execute(update_task_max_tries)
+        task_db._validate_update_result(result)
