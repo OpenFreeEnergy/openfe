@@ -2191,11 +2191,11 @@ def test_handle_alchemical_wats(
 def _assert_total_charge(system, atom_classes, chgA, chgB):
     nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
 
-    offsets = {}
+    offsets: dict[int, float] = {}
     for i in range(nonbond[0].getNumParticleParameterOffsets()):
         offset = nonbond[0].getParticleParameterOffset(i)
         assert len(offset) == 5
-        offsets[offset[1]] = ensure_quantity(offset[2], "openff")
+        offsets[offset[1]] = offsets.get(offset[1], 0.0) + offset[2]
 
     stateA_charges = np.zeros(system.getNumParticles())
     stateB_charges = np.zeros(system.getNumParticles())
@@ -2212,12 +2212,12 @@ def _assert_total_charge(system, atom_classes, chgA, chgB):
         # particle charge (c) is equal to 0
         # offset (c_offset) is equal to molB particle charge
         elif i in atom_classes["unique_new_atoms"]:
-            stateB_charges[i] = offsets[i].m
+            stateB_charges[i] = offsets[i]
         # particle charge (c) is equal to molA particle charge
         # offset (c_offset) is equal to difference between molB and molA
         elif i in atom_classes["core_atoms"]:
             stateA_charges[i] = c.m
-            stateB_charges[i] = c.m + offsets[i].m
+            stateB_charges[i] = c.m + offsets[i]
         # an environment atom
         else:
             assert i in atom_classes["environment_atoms"]
@@ -2226,6 +2226,27 @@ def _assert_total_charge(system, atom_classes, chgA, chgB):
 
     assert chgA == pytest.approx(np.sum(stateA_charges))
     assert chgB == pytest.approx(np.sum(stateB_charges))
+
+
+def _assert_neutral_all_windows(system):
+    """Total charge of the hybrid system must be ~0 at every lambda window."""
+    from openfe.protocols.openmm_rfe._rfe_utils.lambdaprotocol import LambdaProtocol
+
+    nbf = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
+    base = np.array([
+        nbf.getParticleParameters(i)[0].value_in_unit(omm_unit.elementary_charge)
+        for i in range(system.getNumParticles())
+    ])
+    offs = [nbf.getParticleParameterOffset(i)[:3]
+            for i in range(nbf.getNumParticleParameterOffsets())]
+
+    lp = LambdaProtocol(functions="default")
+    for lam in lp.lambda_schedule:
+        vals = {k: fn(lam) for k, fn in lp.functions.items()}
+        charges = base.copy()
+        for name, pidx, qscale in offs:
+            charges[pidx] += qscale * vals[name]
+        assert np.sum(charges) == pytest.approx(0.0, abs=1e-5)
 
 
 def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, tmp_path):
@@ -2258,10 +2279,78 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, solv_settings, 
     results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
     htf = results["hybrid_factory"]
     _assert_total_charge(htf.hybrid_system, htf._atom_classes, 0, 0)
+    _assert_neutral_all_windows(htf.hybrid_system)
 
     assert len(htf._atom_classes["core_atoms"]) == 14
     assert len(htf._atom_classes["unique_new_atoms"]) == 3
     assert len(htf._atom_classes["unique_old_atoms"]) == 1
+
+
+@pytest.mark.parametrize(
+    "mapping_name",
+    [
+        "benzene_to_benzoic_mapping",  # 0 -> -1: charge appears on state B (anion)
+        "benzoic_to_benzene_mapping",  # -1 -> 0: charge disappears from state A (anion)
+        "benzene_to_aniline_mapping",  # 0 -> +1: charge appears on state B (cation)
+        "aniline_to_benzene_mapping",  # +1 -> 0: charge disappears from state A (cation)
+    ],
+)
+def test_dry_run_alchemwater_solvent_directionality(mapping_name, solv_settings, tmp_path, request):
+    """
+    Regression test for the alchemical-water net-charge correction: the hybrid
+    system must stay exactly neutral at every lambda window regardless of
+    whether the net formal charge sits on state A or state B, and regardless
+    of its sign.
+    """
+    mapping = request.getfixturevalue(mapping_name)
+    assert abs(mapping.get_alchemical_charge_difference()) == 1
+
+    stateA_system = openfe.ChemicalSystem(
+        {"ligand": mapping.componentA, "solvent": openfe.SolventComponent()}
+    )
+    stateB_system = openfe.ChemicalSystem(
+        {"ligand": mapping.componentB, "solvent": openfe.SolventComponent()}
+    )
+    solv_settings.alchemical_settings.explicit_charge_correction = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+    dag = protocol.create(stateA=stateA_system, stateB=stateB_system, mapping=mapping)
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+
+    _assert_neutral_all_windows(htf.hybrid_system)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "mapping_name",
+    ["benzene_to_benzoic_mapping", "benzoic_to_benzene_mapping"],
+)
+def test_setup_complex_alchemwater_directionality(
+    mapping_name, solv_settings, tmp_path, request, T4_protein_component,
+):
+    """
+    As test_dry_run_alchemwater_solvent_directionality, but in a complex
+    (protein+solvent) system.
+    """
+    mapping = request.getfixturevalue(mapping_name)
+    solvent = openfe.SolventComponent()
+    stateA_system = openfe.ChemicalSystem(
+        {"ligand": mapping.componentA, "solvent": solvent, "protein": T4_protein_component}
+    )
+    stateB_system = openfe.ChemicalSystem(
+        {"ligand": mapping.componentB, "solvent": solvent, "protein": T4_protein_component}
+    )
+    solv_settings.solvation_settings.solvent_padding = "0.9 nm"
+    solv_settings.solvation_settings.box_shape = "dodecahedron"
+    solv_settings.alchemical_settings.explicit_charge_correction = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
+    dag = protocol.create(stateA=stateA_system, stateB=stateB_system, mapping=mapping)
+    dag_setup_unit = _get_units(dag.protocol_units, HybridTopologySetupUnit)[0]
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+
+    _assert_neutral_all_windows(htf.hybrid_system)
 
 
 @pytest.mark.slow
