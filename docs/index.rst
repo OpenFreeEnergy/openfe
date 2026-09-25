@@ -46,6 +46,13 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
 
         Explanations of key concept underlying the OpenFE toolkit.
 
+    .. grid-item-card:: :fas:`life-ring` Troubleshooting
+        :text-align: center
+        :link: guide/troubleshooting
+        :link-type: doc
+
+        Known issues and error-specific guidance for debugging simulations.
+
     .. grid-item-card:: :fas:`table-list` Cookbooks
         :text-align: center
         :link: cookbook/index
