@@ -67,7 +67,7 @@ If the error lists specific bonds or valence terms, those terms are the ones tha
 
 .. _troubleshooting-nan-errors-during-simulation:
 
-NaN errors during simulation
+``NaN`` errors during simulation
 ----------------------------
 
 You may see errors like:
