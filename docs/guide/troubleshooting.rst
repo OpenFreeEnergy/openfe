@@ -6,12 +6,14 @@ This guide covers tips and strategies for troubleshooting simulation failures.
 Troubleshooting
 ---------------
 
-- `Periodic box size / nonbonded cutoff errors <#periodic-box-size-nonbonded-cutoff-errors>`_
-- `SMIRNOFF force field parameter assignment errors <#smirnoff-force-field-parameter-assignment-errors>`_
-- `NaN errors during simulation <#nan-errors-during-simulation>`_
-- `Log debug information <#log-debug-information>`_
-- `JAX warnings <#jax-warnings>`_
-- `PYMBAR_DISABLE_JAX <#pymbar-disable-jax>`_
+- :ref:`Periodic box size / nonbonded cutoff errors <troubleshooting-periodic-box-size-nonbonded-cutoff-errors>`
+- :ref:`SMIRNOFF force field parameter assignment errors <troubleshooting-smirnoff-force-field-parameter-assignment-errors>`
+- :ref:`NaN errors during simulation <troubleshooting-nan-errors-during-simulation>`
+- :ref:`Log debug information <troubleshooting-log-debug-information>`
+- :ref:`JAX warnings <troubleshooting-jax-warnings>`
+- :ref:`PYMBAR_DISABLE_JAX <troubleshooting-pymbar-disable-jax>`
+
+.. _troubleshooting-periodic-box-size-nonbonded-cutoff-errors:
 
 Periodic box size / nonbonded cutoff errors
 -------------------------------------------
@@ -42,6 +44,8 @@ Suggested fixes
 We do **not** recommend changing the nonbonded cutoff to fix this issue, since force fields are typically parameterized for these values and changing them may affect accuracy.
 If you have modified the nonbonded cutoff, it may be that it is too large for the simulation box.
 
+.. _troubleshooting-smirnoff-force-field-parameter-assignment-errors:
+
 SMIRNOFF force field parameter assignment errors
 ------------------------------------------------
 
@@ -64,6 +68,8 @@ Suggested fixes
 - Consider using a molecule specific force field with custom parameters to guarantee coverage of the chemistry in your system.
 
 If the error lists specific bonds or valence terms, those terms are the ones that could not be assigned parameters.
+
+.. _troubleshooting-nan-errors-during-simulation:
 
 NaN errors during simulation
 ----------------------------
@@ -100,6 +106,8 @@ Suggested fixes
 - If possible, rebuild or re-prep the input structures before rerunning the protocol.
 
 The state of the system and integrator before the error are often saved in a ``nan-error-logs`` directory, which can help with debugging.
+
+.. _troubleshooting-log-debug-information:
 
 Log Debug information
 ---------------------
@@ -156,6 +164,8 @@ Note that the ``--log debug_logging.conf`` argument goes between ``openfe`` and 
 
 This will cause every package to log at the debug level, which may be quite verbose and noisy but should aid in identify what is going on right before the exception is thrown.
 
+.. _troubleshooting-jax-warnings:
+
 JAX warnings
 ------------
 
@@ -170,6 +180,8 @@ If the necessary libraries for GPU acceleration are not installed and JAX detect
 
 This warning does not mean that the *molecular dynamics* simulation will fall back to using the CPU.
 The simulation will still use the computing platform specified in the settings.
+
+.. _troubleshooting-pymbar-disable-jax:
 
 PYMBAR_DISABLE_JAX
 ------------------
