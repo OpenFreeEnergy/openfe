@@ -68,7 +68,7 @@ If the error lists specific bonds or valence terms, those terms are the ones tha
 .. _troubleshooting-nan-errors-during-simulation:
 
 ``NaN`` errors during simulation
-----------------------------
+--------------------------------
 
 You may see errors like:
 
@@ -90,7 +90,7 @@ In some cases the simulation can be rescued by restarting from the last stable s
 
 **Suggested fixes**
 
-- Run ``scripts/validate_transformation.py`` on the transformation JSON to try to identify the source of the problem.
+- Run the `validation script <https://github.com/OpenFreeEnergy/openfe-failure-cases/blob/main/scripts/validate_transformation.py>`_ on the transformation JSON to try to identify the source of the problem.
 - Inspect the receptor for missing residues or missing capping groups.
 - Review the atom mapping for bond-breaking transformations or mappings with too few heavy atoms, try to improve the mapping by aligning the ligands before generating the mapping.
 
