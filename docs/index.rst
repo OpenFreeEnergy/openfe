@@ -37,14 +37,21 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
         :link: tutorials/index
         :link-type: doc
 
-        Step-by-step examples showing how to use the OpenFE toolkit.
+        Step-by-step examples showing how to use the **openfe**.
 
     .. grid-item-card:: :fas:`book-open-reader` User Guide
         :text-align: center
         :link: guide/index
         :link-type: doc
 
-        Explanations of key concept underlying the OpenFE toolkit.
+        Explanations of key concepts underlying **openfe**.
+
+    .. grid-item-card:: :fas:`life-ring` Troubleshooting
+        :text-align: center
+        :link: guide/troubleshooting
+        :link-type: doc
+
+        Known issues and error-specific guidance for debugging simulations.
 
     .. grid-item-card:: :fas:`table-list` Cookbooks
         :text-align: center
