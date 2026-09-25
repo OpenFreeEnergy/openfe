@@ -25,15 +25,13 @@ You may see errors like:
 
 These errors have the same cause: the system is too small for the chosen nonbonded cutoff.
 
-Possible causes
-^^^^^^^^^^^^^^^
+**Possible causes**
 
 - Insufficient solvent padding.
 - Incorrect periodic box vectors.
 - A solvated system that does not leave enough space around the solute.
 
-Suggested fixes
-^^^^^^^^^^^^^^^
+**Suggested fixes**
 
 - If the system is solvated by the OpenFE protocol, increase the protocol's ``solvent_padding`` setting.
 - If the system is explicitly solvated, e.g. when using ``SolvatedPDBComponent`` or ``ProteinMembraneComponent``:
@@ -56,13 +54,11 @@ You may see errors like:
 This usually means the SMIRNOFF-style force field does not have parameters for part of the chemistry in the system.
 In the example above, the force field was unable to assign bond parameters for bonds involving silicon.
 
-Possible causes
-^^^^^^^^^^^^^^^
+**Possible causes**
 
 - The system contains atoms or functional groups that are not covered by the selected force field.
 
-Suggested fixes
-^^^^^^^^^^^^^^^
+**Suggested fixes**
 
 - Check whether the chemistry in the system is expected to be supported by the chosen force field.
 - Consider using a molecule specific force field with custom parameters to guarantee coverage of the chemistry in your system.
@@ -85,16 +81,14 @@ https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#nan
 These errors usually mean that the simulation became numerically unstable during minimization or propagation.
 In some cases the simulation can be rescued by restarting from the last stable state, by default the protocols will attempt this up to ``20`` times before giving up and so you may see multiple ``NaN`` errors in the logs.
 
-Possible causes
-^^^^^^^^^^^^^^^
+**Possible causes**
 
 - Missing capping groups or other issues in the receptor structure.
 - A poor atom mapping, including mappings that break bonds, map too few heavy atoms or map atoms whose hybridization changes due to a single to double/triple bond transformation.
 - An initial clash between the ligand and a crystal water, the receptor, or another part of the system that the minimizer could not relax.
 - A poor input structure for the ligand that the minimizer could not fix.
 
-Suggested fixes
-^^^^^^^^^^^^^^^
+**Suggested fixes**
 
 - Run ``scripts/validate_transformation.py`` on the transformation JSON to try to identify the source of the problem.
 - Inspect the receptor for missing residues or missing capping groups.
