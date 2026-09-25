@@ -10,7 +10,7 @@ from gufe.visualization.mapping_visualization import (
 from rdkit import Chem
 
 from openfe import LigandNetwork, SmallMoleculeComponent
-from openfe.utils.custom_typing import MPL_MouseEvent
+from openfe.utils import requires_package
 from openfe.utils.network_plotting import Edge, GraphDrawing, Node
 
 
@@ -156,6 +156,7 @@ class AtomMappingNetworkDrawing(GraphDrawing):
     EdgeCls = AtomMappingEdge
 
 
+@requires_package("pygraphviz")
 def plot_atommapping_network(network: LigandNetwork):
     """Convenience method for plotting the atom mapping network
 
