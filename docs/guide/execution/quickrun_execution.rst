@@ -123,7 +123,7 @@ Below is an example of a simple script that will create and submit a separate jo
        exit 1
      fi
      for repeat in {0..2}; do
-       cmd="openfe quickrun ${file} -o results_${repeat}/${relpath} -d results_${repeat}/${dirpath} --n-protocol-repeats 1"
+       cmd="openfe quickrun ${file} -o results_${repeat}/${relpath} -d results_${repeat}/${dirpath}"
        echo -e "#!/usr/bin/env bash\n${cmd}" > "${jobpath}"
        sbatch "${jobpath}"
      done
