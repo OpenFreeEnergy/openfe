@@ -2,6 +2,9 @@ Troubleshooting Simulations
 ===========================
 
 This guide covers tips and strategies for troubleshooting simulation failures.
+If you encounter a failure not covered here, please consider contributing it to the
+`openfe-failure-cases <https://github.com/OpenFreeEnergy/openfe-failure-cases>`_ repository
+or opening an `issue <https://github.com/OpenFreeEnergy/openfe/issues>`_.
 
 Troubleshooting
 ---------------
@@ -156,7 +159,7 @@ Save this configuration file as ``debug_logging.conf`` and then run ``openfe qui
 
 Note that the ``--log debug_logging.conf`` argument goes between ``openfe`` and ``quickrun`` on the command line.
 
-This will cause every package to log at the debug level, which may be quite verbose and noisy but should aid in identify what is going on right before the exception is thrown.
+This will cause every package to log at the debug level, which may be quite verbose and noisy but should aid in identifying what is going on right before the exception is thrown.
 
 .. _troubleshooting-jax-warnings:
 
@@ -190,7 +193,7 @@ The error message may look like this:
    LLVM ERROR: Unable to allocate section memory!
 
 We have decided to disable JAX acceleration by default to prevent wasted compute.
-However, if you wish to use the JAX acceleration, you may set ``PYMBAR_DISABLE_JAX`` to ``TRUE`` (e.g. put ``export PYMBAR_DISABLE_JAX=FALSE`` in your submission script before running ``openfe quickrun``).
+However, if you wish to use the JAX acceleration, you may set ``PYMBAR_DISABLE_JAX`` to ``FALSE`` (e.g. put ``export PYMBAR_DISABLE_JAX=FALSE`` in your submission script before running ``openfe quickrun``).
 For more information, see these issues on github:
 
 - https://github.com/choderalab/pymbar/issues/564
