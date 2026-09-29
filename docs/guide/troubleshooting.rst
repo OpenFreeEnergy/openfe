@@ -82,7 +82,13 @@ For more information on the OpenMM error, see the OpenMM FAQ entry on NaNs:
 https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#nan
 
 These errors usually mean that the simulation became numerically unstable during minimization or propagation.
-In some cases the simulation can be rescued by restarting from the last stable state, by default the protocols will attempt this up to ``20`` times before giving up and so you may see multiple ``NaN`` errors in the logs.
+In some cases the simulation can recover by restarting from the last stable state.
+By default the protocols will attempt this up to ``20`` times before giving up, so you may see multiple ``NaN`` errors in the logs even if the simulation ultimately completes.
+
+A successful restart does not necessarily mean that the resulting free-energy estimate is unreliable.
+However, repeated ``NaN`` errors may indicate an underlying stability problem.
+Before trusting the result, investigate the transformation and input structures for likely causes of instability and check the usual
+diagnostics, including agreement between independent repeats.
 
 **Possible causes**
 

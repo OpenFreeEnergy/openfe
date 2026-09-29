@@ -37,7 +37,7 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
         :link: tutorials/index
         :link-type: doc
 
-        Step-by-step examples showing how to use the **openfe**.
+        Step-by-step examples showing how to use the OpenFE ecosystem.
 
     .. grid-item-card:: :fas:`book-open-reader` User Guide
         :text-align: center
