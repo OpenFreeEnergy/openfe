@@ -6,15 +6,9 @@ If you encounter a failure not covered here, please consider contributing it to 
 `openfe-failure-cases <https://github.com/OpenFreeEnergy/openfe-failure-cases>`_ repository
 or opening an `issue <https://github.com/OpenFreeEnergy/openfe/issues>`_.
 
-Troubleshooting
----------------
-
-- :ref:`Periodic box size / nonbonded cutoff errors <troubleshooting-periodic-box-size-nonbonded-cutoff-errors>`
-- :ref:`SMIRNOFF force field parameter assignment errors <troubleshooting-smirnoff-force-field-parameter-assignment-errors>`
-- :ref:`NaN errors during simulation <troubleshooting-nan-errors-during-simulation>`
-- :ref:`Log debug information <troubleshooting-log-debug-information>`
-- :ref:`JAX warnings <troubleshooting-jax-warnings>`
-- :ref:`PYMBAR_DISABLE_JAX <troubleshooting-pymbar-disable-jax>`
+.. contents::
+   :local:
+   :depth: 1
 
 .. _troubleshooting-periodic-box-size-nonbonded-cutoff-errors:
 
