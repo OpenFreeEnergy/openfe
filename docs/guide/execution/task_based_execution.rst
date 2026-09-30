@@ -6,13 +6,15 @@
 Task-based Execution
 ====================
 
-In contrast to :ref:`quickrun execution <userguide_quickrun>`, task-based execution does not require that you explicitly define the ``Transformation`` to be executed.
+In contrast to :ref:`quickrun execution <userguide_quickrun>`, task-based execution does not require that you explicitly pass in the ``Transformation`` to be executed.
 
 Instead, an :class:`AlchemicalNetwork` is used to create a series of tasks corresponding to each transformation, with each task representing a single :class:`ProtocolUnit` to be executed.
+See the :ref:`Protocols and the Execution Model Theory  <userguide_execution_theory>` guide for more details on ProtocolDAGs, ProtocolUnits, and ProtocolUnitResults.
+
 
 .. add a figure relating Transformation -> ProtocolDAG -> ProtocolUnits?
 
-This means that you can execute an entire ``AlchemicalNetwork``\'s campaign just by calling the ``openfe run-task`` command iteratively until all tasks are complete, without needing to track specific Transformation JSON files.
+This means that you can execute an entire ``AlchemicalNetwork``\'s campaign just by calling the ``openfe run-task`` command iteratively to run each task until the entire campaign is complete, without needing to track specific Transformation JSON files.
 
 See below for details on how to run an openfe campaign using task-based execution using either the CLI or the Python API.
 
@@ -22,21 +24,27 @@ Task-based Execution with the CLI
 Setting up a Campaign
 ~~~~~~~~~~~~~~~~~~~~~
 
-An ``AlchemicalNetwork`` will be our input for executing a campaign.
-Refer to the cookbook `Create an AlchemicalNetwork <../../cookbook/create_alchemical_network.nblink>`_ for guidance on getting to this step.
+Any ``AlchemicalNetwork`` can be executed with task-based execution, regardless of ``Protocol`` or other implementation details.
+Refer to the cookbook `Create an AlchemicalNetwork <../../cookbook/create_alchemical_network.nblink>`_ for how you can use the Python API to customize your setup.
+
 
 If you are accustomed to using the ``openfe plan-rbfe-network`` or ``openfe plan-rhfe-network`` CLI commands to setup your campaign, you can simply add the ``--networks-only`` argument to your existing command, and use the output ``AlchemicalNetwork`` (``tyk2.json`` here) as a starting point.
 
 .. code:: bash
 
-    > openfe plan-rbfe-network -M ligands.sdf -p protein.pdb --networks-only -o tyk2
+    > openfe plan-rbfe-network -M ligands.sdf -p protein.pdb --networks-only -o tyk2 --n-protocol-repeats=3
     ...
     > tree .
     tyk2/
     ├── ligand_network.graphml
     └── tyk2.json
 
-Once you have an AlchemicalNetwork, use the following command to set up the task-based campaign.
+.. note::
+
+    Unlike execution with ``quickrun``, with task-based execution the setting ``n_repeats=3`` does not mean the jobs will be inherently run in serial, and doesn't not require different user behavior to enable parallel execution. We recommend including ``--n-protocol-repeats=3`` for simplicity.
+
+Once you have an AlchemicalNetwork, use the ``openfe setup-task-campaign`` command to set up the task-based campaign.
+
 By default, the ``TaskDB`` and ``Warehouse`` will be created using the input file basename (here, ``tyk2``), but you can pass in the ``--name`` parameter to define the identifier for the ``Warehouse`` and ``TaskDB`` file names.
 
 .. code:: bash
@@ -154,7 +162,7 @@ To execute a single ``task`` (where here a ``task`` is one ``ProtocolUnit``), yo
 **openfe** finds next available ``task`` in the ``TaskStatusDB``, retrieves the necessary data from the ``Warehouse`` to execute the task, then executes the task.
 
 Now, you will see that a ``scratch/`` directory has been created locally, which is needed for quick read/write operations during execution.
-
+Use the ``--scratch`` argument to specify where to create this directory; by default, it will be created in the current directory and named ``scratch/``.
 
 
 You'll now see that one task has been completed, and a new task has been unblocked:
@@ -237,9 +245,10 @@ You can call this command in a loop, so that after a ``task`` is completed, the 
     conda activate openfe_env
 
     # continue submitting run-task in serial until the wall time is hit
-    # you may submit this *script* multiple times to have workers execute tasks in parallel
+    # you may submit this *script* multiple times to have workers execute tasks in
+
     while true; do
-        openfe run-task --warehouse my_campaign/ --task-db my_campaign.db --scratch workdir/
+        openfe run-task --warehouse warehouse_tyk2/ --task-db tasks_tyk2.db --scratch workdir/
     done
 
 
