@@ -1654,7 +1654,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                     fig.savefig(output_directory / f"{label}_RMSD.png")
                     plt.close(fig)
 
-                if (values := data.get(f"{label}_COM_drift") is not None):
+                if (values := data.get(f"{label}_COM_drift")) is not None:
                     fig = plotting.plot_ligand_COM_drift(time_ps, values)
                     fig.savefig(output_directory / f"{label}_COM_drift.png")
                     plt.close(fig)

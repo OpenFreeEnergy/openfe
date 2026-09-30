@@ -22,13 +22,14 @@ from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
 )
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from openfe.protocols.openmm_utils.omm_settings import (
     BaseSolvationSettings,
     IntegratorSettings,
     MDOutputSettings,
     MDSimulationSettings,
+    MultiStateAnalysisSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
@@ -346,6 +347,12 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     including the partial charge assignment method, and the
     number of conformers used to generate the partial charges.
     """
+    analysis_settings: MultiStateAnalysisSettings = Field(
+        default_factory=MultiStateAnalysisSettings
+    )
+    """
+    Settings for the structural analysis of the multistate trajectories
+    """
 
 
 class AbsoluteBindingSettings(SettingsBaseModel):
@@ -467,4 +474,10 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
     Settings controlling how restraints are added to the system in the
     complex simulation.
+    """
+    analysis_settings: MultiStateAnalysisSettings = Field(
+        default_factory=MultiStateAnalysisSettings
+    )
+    """
+    Settings for the structural analysis of the multistate trajectories
     """

@@ -9,6 +9,11 @@ This module defines the ProtocolUnits for the
 """
 
 import logging
+import pathlib
+
+import netCDF4 as nc
+import numpy as np
+from rdkit import Chem
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     SettingsBaseModel,
@@ -19,6 +24,7 @@ from .base_afe_units import (
     BaseAbsoluteMultiStateAnalysisUnit,
     BaseAbsoluteMultiStateSimulationUnit,
     BaseAbsoluteSetupUnit,
+    LigandTrajectoryAnalysisMixin,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,6 +85,7 @@ class VacuumSettingsMixin:
             * equil_output_settings : MDOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
+            * analysis_settings: MultiStateAnalysisSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
@@ -95,6 +102,7 @@ class VacuumSettingsMixin:
         settings["equil_output_settings"] = prot_settings.vacuum_equil_output_settings
         settings["simulation_settings"] = prot_settings.vacuum_simulation_settings
         settings["output_settings"] = prot_settings.vacuum_output_settings
+        settings["analysis_settings"] = prot_settings.analysis_settings
 
         return settings
 
@@ -127,6 +135,29 @@ class AHFEVacuumAnalysisUnit(VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysis
     """
 
     simtype = "vacuum"
+
+    @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        topology: pathlib.Path,
+        skip: int,
+        ligand_indices: list[int],
+        rdmol: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        No structural analysis is carried out for the vacuum phase.
+
+        Non-periodic trajectories are not currently supported by
+        ``openfe-analysis``, so this returns no data.
+
+        Returns
+        -------
+        per_state_data : dict[str, list[np.ndarray]]
+          An empty dictionary.
+        time_ps : None
+        """
+        return {}, None
 
 
 class SolventComponentsMixin:
@@ -180,6 +211,7 @@ class SolventSettingsMixin:
             * equil_output_settings : MDOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
+            * analysis_settings: MultiStateAnalysisSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
@@ -196,6 +228,7 @@ class SolventSettingsMixin:
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings
         settings["output_settings"] = prot_settings.solvent_output_settings
+        settings["analysis_settings"] = prot_settings.analysis_settings
 
         return settings
 
@@ -221,7 +254,9 @@ class AHFESolventSimUnit(
     simtype = "solvent"
 
 
-class AHFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class AHFESolventAnalysisUnit(
+    LigandTrajectoryAnalysisMixin, SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the solvent phase
     of absolute hydration free energy transformations.
