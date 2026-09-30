@@ -9,7 +9,7 @@ TODO
 * Add all the restraint settings entries.
 """
 
-from typing import Annotated, Literal, Optional, TypeAlias, Self
+from typing import Annotated, Literal, Optional, Self, TypeAlias
 
 from gufe.settings import SettingsBaseModel
 from gufe.settings.typing import GufeQuantity, NanometerQuantity, specify_quantity_units
