@@ -46,13 +46,6 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
 
         Explanations of key concepts underlying **openfe**.
 
-    .. grid-item-card:: :fas:`life-ring` Troubleshooting
-        :text-align: center
-        :link: guide/troubleshooting
-        :link-type: doc
-
-        Known issues and error-specific guidance for debugging simulations.
-
     .. grid-item-card:: :fas:`table-list` Cookbooks
         :text-align: center
         :link: cookbook/index
@@ -91,6 +84,11 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
    cookbook/index
    reference/index
    CHANGELOG
+
+Frequently Asked Questions:
+---------------------------
+
+Running into errors? See :doc:`guide/troubleshooting` for common failure modes and how to fix them.
 
 Other OpenFE Ecosystem Projects:
 --------------------------------
