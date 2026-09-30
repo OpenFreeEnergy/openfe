@@ -25,7 +25,7 @@ Setting up a Campaign
 An ``AlchemicalNetwork`` will be our input for executing a campaign.
 Refer to the cookbook `Create an AlchemicalNetwork <../../cookbook/create_alchemical_network.nblink>`_ for guidance on getting to this step.
 
-If you are accustomed to using the existing ``openfe plan-rbfe-network`` or ``openfe plan-rhfe-network`` CLI commands to create, you can simply add the ``--networks-only`` argument to your existing call, and use the output ``AlchemicalNetwork`` (``tyk2.json`` here) as a starting point.
+If you are accustomed to using the ``openfe plan-rbfe-network`` or ``openfe plan-rhfe-network`` CLI commands to setup your campaign, you can simply add the ``--networks-only`` argument to your existing command, and use the output ``AlchemicalNetwork`` (``tyk2.json`` here) as a starting point.
 
 .. code:: bash
 
