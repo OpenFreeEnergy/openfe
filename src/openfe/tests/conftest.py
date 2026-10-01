@@ -14,12 +14,15 @@ import openmm
 import pandas as pd
 import pytest
 from gufe import (
+    AlchemicalNetwork,
     AtomMapper,
     ChemicalSystem,
     LigandAtomMapping,
+    NonTransformation,
     ProteinComponent,
     SmallMoleculeComponent,
     SolventComponent,
+    Transformation,
 )
 from gufe.tests.test_protocol import DummyProtocol
 from openff.toolkit import ForceField
@@ -884,7 +887,7 @@ def broken_bond_mapping() -> LigandAtomMapping:
 
 
 @pytest.fixture()
-def appearing_bond_mapping(chlorobenzene):
+def appearing_bond_mapping(chlorobenzene) -> LigandAtomMapping:
     with resources.as_file(resources.files("openfe.tests.data")) as f:
         ethyl_benzene = SmallMoleculeComponent.from_sdf_file(str(f / "ethylbenzene.sdf"))
 
@@ -897,12 +900,12 @@ def appearing_bond_mapping(chlorobenzene):
 
 
 @pytest.fixture
-def solvent_kcl():
+def solvent_kcl() -> SolventComponent:
     yield SolventComponent(positive_ion="K", negative_ion="Cl", ion_concentration=0.0 * unit.molar)
 
 
 @pytest.fixture
-def toluene_complex_system(benzene_modifications, T4_protein_component) -> openfe.ChemicalSystem:
+def toluene_complex_system(benzene_modifications, T4_protein_component) -> ChemicalSystem:
     return openfe.ChemicalSystem(
         {
             "ligand": benzene_modifications["toluene"],
@@ -915,7 +918,7 @@ def toluene_complex_system(benzene_modifications, T4_protein_component) -> openf
 
 
 @pytest.fixture
-def toluene_solvated(benzene_transforms, solvent_kcl):
+def toluene_solvated(benzene_transforms, solvent_kcl) -> ChemicalSystem:
     return ChemicalSystem(
         {
             "ligand": benzene_transforms["toluene"],
@@ -925,8 +928,8 @@ def toluene_solvated(benzene_transforms, solvent_kcl):
 
 
 @pytest.fixture
-def dummy_abfe_transformation(toluene_solvated, toluene_complex_system):
-    return gufe.Transformation(
+def dummy_abfe_transformation(toluene_solvated, toluene_complex_system) -> Transformation:
+    return Transformation(
         toluene_solvated,
         toluene_complex_system,
         protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
@@ -935,15 +938,17 @@ def dummy_abfe_transformation(toluene_solvated, toluene_complex_system):
 
 
 @pytest.fixture
-def dummy_nontransformation(toluene_complex_system):
-    return gufe.NonTransformation(
+def dummy_nontransformation(toluene_complex_system) -> NonTransformation:
+    return NonTransformation(
         toluene_complex_system,
         protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
     )
 
 
 @pytest.fixture
-def radial_alchemical_network(benzene_transforms, solvent_kcl, T4_protein_component):
+def radial_alchemical_network(
+    benzene_transforms, solvent_kcl, T4_protein_component
+) -> AlchemicalNetwork:
     variants = ["toluene", "phenol", "benzonitrile", "anisole", "benzaldehyde", "styrene"]
 
     # define the solvent chemical systems and transformations between
@@ -1005,7 +1010,7 @@ def radial_alchemical_network(benzene_transforms, solvent_kcl, T4_protein_compon
             mapping=None,
         )
 
-    return gufe.AlchemicalNetwork(
+    return AlchemicalNetwork(
         list(toluene_solvated_transformations.values())
         + list(solvated_complex_transformations.values())
     )
