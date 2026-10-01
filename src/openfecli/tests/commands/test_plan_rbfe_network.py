@@ -261,7 +261,7 @@ def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args,
     with open(settings_path, "w") as f:
         f.write(yaml_nagl_settings)
 
-    args = dummy_charge_dir_args + protein_args + ["-s", settings_path]
+    args = dummy_charge_dir_args + protein_args + ["-s", settings_path] + ["--networks-only"]
 
     # get the input charges for the molecules to check they have been overwritten
     charges_by_name = {}
@@ -279,6 +279,10 @@ def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args,
         assert result.exit_code == 0
         if overwrite:
             assert "Overwriting partial charges" in result.output
+
+        # make sure --networks-only works as expected
+        assert not pathlib.Path("alchemicalNetwork", "transformations").is_dir()
+        assert pathlib.Path("alchemicalNetwork", "ligand_network.graphml").is_file()
 
         network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
         # make sure the ligands don't have dummy charges
@@ -481,9 +485,6 @@ def test_plan_rbfe_invalid_membrane(eg5_files):
         match="This usually indicates missing solvent or incorrect box vectors",
     ):
         _ = runner.invoke(plan_rbfe_network, args, catch_exceptions=False)
-
-
-# TODO: add --networks-only test
 
 
 def test_plan_rbfe_missing_protein_args(eg5_files):
