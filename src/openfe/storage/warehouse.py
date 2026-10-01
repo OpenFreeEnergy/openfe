@@ -580,6 +580,8 @@ class FileSystemWarehouse(WarehouseBaseClass):
 
         """
 
+        # TODO: assert that expected subdirs exist - otherwise any dir will be treated as a warehouse
+
         root_dir = pathlib.Path(root_dir)
         if not root_dir.is_dir():
             raise FileNotFoundError(
