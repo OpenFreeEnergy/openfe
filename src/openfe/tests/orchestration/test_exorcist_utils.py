@@ -33,14 +33,14 @@ class _RecordingWarehouse:
         pass
 
 
-def _network_units(benzene_variants_star_map):
+def _network_units(radial_alchemical_network):
     units = []
-    for transformation in benzene_variants_star_map.edges:
+    for transformation in radial_alchemical_network.edges:
         units.extend(transformation.create().protocol_units)
     return units
 
 
-@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
 def test_alchemical_network_to_task_graph_stores_all_units(request, fixture):
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)

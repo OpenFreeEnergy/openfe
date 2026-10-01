@@ -943,7 +943,7 @@ def dummy_nontransformation(toluene_complex_system):
 
 
 @pytest.fixture
-def benzene_variants_star_map(benzene_transforms, solv_comp, T4_protein_component):
+def radial_alchemical_network(benzene_transforms, solv_comp, T4_protein_component):
     variants = ["toluene", "phenol", "benzonitrile", "anisole", "benzaldehyde", "styrene"]
 
     # define the solvent chemical systems and transformations between
