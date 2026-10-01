@@ -897,7 +897,7 @@ def appearing_bond_mapping(chlorobenzene):
 
 
 @pytest.fixture
-def solv_comp():
+def solvent_kcl():
     yield SolventComponent(positive_ion="K", negative_ion="Cl", ion_concentration=0.0 * unit.molar)
 
 
@@ -915,11 +915,11 @@ def toluene_complex_system(benzene_modifications, T4_protein_component) -> openf
 
 
 @pytest.fixture
-def solvated_ligand(benzene_transforms, solv_comp):
+def solvated_ligand(benzene_transforms, solvent_kcl):
     return ChemicalSystem(
         {
             "ligand": benzene_transforms["toluene"],
-            "solvent": solv_comp,
+            "solvent": solvent_kcl,
         }
     )
 
@@ -943,7 +943,7 @@ def dummy_nontransformation(toluene_complex_system):
 
 
 @pytest.fixture
-def radial_alchemical_network(benzene_transforms, solv_comp, T4_protein_component):
+def radial_alchemical_network(benzene_transforms, solvent_kcl, T4_protein_component):
     variants = ["toluene", "phenol", "benzonitrile", "anisole", "benzaldehyde", "styrene"]
 
     # define the solvent chemical systems and transformations between
@@ -953,7 +953,7 @@ def radial_alchemical_network(benzene_transforms, solv_comp, T4_protein_componen
 
     solvated_ligands["benzene"] = ChemicalSystem(
         {
-            "solvent": solv_comp,
+            "solvent": solvent_kcl,
             "ligand": benzene_transforms["benzene"],
         },
         name="benzene-solvent",
@@ -962,7 +962,7 @@ def radial_alchemical_network(benzene_transforms, solv_comp, T4_protein_componen
     for ligand in variants:
         solvated_ligands[ligand] = ChemicalSystem(
             {
-                "solvent": solv_comp,
+                "solvent": solvent_kcl,
                 "ligand": benzene_transforms[ligand],
             },
             name=f"{ligand}-solvent",
@@ -983,7 +983,7 @@ def radial_alchemical_network(benzene_transforms, solv_comp, T4_protein_componen
     solvated_complexes["benzene"] = gufe.ChemicalSystem(
         {
             "protein": T4_protein_component,
-            "solvent": solv_comp,
+            "solvent": solvent_kcl,
             "ligand": benzene_transforms["benzene"],
         },
         name="benzene-complex",
@@ -993,7 +993,7 @@ def radial_alchemical_network(benzene_transforms, solv_comp, T4_protein_componen
         solvated_complexes[ligand] = gufe.ChemicalSystem(
             {
                 "protein": T4_protein_component,
-                "solvent": solv_comp,
+                "solvent": solvent_kcl,
                 "ligand": benzene_transforms[ligand],
             },
             name=f"{ligand}-complex",
