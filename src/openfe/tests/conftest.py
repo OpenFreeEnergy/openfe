@@ -935,7 +935,7 @@ def dummy_abfe_transformation(solvated_ligand, toluene_complex_system):
 
 
 @pytest.fixture
-def complex_equilibrium(toluene_complex_system):
+def dummy_nontransformation(toluene_complex_system):
     return gufe.NonTransformation(
         toluene_complex_system,
         protocol=DummyProtocol(settings=DummyProtocol.default_settings()),

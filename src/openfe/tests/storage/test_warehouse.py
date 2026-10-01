@@ -147,7 +147,7 @@ class TestWarehouseBaseClass:
 
     @pytest.mark.parametrize(
         "fixture",
-        ["dummy_abfe_transformation", "complex_equilibrium"],
+        ["dummy_abfe_transformation", "dummy_nontransformation"],
     )
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_transformation_same_process(self, request, fixture, store):
@@ -158,7 +158,7 @@ class TestWarehouseBaseClass:
 
     @pytest.mark.parametrize(
         "fixture",
-        ["dummy_abfe_transformation", "complex_equilibrium"],
+        ["dummy_abfe_transformation", "dummy_nontransformation"],
     )
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_transformation_different_process(self, request, fixture, store):
@@ -237,7 +237,7 @@ class TestFileSystemWarehouse:
 
     @pytest.mark.parametrize(
         "fixture",
-        ["dummy_abfe_transformation", "complex_equilibrium"],
+        ["dummy_abfe_transformation", "dummy_nontransformation"],
     )
     def test_store_load_transformation_same_process(self, request, fixture):
         transformation = request.getfixturevalue(fixture)
@@ -279,7 +279,7 @@ class TestFileSystemWarehouse:
 
     @pytest.mark.parametrize(
         "fixture",
-        ["dummy_abfe_transformation", "complex_equilibrium"],
+        ["dummy_abfe_transformation", "dummy_nontransformation"],
     )
     def test_store_load_transformation_different_process(self, request, fixture):
         transformation = request.getfixturevalue(fixture)
