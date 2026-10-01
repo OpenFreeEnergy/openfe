@@ -18,19 +18,21 @@ def _alchemical_network_to_task_graph(
     alchemical_network: AlchemicalNetwork,
     warehouse: WarehouseBaseClass,
 ) -> nx.DiGraph:
-    """Build a global task DAG from `alchemical_network` and store its relevant data
-    in `warehouse` the following warehouse stores:
+    """Build a global task DAG from `alchemical_network` and store
+    its relevant data in `warehouse` in the following warehouse stores:
         - 'setup': The AlchemicalNetwork, deduplicated on disk
         - 'tasks': The ProtocolUnits to be executed as tasks
         - 'protocol_dags': The ProtocolDAGs that the ProtocolUnits belong to.
                            Used to gather results after execution.
 
+    Note that any class:`gufe.Tokenizable` objects are deduplicated across the entire warehouse.
+
     Parameters
     ----------
     alchemical_network : AlchemicalNetwork
-        Network containing alchemical Transformations to be executed.
+        :class:`openfe.AlchemicalNetwork` containing alchemical Transformations to be executed.
     warehouse : WarehouseBaseClass
-        Warehouse used to store data used by the execution and simulation engines.
+       :class:`openfe.storage.Warehouse` used to store teh data used by execution and simulation engines.
 
     Returns
     -------
@@ -43,6 +45,7 @@ def _alchemical_network_to_task_graph(
     ValueError
         If the assembled task graph is not acyclic.
         If the input `alchemical_network` is not a valid openfe.AlchemicalNetwork
+
     """
 
     if not isinstance(alchemical_network, AlchemicalNetwork):
@@ -54,7 +57,7 @@ def _alchemical_network_to_task_graph(
 
     global_task_dag = nx.DiGraph()
     for transformation in alchemical_network.edges:
-        dag: ProtocolDAG = transformation.create()  # TODO: skip edges that already have units?
+        dag: ProtocolDAG = transformation.create()
         for unit in dag.protocol_units:
             global_task_dag.add_node(str(unit.key))
             warehouse.store_task(unit)
@@ -72,7 +75,6 @@ def _alchemical_network_to_task_graph(
     return global_task_dag
 
 
-# TODO: add n_repeats
 def setup_task_campaign(
     alchemical_network: AlchemicalNetwork,
     warehouse_dir: Path,  # TODO: make optional?
@@ -98,7 +100,9 @@ def setup_task_campaign(
     exorcist.TaskStatusDB
         Initialized task database populated with graph nodes and dependency
         edges derived from ``alchemical_network``.
+
     """
+
     # require starting clean each time for now - guardrails around modifying existing state can come later
     if Path(db_path).exists():
         raise FileExistsError(f"Error: {db_path} cannot already exist.")
@@ -121,7 +125,9 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     -------
     pd.DataFrame
         A dataframe of the tasks and their statuses
+
     """
+
     status_name_encoding = {e.value: e.name for e in exorcist.TaskStatus}
     # TODO: add task_type back in once it's used
     task_table = pd.read_sql_table(
@@ -145,4 +151,5 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
         A dataframe of the tasks and their dependencies.
 
     """
+
     return pd.read_sql_table("dependencies", task_db.engine)

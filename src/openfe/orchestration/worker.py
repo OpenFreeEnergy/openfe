@@ -26,10 +26,9 @@ class Worker:
         FileSystemWarehouse used to load queued tasks and store execution results.
     task_db_path : pathlib.Path, default=Path("./warehouse/tasks.db")
         Path to the Exorcist SQLite task database.
+
     """
 
-    # TODO: should these both be instances or both paths?
-    # TODO: input validation?
     warehouse: FileSystemWarehouse
     task_db_path: Path
 
@@ -153,6 +152,7 @@ class Worker:
             protocol unit, or ``None`` if no task is currently available.
             The caller is responsible for calling ``mark_task_completed`` on the
             returned database using the returned task ID.
+
         """
 
         db: TaskStatusDB = TaskStatusDB.from_filename(self.task_db_path)
@@ -177,6 +177,7 @@ class Worker:
         ------
         RuntimeError
             Raised when no task is available in the task database.
+
         """
 
         task = self._checkout_task()
@@ -204,7 +205,10 @@ class Worker:
         Exception
             Re-raises any exception thrown during protocol unit execution after
             marking the task as failed.
+
+
         """
+
         # TODO: split per-execution work into a helper function and add an "n" option here?
         scratch = Path(scratch)
         # 1. Get task/unit

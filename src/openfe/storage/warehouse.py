@@ -40,6 +40,7 @@ class WarehouseStores(TypedDict):
     Notes
     -----
     Additional stores for results and tasks may be added in future versions.
+
     """
 
     setup: ExternalStorage
@@ -65,6 +66,7 @@ class WarehouseBaseClass:
     ----------
     stores : WarehouseStores
         The storage locations managed by this warehouse instance.
+
     """
 
     def __init__(self, stores: WarehouseStores, name: str):
@@ -95,6 +97,7 @@ class WarehouseBaseClass:
         MissingExternalResourceError
             Thrown if the object you are trying to delete, can't delete from the store
         """
+
         # TODO: how to guard deleting an object that is needed by another GufeTokenizable?
         store: ExternalStorage = self.stores[store_name]
         store.delete(location)
@@ -116,6 +119,7 @@ class WarehouseBaseClass:
         obj : GufeTokenizable
             The object to store.
         """
+
         self._store_gufe_tokenizable("setup", obj)
 
     def load_setup_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
@@ -132,6 +136,7 @@ class WarehouseBaseClass:
         GufeTokenizable
             The loaded object.
         """
+
         return self._load_gufe_tokenizable(gufe_key=obj)
 
     def store_results_tokenizable(self, obj: GufeTokenizable):
@@ -141,7 +146,9 @@ class WarehouseBaseClass:
         ----------
         obj : GufeKey
             The key of the object to store.
+
         """
+
         return self._store_gufe_tokenizable("results", obj)
 
     def load_results_tokenizable(self, obj: GufeKey) -> GufeTokenizable:
@@ -157,7 +164,9 @@ class WarehouseBaseClass:
         -------
         GufeTokenizable
             The loaded object.
+
         """
+
         return self._load_gufe_tokenizable(gufe_key=obj)
 
     def store_protocol_dag(self, dag: ProtocolDAG):
@@ -171,7 +180,9 @@ class WarehouseBaseClass:
         ------
         TypeError
             If `dag` is not a ProtocolDAG instance.
+
         """
+
         if not isinstance(dag, ProtocolDAG):
             raise TypeError(
                 f"Unable to write {dag}. Only ProtocolDAGs may be written to the 'protocol_dags' store."
@@ -195,7 +206,9 @@ class WarehouseBaseClass:
         ------
         TypeError
             If `gufe_key` does not corresponds to an object that is not a ProtocolDAG instance.
+
         """
+
         obj = self._load_gufe_tokenizable(gufe_key=gufe_key)
         if not isinstance(obj, ProtocolDAG):
             raise TypeError(f"Unable to load {obj} as ProtocolDAG.")
@@ -213,6 +226,7 @@ class WarehouseBaseClass:
         -------
         bool
             True if the object exists, False otherwise.
+
         """
         # TODO: resolve type checking
         return any(key in store for store in self.stores.values())  # type: ignore
@@ -234,7 +248,9 @@ class WarehouseBaseClass:
         ------
         ValueError
             If the key is not found in any store.
+
         """
+
         # TODO: resolve mypy Literal/str conflict here
         # https://mypy.readthedocs.io/en/stable/literal_types.html
         for name in self.stores:
@@ -262,6 +278,7 @@ class WarehouseBaseClass:
         This function performs deduplication by checking if the object
         already exists in any store before storing.
         """
+
         # Try and get the key for the given store
         target: ExternalStorage = self.stores[store_name]
         # Get all of the sub-objects
@@ -296,7 +313,9 @@ class WarehouseBaseClass:
         -----
         Uses depth-first search to rebuild object hierarchy and ensure
         proper deduplication in memory.
+
         """
+
         registry: dict[GufeKey, GufeTokenizable] = {}
 
         def recursive_build_object_cache(key: GufeKey) -> GufeTokenizable:
@@ -311,7 +330,9 @@ class WarehouseBaseClass:
             -------
             GufeTokenizable
                 The reconstructed object.
+
             """
+
             # This implementation is a bit fragile, because ensuring that we
             # don't duplicate objects in memory depends on the fact that
             # `key_decode_dependencies` gets keyencoded objects from a cache
@@ -360,7 +381,9 @@ class WarehouseBaseClass:
         ------
         Generator[ProtocolDAG]
             The ProtocolDAGs found in this Warehouse's 'protocol_dags' store.
+
         """
+
         for item in self.stores["protocol_dags"]:
             dag = self.load_protocol_dag(item)
             yield dag
@@ -376,8 +399,10 @@ class WarehouseBaseClass:
         Raises
         ------
         RuntimeError
-            If any object in the result store is not a ProtocolUnitResult
+            If any object in the result store is not a ProtocolUnitResult.
+
         """
+
         for i in self.stores["results"]:
             obj = self.load_results_tokenizable(i)
             if isinstance(obj, ProtocolUnitResult):
@@ -398,6 +423,7 @@ class WarehouseBaseClass:
         -------
         list[tuple[ProtocolResult, ProtocolDAGResult]]
             ProtocolResults and their corresponding ProtocolDAGResults
+
         """
 
         def construct_results_edge(
@@ -442,7 +468,9 @@ class WarehouseBaseClass:
     ):
         """Given a set of ProtocolDAGs and a set of ProtocolUnitResults,
         create a mapping of protocolDAGs to their corresponding ProtocolUnitResults
+
         """
+
         # protocol unit source key mapped to unit results
         pur_pu_keys = {str(pur.source_key): pur for pur in unit_results}
         dag_map = {}
@@ -462,6 +490,7 @@ class WarehouseBaseClass:
         -------
         ExternalStorage
             The setup storage location
+
         """
         return self.stores["setup"]
 
@@ -473,7 +502,9 @@ class WarehouseBaseClass:
         -------
         ExternalStorage
             The result storage location
+
         """
+
         return self.stores["results"]
 
     @property
@@ -485,6 +516,7 @@ class WarehouseBaseClass:
         ExternalStorage
             The shared storage location
         """
+
         return self.stores["shared"]
 
 
@@ -545,7 +577,9 @@ class FileSystemWarehouse(WarehouseBaseClass):
         ------
         FileNotFoundError
             If `root_dir` is not an existing directory.
+
         """
+
         root_dir = pathlib.Path(root_dir)
         if not root_dir.is_dir():
             raise FileNotFoundError(
