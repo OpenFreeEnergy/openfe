@@ -85,16 +85,16 @@ class TestWarehouseBaseClass:
             assert reload == obj
             assert reload is not obj
 
-    def test_store_load_task_same_process(self, absolute_transformation):
-        unit = self._get_protocol_unit(absolute_transformation)
+    def test_store_load_task_same_process(self, dummy_abfe_transformation):
+        unit = self._get_protocol_unit(dummy_abfe_transformation)
         self._test_store_load_same_process(unit, "store_task", "load_task", "tasks")
 
-    def test_store_load_task_different_process(self, absolute_transformation):
-        unit = self._get_protocol_unit(absolute_transformation)
+    def test_store_load_task_different_process(self, dummy_abfe_transformation):
+        unit = self._get_protocol_unit(dummy_abfe_transformation)
         self._test_store_load_different_process(unit, "store_task", "load_task", "tasks")
 
-    def test_store_task_writes_to_tasks_store(self, absolute_transformation):
-        unit = self._get_protocol_unit(absolute_transformation)
+    def test_store_task_writes_to_tasks_store(self, dummy_abfe_transformation):
+        unit = self._get_protocol_unit(dummy_abfe_transformation)
         stores = self._build_stores()
         client = WarehouseBaseClass(stores, name="test_warehouse")
         client.store_task(unit)
@@ -104,8 +104,8 @@ class TestWarehouseBaseClass:
         assert stores["results"]._data == {}
         assert stores["shared"]._data == {}
 
-    def test_exists_finds_task_key(self, absolute_transformation):
-        unit = self._get_protocol_unit(absolute_transformation)
+    def test_exists_finds_task_key(self, dummy_abfe_transformation):
+        unit = self._get_protocol_unit(dummy_abfe_transformation)
         stores = self._build_stores()
         client = WarehouseBaseClass(stores, "test_warehouse")
 
@@ -113,8 +113,8 @@ class TestWarehouseBaseClass:
 
         assert client.exists(unit.key)
 
-    def test_load_task_returns_object(self, absolute_transformation):
-        unit = self._get_protocol_unit(absolute_transformation)
+    def test_load_task_returns_object(self, dummy_abfe_transformation):
+        unit = self._get_protocol_unit(dummy_abfe_transformation)
         stores = self._build_stores()
         client = WarehouseBaseClass(stores, name="test_warehouse")
 
@@ -124,8 +124,8 @@ class TestWarehouseBaseClass:
         assert loaded is not None
         assert isinstance(loaded, GufeTokenizable)
 
-    def test_load_task_wrong_type(self, absolute_transformation):
-        transformation = absolute_transformation
+    def test_load_task_wrong_type(self, dummy_abfe_transformation):
+        transformation = dummy_abfe_transformation
         stores = self._build_stores()
         client = WarehouseBaseClass(stores, name="test_warehouse")
 
@@ -133,21 +133,21 @@ class TestWarehouseBaseClass:
         with pytest.raises(TypeError, match="as ProtocolUnit"):
             _ = client.load_task(transformation.key)
 
-    def test_store_load_protocol_dag_wrong_type(self, absolute_transformation):
-        transformation = absolute_transformation
+    def test_store_load_protocol_dag_wrong_type(self, dummy_abfe_transformation):
+        transformation = dummy_abfe_transformation
         stores = self._build_stores()
         client = WarehouseBaseClass(stores, name="test_warehouse")
 
         with pytest.raises(TypeError, match="Unable to write"):
-            client.store_protocol_dag(absolute_transformation)
-        client.store_setup_tokenizable(absolute_transformation)
+            client.store_protocol_dag(dummy_abfe_transformation)
+        client.store_setup_tokenizable(dummy_abfe_transformation)
 
         with pytest.raises(TypeError, match="Unable to load"):
-            client.load_protocol_dag(absolute_transformation.key)
+            client.load_protocol_dag(dummy_abfe_transformation.key)
 
     @pytest.mark.parametrize(
         "fixture",
-        ["absolute_transformation", "complex_equilibrium"],
+        ["dummy_abfe_transformation", "dummy_nontransformation"],
     )
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_transformation_same_process(self, request, fixture, store):
@@ -158,7 +158,7 @@ class TestWarehouseBaseClass:
 
     @pytest.mark.parametrize(
         "fixture",
-        ["absolute_transformation", "complex_equilibrium"],
+        ["dummy_abfe_transformation", "dummy_nontransformation"],
     )
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_transformation_different_process(self, request, fixture, store):
@@ -169,7 +169,7 @@ class TestWarehouseBaseClass:
             transformation, store_func_name, load_func_name, store
         )
 
-    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_network_same_process(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
@@ -178,7 +178,7 @@ class TestWarehouseBaseClass:
         load_func_name = f"load_{store}_tokenizable"
         self._test_store_load_same_process(network, store_func_name, load_func_name, store)
 
-    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_network_different_process(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
@@ -187,7 +187,7 @@ class TestWarehouseBaseClass:
         load_func_name = f"load_{store}_tokenizable"
         self._test_store_load_different_process(network, store_func_name, load_func_name, store)
 
-    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_delete(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
@@ -237,7 +237,7 @@ class TestFileSystemWarehouse:
 
     @pytest.mark.parametrize(
         "fixture",
-        ["absolute_transformation", "complex_equilibrium"],
+        ["dummy_abfe_transformation", "dummy_nontransformation"],
     )
     def test_store_load_transformation_same_process(self, request, fixture):
         transformation = request.getfixturevalue(fixture)
@@ -247,8 +247,8 @@ class TestFileSystemWarehouse:
             "load_setup_tokenizable",
         )
 
-    def test_filesystemwarehouse_has_shared_and_tasks_stores(self, absolute_transformation):
-        unit = TestWarehouseBaseClass._get_protocol_unit(absolute_transformation)
+    def test_filesystemwarehouse_has_shared_and_tasks_stores(self, dummy_abfe_transformation):
+        unit = TestWarehouseBaseClass._get_protocol_unit(dummy_abfe_transformation)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             wh_dir = Path(tmpdir) / "warehouse_name"
@@ -279,7 +279,7 @@ class TestFileSystemWarehouse:
 
     @pytest.mark.parametrize(
         "fixture",
-        ["absolute_transformation", "complex_equilibrium"],
+        ["dummy_abfe_transformation", "dummy_nontransformation"],
     )
     def test_store_load_transformation_different_process(self, request, fixture):
         transformation = request.getfixturevalue(fixture)

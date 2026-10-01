@@ -45,29 +45,29 @@ class _FileWritingUnit(ProtocolUnit):
         return {"shared_file": str(shared_file)}
 
 
-def _get_dependency_free_unit(absolute_transformation):
-    for unit in absolute_transformation.create().protocol_units:
+def _get_dependency_free_unit(dummy_abfe_transformation):
+    for unit in dummy_abfe_transformation.create().protocol_units:
         if not _contains_protocol_unit(unit.inputs):
             return unit
     raise ValueError("No dependency-free protocol unit found for execution test setup.")
 
 
 @pytest.fixture
-def worker_with_real_db(tmp_path, absolute_transformation):
+def worker_with_real_db(tmp_path, dummy_abfe_transformation):
     warehouse_root = tmp_path / "warehouse"
     db_path = tmp_path / "tasks.db"
-    network = gufe.AlchemicalNetwork([absolute_transformation])
+    network = gufe.AlchemicalNetwork([dummy_abfe_transformation])
     db, warehouse = setup_task_campaign(network, warehouse_root, db_path=db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
     return worker, warehouse, db
 
 
 @pytest.fixture
-def worker_with_executable_task_db(tmp_path, absolute_transformation):
+def worker_with_executable_task_db(tmp_path, dummy_abfe_transformation):
     warehouse_root = tmp_path / "warehouse"
     db_path = warehouse_root / "tasks.db"
     warehouse = FileSystemWarehouse(str(warehouse_root))
-    unit = _get_dependency_free_unit(absolute_transformation)
+    unit = _get_dependency_free_unit(dummy_abfe_transformation)
     warehouse.store_task(unit)
 
     taskid = unit.key
@@ -82,13 +82,13 @@ def worker_with_executable_task_db(tmp_path, absolute_transformation):
 
 
 def test_get_task_uses_default_db_path_without_patching(
-    tmp_path, monkeypatch, absolute_transformation
+    tmp_path, monkeypatch, dummy_abfe_transformation
 ):
     # TODO: tasks.db shouldn't exist _within_ the warehouse
     monkeypatch.chdir(tmp_path)
     warehouse_root = "warehouse"
     db_path = Path("warehouse/tasks.db")
-    network = gufe.AlchemicalNetwork([absolute_transformation])
+    network = gufe.AlchemicalNetwork([dummy_abfe_transformation])
     db, warehouse = setup_task_campaign(network, warehouse_root, db_path=db_path)
 
     warehouse = FileSystemWarehouse.from_dir("warehouse")
