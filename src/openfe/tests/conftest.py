@@ -925,7 +925,7 @@ def solvated_ligand(benzene_transforms, solv_comp):
 
 
 @pytest.fixture
-def absolute_transformation(solvated_ligand, toluene_complex_system):
+def dummy_abfe_transformation(solvated_ligand, toluene_complex_system):
     return gufe.Transformation(
         solvated_ligand,
         toluene_complex_system,
