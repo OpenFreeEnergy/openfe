@@ -915,7 +915,7 @@ def toluene_complex_system(benzene_modifications, T4_protein_component) -> openf
 
 
 @pytest.fixture
-def solvated_ligand(benzene_transforms, solvent_kcl):
+def toluene_solvated(benzene_transforms, solvent_kcl):
     return ChemicalSystem(
         {
             "ligand": benzene_transforms["toluene"],
@@ -925,9 +925,9 @@ def solvated_ligand(benzene_transforms, solvent_kcl):
 
 
 @pytest.fixture
-def dummy_abfe_transformation(solvated_ligand, toluene_complex_system):
+def dummy_abfe_transformation(toluene_solvated, toluene_complex_system):
     return gufe.Transformation(
-        solvated_ligand,
+        toluene_solvated,
         toluene_complex_system,
         protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
         mapping=None,
@@ -948,10 +948,10 @@ def radial_alchemical_network(benzene_transforms, solvent_kcl, T4_protein_compon
 
     # define the solvent chemical systems and transformations between
     # benzene and the others
-    solvated_ligands = {}
-    solvated_ligand_transformations = {}
+    toluene_solvateds = {}
+    toluene_solvated_transformations = {}
 
-    solvated_ligands["benzene"] = ChemicalSystem(
+    toluene_solvateds["benzene"] = ChemicalSystem(
         {
             "solvent": solvent_kcl,
             "ligand": benzene_transforms["benzene"],
@@ -960,7 +960,7 @@ def radial_alchemical_network(benzene_transforms, solvent_kcl, T4_protein_compon
     )
 
     for ligand in variants:
-        solvated_ligands[ligand] = ChemicalSystem(
+        toluene_solvateds[ligand] = ChemicalSystem(
             {
                 "solvent": solvent_kcl,
                 "ligand": benzene_transforms[ligand],
@@ -968,9 +968,9 @@ def radial_alchemical_network(benzene_transforms, solvent_kcl, T4_protein_compon
             name=f"{ligand}-solvent",
         )
 
-        solvated_ligand_transformations[("benzene", ligand)] = gufe.Transformation(
-            solvated_ligands["benzene"],
-            solvated_ligands[ligand],
+        toluene_solvated_transformations[("benzene", ligand)] = gufe.Transformation(
+            toluene_solvateds["benzene"],
+            toluene_solvateds[ligand],
             protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
             mapping=None,
         )
@@ -1006,6 +1006,6 @@ def radial_alchemical_network(benzene_transforms, solvent_kcl, T4_protein_compon
         )
 
     return gufe.AlchemicalNetwork(
-        list(solvated_ligand_transformations.values())
+        list(toluene_solvated_transformations.values())
         + list(solvated_complex_transformations.values())
     )
