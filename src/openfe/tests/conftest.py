@@ -902,12 +902,14 @@ def solv_comp():
 
 
 @pytest.fixture
-def solvated_complex(T4_protein_component, benzene_transforms, solv_comp):
-    return ChemicalSystem(
+def toluene_complex_system(benzene_modifications, T4_protein_component) -> openfe.ChemicalSystem:
+    return openfe.ChemicalSystem(
         {
-            "ligand": benzene_transforms["toluene"],
+            "ligand": benzene_modifications["toluene"],
+            "solvent": openfe.SolventComponent(
+                positive_ion="Na", negative_ion="Cl", ion_concentration=0.15 * unit.molar
+            ),
             "protein": T4_protein_component,
-            "solvent": solv_comp,
         }
     )
 
@@ -923,19 +925,19 @@ def solvated_ligand(benzene_transforms, solv_comp):
 
 
 @pytest.fixture
-def absolute_transformation(solvated_ligand, solvated_complex):
+def absolute_transformation(solvated_ligand, toluene_complex_system):
     return gufe.Transformation(
         solvated_ligand,
-        solvated_complex,
+        toluene_complex_system,
         protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
         mapping=None,
     )
 
 
 @pytest.fixture
-def complex_equilibrium(solvated_complex):
+def complex_equilibrium(toluene_complex_system):
     return gufe.NonTransformation(
-        solvated_complex,
+        toluene_complex_system,
         protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
     )
 
