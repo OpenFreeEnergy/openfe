@@ -54,7 +54,7 @@ def test_alchemical_network_to_task_graph_stores_all_units(request, fixture):
     assert sorted(stored_unit_names) == sorted(expected_unit_names)
 
 
-@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
 def test_alchemical_network_to_task_graph_uses_canonical_task_ids(request, fixture):
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
@@ -71,7 +71,7 @@ def test_alchemical_network_to_task_graph_uses_canonical_task_ids(request, fixtu
     assert sorted(observed_protocol_unit_keys) == expected_protocol_unit_keys
 
 
-@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
 def test_alchemical_network_to_task_graph_edges_reference_existing_nodes(request, fixture):
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
@@ -84,7 +84,7 @@ def test_alchemical_network_to_task_graph_edges_reference_existing_nodes(request
         assert v in graph.nodes
 
 
-@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
 def test_alchemical_network_to_task_graph_edge_direction_matches_dependencies(request, fixture):
     warehouse = _RecordingWarehouse()
     network = request.getfixturevalue(fixture)
@@ -130,7 +130,7 @@ def test_alchemical_network_to_task_graph_raises_for_cycle():
 
 
 # TODO: slow test
-@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
 def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixture):
     network = request.getfixturevalue(fixture)
     # Build the real sqlite task DB from a real alchemical network fixture.
@@ -181,7 +181,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
 
 
 # TODO: revisit this after deciding how we want to handle defaults
-# @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+# @pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
 # def test_build_task_db_default_path(request, fixture):
 #     network = request.getfixturevalue(fixture)
 #     warehouse = mock.Mock()
@@ -206,7 +206,7 @@ def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixt
 #     assert result is fake_db
 
 
-@pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
 def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
     network = request.getfixturevalue(fixture)
     fake_graph = nx.DiGraph()
@@ -236,9 +236,9 @@ def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
 
 
 @pytest.fixture()
-def benzene_star_map_task_db(benzene_variants_star_map, tmp_path):
+def benzene_star_map_task_db(radial_alchemical_network, tmp_path):
     warehouse = _RecordingWarehouse()
-    network = benzene_variants_star_map
+    network = radial_alchemical_network
     global_task_dag = _alchemical_network_to_task_graph(
         network, cast(WarehouseBaseClass, warehouse)
     )

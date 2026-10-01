@@ -169,7 +169,7 @@ class TestWarehouseBaseClass:
             transformation, store_func_name, load_func_name, store
         )
 
-    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_network_same_process(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
@@ -178,7 +178,7 @@ class TestWarehouseBaseClass:
         load_func_name = f"load_{store}_tokenizable"
         self._test_store_load_same_process(network, store_func_name, load_func_name, store)
 
-    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_store_load_network_different_process(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
@@ -187,7 +187,7 @@ class TestWarehouseBaseClass:
         load_func_name = f"load_{store}_tokenizable"
         self._test_store_load_different_process(network, store_func_name, load_func_name, store)
 
-    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    @pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
     @pytest.mark.parametrize("store", ["setup", "results"])
     def test_delete(self, request, fixture, store):
         network = request.getfixturevalue(fixture)
