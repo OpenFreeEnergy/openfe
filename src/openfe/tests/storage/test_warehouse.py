@@ -1,3 +1,4 @@
+import shutil
 import tempfile
 from importlib import resources
 from pathlib import Path
@@ -292,8 +293,12 @@ class TestFileSystemWarehouse:
 
 @pytest.fixture
 def warehouse_partial_failure():
-    with resources.path("openfe.tests.data.warehouse", "warehouse_mcl1") as d:
-        warehouse = FileSystemWarehouse.from_dir(root_dir=d)
+    with resources.path("openfe.tests", "data") as data_dir:
+        warehouse_dir = data_dir / "warehouse"
+        if not (warehouse_dir).exists():
+            shutil.unpack_archive(warehouse_dir.with_suffix(".tar.gz"), data_dir, format="gztar")
+
+        warehouse = FileSystemWarehouse.from_dir(root_dir=warehouse_dir / "warehouse_mcl1")
         return warehouse
 
 
