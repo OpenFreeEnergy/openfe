@@ -35,7 +35,8 @@ Molecular Dynamics (MD)
 
 Execution
 ---------
-- :any:`Task-based Execution with the CLI <task_based_execution_cli>`
+- :ref:`Task-based Execution with the CLI <task_based_execution_cli>`
+- :any:`Task-based Execution with the Python API <task_based_execution_python_api>`
 
 Post-Simulation Analysis
 ------------------------
@@ -65,4 +66,5 @@ Generating Partial Charges
     md_tutorial
     plotting_with_cinnabar
     task_based_execution_cli
+    task_based_execution_python_api
     charge_molecules_cli_tutorial
