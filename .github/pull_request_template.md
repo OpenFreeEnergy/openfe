@@ -18,7 +18,7 @@ LLMs or other AI-powered tools (beyond simple IDE use cases) were used in this c
 - [ ] Yes: [If yes, please provide details here]
 
 ## Checklist
-* [ ] Read the ``AI_Policy.md`` and filled in the AI-generated code disclosure.
+* [ ] Read the [AI Policy]((https://github.com/OpenFreeEnergy/openfe/blob/main/AI_POLICY.md)  and filled in the AI-generated code disclosure.
 * [ ] All new code is appropriately documented (user-facing code _must_ have complete docstrings).
 * [ ] Ran pre-commit: you can run [pre-commit](https://pre-commit.com) locally or comment on this PR with `pre-commit.ci autofix`.
 * [ ] Adhered to the [contribution guidelines](https://github.com/OpenFreeEnergy/openfe?tab=contributing-ov-file#contribution-guidelines)
