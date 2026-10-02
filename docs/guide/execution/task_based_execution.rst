@@ -41,7 +41,7 @@ If you are accustomed to using the ``openfe plan-rbfe-network`` or ``openfe plan
 
 .. note::
 
-    Unlike execution with ``quickrun``, with task-based execution the setting ``n_repeats=3`` does not mean the jobs will be inherently run in serial, and doesn't not require different user behavior to enable parallel execution. We recommend including ``--n-protocol-repeats=3`` for simplicity.
+    Unlike execution with ``quickrun``, with task-based execution the setting ``protocol_repeats=3`` does not mean the repeats run in serial. Each repeat is a separate set of tasks, so workers can run them in parallel, with no extra steps needed. We recommend keeping the default of ``--n-protocol-repeats=3``.
 
 Once you have an AlchemicalNetwork, use the ``openfe setup-task-campaign`` command to set up the task-based campaign.
 
