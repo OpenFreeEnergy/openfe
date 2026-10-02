@@ -17,8 +17,14 @@ Periodic box size / nonbonded cutoff errors
 
 You may see errors like:
 
-- ``openmm.OpenMMException: The periodic box size has decreased to less than twice the nonbonded cutoff.``
-- ``openmm.OpenMMException: NonbondedForce: The cutoff distance cannot be greater than half the periodic box size.``
+
+.. code:: bash
+
+    openmm.OpenMMException: The periodic box size has decreased to less than twice the nonbonded cutoff.
+
+.. code:: bash
+
+    openmm.OpenMMException: NonbondedForce: The cutoff distance cannot be greater than half the periodic box size.
 
 These errors have the same cause: the system is too small for the chosen nonbonded cutoff.
 
