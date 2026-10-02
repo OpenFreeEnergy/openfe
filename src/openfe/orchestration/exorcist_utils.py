@@ -75,6 +75,7 @@ def _alchemical_network_to_task_graph(
     return global_task_dag
 
 
+# TODO: add `exists_okay` option to add to an existing campaign
 def setup_task_campaign(
     alchemical_network: AlchemicalNetwork,
     warehouse_dir: Path,  # TODO: make optional?
@@ -153,3 +154,52 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """
 
     return pd.read_sql_table("dependencies", task_db.engine)
+
+
+def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: int, task_id: str) -> None:
+    """Update the `max_tries` column of a TaskStatusDB
+
+    Parameters
+    ----------
+    task_db : exorcist.TaskStatusDB
+        TaskStatusDB to update
+    max_tries : int
+        new value of ``max_tries`` to assign row matching task_id
+    task_id : the task_id used to select the row to update
+    """
+
+    import sqlalchemy as sqla
+    from exorcist import TaskStatus
+
+    # TODO: update all rows if task_id==None
+    # TODO: bump all ``TOO_MANY_RETRIES``
+    if task_id:
+        update_task_max_tries = task_db._task_row_update_statement(
+            task_id,
+            max_tries=max_tries,
+        )
+    with task_db.engine.begin() as conn:
+        result = conn.execute(update_task_max_tries)
+        task_db._validate_update_result(result)
+
+
+def update_max_tries(task_db: exorcist.TaskStatusDB, value: int):
+    import sqlalchemy as sqla
+    from exorcist.models import TaskStatus
+
+    """
+    Update the "max_tries" column to `value`.
+    Only rows that do _not_ have status=COMPLETED will be operated on.
+
+    """
+    # TODO: if "TOO MANY TRIES", update to AVAILABLE
+    # TODO: only allow increases if TOO MANY TRIES? maybe only operate on rows where max_tries < val?
+    # TODO: select a single task_id?
+    update_statement = (
+        sqla.update(task_db.tasks_table)
+        .where(task_db.tasks_table.c.status != TaskStatus.COMPLETED.value)
+        .values(max_tries=value)
+    )
+
+    with task_db.engine.begin() as conn:
+        result = conn.execute(update_statement)
