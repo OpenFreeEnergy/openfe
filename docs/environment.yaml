@@ -6,6 +6,7 @@ channels:
 dependencies:
 - autodoc-pydantic >= 2.1
 - docutils == 0.20
+- exorcist
 - gitpython
 - libsass
 - myst-parser
