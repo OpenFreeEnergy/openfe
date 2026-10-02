@@ -125,7 +125,7 @@ def status(task_db: Path, summary: bool):
     """
 
     # TODO: add loading bar
-    write("Fetching task statuses ...")
+    write("Fetching task db status...")
     status_main(task_db_path=task_db, summary=summary)
 
 
