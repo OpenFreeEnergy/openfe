@@ -32,6 +32,11 @@ Molecular Dynamics (MD)
 
 - :any:`MD protocol <md_tutorial>`: A walk-through of running a conventional (non-alchemical) MD simulation of benzene bound to T4-lysozyme L99A.
 
+
+Execution
+---------
+- :any:`Task-based Execution with the CLI <task_based_execution_cli>`
+
 Post-Simulation Analysis
 ------------------------
 
@@ -59,4 +64,5 @@ Generating Partial Charges
     septop_analysis_tutorial
     md_tutorial
     plotting_with_cinnabar
+    task_based_execution_cli
     charge_molecules_cli_tutorial
