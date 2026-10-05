@@ -9,11 +9,6 @@ This module defines the ProtocolUnits for the
 """
 
 import logging
-import pathlib
-
-import netCDF4 as nc
-import numpy as np
-from rdkit import Chem
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     SettingsBaseModel,
