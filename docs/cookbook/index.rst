@@ -163,5 +163,6 @@ List of Cookbooks
     create_alchemical_network
     user_charges
     bespoke_parameters
+    repairing_broken_networks
 
     
