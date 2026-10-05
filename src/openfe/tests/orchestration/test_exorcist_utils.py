@@ -299,24 +299,34 @@ def task_row(taskid, status, last_modified, tries, max_tries, task_type=""):
 
 @pytest.fixture
 def fresh_db():
-    # create an empty database; for "real" (non-sqlite) databases, drop
-    # existing tables
+    # create an empty database
     echo = False  # switch this for debugging
     engine = sqla.create_engine("sqlite://", echo=echo)
 
     yield TaskStatusDB(engine)
 
 
-def test_task_type_preserved_through_checkout_and_completion(fresh_db):
-    fresh_db.add_task("gpu-task", requirements=[], max_tries=3, task_type="gpu")
+def test_update_max_tries(fresh_db):
+    task_db = fresh_db
+    task_db.add_task("task_a", requirements=[], max_tries=1)
+    task_db.add_task("task_b", requirements=["task_a"], max_tries=1)
+    task_db.add_task("task_c", requirements=[], max_tries=1)
 
     with patch_datetime_now():
-        taskid = fresh_db.check_out_task()
-    assert taskid == "gpu-task"
+        taskid = task_db.check_out_task()
+        assert taskid == "task_a"
+        task_db.mark_task_completed(taskid, success=True)
 
-    with patch_datetime_now():
-        fresh_db.mark_task_completed(taskid, success=True)
+        taskid = task_db.check_out_task()
+        assert taskid == "task_b"
+        task_db.mark_task_completed(taskid, success=False)
 
-    tasks, deps = get_tasks_and_deps(fresh_db)
-    assert tasks == {task_row("gpu-task", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 3, "gpu")}
-    assert deps == set()
+    tasks, deps = get_tasks_and_deps(task_db)
+
+    expected_tasks = {
+        task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_b", TaskStatus.TOO_MANY_RETRIES, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, None, 0, 1, ""),
+    }
+    assert tasks == expected_tasks
+    assert deps == {("task_a", "task_b", False)}
