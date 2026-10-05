@@ -280,6 +280,44 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     Settings for controlling the lambda schedule for the different components
     (vdw, elec, restraints).
     """
+    solvent_lambda_settings: LambdaSettings
+    """
+    Settings for controlling the solvent transformation leg
+    lambda schedule for the different components (vdw, elec, restraints).
+
+    Notes
+    -----
+    * The `restraints` entry of the lambda settings will be ignored.
+    """
+    vacuum_lambda_settings: LambdaSettings
+    """
+    Settings for controlling the vacuum transformation leg
+    lambda schedule for the different components (vdw, elec, restraints).
+
+    Notes
+    -----
+    * The `restraints` entry of the lambda settings will be ignored.
+    """
+
+    @model_validator(mode="before")
+    @classmethod
+    def allow_legacy_lambda_settings(cls, data: Any) -> Any:
+        """
+        Allow settings with ``lambda_settings`` (pre openfe v1.13)
+        to be loaded by converting it to ``solvent_lambda_settings``
+        and ``vacuum_lambda_settings``.
+        """
+        if (
+            isinstance(data, dict)
+            and "lambda_settings" in data
+            and "solvent_lambda_settings" not in data
+            and "vacuum_lambda_settings" not in data
+        ):
+            data = dict(data)
+            legacy = data.pop("lambda_settings")
+            data["solvent_lambda_settings"] = copy.deepcopy(legacy)
+            data["vacuum_lambda_settings"] = copy.deepcopy(legacy)
+        return data
 
     # MD Engine things
     vacuum_engine_settings: OpenMMEngineSettings
