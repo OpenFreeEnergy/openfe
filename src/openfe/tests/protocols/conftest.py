@@ -19,6 +19,7 @@ from rdkit.Geometry import Point3D
 import openfe
 from openfe.data._registry import (
     POOCH_CACHE,
+    zenodo_abfe_structural,
     zenodo_industry_benchmark_systems,
     zenodo_md_resume_data,
     zenodo_resume_data,
@@ -433,6 +434,21 @@ def septop_structural_results_dir():
     pooch_septop_structural.fetch("septop_structural_results.zip", processor=pooch.Unzip())
     return pathlib.Path(
         POOCH_CACHE / "septop_structural_results.zip.unzip/septop_structural_results"
+    )
+
+
+pooch_abfe_structural = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_abfe_structural["base_url"],
+    registry={zenodo_abfe_structural["fname"]: zenodo_abfe_structural["known_hash"]},
+)
+
+
+@pytest.fixture(scope="session")
+def abfe_structural_results_dir():
+    pooch_abfe_structural.fetch("abfe_simulation_outputs.zip", processor=pooch.Unzip())
+    return pathlib.Path(
+        POOCH_CACHE / "abfe_simulation_outputs.zip.unzip/abfe_simulation_outputs"
     )
 
 
