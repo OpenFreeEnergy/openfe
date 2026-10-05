@@ -14,7 +14,7 @@ from openfe.orchestration import (
     get_task_df,
     setup_task_campaign,
 )
-from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph
+from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph, update_max_tries
 from openfe.storage.warehouse import WarehouseBaseClass
 
 
@@ -323,10 +323,18 @@ def test_update_max_tries(fresh_db):
 
     tasks, deps = get_tasks_and_deps(task_db)
 
-    expected_tasks = {
+    assert tasks == {
         task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
         task_row("task_b", TaskStatus.TOO_MANY_RETRIES, _DEFAULT_DATETIME, 1, 1, ""),
         task_row("task_c", TaskStatus.AVAILABLE, None, 0, 1, ""),
     }
-    assert tasks == expected_tasks
     assert deps == {("task_a", "task_b", False)}
+
+    update_max_tries(task_db=task_db, value=18)
+    tasks, deps = get_tasks_and_deps(task_db)
+
+    assert tasks == {
+        task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_b", TaskStatus.TOO_MANY_RETRIES, _DEFAULT_DATETIME, 1, 18, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, None, 0, 18, ""),
+    }
