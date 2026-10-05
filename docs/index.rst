@@ -37,14 +37,14 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
         :link: tutorials/index
         :link-type: doc
 
-        Step-by-step examples showing how to use the OpenFE toolkit.
+        Step-by-step examples showing how to use the OpenFE ecosystem.
 
     .. grid-item-card:: :fas:`book-open-reader` User Guide
         :text-align: center
         :link: guide/index
         :link-type: doc
 
-        Explanations of key concept underlying the OpenFE toolkit.
+        Explanations of key concepts underlying **openfe**.
 
     .. grid-item-card:: :fas:`table-list` Cookbooks
         :text-align: center
@@ -84,6 +84,11 @@ Using this toolkit you can plan, execute, and analyze free energy calculations u
    cookbook/index
    reference/index
    CHANGELOG
+
+Frequently Asked Questions:
+---------------------------
+
+Running into errors? See :doc:`guide/troubleshooting` for common failure modes and how to fix them.
 
 Other OpenFE Ecosystem Projects:
 --------------------------------

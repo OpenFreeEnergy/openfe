@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import pathlib
+from pathlib import Path
+from typing import Optional
 
 from openfe import AlchemicalNetwork, LigandNetwork
+from openfe.orchestration.exorcist_utils import setup_task_campaign
+from openfe.storage.warehouse import FileSystemWarehouse
 from openfecli.utils import write
 
 
@@ -12,6 +16,7 @@ def plan_alchemical_network_output(
     alchemical_network: AlchemicalNetwork,
     ligand_network: LigandNetwork,
     folder_path: pathlib.Path,
+    networks_only: bool,
 ):
     """Write the contents of an alchemical network into the structure"""
 
@@ -25,13 +30,19 @@ def plan_alchemical_network_output(
     ln_fname = "ligand_network.graphml"
     with open(folder_path / ln_fname, mode="w") as f:
         f.write(ligand_network.to_graphml())
-    write(f"\t\t- {ln_fname}")
+        write(f"\t\t- {ln_fname}")
 
-    transformations_dir = folder_path / "transformations"
-    transformations_dir.mkdir(parents=True, exist_ok=True)
+    if networks_only:
+        write(
+            "Creating networks only. No Transformation JSONs will be created. To execute the output AlchemicalNetwork, use ``openfe setup-task-campaign``."
+        )
 
-    for transformation in alchemical_network.edges:
-        transformation_name = transformation.name or transformation.key
-        filename = f"{transformation_name}.json"
-        transformation.to_json(transformations_dir / filename)
-        write("\t\t\t\t- " + filename)
+    else:
+        transformations_dir = folder_path / "transformations"
+        transformations_dir.mkdir(parents=True, exist_ok=True)
+
+        for transformation in alchemical_network.edges:
+            transformation_name = transformation.name or transformation.key
+            filename = f"{transformation_name}.json"
+            transformation.to_json(transformations_dir / filename)
+            write("\t\t\t\t- " + filename)

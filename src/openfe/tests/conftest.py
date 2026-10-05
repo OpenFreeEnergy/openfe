@@ -13,8 +13,20 @@ import numpy as np
 import openmm
 import pandas as pd
 import pytest
-from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
+from gufe import (
+    AlchemicalNetwork,
+    AtomMapper,
+    ChemicalSystem,
+    LigandAtomMapping,
+    NonTransformation,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+    Transformation,
+)
+from gufe.tests.test_protocol import DummyProtocol
 from openff.toolkit import ForceField
+from openff.units import unit
 from openff.units import unit as offunit
 from openmm import unit as ommunit
 from rdkit import Chem
@@ -875,7 +887,7 @@ def broken_bond_mapping() -> LigandAtomMapping:
 
 
 @pytest.fixture()
-def appearing_bond_mapping(chlorobenzene):
+def appearing_bond_mapping(chlorobenzene) -> LigandAtomMapping:
     with resources.as_file(resources.files("openfe.tests.data")) as f:
         ethyl_benzene = SmallMoleculeComponent.from_sdf_file(str(f / "ethylbenzene.sdf"))
 
@@ -884,4 +896,121 @@ def appearing_bond_mapping(chlorobenzene):
         componentA=ethyl_benzene,
         componentB=chlorobenzene,
         componentA_to_componentB={5: 0, 7: 1, 8: 2, 9: 3, 10: 4, 11: 5, 12: 6},
+    )
+
+
+@pytest.fixture
+def solvent_kcl() -> SolventComponent:
+    yield SolventComponent(positive_ion="K", negative_ion="Cl", ion_concentration=0.0 * unit.molar)
+
+
+@pytest.fixture
+def toluene_complex_system(benzene_modifications, T4_protein_component) -> ChemicalSystem:
+    return openfe.ChemicalSystem(
+        {
+            "ligand": benzene_modifications["toluene"],
+            "solvent": openfe.SolventComponent(
+                positive_ion="Na", negative_ion="Cl", ion_concentration=0.15 * unit.molar
+            ),
+            "protein": T4_protein_component,
+        }
+    )
+
+
+@pytest.fixture
+def toluene_solvated(benzene_transforms, solvent_kcl) -> ChemicalSystem:
+    return ChemicalSystem(
+        {
+            "ligand": benzene_transforms["toluene"],
+            "solvent": solvent_kcl,
+        }
+    )
+
+
+@pytest.fixture
+def dummy_abfe_transformation(toluene_solvated, toluene_complex_system) -> Transformation:
+    return Transformation(
+        toluene_solvated,
+        toluene_complex_system,
+        protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
+        mapping=None,
+    )
+
+
+@pytest.fixture
+def dummy_nontransformation(toluene_complex_system) -> NonTransformation:
+    return NonTransformation(
+        toluene_complex_system,
+        protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
+    )
+
+
+@pytest.fixture
+def radial_alchemical_network(
+    benzene_transforms, solvent_kcl, T4_protein_component
+) -> AlchemicalNetwork:
+    variants = ["toluene", "phenol", "benzonitrile", "anisole", "benzaldehyde", "styrene"]
+
+    # define the solvent chemical systems and transformations between
+    # benzene and the others
+    toluene_solvateds = {}
+    toluene_solvated_transformations = {}
+
+    toluene_solvateds["benzene"] = ChemicalSystem(
+        {
+            "solvent": solvent_kcl,
+            "ligand": benzene_transforms["benzene"],
+        },
+        name="benzene-solvent",
+    )
+
+    for ligand in variants:
+        toluene_solvateds[ligand] = ChemicalSystem(
+            {
+                "solvent": solvent_kcl,
+                "ligand": benzene_transforms[ligand],
+            },
+            name=f"{ligand}-solvent",
+        )
+
+        toluene_solvated_transformations[("benzene", ligand)] = gufe.Transformation(
+            toluene_solvateds["benzene"],
+            toluene_solvateds[ligand],
+            protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
+            mapping=None,
+        )
+
+    # define the complex chemical systems and transformations between
+    # benzene and the others
+    solvated_complexes = {}
+    solvated_complex_transformations = {}
+
+    solvated_complexes["benzene"] = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": solvent_kcl,
+            "ligand": benzene_transforms["benzene"],
+        },
+        name="benzene-complex",
+    )
+
+    for ligand in variants:
+        solvated_complexes[ligand] = gufe.ChemicalSystem(
+            {
+                "protein": T4_protein_component,
+                "solvent": solvent_kcl,
+                "ligand": benzene_transforms[ligand],
+            },
+            name=f"{ligand}-complex",
+        )
+        solvated_complex_transformations[("benzene", ligand)] = gufe.Transformation(
+            solvated_complexes["benzene"],
+            solvated_complexes[ligand],
+            protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
+            mapping=None,
+        )
+
+    return AlchemicalNetwork(
+        list(toluene_solvated_transformations.values())
+        + list(solvated_complex_transformations.values())
     )
