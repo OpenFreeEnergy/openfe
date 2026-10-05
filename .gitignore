@@ -60,7 +60,7 @@ cover/
 
 # test data
 src/openfe/tests/data/warehouse_data/
-*._warehouse
+*._*warehouse*
 # Translations
 *.mo
 *.pot
