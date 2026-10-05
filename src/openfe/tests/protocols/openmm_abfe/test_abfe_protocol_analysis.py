@@ -232,9 +232,7 @@ class TestSolventStructuralAnalysis:
         assert "structural_analysis_error" in result
         assert "structural_analysis" not in result
 
-    def test_no_ligand_atoms_warning_and_error(
-        self, abfe_solvent_data, tmp_path, caplog
-    ):
+    def test_no_ligand_atoms_warning_and_error(self, abfe_solvent_data, tmp_path, caplog):
         d = abfe_solvent_data
 
         with caplog.at_level(logging.WARNING):
