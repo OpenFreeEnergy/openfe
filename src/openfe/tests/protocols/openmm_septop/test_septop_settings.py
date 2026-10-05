@@ -1,6 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import json
+
+import gufe
 import pytest
 
 from openfe import ChemicalSystem, SolventComponent
@@ -8,6 +11,7 @@ from openfe.protocols.openmm_septop import (
     SepTopProtocol,
 )
 from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
+from openfe.protocols.restraint_utils.settings import BoreschRestraintSettings
 
 
 @pytest.fixture()
@@ -137,3 +141,28 @@ def test_adaptive_settings_with_protein_membrane(a2a_protein_membrane_component,
     assert isinstance(settings, SepTopSettings)
     # Barostat should have been updated
     assert settings.complex_integrator_settings.barostat == "MonteCarloMembraneBarostat"
+
+
+def test_legacy_complex_restraint_settings(default_settings):
+    # Settings created before per-ligand complex restraints were introduced (openfe v1.13)
+    # used a single `complex_restraint_settings` field
+    legacy = dict(default_settings)
+    legacy.pop("complex_restraint_settings_A")
+    legacy.pop("complex_restraint_settings_B")
+    legacy["complex_restraint_settings"] = BoreschRestraintSettings(host_selection="name CA")
+
+    settings = SepTopSettings(**legacy)
+
+    assert settings.complex_restraint_settings_A.host_selection == "name CA"
+    assert settings.complex_restraint_settings_B.host_selection == "name CA"
+    # A and B must not share the same object
+    assert settings.complex_restraint_settings_A is not settings.complex_restraint_settings_B
+
+
+def test_legacy_complex_restraint_settings_mixed(default_settings):
+    # Mixing the legacy field with the new ones is not allowed
+    mixed = dict(default_settings)
+    mixed["complex_restraint_settings"] = BoreschRestraintSettings()
+
+    with pytest.raises(ValueError, match="complex_restraint_settings"):
+        SepTopSettings(**mixed)
