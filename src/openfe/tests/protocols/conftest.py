@@ -434,9 +434,7 @@ pooch_abfe_structural = pooch.create(
 @pytest.fixture(scope="session")
 def abfe_structural_results_dir():
     pooch_abfe_structural.fetch("abfe_simulation_outputs.zip", processor=pooch.Unzip())
-    return pathlib.Path(
-        POOCH_CACHE / "abfe_simulation_outputs.zip.unzip/abfe_simulation_outputs"
-    )
+    return pathlib.Path(POOCH_CACHE / "abfe_simulation_outputs.zip.unzip/abfe_simulation_outputs")
 
 
 @pytest.fixture(scope="session")

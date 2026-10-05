@@ -1886,7 +1886,9 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         checkpoint = simulation_results.outputs["checkpoint"]
 
         # Get the indices of the alchemical species in the subsampled system
-        alchemical_indices = np.where(np.isin(selection_indices, alchemical_full_indices))[0].tolist()
+        alchemical_indices = np.where(np.isin(selection_indices, alchemical_full_indices))[
+            0
+        ].tolist()
 
         # Get the alchemical SMCs
         # Note: in practice this is always a list of 1, but passing full list to futureproof
@@ -1923,6 +1925,7 @@ class ComplexTrajectoryAnalysisMixin:
     Mixin providing trajectory analysis for multistate simulations
     of phases with a host (e.g. complex phase).
     """
+
     @staticmethod
     def _run_trajectory_analysis(
         ds: nc.Dataset,
@@ -2097,4 +2100,3 @@ class LigandVacuumTrajectoryAnalysisMixin:
           Placeholder due to lack of time data.
         """
         return {}, None
-
