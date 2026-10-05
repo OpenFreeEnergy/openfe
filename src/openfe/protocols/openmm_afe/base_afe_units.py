@@ -44,7 +44,10 @@ from openfe_analysis.rmsd import (
     SymmetryCorrectedLigandRMSD,
 )
 from openfe_analysis.utils import plotting
-from openfe_analysis.utils.apply_transformations import apply_ligand_alignment_transformations
+from openfe_analysis.utils.apply_transformations import (
+    apply_complex_alignment_transformations,
+    apply_ligand_alignment_transformations,
+)
 from openfe_analysis.utils.universe_utils import create_universe_single_state
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity
@@ -1757,7 +1760,7 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             return {"structural_analysis_error": str(e)}
 
         if not dry:
-            if (values := data.get("protein_2D_RMSD")) is not None:
+            if values := data.get("protein_2D_RMSD"):
                 fig = plotting.plot_2D_rmsd(values)
                 fig.savefig(output_directory / "protein_2D_RMSD.png")
                 plt.close(fig)
@@ -2057,6 +2060,8 @@ class LigandVacuumTrajectoryAnalysisMixin:
     Mixin providing trajectory analysis for multistate simuulations
     of phases without a host and without solvent (e.g. vacuum phase).
     """
+
+    @staticmethod
     def _run_trajectory_analysis(
         ds: nc.Dataset,
         topology: pathlib.Path,

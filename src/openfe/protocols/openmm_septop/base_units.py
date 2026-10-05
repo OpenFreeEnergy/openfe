@@ -1643,7 +1643,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         # Generate relevant plots if not a dry run
         if not dry:
-            if (values := data.get("protein_2D_RMSD")) is not None:
+            if values := data.get("protein_2D_RMSD"):
                 fig = plotting.plot_2D_rmsd(values)
                 fig.savefig(output_directory / "protein_2D_RMSD.png")
                 plt.close(fig)

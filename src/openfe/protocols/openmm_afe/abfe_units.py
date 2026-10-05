@@ -17,8 +17,6 @@ from gufe import (
     SolventComponent,
 )
 from gufe.components import Component, SolvatedPDBComponent
-from openfe_analysis.utils.apply_transformations import apply_complex_alignment_transformations
-from openfe_analysis.utils.universe_utils import create_universe_single_state
 from openff.units import Quantity
 from openff.units.openmm import to_openmm
 from openmm import System
