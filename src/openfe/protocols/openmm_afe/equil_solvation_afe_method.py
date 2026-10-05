@@ -495,6 +495,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
                 analysis = unit_classes[phase]["analysis"](
                     protocol=self,
+                    # alchem comps needed for analysis
+                    alchemical_components=alchem_comps,
                     setup_results=setup,
                     simulation_results=simulation,
                     generation=0,

@@ -1616,10 +1616,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         try:
             with nc.Dataset(trj_file) as ds:
-                if hasattr(ds, "PositionInterval"):
-                    n_frames = len(range(0, ds.dimensions["iteration"].size, ds.PositionInterval))
-                else:
-                    n_frames = ds.dimensions["iteration"].size
+                n_frames = len(range(0, ds.dimensions["iteration"].size, ds.PositionInterval))
 
                 if skip is None:
                     # find skip that would give ~500 frames of output
@@ -1646,19 +1643,19 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
         # Generate relevant plots if not a dry run
         if not dry:
-            if data.get("protein_2D_RMSD"):
-                fig = plotting.plot_2D_rmsd(data["protein_2D_RMSD"])
+            if values := data.get("protein_2D_RMSD"):
+                fig = plotting.plot_2D_rmsd(values)
                 fig.savefig(output_directory / "protein_2D_RMSD.png")
                 plt.close(fig)
 
             for label in ["ligand_A", "ligand_B"]:
-                if data.get(f"{label}_RMSD"):
-                    fig = plotting.plot_ligand_RMSD(time_ps, data[f"{label}_RMSD"])
+                if values := data.get(f"{label}_RMSD"):
+                    fig = plotting.plot_ligand_RMSD(time_ps, values)
                     fig.savefig(output_directory / f"{label}_RMSD.png")
                     plt.close(fig)
 
-                if data.get(f"{label}_COM_drift"):
-                    fig = plotting.plot_ligand_COM_drift(time_ps, data[f"{label}_COM_drift"])
+                if values := data.get(f"{label}_COM_drift"):
+                    fig = plotting.plot_ligand_COM_drift(time_ps, values)
                     fig.savefig(output_directory / f"{label}_COM_drift.png")
                     plt.close(fig)
 
