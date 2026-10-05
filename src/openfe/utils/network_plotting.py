@@ -36,7 +36,7 @@ class Node:
     # functionality on select, etc.
     draggable = True
     pickable = False
-    lock = None  # lock used while dragging; only one Node dragged at a time
+    lock: Node | None = None  # lock used while dragging; only one Node dragged at a time
 
     def __init__(self, node, x: float, y: float, dx=0.1, dy=0.1):
         self.node = node
