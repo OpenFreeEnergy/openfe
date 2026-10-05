@@ -102,6 +102,45 @@ which is different compared to the results in the :class:`.RelativeHybridTopolog
 
 In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
 
+Analysis
+~~~~~~~~
+
+As with the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`,
+the protocol performs both energetic and structural analysis automatically after each simulation repeat.
+The energetic analysis (MBAR overlap matrix, replica exchange statistics, forward/reverse convergence)
+is identical to that described in the :ref:`multistate analysis section <multistate_analysis>`.
+
+Structural analysis
+"""""""""""""""""""
+
+After each simulation, the protocol automatically analyzes the production trajectories of each lambda state.
+
+In the complex leg, the trajectories are first centered and aligned so that the selected protein atoms are
+the frame of reference, and the following metrics are computed:
+
+* **Ligand RMSD**: symmetry-corrected RMSD of the ligand at each lambda state.
+  The RMSD is relative to the first production frame at that given lambda state.
+  A symmetry-corrected RMSD is used to account for equivalent atom orderings in symmetric
+  molecules (e.g. a flipping phenyl ring) instead of a standard mass-weighted RMSD.
+* **Ligand COM drift**: centre-of-mass displacement of the ligand at each lambda state.
+  The COM is calculated from the ligand's initial production simulation position at that lambda state.
+* **Protein 2D RMSD**:  pairwise RMSD matrix between all analyzed frames for each lambda state.
+
+In the solvent leg, only the symmetry-corrected **Ligand RMSD** is computed.
+
+Results are saved as an `NPZ file <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`_ (``structural_analysis.npz``)
+and plots (``ligand_RMSD.png``, and for the complex leg ``ligand_COM_drift.png`` and ``protein_2D_RMSD.png``) are generated automatically.
+To customize the analysis, the protein selection string (``protein_selection``) and frame stride (``stride``) can be configured via ``analysis_settings`` in :class:`.AbsoluteBindingSettings`.
+
+.. note::
+   This analysis requires the ligand atoms to be included in the trajectory output
+   (controlled by ``output_indices`` in ``solvent_output_settings`` and ``complex_output_settings``).
+   If no ligand atoms are written to the trajectory, the analysis is skipped and a
+   ``structural_analysis_error`` entry is added to the results instead.
+
+For further guidance on interpreting these plots, see the
+:ref:`multistate analysis section <multistate_analysis>` of the hybrid topology protocol documentation.
+
 See Also
 --------
 

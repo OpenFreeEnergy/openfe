@@ -49,7 +49,6 @@ configure_logger("gufe", handler=stdout_handler)
 configure_logger("openfe", handler=stdout_handler)
 configure_logger("openmmtools.multistate.multistatereporter", level=logging.DEBUG, handler=stdout_handler)  # fmt: skip
 configure_logger("openmmtools.multistate.multistatesampler", level=logging.DEBUG, handler=stdout_handler)  # fmt: skip
-
 logger = logging.getLogger(__name__)
 
 LIGA = "[H]C([H])([H])C([H])([H])C(=O)C([H])([H])C([H])([H])[H]"

@@ -19,6 +19,8 @@ from .base_afe_units import (
     BaseAbsoluteMultiStateAnalysisUnit,
     BaseAbsoluteMultiStateSimulationUnit,
     BaseAbsoluteSetupUnit,
+    LigandTrajectoryAnalysisMixin,
+    LigandVacuumTrajectoryAnalysisMixin,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,6 +81,7 @@ class VacuumSettingsMixin:
             * equil_output_settings : MDOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
+            * analysis_settings: MultiStateAnalysisSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
@@ -95,6 +98,7 @@ class VacuumSettingsMixin:
         settings["equil_output_settings"] = prot_settings.vacuum_equil_output_settings
         settings["simulation_settings"] = prot_settings.vacuum_simulation_settings
         settings["output_settings"] = prot_settings.vacuum_output_settings
+        settings["analysis_settings"] = prot_settings.analysis_settings
 
         return settings
 
@@ -120,7 +124,9 @@ class AHFEVacuumSimUnit(
     simtype = "vacuum"
 
 
-class AHFEVacuumAnalysisUnit(VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class AHFEVacuumAnalysisUnit(
+    LigandVacuumTrajectoryAnalysisMixin, VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the vacuum phase
     of absolute hydration free energy transformations.
@@ -180,6 +186,7 @@ class SolventSettingsMixin:
             * equil_output_settings : MDOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
+            * analysis_settings: MultiStateAnalysisSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
@@ -196,6 +203,7 @@ class SolventSettingsMixin:
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings
         settings["output_settings"] = prot_settings.solvent_output_settings
+        settings["analysis_settings"] = prot_settings.analysis_settings
 
         return settings
 
@@ -221,7 +229,9 @@ class AHFESolventSimUnit(
     simtype = "solvent"
 
 
-class AHFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class AHFESolventAnalysisUnit(
+    LigandTrajectoryAnalysisMixin, SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the solvent phase
     of absolute hydration free energy transformations.

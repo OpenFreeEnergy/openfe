@@ -92,6 +92,40 @@ In addition to the estimates of the free energy changes and their uncertainty, t
 
 .. todo: issue 792 change this reference to point to the new results section
 
+Analysis
+~~~~~~~~
+
+As with the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`,
+the protocol performs both energetic and structural analysis automatically after each simulation repeat.
+The energetic analysis (MBAR overlap matrix, replica exchange statistics, forward/reverse convergence)
+is identical to that described in the :ref:`multistate analysis section <multistate_analysis>`.
+
+Structural analysis
+"""""""""""""""""""
+
+After each simulation, the protocol automatically analyzes the production trajectories.
+
+.. note::
+   No structural analysis is currently carried out for the vacuum leg.
+   This will be fixed in a future version of openfe.
+
+For each lambda state, the **Ligand RMSD** is computed: a symmetry-corrected RMSD of the ligand relative to the first production frame.
+A symmetry-corrected RMSD is used to account for equivalent atom orderings in symmetric
+molecules (e.g. a flipping phenyl ring) instead of a standard mass-weighted RMSD.
+
+Results are saved as an `NPZ file <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`_ (``structural_analysis.npz``)
+and a plot (``ligand_RMSD.png``) is generated automatically.
+To customize the analysis, the frame stride can be configured via ``analysis_settings.skip`` in :class:`.AbsoluteSolvationSettings`.
+
+.. note::
+   This analysis requires the ligand atoms to be included in the trajectory output
+   (controlled by ``output_indices`` in ``solvent_output_settings``).
+   If no ligand atoms are written to the trajectory, the analysis is skipped and a
+   ``structural_analysis_error`` entry is added to the results instead.
+
+For further guidance on interpreting this plot, see the
+:ref:`multistate analysis section <multistate_analysis>` of the hybrid topology protocol documentation.
+
 
 See Also
 --------

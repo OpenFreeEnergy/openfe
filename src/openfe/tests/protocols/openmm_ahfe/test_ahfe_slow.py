@@ -29,7 +29,7 @@ def test_openmm_run_engine(
     # Run a really short calculation to check everything is going well
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
-    s.solvent_output_settings.output_indices = "resname UNK"
+    s.solvent_output_settings.output_indices = "resname LIG"
     s.vacuum_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.vacuum_equil_simulation_settings.production_length = 0.1 * unit.picosecond
     s.vacuum_simulation_settings.equilibration_length = 0.1 * unit.picosecond
@@ -45,6 +45,8 @@ def test_openmm_run_engine(
     s.solvent_simulation_settings.time_per_iteration = 20 * unit.femtosecond
     s.vacuum_output_settings.checkpoint_interval = 20 * unit.femtosecond
     s.solvent_output_settings.checkpoint_interval = 20 * unit.femtosecond
+    # Structural analysis needs more than one frame
+    s.solvent_output_settings.positions_write_frequency = 20 * unit.femtosecond
     s.solvent_simulation_settings.n_replicas = 20
     s.solvent_lambda_settings.lambda_elec = [
         0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
@@ -114,6 +116,23 @@ def test_openmm_run_engine(
             nc = pur.outputs["trajectory"]
             assert nc == sim_shared / f"{pur.outputs['simtype']}.nc"
             assert nc.exists()
+
+            # Check the structural analysis outputs
+            assert "structural_analysis_error" not in pur.outputs
+            structural_pngs = ["ligand_RMSD.png", "ligand_COM_drift.png", "protein_2D_RMSD.png"]
+            if phase == "vacuum":
+                # No structural analysis is done in vacuum
+                assert "structural_analysis" not in pur.outputs
+                for png in structural_pngs:
+                    assert not (unit_shared / png).exists()
+            else:
+                npz = pur.outputs["structural_analysis"]
+                assert npz == unit_shared / "structural_analysis.npz"
+                assert npz.exists()
+                # Only the ligand RMSD is analyzed in solvent
+                assert (unit_shared / "ligand_RMSD.png").exists()
+                assert not (unit_shared / "ligand_COM_drift.png").exists()
+                assert not (unit_shared / "protein_2D_RMSD.png").exists()
 
     # Test results methods that need files present
     results = protocol.gather([r])
