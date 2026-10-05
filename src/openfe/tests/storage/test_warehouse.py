@@ -294,7 +294,7 @@ class TestFileSystemWarehouse:
 @pytest.fixture
 def warehouse_partial_failure():
     with resources.path("openfe.tests", "data") as data_dir:
-        warehouse_dir = data_dir / "warehouse"
+        warehouse_dir = data_dir / "warehouse_data"
         if not (warehouse_dir).exists():
             shutil.unpack_archive(warehouse_dir.with_suffix(".tar.gz"), data_dir, format="gztar")
 
