@@ -4,6 +4,7 @@ This module translates an :class:`gufe.AlchemicalNetwork` into Exorcist task
 structures and can initialize an Exorcist task database from that graph.
 """
 
+from datetime import datetime
 from pathlib import Path
 
 import exorcist
@@ -156,24 +157,45 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     return pd.read_sql_table("dependencies", task_db.engine)
 
 
-def update_max_tries(task_db: exorcist.TaskStatusDB, value: int):
+def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: int):
+    """Update the "max_tries" column to `max_tries`.
+    Only rows that do _not_ have status=COMPLETED will be operated on.
+
+    Parameters
+    ----------
+    task_db : openfe.TaskStatusDB
+        The TaskStatusDB to update
+    value : int
+        The integer value to assign as ``max_tries`` for the updated columns.
+
+    """
+
     import sqlalchemy as sqla
     from exorcist.models import TaskStatus
 
-    """
-    Update the "max_tries" column to `value`.
-    Only rows that do _not_ have status=COMPLETED will be operated on.
-
-    """
-    # TODO: if "TOO MANY TRIES", update to AVAILABLE
-    # TODO: only allow increases if TOO MANY TRIES? maybe only operate on rows where max_tries < val?
     # TODO: select a single task_id?
-    update_statement = (
+
+    values = {"max_tries": max_tries, "last_modified": datetime.now()}
+
+    # on the rows that already hit TOO_MANY_RETRIES, only allow increasing max_tries,
+    # otherwise the state is invalid, and set to AVAILABLE
+    stmt_update_too_many_retries = (
+        sqla.update(task_db.tasks_table)
+        .where(task_db.tasks_table.c.status == TaskStatus.TOO_MANY_RETRIES.value)
+        .where(task_db.tasks_table.c.max_tries < max_tries)
+        .values(**values, status=TaskStatus.AVAILABLE.value)
+    )
+
+    # COMPLETED tasks should not be updated, and never allow max_tries to be less than
+    # the number of attempts already made (tries), otherwise the state is invalid.
+    stmt_update_uncompleted_tasks = (
         sqla.update(task_db.tasks_table)
         .where(task_db.tasks_table.c.status != TaskStatus.COMPLETED.value)
-        .values(max_tries=value)
+        .where(task_db.tasks_table.c.tries < max_tries)
+        .values(**values)
     )
 
     with task_db.engine.begin() as conn:
-        result = conn.execute(update_statement)
-        # task_db._validate_update_result(result)
+        # TODO: is there a better way than calling this twice?
+        conn.execute(stmt_update_too_many_retries)
+        conn.execute(stmt_update_uncompleted_tasks)

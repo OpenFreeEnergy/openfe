@@ -278,10 +278,16 @@ from exorcist import TaskStatus, TaskStatusDB
 _DEFAULT_DATETIME = datetime(1970, 1, 1)
 
 
-def patch_datetime_now(with_datetime=_DEFAULT_DATETIME):
+def patch_exorcist_datetime(with_datetime=_DEFAULT_DATETIME):
     # turns out we can't patch just the now() method (datetime is immutable,
     # probably C code?) so we have to patch the entire datetime module
     loc = "exorcist.taskdb.datetime"
+    datetime_now = mock.Mock(now=mock.Mock(return_value=with_datetime))
+    return mock.patch(loc, datetime_now)
+
+
+def patch_openfe_datetime(with_datetime=_DEFAULT_DATETIME):
+    loc = "openfe.orchestration.exorcist_utils.datetime"
     datetime_now = mock.Mock(now=mock.Mock(return_value=with_datetime))
     return mock.patch(loc, datetime_now)
 
@@ -312,7 +318,7 @@ def test_update_max_tries(fresh_db):
     task_db.add_task("task_b", requirements=["task_a"], max_tries=1)
     task_db.add_task("task_c", requirements=[], max_tries=1)
 
-    with patch_datetime_now():
+    with patch_exorcist_datetime():
         taskid = task_db.check_out_task()
         assert taskid == "task_a"
         task_db.mark_task_completed(taskid, success=True)
@@ -330,11 +336,12 @@ def test_update_max_tries(fresh_db):
     }
     assert deps == {("task_a", "task_b", False)}
 
-    update_max_tries(task_db=task_db, value=18)
+    with patch_openfe_datetime():
+        update_max_tries(task_db=task_db, max_tries=18)
     tasks, deps = get_tasks_and_deps(task_db)
 
     assert tasks == {
         task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
-        task_row("task_b", TaskStatus.TOO_MANY_RETRIES, _DEFAULT_DATETIME, 1, 18, ""),
-        task_row("task_c", TaskStatus.AVAILABLE, None, 0, 18, ""),
+        task_row("task_b", TaskStatus.AVAILABLE, _DEFAULT_DATETIME, 1, 18, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, _DEFAULT_DATETIME, 0, 18, ""),
     }
