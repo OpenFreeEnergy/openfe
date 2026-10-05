@@ -127,6 +127,17 @@ def test_openmm_run_engine(
             assert nc == sim_shared / f"{pur.outputs['simtype']}.nc"
             assert nc.exists()
 
+            # Check the structural analysis outputs
+            assert "structural_analysis_error" not in pur.outputs
+            npz = pur.outputs["structural_analysis"]
+            assert npz == unit_shared / "structural_analysis.npz"
+            assert npz.exists()
+
+            assert (unit_shared / "ligand_RMSD.png").exists()
+            complex_pngs = ["ligand_COM_drift.png", "protein_2D_RMSD.png"]
+            for png in complex_pngs:
+                assert (unit_shared / png).exists() == (phase == "complex")
+
     # Test results methods that need files present
     results = protocol.gather([r])
     states = results.get_replica_states()

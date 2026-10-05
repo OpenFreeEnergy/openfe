@@ -23,6 +23,9 @@ import pathlib
 from typing import Any
 
 import gufe
+import matplotlib.pyplot as plt
+import MDAnalysis as mda
+import netCDF4 as nc
 import numpy as np
 import numpy.typing as npt
 import openmm
@@ -35,6 +38,17 @@ from gufe import (
 )
 from gufe.components import Component
 from gufe.protocols.errors import ProtocolUnitExecutionError
+from openfe_analysis.rmsd import (
+    LigandCOMDrift,
+    Protein2DRMSD,
+    SymmetryCorrectedLigandRMSD,
+)
+from openfe_analysis.utils import plotting
+from openfe_analysis.utils.apply_transformations import (
+    apply_complex_alignment_transformations,
+    apply_ligand_alignment_transformations,
+)
+from openfe_analysis.utils.universe_utils import create_universe_single_state
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity
 from openff.units import unit as offunit
@@ -54,6 +68,7 @@ from openmmtools.states import (
     ThermodynamicState,
     create_thermodynamic_state_protocol,
 )
+from rdkit import Chem
 
 import openfe
 from openfe.protocols.openmm_afe.equil_afe_settings import (
@@ -770,6 +785,7 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             "system": system_outfile,
             "positions": positions_outfile,
             "pdb_structure": pdb_structure,
+            "alchem_indices": alchem_indices,
             "selection_indices": selection_indices,
             "box_vectors": from_openmm(box_vectors),
             "alchemical_resname": alchem_resname,
@@ -792,7 +808,6 @@ class BaseAbsoluteSetupUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
                 "standard_system": omm_system,
                 "restrained_system": restrained_omm_system,
                 "alchem_system": alchem_system,
-                "alchem_indices": alchem_indices,
                 "alchem_factory": alchem_factory,
                 "debug_positions": positions,
             }
@@ -1607,11 +1622,181 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         reporter.close()
         return analyzer.unit_results_dict
 
+    @staticmethod
+    @abc.abstractmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        topology: pathlib.Path,
+        skip: int,
+        ligand_indices: list[int],
+        rdmol: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Analyze a trajectory.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        topology : pathlib.Path
+          Path to the subsampled topology file.
+        skip : int
+          Frame stride for analysis.
+        ligand_indices : list[int]
+          Atom indices of the ligand in the subsampled system.
+        rdmol : Chem.Mol
+          RDKit molecule for the ligand, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          Optional MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations.
+
+        Returns
+        -------
+        analysis_data : dict[str, list[np.ndarray]]
+          Structural analysis results, keyed by the analysis
+          type, e.g. ``ligand_RMSD``, ``ligand_COM_drift``,
+          and ``protein_2D_RMSD``. An empty dictionary indicates
+          that no structural analysis applies.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        ...
+
+    def _structural_analysis(
+        self,
+        topology: pathlib.Path | None,
+        trajectory: pathlib.Path,
+        output_directory: pathlib.Path,
+        ligand_indices: list[int],
+        ligand_smcs: list[SmallMoleculeComponent],
+        protein_selection: str,
+        skip: int | None,
+        dry: bool,
+    ) -> dict[str, str | pathlib.Path]:
+        """
+        Run structural analysis using ``openfe-analysis``.
+
+        Parameters
+        ----------
+        topology : pathlib.Path | None
+          Path to the subsampled topology (PDB) file. May be ``None`` if
+          no atoms were selected for trajectory output.
+        trajectory : pathlib.Path
+          Path to the trajectory NetCDF file.
+        output_directory : pathlib.Path
+          The output directory where plots and the data NPZ file
+          will be stored.
+        ligand_indices : list[int]
+          Atom indices of the alchemical ligand in the subsampled system.
+        ligand_smcs : list[SmallMoleculeComponent]
+          The SmallMoleculeComponent(s) representing the alchemical species.
+          Only a single alchemical species is currently supported.
+        protein_selection : str
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations in the complex phase.
+          Ignored for phases without a protein.
+        skip : int | None
+          Frame stride for structural analysis. If ``None``, a stride is
+          chosen such that approximately (max.) 500 frames are analyzed per state.
+          Set to 1 to analyze every frame.
+        dry : bool
+          Whether or not we are running a dry run.
+
+        Returns
+        -------
+        dict[str, str | pathlib.Path]
+          Dictionary containing either the path to the NPZ file with the
+          structural data, or the analysis error. Empty if no structural
+          analysis applies to this phase.
+        """
+        if len(ligand_smcs) != 1:
+            errmsg = (
+                "Structural analysis is only supported for a single "
+                f"alchemical species, got {len(ligand_smcs)}."
+            )
+            logger.warning(errmsg)
+            return {"structural_analysis_error": errmsg}
+
+        if len(ligand_indices) != ligand_smcs[0].to_rdkit().GetNumAtoms():
+            errmsg = (
+                f"Number of ligand indices: {len(ligand_indices)} "
+                f"does not match the number of ligand atoms: {ligand_smcs[0].to_rdkit().GetNumAtoms()}"
+            )
+            logger.warning(errmsg)
+            return {"structural_analysis_error": errmsg}
+
+        if topology is None:
+            errmsg = (
+                "No atoms found in the subsampled trajectory, "
+                "cannot carry out structural analysis. This is likely "
+                "due to the `output_indices` selection in your settings "
+                "not including the ligand and other relevant molecules. "
+                "If this is unexpected, please check the value of "
+                "`output_indices` under the output settings to ensure "
+                "ligand atoms are included in the trajectory output."
+            )
+            logger.warning(errmsg)
+            return {"structural_analysis_error": errmsg}
+
+        try:
+            with nc.Dataset(trajectory) as ds:
+                n_frames = len(range(0, ds.dimensions["iteration"].size, ds.PositionInterval))
+
+                if skip is None:
+                    # find skip that would give ~ 500 frame of output
+                    # max to ensure we have at least one frame
+                    skip = max(n_frames // 500, 1)
+
+                data, time_ps = self._run_trajectory_analysis(
+                    ds=ds,
+                    topology=topology,
+                    skip=skip,
+                    ligand_indices=ligand_indices,
+                    rdmol=ligand_smcs[0].to_rdkit(),
+                    protein_selection=protein_selection,
+                )
+
+            # Nothing to analyze for this phase
+            if not data:
+                return {}
+
+            npz_data = {k: np.asarray(v, dtype=np.float32) for k, v in data.items()}
+            npz_data["time_ps"] = np.asarray(time_ps, dtype=np.float32)
+        # TODO: in future we should try to more specifically capture failure types
+        except Exception as e:
+            return {"structural_analysis_error": str(e)}
+
+        if not dry:
+            if values := data.get("protein_2D_RMSD"):
+                fig = plotting.plot_2D_rmsd(values)
+                fig.savefig(output_directory / "protein_2D_RMSD.png")
+                plt.close(fig)
+
+            if values := data.get("ligand_RMSD"):
+                fig = plotting.plot_ligand_RMSD(time_ps, values)
+                fig.savefig(output_directory / "ligand_RMSD.png")
+                plt.close(fig)
+
+            if values := data.get("ligand_COM_drift"):
+                fig = plotting.plot_ligand_COM_drift(time_ps, values)
+                fig.savefig(output_directory / "ligand_COM_drift.png")
+                plt.close(fig)
+
+        # Write out an NPZ with the extracted analysis data
+        npz_filepath = output_directory / "structural_analysis.npz"
+        np.savez_compressed(npz_filepath, **npz_data)  # type: ignore[arg-type]
+
+        return {"structural_analysis": npz_filepath}
+
     def run(
         self,
         *,
+        topology: pathlib.Path | None,
         trajectory: pathlib.Path,
         checkpoint: pathlib.Path,
+        alchemical_smcs: list[SmallMoleculeComponent],
+        alchemical_indices: list[int],
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
@@ -1621,10 +1806,16 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
 
         Parameters
         ----------
+        topology : pathlib.Path | None
+          Path to the topology file associated with the trajectory.
         trajectory : pathlib.Path
           Path to the MultiStateReporter generated NetCDF file.
         checkpoint : pathlib.Path
           Path to the checkpoint file generated by MultiStateReporter.
+        alchemical_smcs : list[SmallMoleculeComponent]
+          The SmallMoleculeComponent(s) representing the alchemical species.
+        alchemical_indices : list[int]
+          Atom indices of the alchemical component in the subsampled system.
         dry : bool
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
@@ -1653,7 +1844,7 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         settings = self._get_settings()
 
         # Energies analysis
-        if verbose:
+        if self.verbose:
             self.logger.info("Analyzing energies")
 
         energy_analysis = self._analyze_multistate_energies(
@@ -1664,7 +1855,21 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             dry=dry,
         )
 
-        return energy_analysis
+        if self.verbose:
+            self.logger.info("Analyzing structural outputs")
+
+        structural_analysis = self._structural_analysis(
+            topology=topology,
+            trajectory=trajectory,
+            ligand_smcs=alchemical_smcs,
+            ligand_indices=alchemical_indices,
+            protein_selection=settings["analysis_settings"].protein_selection,
+            skip=settings["analysis_settings"].skip,
+            output_directory=self.shared_basepath,
+            dry=dry,
+        )
+
+        return energy_analysis | structural_analysis
 
     def _execute(
         self,
@@ -1679,17 +1884,30 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         # Ensure the environment hasn't changed
         self._verify_execution_environment(setup_results.outputs)
 
-        # Get the relevant inputs for running the unit
+        # Get the relevant previous unit outputs
         pdb_file = setup_results.outputs["pdb_structure"]
         selection_indices = setup_results.outputs["selection_indices"]
+        alchemical_full_indices = setup_results.outputs["alchem_indices"]
         restraint_geometry = setup_results.outputs["restraint_geometry"]
         standard_state_corr = setup_results.outputs["standard_state_correction"]
         trajectory = simulation_results.outputs["trajectory"]
         checkpoint = simulation_results.outputs["checkpoint"]
 
+        # Get the indices of the alchemical species in the subsampled system
+        alchemical_indices = np.where(np.isin(selection_indices, alchemical_full_indices))[
+            0
+        ].tolist()
+
+        # Get the alchemical SMCs
+        # Note: in practice this is always a list of 1, but passing full list to futureproof
+        alchemical_smcs = self._inputs["alchemical_components"]["stateA"]
+
         outputs = self.run(
+            topology=pdb_file,
             trajectory=trajectory,
             checkpoint=checkpoint,
+            alchemical_smcs=alchemical_smcs,
+            alchemical_indices=alchemical_indices,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )
@@ -1708,3 +1926,188 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             "standard_state_correction": standard_state_corr,
             **outputs,
         }
+
+
+class ComplexTrajectoryAnalysisMixin:
+    """
+    Mixin providing trajectory analysis for multistate simulations
+    of phases with a host (e.g. complex phase).
+    """
+
+    @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        topology: pathlib.Path,
+        skip: int,
+        ligand_indices: list[int],
+        rdmol: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run trajectory analysis for the complex phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        topology : pathlib.Path
+          Path to the subsampled topology (PDB) file.
+        skip : int
+          Frame stride for analysis.
+        ligand_indices : list[int]
+          Atom indices of the ligand in the subsampled system.
+        rdmol : Chem.Mol
+          RDKit molecule for the ligand, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations.
+
+        Returns
+        -------
+        analysis_data : dict[str, list[np.ndarray]]
+          Structural analysis results, keyed by the analysis
+          type. Currently ``ligand_RMSD`` (symmetry corrected ligand RMSD),
+          ``ligand_COM_drift`` (COM drift of ligand), and ``protein_2D_RMSD``
+          (protein backbone self RMSD).
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        analysis_data: dict[str, list[np.ndarray]] = {
+            "ligand_RMSD": [],
+            "ligand_COM_drift": [],
+            "protein_2D_RMSD": [],
+        }
+
+        # Read the topology once and reuse across all lambda states
+        u_top = mda.Universe(topology)
+        prot_indices = u_top.select_atoms(protein_selection).indices
+        for state_idx in range(n_lambda):
+            universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+            prot = universe.atoms[prot_indices]
+            lig = universe.atoms[ligand_indices]
+            apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig])
+
+            # Protein selection is empty - e.g. not looking at a protein host
+            if prot:
+                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
+                analysis_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+
+            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+            analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
+
+            lig_drift = LigandCOMDrift(lig).run(step=skip)
+            analysis_data["ligand_COM_drift"].append(lig_drift.results.com_drift)
+
+        # Assign time based on the final state's universe
+        time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
+        return analysis_data, time_ps
+
+
+class LigandTrajectoryAnalysisMixin:
+    """
+    Mixin providing trajectory analysis for multistate simuulations
+    of phases without a host (e.g. solvent phase).
+    """
+
+    @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        topology: pathlib.Path,
+        skip: int,
+        ligand_indices: list[int],
+        rdmol: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run ligand-only trajectory analysis.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        topology : pathlib.Path
+          Path to the subsampled topology (PDB) file.
+        skip : int
+          Frame stride for analysis.
+        ligand_indices : list[int]
+          Atom indices of the ligand in the subsampled system.
+        rdmol : Chem.Mol
+          RDKit molecule for the ligand, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          Ignored, there is no protein in this phase.
+
+        Returns
+        -------
+        analysis_data : dict[str, list[np.ndarray]]
+          Structural analysis results, keyed by the analysis
+          type. Currently only contains ``ligand_RMSD``, the
+          symmetry corrected RMSD of the ligand species.
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        analysis_data: dict[str, list[np.ndarray]] = {"ligand_RMSD": []}
+
+        # Read the topology once and reuse across all lambda states
+        u_top = mda.Universe(topology)
+        for state_idx in range(n_lambda):
+            universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+            lig = universe.atoms[ligand_indices]
+            apply_ligand_alignment_transformations(universe, ligand=lig)
+
+            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+            analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
+
+        # Assign time based on the final state's universe
+        time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
+        return analysis_data, time_ps
+
+
+class LigandVacuumTrajectoryAnalysisMixin:
+    """
+    Mixin providing trajectory analysis for multistate simuulations
+    of phases without a host and without solvent (e.g. vacuum phase).
+
+    See `Issue #2239 <https://github.com/OpenFreeEnergy/openfe/issues/2239>`_
+    for more information.
+    """
+
+    @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        topology: pathlib.Path,
+        skip: int,
+        ligand_indices: list[int],
+        rdmol: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Due to limitations in ``openfe-analysis`` no structural
+        analysis run for the vacuum phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        topology : pathlib.Path
+          Path to the subsampled topology (PDB) file.
+        skip : int
+          Frame stride for analysis.
+        ligand_indices : list[int]
+          Atom indices of the ligand in the subsampled system.
+        rdmol : Chem.Mol
+          RDKit molecule for the ligand, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          Ignored, there is no protein in this phase.
+
+        Returns
+        -------
+        analysis_data : dict[str, list[np.ndarray]]
+          Empty dictionary.
+        time_ps : None
+          Placeholder due to lack of time data.
+        """
+        return {}, None
