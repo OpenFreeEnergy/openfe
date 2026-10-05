@@ -12,7 +12,7 @@ from ..utils import assert_click_success
 @pytest.fixture
 def alchemical_network_mcl1_path() -> pathlib.Path:
     with resources.path(
-        "openfe.tests.data.warehouse", "alchemicalNetwork_mc1_small.json"
+        "openfe.tests.data.warehouse_data", "alchemicalNetwork_mc1_small.json"
     ) as fspath:
         return fspath
 
