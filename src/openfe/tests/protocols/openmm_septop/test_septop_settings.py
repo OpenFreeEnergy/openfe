@@ -1,9 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import json
-
-import gufe
 import pytest
 
 from openfe import ChemicalSystem, SolventComponent
@@ -151,7 +148,8 @@ def test_legacy_complex_restraint_settings(default_settings):
     legacy.pop("complex_restraint_settings_B")
     legacy["complex_restraint_settings"] = BoreschRestraintSettings(host_selection="name CA")
 
-    settings = SepTopSettings(**legacy)
+    with pytest.warns(FutureWarning, match="complex_restraint_settings"):
+        settings = SepTopSettings(**legacy)
 
     assert settings.complex_restraint_settings_A.host_selection == "name CA"
     assert settings.complex_restraint_settings_B.host_selection == "name CA"

@@ -12,6 +12,7 @@ openfe.protocols.openmm_septop.SepTopProtocol
 """
 
 import copy
+import warnings
 from typing import Any, Optional
 
 import numpy as np
@@ -387,6 +388,14 @@ class SepTopSettings(SettingsBaseModel):
             and "complex_restraint_settings_A" not in data
             and "complex_restraint_settings_B" not in data
         ):
+            wmsg = (
+                "Loading SepTop settings from `openfe<=1.12` "
+                "which uses ``complex_restraint_settings``. "
+                "The values of ``complex_restraint_settings`` have been copied over to "
+                "``complex_restraint_settings_A`` and ``complex_restraint_settings_B``. "
+                "This will no longer be supported in openfe v1.14."
+            )
+            warnings.warn(wmsg, FutureWarning, stacklevel=2)
             data = dict(data)
             legacy = data.pop("complex_restraint_settings")
             data["complex_restraint_settings_A"] = copy.deepcopy(legacy)
