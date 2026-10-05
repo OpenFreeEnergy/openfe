@@ -76,7 +76,6 @@ def _alchemical_network_to_task_graph(
     return global_task_dag
 
 
-# TODO: add `exists_okay` option to add to an existing campaign
 def setup_task_campaign(
     alchemical_network: AlchemicalNetwork,
     warehouse_dir: Path,  # TODO: make optional?
