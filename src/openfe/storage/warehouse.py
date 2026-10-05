@@ -7,6 +7,7 @@ import pathlib
 import re
 from typing import Generator, Iterable, Literal, TypedDict
 
+import gufe
 from gufe.protocols import ProtocolResult
 from gufe.protocols.protocoldag import ProtocolDAG, ProtocolDAGResult
 from gufe.protocols.protocolunit import ProtocolUnit, ProtocolUnitResult
@@ -403,8 +404,8 @@ class WarehouseBaseClass:
 
         """
 
-        for i in self.stores["results"]:
-            obj = self.load_results_tokenizable(i)
+        for fname in self.stores["results"]:
+            obj = self.load_results_tokenizable(fname)
             if isinstance(obj, ProtocolUnitResult):
                 yield obj
             else:
@@ -464,8 +465,9 @@ class WarehouseBaseClass:
 
     @staticmethod
     def _construct_dags_to_unit_results(
-        dags: Iterable[ProtocolDAG], unit_results: Iterable[ProtocolUnitResult]
-    ):
+        dags: Iterable[ProtocolDAG],
+        unit_results: Iterable[ProtocolUnitResult],
+    ) -> dict[gufe.key, list[ProtocolUnitResult]]:
         """Given a set of ProtocolDAGs and a set of ProtocolUnitResults,
         create a mapping of protocolDAGs to their corresponding ProtocolUnitResults
 
@@ -473,7 +475,7 @@ class WarehouseBaseClass:
 
         # protocol unit source key mapped to unit results
         pur_pu_keys = {str(pur.source_key): pur for pur in unit_results}
-        dag_map = {}
+        dag_map: dict[gufe.key, list[ProtocolUnitResult]] = {}
         for dag in dags:
             dag_unit_results = []
             for unit in dag.protocol_units:
@@ -579,6 +581,8 @@ class FileSystemWarehouse(WarehouseBaseClass):
             If `root_dir` is not an existing directory.
 
         """
+
+        # TODO: assert that expected subdirs exist - otherwise any dir will be treated as a warehouse
 
         root_dir = pathlib.Path(root_dir)
         if not root_dir.is_dir():
