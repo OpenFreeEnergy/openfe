@@ -336,12 +336,13 @@ def test_update_max_tries(fresh_db):
     }
     assert deps == {("task_a", "task_b", False)}
 
-    with patch_openfe_datetime():
+    datetime2 = datetime(1999, 1, 1)
+    with patch_openfe_datetime(datetime2):
         update_max_tries(task_db=task_db, max_tries=18)
     tasks, deps = get_tasks_and_deps(task_db)
 
     assert tasks == {
         task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
-        task_row("task_b", TaskStatus.AVAILABLE, _DEFAULT_DATETIME, 1, 18, ""),
-        task_row("task_c", TaskStatus.AVAILABLE, _DEFAULT_DATETIME, 0, 18, ""),
+        task_row("task_b", TaskStatus.AVAILABLE, datetime2, 1, 18, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, datetime2, 0, 18, ""),
     }
