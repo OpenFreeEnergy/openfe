@@ -130,7 +130,7 @@ In the solvent leg, only the symmetry-corrected **Ligand RMSD** is computed.
 
 Results are saved as an `NPZ file <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`_ (``structural_analysis.npz``)
 and plots (``ligand_RMSD.png``, and for the complex leg ``ligand_COM_drift.png`` and ``protein_2D_RMSD.png``) are generated automatically.
-To customize the analysis, the protein selection string and frame stride can be configured via ``analysis_settings`` in :class:`.AbsoluteBindingSettings`.
+To customize the analysis, the protein selection string (``protein_selection``) and frame stride (``stride``) can be configured via ``analysis_settings`` in :class:`.AbsoluteBindingSettings`.
 
 .. note::
    This analysis requires the ligand atoms to be included in the trajectory output
