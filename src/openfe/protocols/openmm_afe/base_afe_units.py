@@ -38,7 +38,11 @@ from gufe import (
 )
 from gufe.components import Component
 from gufe.protocols.errors import ProtocolUnitExecutionError
-from openfe_analysis.rmsd import SymmetryCorrectedLigandRMSD
+from openfe_analysis.rmsd import (
+    LigandCOMDrift,
+    Protein2DRMSD,
+    SymmetryCorrectedLigandRMSD,
+)
 from openfe_analysis.utils import plotting
 from openfe_analysis.utils.apply_transformations import apply_ligand_alignment_transformations
 from openfe_analysis.utils.universe_utils import create_universe_single_state
@@ -1633,7 +1637,7 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         ds : netCDF4.Dataset
           Open NetCDF dataset for the multistate trajectory.
         topology : pathlib.Path
-          Path to the subsampled topology (PDB) file.
+          Path to the subsampled topology file.
         skip : int
           Frame stride for analysis.
         ligand_indices : list[int]
@@ -1646,10 +1650,11 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
 
         Returns
         -------
-        per_state_data : dict[str, list[np.ndarray]]
-          Per-state analysis results, keyed by any of ``ligand_RMSD``,
-          ``ligand_COM_drift``, and ``protein_2D_RMSD``. An empty
-          dictionary indicates that no structural analysis applies.
+        analysis_data : dict[str, list[np.ndarray]]
+          Structural analysis results, keyed by the analysis
+          type, e.g. ``ligand_RMSD``, ``ligand_COM_drift``,
+          and ``protein_2D_RMSD``. An empty dictionary indicates
+          that no structural analysis applies.
         time_ps : np.ndarray or None
           Time array in picoseconds corresponding to the analyzed frames.
         """
@@ -1910,10 +1915,86 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
         }
 
 
+class ComplexTrajectoryAnalysisMixin:
+    """
+    Mixin providing trajectory analysis for multistate simulations
+    of phases with a host (e.g. complex phase).
+    """
+    @staticmethod
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        topology: pathlib.Path,
+        skip: int,
+        ligand_indices: list[int],
+        rdmol: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Run trajectory analysis for the complex phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        topology : pathlib.Path
+          Path to the subsampled topology (PDB) file.
+        skip : int
+          Frame stride for analysis.
+        ligand_indices : list[int]
+          Atom indices of the ligand in the subsampled system.
+        rdmol : Chem.Mol
+          RDKit molecule for the ligand, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          MDAnalysis selection string for the protein atoms used for
+          alignment and RMSD calculations.
+
+        Returns
+        -------
+        analysis_data : dict[str, list[np.ndarray]]
+          Structural analysis results, keyed by the analysis
+          type. Currently ``ligand_RMSD`` (symmetry corrected ligand RMSD),
+          ``ligand_COM_drift`` (COM drift of ligand), and ``protein_2D_RMSD``
+          (protein backbone self RMSD).
+        time_ps : np.ndarray or None
+          Time array in picoseconds corresponding to the analyzed frames.
+        """
+        n_lambda = ds.dimensions["state"].size
+        analysis_data: dict[str, list[np.ndarray]] = {
+            "ligand_RMSD": [],
+            "ligand_COM_drift": [],
+            "protein_2D_RMSD": [],
+        }
+
+        # Read the topology once and reuse across all lambda states
+        u_top = mda.Universe(topology)
+        prot_indices = u_top.select_atoms(protein_selection).indices
+        for state_idx in range(n_lambda):
+            universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+            prot = universe.atoms[prot_indices]
+            lig = universe.atoms[ligand_indices]
+            apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig])
+
+            # Protein selection is empty - e.g. not looking at a protein host
+            if prot:
+                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
+                analysis_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+
+            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+            analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
+
+            lig_drift = LigandCOMDrift(lig).run(step=skip)
+            analysis_data["ligand_COM_drift"].append(lig_drift.results.com_drift)
+
+        # Assign time based on the final state's universe
+        time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
+        return analysis_data, time_ps
+
+
 class LigandTrajectoryAnalysisMixin:
     """
-    Mixin providing ligand-only trajectory analysis for multistate
-    analysis units of phases without a protein (e.g. the solvent phase).
+    Mixin providing trajectory analysis for multistate simuulations
+    of phases without a host (e.g. solvent phase).
     """
 
     @staticmethod
@@ -1945,14 +2026,16 @@ class LigandTrajectoryAnalysisMixin:
 
         Returns
         -------
-        per_state_data : dict[str, list[np.ndarray]]
-          Per-state analysis results for ``ligand_RMSD``.
+        analysis_data : dict[str, list[np.ndarray]]
+          Structural analysis results, keyed by the analysis
+          type. Currently only contains ``ligand_RMSD``, the
+          symmetry corrected RMSD of the ligand species.
         time_ps : np.ndarray or None
           Time array in picoseconds corresponding to the analyzed frames.
         """
         n_lambda = ds.dimensions["state"].size
-        per_state_data: dict[str, list[np.ndarray]] = {"ligand_RMSD": []}
-        time_ps: np.ndarray | None = None
+        analysis_data: dict[str, list[np.ndarray]] = {"ligand_RMSD": []}
+
         # Read the topology once and reuse across all lambda states
         u_top = mda.Universe(topology)
         for state_idx in range(n_lambda):
@@ -1961,9 +2044,9 @@ class LigandTrajectoryAnalysisMixin:
             apply_ligand_alignment_transformations(universe, ligand=lig)
 
             lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
-            per_state_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
+            analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
 
-            if time_ps is None:
-                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+        # Assign time based on the final state's universe
+        time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
-        return per_state_data, time_ps
+        return analysis_data, time_ps

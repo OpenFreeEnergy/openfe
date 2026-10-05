@@ -11,18 +11,12 @@ import pathlib
 from collections.abc import Iterable
 
 import MDAnalysis as mda
-import netCDF4 as nc
 import numpy as np
 import numpy.typing as npt
 from gufe import (
     SolventComponent,
 )
 from gufe.components import Component, SolvatedPDBComponent
-from openfe_analysis.rmsd import (
-    LigandCOMDrift,
-    Protein2DRMSD,
-    SymmetryCorrectedLigandRMSD,
-)
 from openfe_analysis.utils.apply_transformations import apply_complex_alignment_transformations
 from openfe_analysis.utils.universe_utils import create_universe_single_state
 from openff.units import Quantity
@@ -47,6 +41,7 @@ from .base_afe_units import (
     BaseAbsoluteMultiStateAnalysisUnit,
     BaseAbsoluteMultiStateSimulationUnit,
     BaseAbsoluteSetupUnit,
+    ComplexTrajectoryAnalysisMixin,
     LigandTrajectoryAnalysisMixin,
 )
 
@@ -435,80 +430,15 @@ class ABFEComplexSimUnit(
     simtype = "complex"
 
 
-class ABFEComplexAnalysisUnit(ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class ABFEComplexAnalysisUnit(
+    ComplexTrajectoryAnalysisMixin, ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the complex phase
     of absolute binding free energy transformations.
     """
 
     simtype = "complex"
-
-    @staticmethod
-    def _run_trajectory_analysis(
-        ds: nc.Dataset,
-        topology: pathlib.Path,
-        skip: int,
-        ligand_indices: list[int],
-        rdmol: Chem.Mol,
-        protein_selection: str | None,
-    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
-        """
-        Run trajectory analysis for the complex phase.
-
-        Parameters
-        ----------
-        ds : netCDF4.Dataset
-          Open NetCDF dataset for the multistate trajectory.
-        topology : pathlib.Path
-          Path to the subsampled topology (PDB) file.
-        skip : int
-          Frame stride for analysis.
-        ligand_indices : list[int]
-          Atom indices of the ligand in the subsampled system.
-        rdmol : Chem.Mol
-          RDKit molecule for the ligand, used for symmetry-corrected RMSD.
-        protein_selection : str | None
-          MDAnalysis selection string for the protein atoms used for
-          alignment and RMSD calculations.
-
-        Returns
-        -------
-        per_state_data : dict[str, list[np.ndarray]]
-          Per-state analysis results for ``ligand_RMSD``,
-          ``ligand_COM_drift``, and ``protein_2D_RMSD``.
-        time_ps : np.ndarray or None
-          Time array in picoseconds corresponding to the analyzed frames.
-        """
-        n_lambda = ds.dimensions["state"].size
-        per_state_data: dict[str, list[np.ndarray]] = {
-            "ligand_RMSD": [],
-            "ligand_COM_drift": [],
-            "protein_2D_RMSD": [],
-        }
-        time_ps: np.ndarray | None = None
-        # Read the topology once and reuse across all lambda states
-        u_top = mda.Universe(topology)
-        prot_indices = u_top.select_atoms(protein_selection).indices
-        for state_idx in range(n_lambda):
-            universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
-            prot = universe.atoms[prot_indices]
-            lig = universe.atoms[ligand_indices]
-            apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig])
-
-            if prot:
-                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
-                per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
-
-            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
-            per_state_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
-
-            lig_drift = LigandCOMDrift(lig).run(step=skip)
-            per_state_data["ligand_COM_drift"].append(lig_drift.results.com_drift)
-
-            if time_ps is None:
-                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
-
-        return per_state_data, time_ps
 
 
 class SolventComponentsMixin:
