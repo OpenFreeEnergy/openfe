@@ -15,6 +15,9 @@ TODO
 * Add support for restraints
 
 """
+import copy
+from typing import Any
+import warnings
 
 import numpy as np
 from gufe.settings import (
@@ -275,15 +278,12 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     Alchemical protocol settings.
     """
-    lambda_settings: LambdaSettings
-    """
-    Settings for controlling the lambda schedule for the different components
-    (vdw, elec, restraints).
-    """
     solvent_lambda_settings: LambdaSettings
     """
     Settings for controlling the solvent transformation leg
     lambda schedule for the different components (vdw, elec, restraints).
+
+    A value of 0.0 means fully interacting, and 1.0 means decoupled or annihilated.
 
     Notes
     -----
@@ -293,6 +293,8 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     Settings for controlling the vacuum transformation leg
     lambda schedule for the different components (vdw, elec, restraints).
+
+    A value of 0.0 means fully interacting, and 1.0 means decoupled or annihilated.
 
     Notes
     -----
@@ -313,6 +315,14 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
             and "solvent_lambda_settings" not in data
             and "vacuum_lambda_settings" not in data
         ):
+            wmsg = (
+                "Loading AbsoluteSolvationProtocol settings from `openfe<=1.12` "
+                "which uses ``lambda_settings``. "
+                "The values of ``lambda_settings`` have been copied over to "
+                "``solvent_lambda_settings`` and ``vacuum_lambda_settings``. "
+                "This will no longer be supported in openfe v1.14."
+            )
+            warnings.warn(wmsg, FutureWarning, stacklevel=2)
             data = dict(data)
             legacy = data.pop("lambda_settings")
             data["solvent_lambda_settings"] = copy.deepcopy(legacy)
