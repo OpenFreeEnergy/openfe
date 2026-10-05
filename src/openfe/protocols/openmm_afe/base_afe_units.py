@@ -2050,3 +2050,46 @@ class LigandTrajectoryAnalysisMixin:
         time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
         return analysis_data, time_ps
+
+
+class LigandVacuumTrajectoryAnalysisMixin:
+    """
+    Mixin providing trajectory analysis for multistate simuulations
+    of phases without a host and without solvent (e.g. vacuum phase).
+    """
+    def _run_trajectory_analysis(
+        ds: nc.Dataset,
+        topology: pathlib.Path,
+        skip: int,
+        ligand_indices: list[int],
+        rdmol: Chem.Mol,
+        protein_selection: str | None,
+    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        """
+        Due to limitations in ``openfe-analysis`` no structural
+        analysis run for the vacuum phase.
+
+        Parameters
+        ----------
+        ds : netCDF4.Dataset
+          Open NetCDF dataset for the multistate trajectory.
+        topology : pathlib.Path
+          Path to the subsampled topology (PDB) file.
+        skip : int
+          Frame stride for analysis.
+        ligand_indices : list[int]
+          Atom indices of the ligand in the subsampled system.
+        rdmol : Chem.Mol
+          RDKit molecule for the ligand, used for symmetry-corrected RMSD.
+        protein_selection : str | None
+          Ignored, there is no protein in this phase.
+
+        Returns
+        -------
+        analysis_data : dict[str, list[np.ndarray]]
+          Empty dictionary.
+        time_ps : None
+          Placeholder due to lack of time data.
+        """
+        return {}, None
+

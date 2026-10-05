@@ -25,6 +25,7 @@ from .base_afe_units import (
     BaseAbsoluteMultiStateSimulationUnit,
     BaseAbsoluteSetupUnit,
     LigandTrajectoryAnalysisMixin,
+    LigandVacuumTrajectoryAnalysisMixin,
 )
 
 logger = logging.getLogger(__name__)
@@ -128,36 +129,15 @@ class AHFEVacuumSimUnit(
     simtype = "vacuum"
 
 
-class AHFEVacuumAnalysisUnit(VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class AHFEVacuumAnalysisUnit(
+    LigandVacuumTrajectoryAnalysisMixin, VacuumSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the vacuum phase
     of absolute hydration free energy transformations.
     """
 
     simtype = "vacuum"
-
-    @staticmethod
-    def _run_trajectory_analysis(
-        ds: nc.Dataset,
-        topology: pathlib.Path,
-        skip: int,
-        ligand_indices: list[int],
-        rdmol: Chem.Mol,
-        protein_selection: str | None,
-    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
-        """
-        No structural analysis is carried out for the vacuum phase.
-
-        Non-periodic trajectories are not currently supported by
-        ``openfe-analysis``, so this returns no data.
-
-        Returns
-        -------
-        per_state_data : dict[str, list[np.ndarray]]
-          An empty dictionary.
-        time_ps : None
-        """
-        return {}, None
 
 
 class SolventComponentsMixin:
