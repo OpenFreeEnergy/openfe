@@ -115,14 +115,16 @@ Structural analysis
 
 After each simulation, the protocol automatically analyzes the production trajectories of each lambda state.
 
-In the complex leg, the system is first centered and aligned so that the protein is the frame of reference,
-and the following metrics are computed:
+In the complex leg, the trajectories are first centered and aligned so that the selected protein atoms are
+the frame of reference, and the following metrics are computed:
 
-* **Ligand RMSD**: symmetry-corrected RMSD of the ligand relative to the first production frame.
+* **Ligand RMSD**: symmetry-corrected RMSD of the ligand at each lambda state.
+  The RMSD is relative to the first production frame at that given lambda state.
   A symmetry-corrected RMSD is used to account for equivalent atom orderings in symmetric
   molecules (e.g. a flipping phenyl ring) instead of a standard mass-weighted RMSD.
-* **Ligand COM drift**: centre-of-mass displacement of the ligand from its initial production simulation position.
-* **Protein 2D RMSD**:  pairwise RMSD matrix between all analyzed frames.
+* **Ligand COM drift**: centre-of-mass displacement of the ligand at each lambda state.
+  The COM is calculated from the ligand's initial production simulation position at that lambda state.
+* **Protein 2D RMSD**:  pairwise RMSD matrix between all analyzed frames for each lambda state.
 
 In the solvent leg, only the symmetry-corrected **Ligand RMSD** is computed.
 

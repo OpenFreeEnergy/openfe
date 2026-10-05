@@ -1718,15 +1718,23 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
             logger.warning(errmsg)
             return {"structural_analysis_error": errmsg}
 
-        if topology is None or len(ligand_indices) == 0:
+        if len(ligand_indices) != ligand_smcs[0].to_rdkit().GetNumAtoms():
             errmsg = (
-                "No ligand atoms found in the subsampled trajectory, "
+                f"Number of ligand indices: {len(ligand_indices)} "
+                f"does not match the number of ligand atoms: {ligand_smcs[0].to_rdkit().GetNumAtoms()}"
+            )
+            logger.warning(errmsg)
+            return {"structural_analysis_error": errmsg}
+
+        if topology is None:
+            errmsg = (
+                "No atoms found in the subsampled trajectory, "
                 "cannot carry out structural analysis. This is likely "
                 "due to the `output_indices` selection in your settings "
-                "not including the ligand. If this is unexpected, please "
-                "check the value of `output_indices` under the output "
-                "settings to ensure ligand atoms are included in the "
-                "trajectory output."
+                "not including the ligand and other relevant molecules. "
+                "If this is unexpected, please check the value of "
+                "`output_indices` under the output settings to ensure "
+                "ligand atoms are included in the trajectory output."
             )
             logger.warning(errmsg)
             return {"structural_analysis_error": errmsg}
@@ -1765,12 +1773,12 @@ class BaseAbsoluteMultiStateAnalysisUnit(gufe.ProtocolUnit, AbsoluteUnitMixin):
                 fig.savefig(output_directory / "protein_2D_RMSD.png")
                 plt.close(fig)
 
-            if (values := data.get("ligand_RMSD")) is not None:
+            if values := data.get("ligand_RMSD"):
                 fig = plotting.plot_ligand_RMSD(time_ps, values)
                 fig.savefig(output_directory / "ligand_RMSD.png")
                 plt.close(fig)
 
-            if (values := data.get("ligand_COM_drift")) is not None:
+            if values := data.get("ligand_COM_drift"):
                 fig = plotting.plot_ligand_COM_drift(time_ps, values)
                 fig.savefig(output_directory / "ligand_COM_drift.png")
                 plt.close(fig)

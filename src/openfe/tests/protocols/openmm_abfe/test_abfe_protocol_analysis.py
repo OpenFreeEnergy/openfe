@@ -232,18 +232,17 @@ class TestSolventStructuralAnalysis:
         assert "structural_analysis_error" in result
         assert "structural_analysis" not in result
 
-    @pytest.mark.parametrize("topology_none", [True, False])
     def test_no_ligand_atoms_warning_and_error(
-        self, abfe_solvent_data, topology_none, tmp_path, caplog
+        self, abfe_solvent_data, tmp_path, caplog
     ):
         d = abfe_solvent_data
 
         with caplog.at_level(logging.WARNING):
             result = ABFESolventAnalysisUnit()._structural_analysis(
-                topology=None if topology_none else d["pdb"],
+                topology=None,
                 trajectory=tmp_path / "nonexistent.nc",  # won't be accessed
                 output_directory=tmp_path,
-                ligand_indices=d["ligand_indices"] if topology_none else [],
+                ligand_indices=d["ligand_indices"],
                 ligand_smcs=d["ligand_smcs"],
                 protein_selection="protein and name CA",
                 skip=None,
@@ -252,7 +251,7 @@ class TestSolventStructuralAnalysis:
 
         assert "structural_analysis_error" in result
         assert "structural_analysis" not in result
-        assert any("No ligand atoms found" in msg for msg in caplog.messages)
+        assert any("No atoms found" in msg for msg in caplog.messages)
 
     def test_multiple_ligands_warning_and_error(self, abfe_solvent_data, tmp_path, caplog):
         d = abfe_solvent_data
@@ -272,3 +271,22 @@ class TestSolventStructuralAnalysis:
         assert "structural_analysis_error" in result
         assert "structural_analysis" not in result
         assert any("single alchemical species" in msg for msg in caplog.messages)
+
+    def test_ligand_indices_mismatch_warning_and_error(self, abfe_solvent_data, tmp_path, caplog):
+        d = abfe_solvent_data
+
+        with caplog.at_level(logging.WARNING):
+            result = ABFESolventAnalysisUnit()._structural_analysis(
+                topology=d["pdb"],
+                trajectory=tmp_path / "nonexistent.nc",  # won't be accessed
+                output_directory=tmp_path,
+                ligand_indices=d["ligand_indices"][:-1],
+                ligand_smcs=d["ligand_smcs"],
+                protein_selection="protein and name CA",
+                skip=None,
+                dry=True,
+            )
+
+        assert "structural_analysis_error" in result
+        assert "structural_analysis" not in result
+        assert any("does not match the number of ligand atoms" in msg for msg in caplog.messages)
