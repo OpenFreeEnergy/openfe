@@ -45,7 +45,7 @@ A value of 0.0 means the interactions are fully on, and 1.0 means they are fully
     The lambda settings have a ``lambda_restraints`` entry that is ignored for the :class:`.AbsoluteSolvationProtocol`.
 
 By default, the solvent leg uses 14 lambda windows, while the vacuum leg uses only 5 lambda windows.
-This is because there arer no intermolecular interactions to scale in vacuum. This means that only the electrostatic interactions,
+This is because there are no intermolecular interactions to scale in vacuum. This means that only the electrostatic interactions,
 which are annihilated, need to be turned off gradually. Since decoupling the Lennard-Jones interactions has no effect in vacuum,
 ``lambda_vdw`` is simply switched to 1.0 in the final window of the vacuum schedule.
 
