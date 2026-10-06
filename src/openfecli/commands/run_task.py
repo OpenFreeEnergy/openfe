@@ -129,10 +129,8 @@ def run_task_main(warehouse_path: Path, task_db_path: Path, scratch: Path):
 @print_duration
 def run_task(warehouse: Path, task_db: Path, scratch: Path):
     """
-    Execute one available task from a warehouse task graph.
+    Check out one task from ``task_db`` and execute the corresponding ``ProtocolUnit`` in the``Warehouse``.
 
-    The warehouse directory must contain a ``tasks.db`` task database and task
-    payloads under ``tasks/`` created via OpenFE orchestration setup.
     """
     run_task_main(warehouse_path=warehouse, task_db_path=task_db, scratch=scratch)
 

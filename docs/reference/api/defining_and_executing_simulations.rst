@@ -16,6 +16,13 @@ Executing Simulations
     :toctree: generated/
 
     execute_DAG
+    setup_task_campaign
+    Worker
+    TaskStatusDB
+    get_task_df
+    get_dependency_df
+    storage.FileSystemWarehouse
+
 
 General classes
 ---------------

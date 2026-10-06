@@ -117,6 +117,7 @@ def rich_print_summary(task_counts: dict):
     "--summary",
     flag_value=True,
     default=False,
+    help="Display a table containing the count of each task type.",
 )
 def status(task_db: Path, summary: bool):
     """
