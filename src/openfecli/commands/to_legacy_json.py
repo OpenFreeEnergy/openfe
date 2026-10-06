@@ -42,12 +42,18 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
 @print_duration
 def to_legacy_json(warehouse_path: str, output_dir: str):
     """
-    Execute one available task from a warehouse task graph.
+    Given a Warehouse containing task-based execution results, write results as JSON
+    files in the same output format as ``openfe quickrun``.
 
-    The warehouse directory must contain a ``tasks.db`` task database and task
-    payloads under ``tasks/`` created via OpenFE orchestration setup.
+    Results will be written to ``OUTPUT_DIR`` in files named by Transformation key.
+
+
+    .. warning::
+
+        This is a helper function meant to aid analysis of results alongside quickrun output, and is not meant for production use!
 
     """
+
     msg = "WARNING! This is an experimental feature and subject to change in a future release of openfe."
     click.secho(msg, err=True, fg="yellow")  # fmt: skip
     to_legacy_json_main(warehouse_path=warehouse_path, output_dir=output_dir)
