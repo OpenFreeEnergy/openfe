@@ -191,6 +191,7 @@ def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: int):
         sqla.update(task_db.tasks_table)
         .where(task_db.tasks_table.c.status != TaskStatus.COMPLETED.value)
         .where(task_db.tasks_table.c.tries < max_tries)
+        .where(task_db.tasks_table.c.max_tries != max_tries)
         .values(**values)
     )
 
