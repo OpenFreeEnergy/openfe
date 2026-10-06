@@ -73,7 +73,7 @@ from gufe.protocols import (
 )
 
 from . import analysis, orchestration, setup, storage, utils
-from .orchestration import get_dependency_df, get_task_df, setup_task_campaign
+from .orchestration import get_dependency_df, get_task_df, setup_task_campaign, update_max_tries
 from .orchestration.worker import Worker
 from .setup import (
     KartografAtomMapper,
