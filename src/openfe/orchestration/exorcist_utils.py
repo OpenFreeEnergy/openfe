@@ -164,7 +164,7 @@ def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: int):
     ----------
     task_db : openfe.TaskStatusDB
         The TaskStatusDB to update
-    value : int
+    max_tries : int
         The integer value to assign as ``max_tries`` for the updated columns.
 
     """
