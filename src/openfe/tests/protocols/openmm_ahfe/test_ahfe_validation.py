@@ -49,20 +49,23 @@ def stateB():
         {"elec": [0.0, 1.0], "vdw": [1.0, 1.0], "restraints": [0.0, 0.0]},
     ],
 )
-@pytest.mark.parametrize("phase", ["solvent", "vacuum"])
-def test_validate_lambda_schedule_naked_charge(val, phase, default_settings):
+def test_validate_lambda_schedule_naked_charge(val):
     errmsg = (
         "There are states along this lambda schedule "
         "where there are atoms with charges but no LJ "
         f"interactions: lambda 0: "
         f"elec {val['elec'][0]} vdW {val['vdw'][0]}"
     )
-    lambda_settings = getattr(default_settings, f"{phase}_lambda_settings")
-    simulation_settings = getattr(default_settings, f"{phase}_simulation_settings")
-    lambda_settings.lambda_elec = val["elec"]
-    lambda_settings.lambda_vdw = val["vdw"]
-    lambda_settings.lambda_restraints = val["restraints"]
-    simulation_settings.n_replicas = 2
+    lambda_settings = LambdaSettings(
+        lambda_elec=val["elec"],
+        lambda_vdw=val["vdw"],
+        lambda_restraints=val["restraints"],
+    )
+    simulation_settings = MultiStateSimulationSettings(
+        n_replicas=2,
+        equilibration_length=1.0 * offunit.nanosecond,
+        production_length=10.0 * offunit.nanosecond,
+    )
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteSolvationProtocol._validate_lambda_schedule(
             lambda_settings,
@@ -76,15 +79,19 @@ def test_validate_lambda_schedule_naked_charge(val, phase, default_settings):
         {"elec": [1.0, 1.0], "vdw": [0.0, 1.0], "restraints": [0.0, 0.0]},
     ],
 )
-@pytest.mark.parametrize("phase", ["solvent", "vacuum"])
-def test_validate_lambda_schedule_nreplicas(val, phase, default_settings):
-    lambda_settings = getattr(default_settings, f"{phase}_lambda_settings")
-    simulation_settings = getattr(default_settings, f"{phase}_simulation_settings")
-    lambda_settings.lambda_elec = val["elec"]
-    lambda_settings.lambda_vdw = val["vdw"]
-    lambda_settings.lambda_restraints = val["restraints"]
+def test_validate_lambda_schedule_nreplicas(val):
     n_replicas = 3
-    simulation_settings.n_replicas = n_replicas
+    lambda_settings = LambdaSettings(
+        lambda_elec=val["elec"],
+        lambda_vdw=val["vdw"],
+        lambda_restraints=val["restraints"],
+    )
+    simulation_settings = MultiStateSimulationSettings(
+        n_replicas=n_replicas,
+        equilibration_length=1.0 * offunit.nanosecond,
+        production_length=10.0 * offunit.nanosecond,
+    )
+
     errmsg = (
         f"Number of replicas {n_replicas} does not equal the"
         f" number of lambda windows {len(val['vdw'])}"
@@ -102,15 +109,19 @@ def test_validate_lambda_schedule_nreplicas(val, phase, default_settings):
         {"elec": [1.0, 1.0, 1.0], "vdw": [0.0, 1.0], "restraints": [0.0, 0.0]},
     ],
 )
-@pytest.mark.parametrize("phase", ["solvent", "vacuum"])
-def test_validate_lambda_schedule_nwindows(val, phase, default_settings):
-    lambda_settings = getattr(default_settings, f"{phase}_lambda_settings")
-    simulation_settings = getattr(default_settings, f"{phase}_simulation_settings")
-    lambda_settings.lambda_elec = val["elec"]
-    lambda_settings.lambda_vdw = val["vdw"]
-    lambda_settings.lambda_restraints = val["restraints"]
+def test_validate_lambda_schedule_nwindows(val):
     n_replicas = 3
-    simulation_settings.n_replicas = n_replicas
+    lambda_settings = LambdaSettings(
+        lambda_elec=val["elec"],
+        lambda_vdw=val["vdw"],
+        lambda_restraints=val["restraints"],
+    )
+    simulation_settings = MultiStateSimulationSettings(
+        n_replicas=n_replicas,
+        equilibration_length=1.0 * offunit.nanosecond,
+        production_length=10.0 * offunit.nanosecond,
+    )
+
     errmsg = (
         "Components elec, vdw, and restraints must have equal amount"
         f" of lambda windows. Got {len(val['elec'])} elec lambda"
@@ -130,19 +141,25 @@ def test_validate_lambda_schedule_nwindows(val, phase, default_settings):
         {"elec": [1.0, 1.0], "vdw": [1.0, 1.0], "restraints": [0.0, 1.0]},
     ],
 )
-@pytest.mark.parametrize("phase", ["solvent", "vacuum"])
-def test_validate_lambda_schedule_nonzero_restraints(val, phase, default_settings):
+def test_validate_lambda_schedule_nonzero_restraints(val):
     wmsg = (
         "Non-zero restraint lambdas applied. The absolute "
         "solvation protocol doesn't apply restraints, "
         "therefore restraints won't be applied."
     )
-    lambda_settings = getattr(default_settings, f"{phase}_lambda_settings")
-    simulation_settings = getattr(default_settings, f"{phase}_simulation_settings")
-    lambda_settings.lambda_elec = val["elec"]
-    lambda_settings.lambda_vdw = val["vdw"]
-    lambda_settings.lambda_restraints = val["restraints"]
-    simulation_settings.n_replicas = 2
+
+    n_replicas = 2
+    lambda_settings = LambdaSettings(
+        lambda_elec=val["elec"],
+        lambda_vdw=val["vdw"],
+        lambda_restraints=val["restraints"],
+    )
+    simulation_settings = MultiStateSimulationSettings(
+        n_replicas=n_replicas,
+        equilibration_length=1.0 * offunit.nanosecond,
+        production_length=10.0 * offunit.nanosecond,
+    )
+
     with pytest.warns(UserWarning, match=wmsg):
         AbsoluteSolvationProtocol._validate_lambda_schedule(
             lambda_settings,
@@ -150,7 +167,7 @@ def test_validate_lambda_schedule_nonzero_restraints(val, phase, default_setting
         )
 
 
-def test_annihilate_sterics_default_vacuum_schedule_warning(default_settings, stateA, stateB):
+def test_annihilate_sterics_default_settings_vacuum_schedule_warning(default_settings, stateA, stateB):
     # The default vacuum schedule has no intermediate vdw windows,
     # which is only appropriate when sterics are decoupled
     default_settings.alchemical_settings.annihilate_sterics = True

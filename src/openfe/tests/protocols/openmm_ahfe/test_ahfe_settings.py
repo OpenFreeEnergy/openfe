@@ -35,14 +35,14 @@ def test_invalid_protocol_repeats():
         {"elec": [0.0, 1.5], "vdw": [0.0, 1.5], "restraints": [-0.1, 1.0]},
     ],
 )
-@pytest.mark.parametrize("phase", ["solvent", "vacuum"])
-def test_incorrect_window_settings(val, phase, default_settings):
+def test_incorrect_window_settings(val):
     errmsg = "Lambda windows must be between 0 and 1."
-    lambda_settings = getattr(default_settings, f"{phase}_lambda_settings")
     with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec = val["elec"]
-        lambda_settings.lambda_vdw = val["vdw"]
-        lambda_settings.lambda_restraints = val["restraints"]
+        _ = LambdaSettings(
+            lambda_elec=val["elec"],
+            lambda_vdw=val["vdw"],
+            lambda_restraints=val["restraints"],
+        )
 
 
 @pytest.mark.parametrize(
@@ -51,20 +51,25 @@ def test_incorrect_window_settings(val, phase, default_settings):
         {"elec": [0.0, 0.1, 0.0], "vdw": [0.0, 1.0, 1.0], "restraints": [0.0, 1.0, 1.0]},
     ],
 )
-@pytest.mark.parametrize("phase", ["solvent", "vacuum"])
-def test_monotonic_lambda_windows(val, phase, default_settings):
+def test_monotonic_lambda_windows(val):
     errmsg = "The lambda schedule is not monotonically increasing"
-    lambda_settings = getattr(default_settings, f"{phase}_lambda_settings")
 
     with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec = val["elec"]
-        lambda_settings.lambda_vdw = val["vdw"]
-        lambda_settings.lambda_restraints = val["restraints"]
+        _ = LambdaSettings(
+            lambda_elec=val["elec"],
+            lambda_vdw=val["vdw"],
+            lambda_restraints=val["restraints"],
+        )
 
 
 def test_legacy_lambda_settings(default_settings):
-    # Settings created before per-leg lambda schedules were introduced (openfe v1.13)
-    # used a single `lambda_settings` field
+    """
+    Check that we can load ``lambda_settings`` from pre-openfe v1.13 settings.
+
+    TODO
+    ----
+    Remove in openfe v1.14. See Issue #2247
+    """
     legacy = dict(default_settings)
     legacy.pop("solvent_lambda_settings")
     legacy.pop("vacuum_lambda_settings")
