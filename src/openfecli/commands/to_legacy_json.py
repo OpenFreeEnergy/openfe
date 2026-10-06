@@ -38,7 +38,7 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
         path_type=Path,
     ),
 )
-@OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./results/", default="results/")  # fmt: skip
+@OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to './results'", default="results/")  # fmt: skip
 @print_duration
 def to_legacy_json(warehouse_path: str, output_dir: str):
     """
@@ -46,6 +46,7 @@ def to_legacy_json(warehouse_path: str, output_dir: str):
 
     The warehouse directory must contain a ``tasks.db`` task database and task
     payloads under ``tasks/`` created via OpenFE orchestration setup.
+
     """
     msg = "WARNING! This is an experimental feature and subject to change in a future release of openfe."
     click.secho(msg, err=True, fg="yellow")  # fmt: skip
