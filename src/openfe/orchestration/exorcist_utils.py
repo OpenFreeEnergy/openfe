@@ -167,12 +167,18 @@ def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: int):
     max_tries : int
         The integer value to assign as ``max_tries`` for the updated columns.
 
+    Raises
+    ------
+    ValueError: If max_tries is not a positive integer.
+
     """
 
     import sqlalchemy as sqla
     from exorcist.models import TaskStatus
 
     # TODO: select a single task_id?
+    if not isinstance(max_tries, int) or max_tries <= 0:
+        raise ValueError("`max_tries` must be a positive integer.")
 
     values = {"max_tries": max_tries, "last_modified": datetime.now()}
 
