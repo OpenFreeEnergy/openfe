@@ -92,6 +92,7 @@ def update_task_db_main(
     default=False,
     help="The positive integer value to assign as 'max_tries' for the updated columns.",
 )
+# NOTE: this is named intentionally broad so that we can add "update_task_type" in a future version
 def update_task_db(task_db: Path, max_tries: int):
     """
     Update the 'max_tries' column for applicable tasks. COMPLETED tasks and tasks with tries > the input 'max-tries' will not be updated.
