@@ -148,7 +148,7 @@ html_theme_options = {
     ],
     "accent_color": "cantina-purple",
     "navigation_with_keys": False,
-    "announcement": "The OpenFE team is conducting user interviews until August 15th! <a href=https://app.reclaim.ai/m/james-omsf/openfe-user-interview>Click here</a> to schedule an interview.",
+    "announcement": "Please take our <a href=https://docs.google.com/forms/d/e/1FAIpQLScw-vxBzlzFQT_6JHO64tgRuvzN4hmkPYjkXoJKQEsiA2anFw/viewform>user survey</a> to help us improve our documentation and training materials!",
 }
 html_logo = "_static/OFE-color-icon.svg"
 html_favicon = "_static/OFE-color-icon.svg"
@@ -195,7 +195,7 @@ try:
     else:
         repo = git.Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch="2026.06.29",
+            branch="main",
             to_path=example_notebooks_path,
         )
 except Exception as e:

@@ -13,8 +13,20 @@ import numpy as np
 import openmm
 import pandas as pd
 import pytest
-from gufe import AtomMapper, LigandAtomMapping, ProteinComponent, SmallMoleculeComponent
+from gufe import (
+    AlchemicalNetwork,
+    AtomMapper,
+    ChemicalSystem,
+    LigandAtomMapping,
+    NonTransformation,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+    Transformation,
+)
+from gufe.tests.test_protocol import DummyProtocol
 from openff.toolkit import ForceField
+from openff.units import unit
 from openff.units import unit as offunit
 from openmm import unit as ommunit
 from rdkit import Chem
@@ -811,3 +823,194 @@ def htf_chlorobenzene_benzene(
         "vdW_scale": ff.get_parameter_handler("vdW").scale14,
         "force_field": ff,
     }
+
+
+@pytest.fixture()
+def broken_bond_mapping() -> LigandAtomMapping:
+    """Build a broken bond mapping for two pfkfb3 ligands"""
+    with resources.as_file(resources.files("openfe.tests.data")) as f:
+        supplier = Chem.SDMolSupplier(str(f / "pfkfb3_ligands.sdf"), removeHs=False)
+        mol_by_name = dict()
+        for mol in supplier:
+            smc = SmallMoleculeComponent(mol)
+            mol_by_name[smc.name] = smc
+
+    return LigandAtomMapping(
+        componentA=mol_by_name["47"],
+        componentB=mol_by_name["46"],
+        componentA_to_componentB={
+            29: 32,
+            30: 31,
+            31: 33,
+            32: 34,
+            33: 38,
+            34: 37,
+            36: 35,
+            37: 36,
+            38: 39,
+            39: 40,
+            40: 41,
+            41: 42,
+            42: 43,
+            43: 44,
+            0: 2,
+            1: 3,
+            2: 0,
+            3: 1,
+            4: 4,
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+            10: 14,
+            11: 10,
+            12: 13,
+            13: 25,
+            14: 11,
+            15: 12,
+            16: 26,
+            17: 15,
+            18: 16,
+            19: 17,
+            20: 18,
+            21: 19,
+            22: 20,
+            23: 21,
+            24: 23,
+            25: 22,
+            26: 24,
+            27: 28,
+            28: 27,
+        },
+    )
+
+
+@pytest.fixture()
+def appearing_bond_mapping(chlorobenzene) -> LigandAtomMapping:
+    with resources.as_file(resources.files("openfe.tests.data")) as f:
+        ethyl_benzene = SmallMoleculeComponent.from_sdf_file(str(f / "ethylbenzene.sdf"))
+
+    # create a fake mapping which adds a new bond during the transformation by mapping the ethyl group to the chlorine atom in chlorobenzene
+    return LigandAtomMapping(
+        componentA=ethyl_benzene,
+        componentB=chlorobenzene,
+        componentA_to_componentB={5: 0, 7: 1, 8: 2, 9: 3, 10: 4, 11: 5, 12: 6},
+    )
+
+
+@pytest.fixture
+def solvent_kcl() -> SolventComponent:
+    yield SolventComponent(positive_ion="K", negative_ion="Cl", ion_concentration=0.0 * unit.molar)
+
+
+@pytest.fixture
+def toluene_complex_system(benzene_modifications, T4_protein_component) -> ChemicalSystem:
+    return openfe.ChemicalSystem(
+        {
+            "ligand": benzene_modifications["toluene"],
+            "solvent": openfe.SolventComponent(
+                positive_ion="Na", negative_ion="Cl", ion_concentration=0.15 * unit.molar
+            ),
+            "protein": T4_protein_component,
+        }
+    )
+
+
+@pytest.fixture
+def toluene_solvated(benzene_transforms, solvent_kcl) -> ChemicalSystem:
+    return ChemicalSystem(
+        {
+            "ligand": benzene_transforms["toluene"],
+            "solvent": solvent_kcl,
+        }
+    )
+
+
+@pytest.fixture
+def dummy_abfe_transformation(toluene_solvated, toluene_complex_system) -> Transformation:
+    return Transformation(
+        toluene_solvated,
+        toluene_complex_system,
+        protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
+        mapping=None,
+    )
+
+
+@pytest.fixture
+def dummy_nontransformation(toluene_complex_system) -> NonTransformation:
+    return NonTransformation(
+        toluene_complex_system,
+        protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
+    )
+
+
+@pytest.fixture
+def radial_alchemical_network(
+    benzene_transforms, solvent_kcl, T4_protein_component
+) -> AlchemicalNetwork:
+    variants = ["toluene", "phenol", "benzonitrile", "anisole", "benzaldehyde", "styrene"]
+
+    # define the solvent chemical systems and transformations between
+    # benzene and the others
+    toluene_solvateds = {}
+    toluene_solvated_transformations = {}
+
+    toluene_solvateds["benzene"] = ChemicalSystem(
+        {
+            "solvent": solvent_kcl,
+            "ligand": benzene_transforms["benzene"],
+        },
+        name="benzene-solvent",
+    )
+
+    for ligand in variants:
+        toluene_solvateds[ligand] = ChemicalSystem(
+            {
+                "solvent": solvent_kcl,
+                "ligand": benzene_transforms[ligand],
+            },
+            name=f"{ligand}-solvent",
+        )
+
+        toluene_solvated_transformations[("benzene", ligand)] = gufe.Transformation(
+            toluene_solvateds["benzene"],
+            toluene_solvateds[ligand],
+            protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
+            mapping=None,
+        )
+
+    # define the complex chemical systems and transformations between
+    # benzene and the others
+    solvated_complexes = {}
+    solvated_complex_transformations = {}
+
+    solvated_complexes["benzene"] = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": solvent_kcl,
+            "ligand": benzene_transforms["benzene"],
+        },
+        name="benzene-complex",
+    )
+
+    for ligand in variants:
+        solvated_complexes[ligand] = gufe.ChemicalSystem(
+            {
+                "protein": T4_protein_component,
+                "solvent": solvent_kcl,
+                "ligand": benzene_transforms[ligand],
+            },
+            name=f"{ligand}-complex",
+        )
+        solvated_complex_transformations[("benzene", ligand)] = gufe.Transformation(
+            solvated_complexes["benzene"],
+            solvated_complexes[ligand],
+            protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
+            mapping=None,
+        )
+
+    return AlchemicalNetwork(
+        list(toluene_solvated_transformations.values())
+        + list(solvated_complex_transformations.values())
+    )

@@ -22,13 +22,14 @@ from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
 )
-from pydantic import field_validator
+from pydantic import Field, field_validator, model_validator
 
 from openfe.protocols.openmm_utils.omm_settings import (
     BaseSolvationSettings,
     IntegratorSettings,
     MDOutputSettings,
     MDSimulationSettings,
+    MultiStateAnalysisSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
@@ -169,6 +170,10 @@ class LambdaSettings(SettingsBaseModel):
 
 
 class ABFEPreEquilOutputSettings(MDOutputSettings):
+    """
+    Settings controlling the pre-alchemical equilibration MD simulations.
+    """
+
     output_indices: str = "all"
     """
     Selection string for which part of the system to write coordinates for.
@@ -242,6 +247,24 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
     vacuum_forcefield_settings: OpenMMSystemGeneratorFFSettings
     """Parameters to set up the force field with OpenMM Force Fields"""
+
+    @model_validator(mode="after")
+    def vacuum_and_solvent_forcefield_settings_must_match(self):
+        vac_settings = self.vacuum_forcefield_settings.model_dump(exclude={"nonbonded_method"})
+        solvent_settings = self.solvent_forcefield_settings.model_dump(exclude={"nonbonded_method"})
+
+        if vac_settings != solvent_settings:
+            errmsg = (
+                "The vacuum and solvent force field settings must match "
+                "except for the nonbonded_method. The following settings differ:\n"
+            )
+            for k in vac_settings.keys():
+                if vac_settings[k] != solvent_settings[k]:
+                    errmsg += f"  {k}: vacuum={vac_settings[k]}, solvent={solvent_settings[k]}\n"
+            raise ValueError(errmsg)
+
+        return self
+
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
 
@@ -323,6 +346,12 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     Settings for controlling how to assign partial charges,
     including the partial charge assignment method, and the
     number of conformers used to generate the partial charges.
+    """
+    analysis_settings: MultiStateAnalysisSettings = Field(
+        default_factory=MultiStateAnalysisSettings
+    )
+    """
+    Settings for the structural analysis of the multistate trajectories
     """
 
 
@@ -445,4 +474,10 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
     Settings controlling how restraints are added to the system in the
     complex simulation.
+    """
+    analysis_settings: MultiStateAnalysisSettings = Field(
+        default_factory=MultiStateAnalysisSettings
+    )
+    """
+    Settings for the structural analysis of the multistate trajectories
     """

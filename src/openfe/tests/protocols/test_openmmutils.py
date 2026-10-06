@@ -14,6 +14,7 @@ import pytest
 from gufe.components.errors import ComponentValidationError
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
+from openff.toolkit import ForceField
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
@@ -46,7 +47,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
 from openfe.protocols.openmm_utils.offmolecule_utils import (
     _get_offmol_metadata,
     _set_offmol_metadata,
-    _set_offmol_resname,
+    assign_offmol_residue_metadata,
 )
 
 from ..conftest import HAS_INTERNET
@@ -373,13 +374,12 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["forward_DGs"].m,
             np.array(
                 [
-                    -48.057326, -48.038367, -48.033994, -48.0228, -48.028532,
-                    -48.025258, -48.006349, -47.986304, -47.972138, -47.960623,
+                    -47.823889, -47.905875, -47.935716, -47.951184, -47.971532,
+                    -47.949007, -47.938932, -47.936925, -47.951239, -47.960623,
                 ]
             ),
             rtol=1e-04,
         )  # fmt: skip
-        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict["forward_and_reverse_energies"]["forward_dDGs"].m,
             np.array(
@@ -394,13 +394,12 @@ class TestFEAnalysis:
             ret_dict["forward_and_reverse_energies"]["reverse_DGs"].m,
             np.array(
                 [
-                    -47.823839, -47.833107, -47.845866, -47.858173, -47.883887,
-                    -47.915963, -47.93319, -47.939125, -47.949016, -47.960623,
+                    -48.0018, -48.00823 , -48.012272, -47.974658, -47.96017,
+                    -47.961262, -47.971833, -47.971134, -47.971301, -47.960623,
                 ]
             ),
             rtol=1e-04,
         )  # fmt: skip
-        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict["forward_and_reverse_energies"]["reverse_dDGs"].m,
             np.array(
@@ -411,6 +410,54 @@ class TestFEAnalysis:
             ),
             rtol=5e-01,
         )  # fmt: skip
+
+    def test_forward_reverse_uln_to_ukln_to_uln_conversion(self, analyzer):
+        def _recreate_ukln(analyzer):
+            """
+            Helper method to recreate u_kln the same way openmmtools does.
+            """
+            energy_data = list(analyzer._read_energies(truncate_max_n_iterations=True))
+            (
+                sampled_energy_matrix,
+                unsampled_energy_matrix,
+                neighborhoods,
+                replicas_state_indices,
+            ) = energy_data
+            number_equilibrated, g_t, Neff_max = analyzer._get_equilibration_data(
+                sampled_energy_matrix, neighborhoods, replicas_state_indices
+            )
+            for i, energies in enumerate(energy_data):
+                energies = multistate.utils.remove_unequilibrated_data(
+                    energies, number_equilibrated, -1
+                )
+                energy_data[i] = multistate.utils.subsample_data_along_axis(energies, g_t, -1)
+            sampled_energy_matrix, unsampled_energy_matrix, neighborhood, replicas_state_indices = (
+                energy_data
+            )
+            return sampled_energy_matrix
+
+        u_ln = analyzer.analyzer._unbiased_decorrelated_u_ln
+        N_l = analyzer.analyzer._unbiased_decorrelated_N_l
+
+        u_kln = analyzer._get_ukln_from_uln(u_ln, len(N_l), N_l[0])
+
+        assert (u_kln == _recreate_ukln(analyzer.analyzer)).all()
+
+        new_u_ln = analyzer._get_uln_from_ukln(u_kln)
+
+        assert (new_u_ln == u_ln).all()
+
+    def test_ukln_from_uln_errors(self, analyzer):
+        # Check the exceptions we could raise ahead of the conversion
+        u_ln = np.zeros((2, 100))
+
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 3"
+        with pytest.raises(ValueError, match=errmsg):
+            analyzer._get_ukln_from_uln(u_ln, 3, 100)
+
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 2 and num_samples 75"
+        with pytest.raises(ValueError, match=errmsg):
+            analyzer._get_ukln_from_uln(u_ln, 2, 75)
 
     @pytest.mark.parametrize("fail_on_call", [1, 2], ids=["forward_fails", "reverse_fails"])
     def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer, fail_on_call):
@@ -1243,6 +1290,171 @@ class TestOFFPartialCharge:
                 nagl_model=None,
             )
 
+    @pytest.mark.parametrize("forcefields", [None, []])
+    def test_forcefield_missing_ff(self, uncharged_mol, forcefields):
+        # Make sure an error is raised if we forget to pass a force field to charge with
+        with pytest.raises(
+            ValueError,
+            match="The forcefield method requires a force field or list of force fields' to be provided via `forcefields`.",
+        ):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method="forcefield",
+                toolkit_backend="rdkit",
+                generate_n_conformers=None,
+                nagl_model=None,
+                forcefields=forcefields,
+            )
+
+    def test_forcefields_wrong_method(self, uncharged_mol):
+        # Make sure an error is raised if we pass in some forcefields but the method isn't forcefield
+        with pytest.raises(
+            ValueError,
+            match="The `forcefields` option is only valid with the `forcefield` charge method, but got am1bcc.",
+        ):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method="am1bcc",
+                toolkit_backend="ambertools",
+                generate_n_conformers=None,
+                nagl_model=None,
+                forcefields=["openff-2.0.0.offxml"],
+            )
+
+    def test_forcefield_charges_library(self, uncharged_mol):
+        # Make sure that the forcefield method can assign charges from a library
+        # Create a force field with a charge library for the molecule using a force field with an AM1BCC handler as well
+        ff = ForceField("openff-2.0.0.offxml")
+        lib_handler = ff.get_parameter_handler("LibraryCharges")
+        # add the new parameter
+        charged_mol = copy.deepcopy(uncharged_mol)
+        dummy_charges = np.zeros(charged_mol.n_atoms) * unit.e
+        # no other method should assign all zero charges
+        charged_mol.partial_charges = dummy_charges
+        lib_param = lib_handler._INFOTYPE.from_molecule(charged_mol)
+        lib_handler.add_parameter(parameter=lib_param)
+        del charged_mol
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=False,
+            method="forcefield",
+            toolkit_backend="rdkit",
+            generate_n_conformers=None,
+            nagl_model=None,
+            forcefields=[ff.to_string()],
+        )
+
+        assert_allclose(uncharged_mol.partial_charges.m, dummy_charges.m)
+
+    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    def test_forcefield_nagl_charges(self, uncharged_mol):
+        # Make sure that the forcefield method can assign charges from a NAGL model
+        opc = ForceField("opc-1.0.0.offxml")
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=False,
+            method="forcefield",
+            toolkit_backend="rdkit",
+            generate_n_conformers=None,
+            # set the model to none this should use the model define in the force field.
+            nagl_model=None,
+            # use a force field that has a NAGL handler and another redundant force field file
+            # this is also testing that missing the file extension doesn't break the code
+            forcefields=["openff-2.3.0", opc.to_string()],
+        )
+
+        assert uncharged_mol.partial_charges is not None
+
+        # get the reference charges to compare with
+        ff = ForceField("openff-2.3.0.offxml")
+        nagl_model = ff.get_parameter_handler("NAGLCharges").model_file
+        copy_mol = copy.deepcopy(uncharged_mol)
+        copy_mol.partial_charges = None
+        copy_mol.assign_partial_charges(partial_charge_method=nagl_model)
+
+        assert_allclose(uncharged_mol.partial_charges.m, copy_mol.partial_charges.m, rtol=1e-4)
+
+    def test_forcefield_charges_vsites(self):
+        # Test assigning partial charges to a molecule with virtual sites using the forcefield method
+        offmol = OFFMol.from_smiles("O")
+        offmol.generate_conformers()
+        with pytest.warns(
+            UserWarning,
+            match="Found a VirtualSiteHandler: VirtualSites in the force field, base charges before applying the virtual site handler will be assigned to the molecule.",
+        ):
+            charge_generation.assign_offmol_partial_charges(
+                offmol,
+                overwrite=False,
+                method="forcefield",
+                toolkit_backend="rdkit",
+                generate_n_conformers=None,
+                nagl_model=None,
+                forcefields=["tip4p_fb.offxml"],
+            )
+        # the libary charges for water in tip4p_fb.offxml are all zero, so we expect the charges to be zero
+        assert_allclose(offmol.partial_charges.m, np.array([0.0, 0.0, 0.0]), rtol=1e-4)
+
+    def test_bulk_raise_errors(self, bodipy_molecules):
+        # Make sure that bulk charge assignment caches errors and returns a helpful error message when it fails
+        with pytest.raises(
+            ExceptionGroup,
+            match="Partial charge generation failed for 2 molecules",
+        ):
+            charge_generation.bulk_assign_partial_charges(
+                bodipy_molecules,
+                overwrite=False,
+                # there should be no bcc for Boron, so this should fail for all molecules
+                method="am1bcc",
+                toolkit_backend="ambertools",
+                generate_n_conformers=None,
+                nagl_model=None,
+                processors=1,
+                raise_errors=True,
+            )
+
+    @pytest.mark.slow
+    def test_bulk_raise_errors_multi_processors(self, bodipy_molecules):
+        # Make sure that bulk charge assignment caches errors and returns a helpful error message when it fails
+        # when using multiple processors
+        with pytest.raises(
+            ExceptionGroup,
+            match="Partial charge generation failed for 2 molecules",
+        ):
+            charge_generation.bulk_assign_partial_charges(
+                bodipy_molecules,
+                overwrite=False,
+                # there should be no bcc for Boron, so this should fail for all molecules
+                method="am1bcc",
+                toolkit_backend="ambertools",
+                generate_n_conformers=None,
+                nagl_model=None,
+                processors=2,
+                raise_errors=True,
+            )
+
+    def test_bulk_ignore_errors(self, bodipy_molecules):
+        # Make sure errors are ignored when raise_errors=False
+        # and that a warning is used to indicate that some molecules failed to generate charges
+        with pytest.warns(
+            RuntimeWarning,
+            match="Partial charge generation failed for 2 molecules, ",
+        ):
+            results = charge_generation.bulk_assign_partial_charges(
+                bodipy_molecules,
+                overwrite=False,
+                # there should be no bcc for Boron, so this should fail for all molecules
+                method="am1bcc",
+                toolkit_backend="ambertools",
+                generate_n_conformers=None,
+                nagl_model=None,
+                processors=1,
+                raise_errors=False,
+            )
+            # it should be an empty list since all molecules failed to generate charges
+            assert not results
+
 
 @pytest.mark.slow
 @pytest.mark.skipif(
@@ -1283,3 +1495,101 @@ def test_set_metadata_none_clears():
     _set_offmol_metadata(mol, "residue_name", "LIG")
     _set_offmol_metadata(mol, "residue_name", None)
     assert all("residue_name" not in a.metadata for a in mol.atoms)
+
+
+class TestAssignOffmolResidueMetadata:
+    # name, is_ligand, preset resname, preset residue number
+    _RESIDUE_METADATA_CASES = {
+        "single ligand": (
+            [("benzene", True, None, None)],
+            [("LIG", "1")],
+        ),
+        "ligand and cofactors": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", False, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", "1"), ("COF", "2"), ("COF", "3")],
+        ),
+        "two ligands pool to LIG": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", True, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", "1"), ("LIG", "2"), ("COF", "3")],
+        ),
+        "custom cofactor name kept": (
+            [("benzene", True, None, None), ("toluene", False, "NAD", None)],
+            [("LIG", "1"), ("NAD", "2")],
+        ),
+        "custom ligand name kept": (
+            [("benzene", True, "BNZ", None), ("toluene", False, None, None)],
+            [("BNZ", "1"), ("COF", "2")],
+        ),
+        "cofactor named LIG, ligands fall back to LG1": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", True, None, None),
+                ("phenol", False, "LIG", None),
+                ("benzonitrile", False, None, None),
+            ],
+            [("LG1", "1"), ("LG1", "2"), ("LIG", "3"), ("COF", "4")],
+        ),
+        "ligand named COF, cofactors fall back to CF1": (
+            [
+                ("benzene", True, "COF", None),
+                ("toluene", False, None, None),
+                ("phenol", False, None, None),
+            ],
+            [("COF", "1"), ("CF1", "2"), ("CF1", "3")],
+        ),
+        "pinned residue number respected": (
+            [("benzene", True, None, None), ("toluene", False, None, "5")],
+            [("LIG", "1"), ("COF", "5")],
+        ),
+        "auto residue number steps past a pinned one": (
+            [
+                ("benzene", True, None, None),
+                ("toluene", False, None, "2"),
+                ("phenol", False, None, None),
+            ],
+            [("LIG", "1"), ("COF", "2"), ("COF", "3")],
+        ),
+    }
+
+    @staticmethod
+    def _build_small_molecules(benzene_modifications, specs):
+        """Build the small molecules and alchemical components for a test case."""
+        small, alchemical = {}, []
+
+        for name, is_ligand, resname, residue_number in specs:
+            smc = benzene_modifications[name]
+            off = copy.deepcopy(smc.to_openff())
+
+            if resname is not None:
+                _set_offmol_metadata(off, "residue_name", resname)
+            if residue_number is not None:
+                _set_offmol_metadata(off, "residue_number", residue_number)
+
+            small[smc] = off
+            if is_ligand:
+                alchemical.append(smc)
+
+        return small, alchemical
+
+    @pytest.mark.parametrize(
+        "specs, expected",
+        _RESIDUE_METADATA_CASES.values(),
+        ids=list(_RESIDUE_METADATA_CASES),
+    )
+    def test_assign_offmol_residue_metadata(self, benzene_modifications, specs, expected):
+        small, alchemical = self._build_small_molecules(benzene_modifications, specs)
+
+        assigned = assign_offmol_residue_metadata(small, alchemical)
+
+        for smc, off, (resname, residue_number) in zip(small.keys(), small.values(), expected):
+            assert _get_offmol_metadata(off, "residue_name") == resname
+            assert _get_offmol_metadata(off, "residue_number") == residue_number
+            assert assigned[smc] == resname

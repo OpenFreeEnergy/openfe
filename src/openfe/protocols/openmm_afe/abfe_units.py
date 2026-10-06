@@ -39,6 +39,8 @@ from .base_afe_units import (
     BaseAbsoluteMultiStateAnalysisUnit,
     BaseAbsoluteMultiStateSimulationUnit,
     BaseAbsoluteSetupUnit,
+    ComplexTrajectoryAnalysisMixin,
+    LigandTrajectoryAnalysisMixin,
 )
 
 logger = logging.getLogger(__name__)
@@ -102,6 +104,7 @@ class ComplexSettingsMixin:
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintSettings
+            * analysis_settings: MultiStateAnalysisSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
@@ -119,6 +122,7 @@ class ComplexSettingsMixin:
         settings["simulation_settings"] = prot_settings.complex_simulation_settings
         settings["output_settings"] = prot_settings.complex_output_settings
         settings["restraint_settings"] = prot_settings.restraint_settings
+        settings["analysis_settings"] = prot_settings.analysis_settings
 
         return settings
 
@@ -249,11 +253,23 @@ class ABFEComplexSetupUnit(ComplexComponentsMixin, ComplexSettingsMixin, BaseAbs
         # Take the minimum of the two possible force constants to check against
         frc_const = min(settings.K_thetaA, settings.K_thetaB)
 
+        if settings.guest_restraint_ids is not None:
+            guest_restraint_atoms_idxs = list(settings.guest_restraint_ids)
+        else:
+            guest_restraint_atoms_idxs = None
+
+        if settings.host_restraint_ids is not None:
+            host_restraint_atoms_idxs = list(settings.host_restraint_ids)
+        else:
+            host_restraint_atoms_idxs = None
+
         geom = geometry.boresch.find_boresch_restraint(
             universe=universe,
             guest_rdmol=guest_rdmol,
             guest_idxs=guest_atom_ids,
             host_idxs=host_atom_ids,
+            guest_restraint_atoms_idxs=guest_restraint_atoms_idxs,
+            host_restraint_atoms_idxs=host_restraint_atoms_idxs,
             host_selection=settings.host_selection,
             anchor_finding_strategy=settings.anchor_finding_strategy,
             dssp_filter=settings.dssp_filter,
@@ -412,7 +428,9 @@ class ABFEComplexSimUnit(
     simtype = "complex"
 
 
-class ABFEComplexAnalysisUnit(ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class ABFEComplexAnalysisUnit(
+    ComplexTrajectoryAnalysisMixin, ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the complex phase
     of absolute binding free energy transformations.
@@ -471,6 +489,7 @@ class SolventSettingsMixin:
             * equil_output_settings : ABFEPreEquilOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
+            * analysis_settings: MultiStateAnalysisSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
@@ -487,6 +506,7 @@ class SolventSettingsMixin:
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings
         settings["output_settings"] = prot_settings.solvent_output_settings
+        settings["analysis_settings"] = prot_settings.analysis_settings
 
         return settings
 
@@ -512,7 +532,9 @@ class ABFESolventSimUnit(
     simtype = "solvent"
 
 
-class ABFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class ABFESolventAnalysisUnit(
+    LigandTrajectoryAnalysisMixin, SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the solvent phase
     of absolute binding free energy transformations.

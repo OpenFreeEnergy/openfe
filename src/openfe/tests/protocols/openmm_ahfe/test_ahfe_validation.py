@@ -2,12 +2,24 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 from gufe import LigandAtomMapping, ProtocolDAGResult
+from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from openff.units import unit as offunit
 
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
-from openfe.protocols.openmm_afe import (
-    AbsoluteSolvationProtocol,
+from openfe.protocols.openmm_afe import AbsoluteSolvationProtocol, AbsoluteSolvationSettings
+from openfe.protocols.openmm_afe.equil_afe_settings import (
+    AbsoluteSolvationSettings,
+    AlchemicalSettings,
+    IntegratorSettings,
+    LambdaSettings,
+    MDOutputSettings,
+    MDSimulationSettings,
+    MultiStateOutputSettings,
+    MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
 )
 from openfe.protocols.openmm_utils import system_validation
 
@@ -318,3 +330,138 @@ def test_high_timestep(phase, stateA, stateB):
 
     with pytest.raises(ValueError, match="too large for hydrogen"):
         protocol.validate(stateA=stateA, stateB=stateB, mapping=None)
+
+
+def test_validate_forcefield_settings(stateA, stateB):
+    # make sure the default settings with a different nonbonded method still works
+    settings = AbsoluteSolvationProtocol.default_settings()
+    assert settings.vacuum_forcefield_settings.nonbonded_method == "nocutoff"
+
+    protocol = AbsoluteSolvationProtocol(settings=settings)
+    protocol.validate(stateA=stateA, stateB=stateB, mapping=None)
+
+    # change some other forcefield settings and make sure an error is raised
+    settings.solvent_forcefield_settings.small_molecule_forcefield = "gaff-2.11"
+    protocol = AbsoluteSolvationProtocol(settings=settings)
+    with pytest.raises(
+        ValueError,
+        match="The following settings differ:\n  small_molecule_forcefield: vacuum=openff-2.2.1, solvent=gaff-2.11",
+    ):
+        protocol.validate(stateA=stateA, stateB=stateB, mapping=None)
+
+
+def test_settings_validation():
+    # make sure an error is raised if invalid settings are initialized
+    with pytest.raises(
+        ValueError,
+        match="The following settings differ:\n  small_molecule_forcefield: vacuum=openff-2.2.1, solvent=gaff-2.11",
+    ):
+        _ = AbsoluteSolvationSettings(
+            protocol_repeats=3,
+            solvent_forcefield_settings=OpenMMSystemGeneratorFFSettings(
+                small_molecule_forcefield="gaff-2.11",
+            ),
+            vacuum_forcefield_settings=OpenMMSystemGeneratorFFSettings(
+                nonbonded_method="nocutoff",
+            ),
+            thermo_settings=ThermoSettings(
+                temperature=298.15 * offunit.kelvin,
+                pressure=1 * offunit.bar,
+            ),
+            alchemical_settings=AlchemicalSettings(),
+            lambda_settings=LambdaSettings(
+                lambda_elec=[
+                    0.0,
+                    0.25,
+                    0.5,
+                    0.75,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                ],
+                lambda_vdw=[
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.12,
+                    0.24,
+                    0.36,
+                    0.48,
+                    0.6,
+                    0.7,
+                    0.77,
+                    0.85,
+                    1.0,
+                ],
+                lambda_restraints=[
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+            ),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
+            solvation_settings=OpenMMSolvationSettings(),
+            vacuum_engine_settings=OpenMMEngineSettings(),
+            solvent_engine_settings=OpenMMEngineSettings(),
+            integrator_settings=IntegratorSettings(),
+            solvent_equil_simulation_settings=MDSimulationSettings(
+                equilibration_length_nvt=0.1 * offunit.nanosecond,
+                equilibration_length=0.2 * offunit.nanosecond,
+                production_length=0.5 * offunit.nanosecond,
+            ),
+            solvent_equil_output_settings=MDOutputSettings(
+                equil_nvt_structure="equil_nvt_structure.pdb",
+                equil_npt_structure="equil_npt_structure.pdb",
+                production_trajectory_filename="production_equil.xtc",
+                log_output="equil_simulation.log",
+            ),
+            solvent_simulation_settings=MultiStateSimulationSettings(
+                n_replicas=14,
+                equilibration_length=1.0 * offunit.nanosecond,
+                production_length=10.0 * offunit.nanosecond,
+            ),
+            solvent_output_settings=MultiStateOutputSettings(
+                output_filename="solvent.nc",
+                checkpoint_storage_filename="solvent_checkpoint.nc",
+            ),
+            vacuum_equil_simulation_settings=MDSimulationSettings(
+                equilibration_length_nvt=None,
+                equilibration_length=0.2 * offunit.nanosecond,
+                production_length=0.5 * offunit.nanosecond,
+            ),
+            vacuum_equil_output_settings=MDOutputSettings(
+                equil_nvt_structure=None,
+                equil_npt_structure="equil_structure.pdb",
+                production_trajectory_filename="production_equil.xtc",
+                log_output="equil_simulation.log",
+            ),
+            vacuum_simulation_settings=MultiStateSimulationSettings(
+                n_replicas=14,
+                equilibration_length=0.5 * offunit.nanosecond,
+                production_length=2.0 * offunit.nanosecond,
+            ),
+            vacuum_output_settings=MultiStateOutputSettings(
+                output_filename="vacuum.nc",
+                checkpoint_storage_filename="vacuum_checkpoint.nc",
+            ),
+        )
