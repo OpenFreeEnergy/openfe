@@ -74,6 +74,7 @@ from gufe.protocols import (
 
 from . import analysis, orchestration, setup, storage, utils
 from .orchestration import get_dependency_df, get_task_df, setup_task_campaign
+from .orchestration.worker import Worker
 from .setup import (
     KartografAtomMapper,
     LigandAtomMapper,
