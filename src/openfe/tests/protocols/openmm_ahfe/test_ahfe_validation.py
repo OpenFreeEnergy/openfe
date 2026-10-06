@@ -167,7 +167,9 @@ def test_validate_lambda_schedule_nonzero_restraints(val):
         )
 
 
-def test_annihilate_sterics_default_settings_vacuum_schedule_warning(default_settings, stateA, stateB):
+def test_annihilate_sterics_default_settings_vacuum_schedule_warning(
+    default_settings, stateA, stateB
+):
     # The default vacuum schedule has no intermediate vdw windows,
     # which is only appropriate when sterics are decoupled
     default_settings.alchemical_settings.annihilate_sterics = True

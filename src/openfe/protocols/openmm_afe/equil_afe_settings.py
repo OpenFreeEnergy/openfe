@@ -15,9 +15,10 @@ TODO
 * Add support for restraints
 
 """
+
 import copy
-from typing import Any
 import warnings
+from typing import Any
 
 import numpy as np
 from gufe.settings import (
