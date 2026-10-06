@@ -10,6 +10,7 @@ from pathlib import Path
 import exorcist
 import networkx as nx
 import pandas as pd
+from annotated_types import Annotated, Gt
 from gufe import AlchemicalNetwork, ProtocolDAG
 
 from ..storage.warehouse import FileSystemWarehouse, WarehouseBaseClass
@@ -156,7 +157,7 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     return pd.read_sql_table("dependencies", task_db.engine)
 
 
-def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: int):
+def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: Annotated[int, Gt(0)]):
     """Update the "max_tries" column to `max_tries`.
     Only rows that do _not_ have status=COMPLETED will be operated on.
 
@@ -165,7 +166,7 @@ def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: int):
     task_db : openfe.TaskStatusDB
         The TaskStatusDB to update
     max_tries : int
-        The integer value to assign as ``max_tries`` for the updated columns.
+        The positive integer value to assign as ``max_tries`` for the updated columns.
 
     Raises
     ------
