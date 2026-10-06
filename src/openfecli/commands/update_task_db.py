@@ -89,7 +89,7 @@ def update_task_db_main(
 @click.option(
     "--max-tries",
     type=click.INT,
-    default=False,
+    required=True,
     help="The positive integer value to assign as 'max_tries' for the updated columns.",
 )
 # NOTE: this is named intentionally broad so that we can add "update_task_type" in a future version
