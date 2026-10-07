@@ -105,8 +105,6 @@ def setup_task_campaign(
         Initialized task database populated with graph nodes and dependency
         edges derived from ``alchemical_network``.
 
-
-
     """
 
     # require starting clean each time for now - guardrails around modifying existing state can come later

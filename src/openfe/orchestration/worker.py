@@ -29,7 +29,6 @@ class Worker:
     task_db_path : pathlib.Path, default=Path("./warehouse/tasks.db")
         Path to the Exorcist SQLite task database.
 
-
     """
 
     warehouse: FileSystemWarehouse
