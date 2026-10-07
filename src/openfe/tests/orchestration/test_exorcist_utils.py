@@ -14,7 +14,7 @@ from openfe.orchestration import (
     get_task_df,
     setup_task_campaign,
 )
-from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph
+from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph, update_max_tries
 from openfe.storage.warehouse import WarehouseBaseClass
 
 
@@ -268,3 +268,87 @@ def test_get_dependency_df(benzene_star_map_task_db):
     assert isinstance(df, pd.DataFrame)
     assert list(df.columns) == ["from", "to", "blocking"]
     assert len(df) == 504
+
+
+# NOTE: pulled this fixture from exorcist, since I expect to upstream the tests below
+from datetime import datetime
+
+from exorcist import TaskStatus, TaskStatusDB
+
+_DEFAULT_DATETIME = datetime(1970, 1, 1)
+
+
+def patch_exorcist_datetime(with_datetime=_DEFAULT_DATETIME):
+    # turns out we can't patch just the now() method (datetime is immutable,
+    # probably C code?) so we have to patch the entire datetime module
+    loc = "exorcist.taskdb.datetime"
+    datetime_now = mock.Mock(now=mock.Mock(return_value=with_datetime))
+    return mock.patch(loc, datetime_now)
+
+
+def patch_openfe_datetime(with_datetime=_DEFAULT_DATETIME):
+    loc = "openfe.orchestration.exorcist_utils.datetime"
+    datetime_now = mock.Mock(now=mock.Mock(return_value=with_datetime))
+    return mock.patch(loc, datetime_now)
+
+
+def get_tasks_and_deps(db):
+    with db.engine.connect() as conn:
+        tasks = set(conn.execute(sqla.select(db.tasks_table)))
+        deps = set(conn.execute(sqla.select(db.dependencies_table)))
+    return tasks, deps
+
+
+def task_row(taskid, status, last_modified, tries, max_tries, task_type=""):
+    return (taskid, status.value, last_modified, tries, max_tries, task_type)
+
+
+@pytest.fixture
+def fresh_db():
+    # create an empty database
+    echo = False  # switch this for debugging
+    engine = sqla.create_engine("sqlite://", echo=echo)
+
+    yield TaskStatusDB(engine)
+
+
+def test_update_max_tries(fresh_db):
+    task_db = fresh_db
+    task_db.add_task("task_a", requirements=[], max_tries=1)
+    task_db.add_task("task_b", requirements=["task_a"], max_tries=1)
+    task_db.add_task("task_c", requirements=[], max_tries=1)
+
+    with patch_exorcist_datetime():
+        taskid = task_db.check_out_task()
+        assert taskid == "task_a"
+        task_db.mark_task_completed(taskid, success=True)
+
+        taskid = task_db.check_out_task()
+        assert taskid == "task_b"
+        task_db.mark_task_completed(taskid, success=False)
+
+    tasks, deps = get_tasks_and_deps(task_db)
+
+    assert tasks == {
+        task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_b", TaskStatus.TOO_MANY_RETRIES, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, None, 0, 1, ""),
+    }
+    assert deps == {("task_a", "task_b", False)}
+
+    datetime2 = datetime(1999, 1, 1)
+    with patch_openfe_datetime(datetime2):
+        update_max_tries(task_db=task_db, max_tries=18)
+    tasks, deps = get_tasks_and_deps(task_db)
+
+    assert tasks == {
+        task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_b", TaskStatus.AVAILABLE, datetime2, 1, 18, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, datetime2, 0, 18, ""),
+    }
+
+
+@pytest.mark.parametrize("bad_value", ["1", -2, 3.0, 0, True])
+def test_update_max_tries_invalid_val(fresh_db, bad_value):
+    with pytest.raises(ValueError, match="must be a positive integer"):
+        update_max_tries(task_db=fresh_db, max_tries=bad_value)
