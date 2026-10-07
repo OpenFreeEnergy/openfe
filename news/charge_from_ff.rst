@@ -1,6 +1,8 @@
 **Added:**
 
-* The ``assign_offmol_partial_charges`` and ``bulk_assign_partial_charges`` functions can assign charges from a list of OpenFF SMIRNOFF style force fields. Set method=``forcefield`` and provide a list of force field files via the new keyword argument ``forcefields``. This is also supported in the  ``charge-molecules`` CLI command and is set by using a yaml settings file.
+* The ``assign_offmol_partial_charges`` and ``bulk_assign_partial_charges`` functions can assign charges from a list of OpenFF SMIRNOFF style force fields.
+  Set method=``forcefield`` and provide a list of force field files via the new keyword argument ``forcefields``.
+  This is also supported in the  ``charge-molecules`` CLI command and is set by using a yaml settings file (`PR #2152 <https://github.com/OpenFreeEnergy/openfe/pull/2152>`_).
 
 **Changed:**
 

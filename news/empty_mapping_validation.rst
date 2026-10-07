@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* The RelativeHybridTopologyProtocol will now raise a ValueError during validation if the atom mapping is empty preventing execution of the simulation.
+* The ``RelativeHybridTopologyProtocol`` will now raise a ``ValueError`` during validation if the atom mapping is empty preventing execution of the simulation (`PR #2120 <https://github.com/OpenFreeEnergy/openfe/pull/2120>`_).
 
 **Deprecated:**
 

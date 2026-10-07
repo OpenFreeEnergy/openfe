@@ -1,7 +1,7 @@
 **Added:**
 
-* Added support for Python 3.14.
-* Added support for Pydantic 2.13.
+* Added support for Python 3.14 (`PR #2058 <https://github.com/OpenFreeEnergy/openfe/pull/2058>`_).
+* Added support for Pydantic 2.13 (`PR #2058 <https://github.com/OpenFreeEnergy/openfe/pull/2058>`_).
 
 **Changed:**
 

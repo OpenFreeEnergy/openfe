@@ -4,7 +4,8 @@
 
 **Changed:**
 
-* Small molecules in RelativeHybridTopologyProtocol topologies (including the output PDB) are now named LIG (alchemical ligand) and COF (cofactors) instead of UNK. If a residue name was already assigned, the assigned one is kept.
+* Small molecules in RelativeHybridTopologyProtocol topologies (including the output PDB) are now named LIG (alchemical ligand) and COF (cofactors) instead of UNK.
+If a residue name was already assigned, the assigned one is kept (`PR #2042 <https://github.com/OpenFreeEnergy/openfe/pull/2042>`_).
 
 **Deprecated:**
 
@@ -16,7 +17,7 @@
 
 **Fixed:**
 
-* Fixed inflated ligand RMSD in the RelativeHybridTopology protocol's structural analysis for systems containing cofactors; the ligand RMSD is now computed for the alchemical ligand alone rather than conflating it with cofactors that shared the UNK residue name.
+* Fixed inflated ligand RMSD in the RelativeHybridTopology protocol's structural analysis for systems containing cofactors; the ligand RMSD is now computed for the alchemical ligand alone rather than conflating it with cofactors that shared the UNK residue name (`PR #2042 <https://github.com/OpenFreeEnergy/openfe/pull/2042>`_).
 
 **Security:**
 

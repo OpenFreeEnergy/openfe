@@ -1,15 +1,10 @@
 **Added:**
 
-* The ``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol`` now
-  carry out structural analyses at the end of the simulation. For all
-  legs, except vacuum, a symmetry-corrected ligand RMSD is calculated. For
-  complex transformations, a ligand COM drift and protein 2D RMSD is also
-  calculated. All results are written to a numpy NPZ file named
-  `structural_analysis.npz`, alongside PNGs for the plots for each
-  analysis type.
-* A new ``analysis_settings`` field has been added to
-  ``AbsoluteBindingSettings`` and ``AbsoluteSolvationSettings``
-  to control post-simulation analysis.
+* The ``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol`` now carry out structural analyses at the end of the simulation.
+  For all legs, except vacuum, a symmetry-corrected ligand RMSD is calculated.
+  For complex transformations, a ligand COM drift and protein 2D RMSD is also calculated.
+  All results are written to a numpy NPZ file named ``structural_analysis.npz``, alongside PNGs for the plots for each analysis type (`PR #2220 <https://github.com/OpenFreeEnergy/openfe/pull/2220>`_).
+* A new ``analysis_settings`` field has been added to ``AbsoluteBindingSettings`` and ``AbsoluteSolvationSettings`` to control post-simulation analysis (`PR #2220 <https://github.com/OpenFreeEnergy/openfe/pull/2220>`_).
 
 **Changed:**
 
