@@ -247,8 +247,12 @@ You can call this command in a loop, so that after a ``task`` is completed, the 
     # continue submitting run-task in serial until the wall time is hit
     # you may submit this *script* multiple times to have workers execute tasks in
 
-    while true; do
+    # if the command doesn't exit successfully (which includes no more tasks available because the campaign is complete),
+    # exit the script
+    EXIT_CODE = 0
+    while $EXIT_CODE == 0 ; do
         openfe run-task --warehouse warehouse_tyk2/ --task-db tasks_tyk2.db --scratch workdir/
+        EXIT_CODE = $?
     done
 
 
