@@ -8,7 +8,7 @@ from openfecli.parameters import ALCHEMICAL_NETWORK
 from openfecli.utils import print_duration, write
 
 
-def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str | None = None):
+def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str):
     from openfe.orchestration.exorcist_utils import setup_task_campaign
 
     db_path = Path(f"tasks_{name}.db")
