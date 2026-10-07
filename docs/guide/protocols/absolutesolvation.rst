@@ -31,11 +31,30 @@ The Lennard-Jones interactions are instead decoupled, meaning the intermolecular
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
-Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions. 
+Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions.
+
 A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 Both the soft-core potential functions from Beutler et al. [1]_ and from Gapsys et al. [2]_ are available and can be specified in the ``alchemical_settings.softcore_LJ`` settings
 (default: ``gapsys``).
-The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec`` and ``lambda_vdw``. Note that the ``lambda_restraints`` setting is ignored for the :class:`.AbsoluteSolvationProtocol`.
+
+Lambda schedules for the solvent and vacuum legs are defined by the ``lambda_elec`` and ``lambda_vdw`` entries of
+``solvent_lambda_settings`` and ``vacuum_lambda_settings`` respectively.
+A value of 0.0 means the interactions are fully on, and 1.0 means they are fully decoupled (or annihilated).
+
+.. note::
+    The lambda settings have a ``lambda_restraints`` entry that is ignored for the :class:`.AbsoluteSolvationProtocol`.
+
+By default, the solvent leg uses 14 lambda windows, while the vacuum leg uses only 5 lambda windows.
+This is because there are no intermolecular interactions to scale in vacuum. This means that only the electrostatic interactions,
+which are annihilated, need to be turned off gradually. Since decoupling the Lennard-Jones interactions has no effect in vacuum,
+``lambda_vdw`` is simply switched to 1.0 in the final window of the vacuum schedule.
+
+.. note::
+   If ``alchemical_settings.annihilate_sterics`` is set to ``True``, the intramolecular Lennard-Jones interactions are also turned off.
+   In this case the default vacuum lambda schedule is not appropriate, and intermediate ``lambda_vdw`` windows should be added to
+   ``vacuum_lambda_settings``.
+
+The number of lambda windows in each leg must match the number of replicas set in ``solvent_simulation_settings.n_replicas`` and ``vacuum_simulation_settings.n_replicas``.
 
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~

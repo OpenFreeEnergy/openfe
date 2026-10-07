@@ -91,7 +91,7 @@ class VacuumSettingsMixin:
         settings["charge_settings"] = prot_settings.partial_charge_settings
         settings["solvation_settings"] = prot_settings.solvation_settings
         settings["alchemical_settings"] = prot_settings.alchemical_settings
-        settings["lambda_settings"] = prot_settings.lambda_settings
+        settings["lambda_settings"] = prot_settings.vacuum_lambda_settings
         settings["engine_settings"] = prot_settings.vacuum_engine_settings
         settings["integrator_settings"] = prot_settings.integrator_settings
         settings["equil_simulation_settings"] = prot_settings.vacuum_equil_simulation_settings
@@ -196,7 +196,7 @@ class SolventSettingsMixin:
         settings["charge_settings"] = prot_settings.partial_charge_settings
         settings["solvation_settings"] = prot_settings.solvation_settings
         settings["alchemical_settings"] = prot_settings.alchemical_settings
-        settings["lambda_settings"] = prot_settings.lambda_settings
+        settings["lambda_settings"] = prot_settings.solvent_lambda_settings
         settings["engine_settings"] = prot_settings.solvent_engine_settings
         settings["integrator_settings"] = prot_settings.integrator_settings
         settings["equil_simulation_settings"] = prot_settings.solvent_equil_simulation_settings
