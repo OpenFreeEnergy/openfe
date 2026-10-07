@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - cinnabar >=0.6.0  # min pin for some API breaks and behavior changes in 0.6.0
-  - click >=8.2.0
+  - click >=8.2.0, <8.5.0  # until the deprecation warnings are addressed by https://github.com/OpenFreeEnergy/openfe/pull/2251
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
   - duecredit
