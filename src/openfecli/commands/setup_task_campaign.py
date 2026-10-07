@@ -8,7 +8,7 @@ from openfecli.parameters import ALCHEMICAL_NETWORK
 from openfecli.utils import print_duration, write
 
 
-def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str | None = None):
+def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str):
     from openfe.orchestration.exorcist_utils import setup_task_campaign
 
     db_path = Path(f"tasks_{name}.db")
@@ -26,21 +26,29 @@ def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str | 
     "setup-task-campaign",
     short_help="Build a Warehouse and corresponding TaskDB from an AlchemicalNetwork.",
 )
-# TODO: add --name and --amend options
 @ALCHEMICAL_NETWORK.parameter(multiple=False, required=True, help=ALCHEMICAL_NETWORK.kwargs["help"])
+@click.option(
+    "--name",
+    type=click.STRING,
+    required=False,
+    help="Campaign name used to create the TaskDB ('tasks_{name}.db') and Warehouse ('warehouse_{name}/'). By default, the basename of the input AlchemicalNetwork will be used.",
+)
+# TODO: add --amend option
 @print_duration
-def setup_task_campaign(alchemical_network: str | Path):
+def setup_task_campaign(alchemical_network: str | Path, name: str | None = None):
     """From an AlchemicalNetwork, create the necessary objects for task-based execution:
 
     - ``warehouse_{name}/``: Warehouse (on the local filesystem as a directory) that stores all setup, task, and results data.
     - ``tasks_{name}.db``: SQLite TaskDB that tracks orchestration status of the tasks.
 
     """
-    # TODO: allow user-supplied name and out_dir?
-    name = Path(alchemical_network).stem
+
     write("Loading AlchemicalNetwork ...")
     loaded_alch_net = ALCHEMICAL_NETWORK.get(alchemical_network)
+
     write("Creating Warehouse and TaskDB ...")
+    if not name:
+        name = Path(alchemical_network).stem
     setup_task_campaign_main(alchemical_network=loaded_alch_net, name=name)
 
 
