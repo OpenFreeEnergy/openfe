@@ -144,16 +144,30 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 pressure=1 * offunit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
-            lambda_settings=LambdaSettings(
+            solvent_lambda_settings=LambdaSettings(
                 lambda_elec=[
                     0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                ],
                 lambda_vdw=[
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
-                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
+                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0,
+                ],
                 lambda_restraints=[
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                ],
+            ),
+            vacuum_lambda_settings=LambdaSettings(
+                lambda_elec=[
+                    0.0, 0.25, 0.5, 0.75, 1.0,
+                ],
+                lambda_vdw=[
+                    0.0, 0.0, 0.0, 0.0, 1.0,
+                ],
+                lambda_restraints=[
+                    0.0, 0.0, 0.0, 0.0, 0.0,
+                ],
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
@@ -192,7 +206,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 log_output="equil_simulation.log",
             ),
             vacuum_simulation_settings=MultiStateSimulationSettings(
-                n_replicas=14,
+                n_replicas=5,
                 equilibration_length=0.5 * offunit.nanosecond,
                 production_length=2.0 * offunit.nanosecond,
             ),
@@ -386,14 +400,33 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         self._validate_endstates(stateA, stateB)
 
         # Validate the lambda schedule
-        for solv_sets in (
+        self._validate_lambda_schedule(
+            self.settings.solvent_lambda_settings,
             self.settings.solvent_simulation_settings,
+        )
+
+        self._validate_lambda_schedule(
+            self.settings.vacuum_lambda_settings,
             self.settings.vacuum_simulation_settings,
+        )
+
+        # When annihilating sterics, the intramolecular LJ interactions
+        # are also turned off, so the vacuum leg needs intermediate vdw windows
+        vacuum_lambda_vdw = self.settings.vacuum_lambda_settings.lambda_vdw
+        if self.settings.alchemical_settings.annihilate_sterics and not any(
+            0 < lam < 1 for lam in vacuum_lambda_vdw
         ):
-            self._validate_lambda_schedule(
-                self.settings.lambda_settings,
-                solv_sets,
+            wmsg = (
+                "Sterics are being annihilated (annihilate_sterics=True) but "
+                "the vacuum lambda schedule has no intermediate vdw windows. "
+                "Annihilating sterics also turns off intramolecular "
+                "Lennard-Jones interactions, so the vacuum leg will likely "
+                "have poor overlap. Consider adding intermediate vdw windows "
+                "to ``vacuum_lambda_settings``. "
+                f"Given vacuum lambda_vdw: {vacuum_lambda_vdw}"
             )
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
 
         # Check nonbond & solvent compatibility
         solv_nonbonded_method = self.settings.solvent_forcefield_settings.nonbonded_method
