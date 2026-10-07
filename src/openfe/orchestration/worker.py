@@ -20,6 +20,8 @@ from ..storage.warehouse import FileSystemWarehouse
 class Worker:
     """Execute protocol units from a task database.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe
+
     Parameters
     ----------
     warehouse : FileSystemWarehouse

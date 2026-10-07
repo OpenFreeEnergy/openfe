@@ -85,6 +85,8 @@ def setup_task_campaign(
 ) -> tuple[exorcist.TaskStatusDB, FileSystemWarehouse]:
     """Create a task database and FileSystemWarehouse from an alchemical network.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe
+
     Parameters
     ----------
     alchemical_network : AlchemicalNetwork
@@ -118,6 +120,8 @@ def setup_task_campaign(
 def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """Create a pandas Dataframe from task_db.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe
+
     Parameters
     ----------
     task_db : exorcist.TaskStatusDB
@@ -142,6 +146,8 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
 def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """Create a pandas Dataframe from task_db.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe
+
     Parameters
     ----------
     task_db : exorcist.TaskStatusDB
@@ -160,6 +166,8 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
 def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: Annotated[int, Gt(0)]):
     """Update the "max_tries" column to `max_tries`.
     Only rows that do _not_ have status=COMPLETED will be operated on.
+
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe
 
     Parameters
     ----------

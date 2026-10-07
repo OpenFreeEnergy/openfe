@@ -17,8 +17,8 @@ def warehouse_to_legacy_json(
 
     Results will be written to ``out_dir`` in files named by Transformation key.
 
-    Notice: this is a helper function meant to aid analysis of results
-    alongside quickrun output, and is not meant for production use!
+    .. warning:: This is a helper function meant to aid analysis of results alongside quickrun output, and is not meant for production use!
+
 
     Parameters
     ----------
@@ -31,6 +31,7 @@ def warehouse_to_legacy_json(
     ------
     FileExistsError
         If a JSON output file already exists.
+
     """
     # TODO: this is copied from quickrun, refactor to avoid duplication
     for prot_result, dagresult in result_edges:
