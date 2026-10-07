@@ -9,7 +9,7 @@ v1.13.0
 
 **Added:**
 
-* Added support for user-defined Boresch restraints in the ABFE Protocol (`PR #2019 <https://github.com/OpenFreeEnergy/openfe/pull/2019>`_).
+* Added support for user-defined Boresch restraints in the SepTop and ABFE Protocols (`PR #2019 <https://github.com/OpenFreeEnergy/openfe/pull/2019>`_ and `PR #2128 <https://github.com/OpenFreeEnergy/openfe/pull/2128>`_).
 * Added support for Python 3.14 (`PR #2058 <https://github.com/OpenFreeEnergy/openfe/pull/2058>`_).
 * Added support for Pydantic 2.13 (`PR #2058 <https://github.com/OpenFreeEnergy/openfe/pull/2058>`_).
 * The ``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol`` now carry out structural analyses at the end of the simulation.
@@ -22,7 +22,6 @@ v1.13.0
   Set ``method=forcefield`` and provide a list of force field files via the new keyword argument ``forcefields``.
   This is also supported in the  ``charge-molecules`` CLI command and is set by using a yaml settings file (`PR #2152 <https://github.com/OpenFreeEnergy/openfe/pull/2152>`_).
 
-* Added support for user-defined Boresch restraints in the SepTop Protocol (`PR #2128 <https://github.com/OpenFreeEnergy/openfe/pull/2128>`_).
 * (**Experimental Feature**) Added CLI commands for task-based execution, including:
 
   * CLI commands ``setup-task-campaign`` and ``run-task`` for running task-based execution (`PR #2174 <https://github.com/OpenFreeEnergy/openfe/pull/2174>`_).
@@ -53,9 +52,9 @@ v1.13.0
 * The forward and reverse convergence analysis now retains and plots the free energy estimates at the fractions MBAR could evaluate, instead of discarding the whole analysis, when MBAR fails to converge at low fractions of uncorrelated samples.
   Individual MBAR failures are recorded as NaN (`PR #1984 <https://github.com/OpenFreeEnergy/openfe/pull/1984>`_).
 * The ``RelativeHybridTopologyProtocol`` will now raise a ``ValueError`` during validation if the atom mapping is empty preventing execution of the simulation (`PR #2120 <https://github.com/OpenFreeEnergy/openfe/pull/2120>`_).
-* Small molecules in RelativeHybridTopologyProtocol topologies (including the output PDB) are now named LIG (alchemical ligand) and COF (cofactors) instead of UNK.
-  If a residue name was already assigned, the assigned one is kept (`PR #2042 <https://github.com/OpenFreeEnergy/openfe/pull/2042>`_).
-* The PlainMDProtocol now assigns the residue name ``"LIG"`` (or ``"LG?"`` where ``?`` is a number between 1 and 9 to yield a unique residue name) and a unique residue number to all SmallMoleculeComponents.
+* Small molecules in ``RelativeHybridTopologyProtocol``, ``SepTopProtocol``, and ``AbsoluteBindingProtocol`` topologies (including the output PDB) are now named LIG (alchemical ligand) and COF (cofactors) instead of UNK.
+  If a residue name was already assigned, the assigned one is kept (`PR #2042 <https://github.com/OpenFreeEnergy/openfe/pull/2042>`_ and `PR #2118 <https://github.com/OpenFreeEnergy/openfe/pull/2118>`_).
+* The ``PlainMDProtocol`` now assigns the residue name ``"LIG"`` (or ``"LG?"`` where ``?`` is a number between 1 and 9 to yield a unique residue name) and a unique residue number to all SmallMoleculeComponents.
   Previously, these would have been assigned the residue name ``"UNK"`` (`PR #2178 <https://github.com/OpenFreeEnergy/openfe/pull/2178>`_).
 * The ``RelativeHybridTopologyProtocol`` will now raise a ValueError during validation if the number of heavy atoms in the atom mapping is less than 4 and the components have more than 6 heavy atoms preventing execution of the simulation (`PR #2122 <https://github.com/OpenFreeEnergy/openfe/pull/2122>`_).
 
