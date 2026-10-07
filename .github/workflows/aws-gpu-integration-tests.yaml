@@ -18,14 +18,16 @@ jobs:
           aws-region: us-east-2
       - name: Create cloud runner
         id: aws-start
-        uses: omsf/start-aws-gha-runner@v1.0.0
+        uses: omsf/start-aws-gha-runner@v1.3.0
         with:
-          aws_image_id: ami-076a54ed41e67782d
+          aws_image_name: "Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 24.04)"
+          aws_image_id: latest
           aws_instance_type: g4dn.xlarge
           aws_home_dir: /home/ubuntu
           aws_root_device_size: 125
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+
 
   self-hosted-test:
     runs-on: self-hosted
@@ -43,6 +45,10 @@ jobs:
 
       - name: Print disk usage
         run: "df -h"
+
+      - name: list CUDA versions
+        run: |
+          ls -ld /usr/local/cuda*
 
       - name: Print Docker details
         run: "docker version || true"
@@ -64,7 +70,7 @@ jobs:
             espaloma==0.4.0
             openeye-toolkits
             python=3.12
-            cuda-version=12.8
+            cuda-version=12.9
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
