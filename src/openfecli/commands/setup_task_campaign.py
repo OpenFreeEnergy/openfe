@@ -45,6 +45,9 @@ def setup_task_campaign(alchemical_network: str | Path, name: str | None = None)
 
     """
 
+    msg = "WARNING! Task-based execution is an experimental feature and subject to change in a future release of openfe."
+    click.secho(msg, err=False, fg="yellow")
+
     write("Loading AlchemicalNetwork ...")
     loaded_alch_net = ALCHEMICAL_NETWORK.get(alchemical_network)
 

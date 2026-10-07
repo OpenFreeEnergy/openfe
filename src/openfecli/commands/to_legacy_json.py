@@ -52,8 +52,8 @@ def to_legacy_json(warehouse_path: str, output_dir: str):
 
     """
 
-    msg = "WARNING! This is an experimental feature and subject to change in a future release of openfe."
-    click.secho(msg, err=True, fg="yellow")  # fmt: skip
+    msg = "WARNING! This is a helper function meant to aid analysis of results alongside quickrun output, and is not meant for production use!"
+    click.secho(msg, err=False, fg="yellow")
     to_legacy_json_main(warehouse_path=warehouse_path, output_dir=output_dir)
 
 

@@ -134,6 +134,9 @@ def run_task(warehouse: Path, task_db: Path, scratch: Path):
     .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe.
 
     """
+
+    msg = "WARNING! Task-based execution is an experimental feature and subject to change in a future release of openfe."
+    click.secho(msg, err=False, fg="yellow")
     run_task_main(warehouse_path=warehouse, task_db_path=task_db, scratch=scratch)
 
 
