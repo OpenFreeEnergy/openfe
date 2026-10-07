@@ -31,7 +31,7 @@ def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str | 
     "--name",
     type=click.STRING,
     required=False,
-    help="Identifier to use when creating the TaskDB ('tasks_{name}.db') and Warehouse ('warehouse_{name}/'). By default, the basename of the input AlchemicalNetwork will be used.",
+    help="Campaign name used to create the TaskDB ('tasks_{name}.db') and Warehouse ('warehouse_{name}/'). By default, the basename of the input AlchemicalNetwork will be used.",
 )
 # TODO: add --amend option
 @print_duration
