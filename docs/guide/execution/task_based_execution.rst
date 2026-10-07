@@ -244,10 +244,11 @@ You can call this command in a loop, so that after a ``task`` is completed, the 
     # activate an appropriate conda environment, or any "module load" commands required
     conda activate openfe_env
 
-    # continue submitting run-task in serial until the wall time is hit
+    # continue submitting run-task in serial up to 50 times (a reasonable upper limit for this campaign)
+    # or until the wall time is hit
     # you may submit this *script* multiple times to have workers execute tasks in
 
-    while true; do
+    for n in {0..50}; do
         openfe run-task --warehouse warehouse_tyk2/ --task-db tasks_tyk2.db --scratch workdir/
     done
 
