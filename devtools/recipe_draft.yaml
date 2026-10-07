@@ -34,7 +34,9 @@ outputs:
         - setuptools_scm
       run:
         - cinnabar ~=0.6.0
+        - citeproc-py <0.10.3  # the default harvard1 style used by duecredit was changed in 0.10.3, this avoids needing an extra dependency on citeproc-py-styles
         - click >=8.2.0, <8.5.0  # until the deprecation warnings are addressed by https://github.com/OpenFreeEnergy/openfe/pull/2251
+        - duecredit
         - exorcist ~= 0.1.0
         - gufe ~=1.13.1
         - kartograf ~=2.0.0
@@ -54,7 +56,7 @@ outputs:
         - plugcli
         - pooch >=1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
         - psutil <7.2.0  # remove this in next release that includes https://github.com/OpenFreeEnergy/openfe/pull/1779
-        - pydantic >=2.0,<2.12  # https://github.com/openforcefield/openff-interchange/issues/1346
+        - pydantic ~=2.13.0 # don't trust that 2.14 won't break
         - pygraphviz
         - pymbar >=4.0
         - pytest
