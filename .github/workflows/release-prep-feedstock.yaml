@@ -61,7 +61,7 @@ jobs:
             cp recipe/recipe.yaml recipe/recipe.yaml.bak
 
             # Copy draft recipe from openfe repo
-            cp ../openfe/devtools/recipe_draft.yaml recipe.yaml
+            cp recipe/openfe_source/devtools/recipe_draft.yaml recipe/recipe.yaml
 
             # Add path after 'source:' and delete url line
             yq -i '.source.path="./openfe_source"' recipe/recipe.yaml
