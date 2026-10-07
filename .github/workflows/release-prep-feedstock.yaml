@@ -60,6 +60,9 @@ jobs:
             # Backup original recipe.yaml
             cp recipe/recipe.yaml recipe/recipe.yaml.bak
 
+            # Copy draft recipe from openfe repo
+            cp ../openfe/devtools/recipe_draft.yaml recipe.yaml
+
             # Add path after 'source:' and delete url line
             yq -i '.source.path="./openfe_source"' recipe/recipe.yaml
             yq -i 'del(.source.url)' recipe/recipe.yaml
@@ -67,7 +70,6 @@ jobs:
             # remove existing gufe entry and add the gufe pin we want
             yq -i 'del(.outputs.[0].requirements.run[] | select(. =="*gufe*"))' recipe/recipe.yaml
             yq -i '.outputs.[0].requirements.run += "gufe==${{ steps.latest-gufe-version.outputs.VERSION }}"' recipe/recipe.yaml
-            
             
             echo "Modified recipe.yaml:"
             cat recipe/recipe.yaml
