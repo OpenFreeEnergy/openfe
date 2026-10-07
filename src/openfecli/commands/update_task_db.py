@@ -13,7 +13,6 @@ def update_task_db_main(
     task_db_path: Path,
     max_tries: int,
 ):
-    from openfe.orchestration.exorcist_utils import update_max_tries
 
     """
     Parameters
@@ -27,7 +26,7 @@ def update_task_db_main(
 
     Example
     -------
-    >>> openfe status task.db
+    >>> openfe status --task-db task.db
 
     ┌─────────────────────────────┬──────────────────┬─────────────────────┬───────┬───────────┐
     │ task_id                     │ status           │ last_modified       │ tries │ max_tries │
@@ -89,7 +88,7 @@ def update_task_db_main(
 )
 @click.option(
     "--max-tries",
-    type=click.INT,
+    type=click.IntRange(min=1),
     required=True,
     help="The positive integer value to assign as 'max_tries' for the updated columns.",
 )
@@ -105,4 +104,4 @@ def update_task_db(task_db: Path, max_tries: int):
     update_task_db_main(task_db_path=task_db, max_tries=max_tries)
 
 
-PLUGIN = OFECommandPlugin(command=update_task_db_main, section="Execution", requires_ofe=(1, 13))
+PLUGIN = OFECommandPlugin(command=update_task_db, section="Execution", requires_ofe=(1, 13))
