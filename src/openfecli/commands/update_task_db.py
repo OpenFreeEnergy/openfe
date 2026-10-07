@@ -21,7 +21,8 @@ def update_task_db_main(
     task_db_path : pathlib.Path
         Path to a task.db
 
-    max_tries: value to update "max_tries" column to, for applicable rows
+    max_tries: int
+        Value to update "max_tries" column to, for applicable rows
 
 
     Example
