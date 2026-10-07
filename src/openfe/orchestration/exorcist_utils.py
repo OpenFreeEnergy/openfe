@@ -178,7 +178,7 @@ def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: Annotated[int, G
     from exorcist.models import TaskStatus
 
     # TODO: select a single task_id?
-    if not isinstance(max_tries, int) or max_tries <= 0:
+    if type(max_tries) is not int or max_tries <= 0:
         raise ValueError("`max_tries` must be a positive integer.")
 
     values = {"max_tries": max_tries, "last_modified": datetime.now()}

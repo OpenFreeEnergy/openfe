@@ -348,7 +348,7 @@ def test_update_max_tries(fresh_db):
     }
 
 
-@pytest.mark.parametrize("bad_value", ["1", -2, 3.0, 0])
+@pytest.mark.parametrize("bad_value", ["1", -2, 3.0, 0, True])
 def test_update_max_tries_invalid_val(fresh_db, bad_value):
     with pytest.raises(ValueError, match="must be a positive integer"):
         update_max_tries(task_db=fresh_db, max_tries=bad_value)
