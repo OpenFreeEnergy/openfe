@@ -20,12 +20,15 @@ from ..storage.warehouse import FileSystemWarehouse
 class Worker:
     """Execute protocol units from a task database.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe
+
     Parameters
     ----------
     warehouse : FileSystemWarehouse
         FileSystemWarehouse used to load queued tasks and store execution results.
     task_db_path : pathlib.Path, default=Path("./warehouse/tasks.db")
         Path to the Exorcist SQLite task database.
+
 
     """
 

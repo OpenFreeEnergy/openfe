@@ -96,6 +96,8 @@ def update_task_db(task_db: Path, max_tries: int):
     """
     Update the 'max_tries' column for applicable tasks. COMPLETED tasks and tasks with tries > the input 'max-tries' will not be updated.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe.
+
     """
 
     # TODO: add loading bar

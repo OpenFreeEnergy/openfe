@@ -48,9 +48,7 @@ def to_legacy_json(warehouse_path: str, output_dir: str):
     Results will be written to ``OUTPUT_DIR`` in files named by Transformation key.
 
 
-    .. warning::
-
-        This is a helper function meant to aid analysis of results alongside quickrun output, and is not meant for production use!
+    .. warning:: This is a helper function meant to aid analysis of results alongside quickrun output, and is not meant for production use!
 
     """
 

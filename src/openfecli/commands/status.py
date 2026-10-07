@@ -123,6 +123,8 @@ def status(task_db: Path, summary: bool):
     """
     Show the status of a task.db as a table.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe.
+
     """
 
     # TODO: add loading bar

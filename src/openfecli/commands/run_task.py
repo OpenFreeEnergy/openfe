@@ -131,6 +131,8 @@ def run_task(warehouse: Path, task_db: Path, scratch: Path):
     """
     Check out one task from ``task_db`` and execute the corresponding ``ProtocolUnit`` in the``Warehouse``.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe.
+
     """
     run_task_main(warehouse_path=warehouse, task_db_path=task_db, scratch=scratch)
 
