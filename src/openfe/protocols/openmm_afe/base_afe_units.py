@@ -1978,6 +1978,7 @@ class ComplexTrajectoryAnalysisMixin:
             "ligand_COM_drift": [],
             "protein_2D_RMSD": [],
         }
+        time_ps: np.ndarray | None = None
 
         # Read the topology once and reuse across all lambda states
         u_top = mda.Universe(topology)
