@@ -1997,8 +1997,7 @@ class ComplexTrajectoryAnalysisMixin:
             # Capture the time axis from the on-disk trajectory BEFORE the memory
             # transfer strides it and rescales dt.
             if time_ps is None:
-                time_ps = np.arange(len(universe.trajectory))[
-                          ::skip] * universe.trajectory.dt
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
             # unwrap/shift/align run once per frame, here
             universe.transfer_to_memory(step=skip)
