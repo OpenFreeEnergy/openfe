@@ -1,0 +1,147 @@
+schema_version: 1
+
+context:
+  python_min: "3.12"
+  name: openfe
+  version: "1.12.0"
+
+recipe:
+  name: openfe-suite
+  version: ${{ version }}
+
+source:
+  url: https://github.com/OpenFreeEnergy/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 72732e34ca26ae78bd46e00ddc6d2c5cc88ba6a8db296593f7a85a232d110c88
+
+build:
+  number: 1
+
+outputs:
+  - package:
+      name: openfe-base
+    build:
+      noarch: python
+      script:
+        file: build_base.sh
+      python:
+        entry_points:
+          - openfe = openfecli.cli:main
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}.*
+        - setuptools
+        - setuptools_scm
+      run:
+        - cinnabar ~=0.6.0
+        - citeproc-py <0.10.3  # the default harvard1 style used by duecredit was changed in 0.10.3, this avoids needing an extra dependency on citeproc-py-styles
+        - click >=8.2.0, <8.5.0  # until the deprecation warnings are addressed by https://github.com/OpenFreeEnergy/openfe/pull/2251
+        - duecredit
+        - exorcist ~= 0.1.0
+        - gufe ~=1.13.1
+        - kartograf ~=2.0.0
+        - konnektor ~=0.5.0
+        - lomap2 ~=3.3.0
+        - matplotlib-base
+        - networkx
+        - numpy
+        - openfe-analysis ~=0.5.0
+        - openff-toolkit-base >=0.16.2,<0.19  # upper pinning 0.19, just so we can test it before conda-forge pulls it in.
+        - openff-units >=0.4.0  # adds pydantic 2.13 support
+        - openmm !=8.1.0,!=8.3,>=8.0.0,<8.5.0  # omit 8.3.0 and 8.3.1 due to https://github.com/openmm/openmm/pull/5069
+        - openmmforcefields >=0.15.1  # min needed for https://github.com/openmm/openmmforcefields/pull/414
+        - openmmtools >=0.26  # fix to support membrane barostat: https://github.com/choderalab/openmmtools/pull/798
+        - packaging
+        - pint >=0.24.0
+        - plugcli
+        - pooch >=1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
+        - psutil <7.2.0  # remove this in next release that includes https://github.com/OpenFreeEnergy/openfe/pull/1779
+        - pydantic ~=2.13.0 # don't trust that 2.14 won't break
+        - pygraphviz
+        - pymbar >=4.0
+        - pytest
+        - pytest-regressions
+        - pytest-rerunfailures
+        - python >=${{ python_min }}
+        - rdkit <2026.03  # https://github.com/OpenFreeEnergy/openfe/issues/2067
+        - rich
+        - threadpoolctl
+        - typing-extensions
+      run_constraints:
+        - dask >=2025  # drop this constraint when handled upstream in espaloma-feedstock  
+        - smirnoff99frosst >=1.1.0.1  # https://github.com/openforcefield/smirnoff99Frosst/issues/109
+        - openff-interchange-base >=0.5.4  # adds pydantic 2.13 support
+    tests:
+      - python:
+          imports:
+            - openfe
+          pip_check: false
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - pip
+            - pytest-xdist
+            - python ${{ python_min }}.*
+            - py3dmol  # TODO: remove this when we improve our optional deps testing
+        script:
+          - openfe --help
+          - openfe --version
+          - python -c "import ${{ name }}; print(${{ name }}.__version__)"
+          - python -c "import ${{ name }}; assert(${{ name }}.__version__ == '${{ version }}')"
+          - pytest -v --pyargs openfe openfecli
+
+    # Test section duplicated for now, will be more important later
+    # when we add more packages and skip tests for optional deps
+  - package:
+      name: openfe
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}.*
+        - setuptools
+        - setuptools_scm
+      run:
+        - python >=${{ python_min }}
+        - jq
+        - py3dmol
+        - ${{ pin_subpackage('openfe-base', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - openfe
+          pip_check: false
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - pip
+            - pytest-xdist
+            - python ${{ python_min }}.*
+        script:
+          - openfe --help
+          - openfe --version
+          - python -c "import ${{ name }}; print(${{ name }}.__version__)"
+          - python -c "import ${{ name }}; assert(${{ name }}.__version__ == '${{ version }}')"
+          - pytest -v --pyargs openfe openfecli
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Free software for Free Energies.
+  description: |
+    The Open Free Energy (OpenFE) project is dedicated to the maintenance and
+    development of open source tools for free energy calculations to guide
+    pharmaceutical drug design and discovery. This package enables researchers
+    to plan, execute, and analyze networks of free energy calculations.
+  homepage: https://openfree.energy/
+  repository: https://github.com/OpenFreeEnergy/openfe
+  documentation: https://docs.openfree.energy
+
+extra:
+  feedstock-name: openfe
+  recipe-maintainers:
+    - IAlibay
+    - atravitz
+    - dwhswenson
+    - mikemhenry
