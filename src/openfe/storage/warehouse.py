@@ -42,6 +42,8 @@ class WarehouseStores(TypedDict):
     -----
     Additional stores for results and tasks may be added in future versions.
 
+    .. warning:: Warehouse storage is an experimental feature and subject to change in future releases of openfe
+
     """
 
     setup: ExternalStorage
@@ -56,6 +58,9 @@ class WarehouseBaseClass:
 
     Provides functionality to store, load, and manage GufeTokenizable objects
     across different storage backends.
+
+    .. warning:: Warehouse storage is an experimental feature and subject to change in future releases of openfe
+
 
     Parameters
     ----------
@@ -528,16 +533,13 @@ class FileSystemWarehouse(WarehouseBaseClass):
     Provides a file-based storage backend for GufeTokenizable objects
     organized in a directory structure.
 
+    .. warning:: Warehouse storage is an experimental feature and subject to change in future releases of openfe
+
     Parameters
     ----------
     root_dir : pathlib.Path, optional
         Root directory in which to create the warehouse storage.
 
-    Notes
-    -----
-    Creates a "setup" subdirectory within the root directory for storing
-    setup-related objects. Future versions may include additional stores
-    for results and other data types.
     """
 
     def __init__(self, root_dir: pathlib.Path, exist_ok=False):

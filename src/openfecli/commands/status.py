@@ -123,8 +123,12 @@ def status(task_db: Path, summary: bool):
     """
     Show the status of a task.db as a table.
 
+    .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe.
+
     """
 
+    msg = "WARNING! Task-based execution is an experimental feature and subject to change in a future release of openfe."
+    click.secho(msg, err=False, fg="yellow")
     # TODO: add loading bar
     write("Fetching task db status...")
     status_main(task_db_path=task_db, summary=summary)
