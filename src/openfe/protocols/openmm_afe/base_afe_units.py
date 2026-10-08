@@ -1988,7 +1988,9 @@ class ComplexTrajectoryAnalysisMixin:
             if protein.bonds:
                 u_top.delete_bonds(protein.bonds)
             protein.guess_bonds()
+
         prot_indices = u_top.select_atoms(protein_selection).indices
+
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
             prot = universe.atoms[prot_indices]
@@ -2005,17 +2007,14 @@ class ComplexTrajectoryAnalysisMixin:
 
             # Protein selection is empty - e.g. not looking at a protein host
             if prot:
-                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
+                prot_rmsd2d = Protein2DRMSD(prot).run()
                 analysis_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
 
-            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run()
             analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
 
-            lig_drift = LigandCOMDrift(lig).run(step=skip)
+            lig_drift = LigandCOMDrift(lig).run()
             analysis_data["ligand_COM_drift"].append(lig_drift.results.com_drift)
-
-        if time_ps is None:  # safety: trajectory had no frames before transfer
-            time_ps = np.arange(len(universe.trajectory)) * universe.trajectory.dt
 
         return analysis_data, time_ps
 
