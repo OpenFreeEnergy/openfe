@@ -195,7 +195,7 @@ try:
     else:
         repo = git.Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch="main",
+            branch="2026.10.07",
             to_path=example_notebooks_path,
         )
 except Exception as e:
