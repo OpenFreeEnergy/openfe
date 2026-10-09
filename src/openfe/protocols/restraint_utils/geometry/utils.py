@@ -75,7 +75,8 @@ def _get_mda_selection(
 
 def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     """
-    Get a list of tuples with the indices for each ring in an rdkit Molecule.
+    Get one set of atom indices for each aromatic ring system in an rdkit Molecule.
+    Aromatic rings that share atoms are merged into a single ring system.
 
     Parameters
     ----------
@@ -89,7 +90,7 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     """
 
     ringinfo = rdmol.GetRingInfo()
-    arom_idxs = get_aromatic_atom_idxs(rdmol)
+    arom_idxs = set(get_aromatic_atom_idxs(rdmol))
 
     aromatic_rings = []
 
@@ -99,13 +100,20 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
             aromatic_rings.append(set(ring))
 
     # Reduce the ring list by merging any rings that have colliding atoms
-    for x, y in combinations(aromatic_rings, 2):
-        if not x.isdisjoint(y):
-            x.update(y)
-            aromatic_rings.remove(y)
+    graph = nx.Graph()
+    graph.add_nodes_from(range(len(aromatic_rings)))
 
-    return aromatic_rings
+    for i, j in combinations(range(len(aromatic_rings)), 2):
+        # Connect rings that have at least one atom in common
+        if not aromatic_rings[i].isdisjoint(aromatic_rings[j]):
+            graph.add_edge(i, j)
 
+    ring_systems = [
+        set().union(*(aromatic_rings[i] for i in component))
+        for component in nx.connected_components(graph)
+    ]
+
+    return ring_systems
 
 def get_aromatic_atom_idxs(rdmol: Chem.Mol) -> list[int]:
     """

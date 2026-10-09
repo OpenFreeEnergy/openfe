@@ -89,6 +89,12 @@ def test_mda_selection_atomgroup_string(eg5_pdb_universe):
         ["C1=CC=C2C=CC=CC2=C1", [10]],
         ["C1=CC=C(C=C1)C2=CC=CC=C2", [6, 6]],
         ["C1=CC=C(C=C1)C(C2=CC=CC=C2)(C3=CC=CC=C3Cl)N4C=CN=C4", [6, 6, 6, 5]],
+        # Regression tests for fused aromatic ring systems
+        ["c1ccc2cc3ccccc3cc2c1", [14]],        # anthracene
+        ["c1ccc2c(c1)ccc1ccccc12", [14]],      # phenanthrene
+        ["c1cc2ccc3cccc4ccc(c1)c2c34", [16]],  # pyrene
+        ["c1ccc2[nH]c3ccccc3c2c1", [13]],  # carbazole
+
     ],
 )
 def test_aromatic_rings(smiles, expected):
