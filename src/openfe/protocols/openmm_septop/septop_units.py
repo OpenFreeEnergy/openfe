@@ -1412,8 +1412,7 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
             lig_B = universe.atoms[ligand_B_indices]
             apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig_A, lig_B])
 
-            # Capture the time axis from the on-disk trajectory BEFORE the memory
-            # transfer strides it and rescales dt.
+            # Assign time based on the state's universe before transferring to memory
             if time_ps is None:
                 time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
