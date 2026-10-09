@@ -39,6 +39,8 @@ from .base_afe_units import (
     BaseAbsoluteMultiStateAnalysisUnit,
     BaseAbsoluteMultiStateSimulationUnit,
     BaseAbsoluteSetupUnit,
+    ComplexTrajectoryAnalysisMixin,
+    LigandTrajectoryAnalysisMixin,
 )
 
 logger = logging.getLogger(__name__)
@@ -102,6 +104,7 @@ class ComplexSettingsMixin:
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintSettings
+            * analysis_settings: MultiStateAnalysisSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
@@ -119,6 +122,7 @@ class ComplexSettingsMixin:
         settings["simulation_settings"] = prot_settings.complex_simulation_settings
         settings["output_settings"] = prot_settings.complex_output_settings
         settings["restraint_settings"] = prot_settings.restraint_settings
+        settings["analysis_settings"] = prot_settings.analysis_settings
 
         return settings
 
@@ -424,7 +428,9 @@ class ABFEComplexSimUnit(
     simtype = "complex"
 
 
-class ABFEComplexAnalysisUnit(ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class ABFEComplexAnalysisUnit(
+    ComplexTrajectoryAnalysisMixin, ComplexSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the complex phase
     of absolute binding free energy transformations.
@@ -483,6 +489,7 @@ class SolventSettingsMixin:
             * equil_output_settings : ABFEPreEquilOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
+            * analysis_settings: MultiStateAnalysisSettings
         """
         prot_settings = self._inputs["protocol"].settings  # type: ignore[attr-defined]
 
@@ -499,6 +506,7 @@ class SolventSettingsMixin:
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings
         settings["output_settings"] = prot_settings.solvent_output_settings
+        settings["analysis_settings"] = prot_settings.analysis_settings
 
         return settings
 
@@ -524,7 +532,9 @@ class ABFESolventSimUnit(
     simtype = "solvent"
 
 
-class ABFESolventAnalysisUnit(SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit):
+class ABFESolventAnalysisUnit(
+    LigandTrajectoryAnalysisMixin, SolventSettingsMixin, BaseAbsoluteMultiStateAnalysisUnit
+):
     """
     Analysis unit for multi-state simulations with the solvent phase
     of absolute binding free energy transformations.

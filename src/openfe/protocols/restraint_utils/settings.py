@@ -9,7 +9,7 @@ TODO
 * Add all the restraint settings entries.
 """
 
-from typing import Annotated, Literal, Optional, TypeAlias
+from typing import Annotated, Literal, Optional, Self, TypeAlias
 
 from gufe.settings import SettingsBaseModel
 from gufe.settings.typing import GufeQuantity, NanometerQuantity, specify_quantity_units
@@ -218,10 +218,11 @@ class BoreschRestraintSettings(BaseRestraintSettings):
         return v
 
     @model_validator(mode="after")
-    def check_restraint_ids_defined(self):
+    def check_restraint_ids_defined(self) -> Self:
         if (self.host_restraint_ids is None) ^ (self.guest_restraint_ids is None):
             errmsg = (
                 "`guest_restraint_ids` and `host_restraint_ids` must both "
                 "either be defined or undefined"
             )
             raise ValueError(errmsg)
+        return self

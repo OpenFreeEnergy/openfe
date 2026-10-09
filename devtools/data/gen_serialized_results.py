@@ -49,7 +49,6 @@ configure_logger("gufe", handler=stdout_handler)
 configure_logger("openfe", handler=stdout_handler)
 configure_logger("openmmtools.multistate.multistatereporter", level=logging.DEBUG, handler=stdout_handler)  # fmt: skip
 configure_logger("openmmtools.multistate.multistatesampler", level=logging.DEBUG, handler=stdout_handler)  # fmt: skip
-
 logger = logging.getLogger(__name__)
 
 LIGA = "[H]C([H])([H])C([H])([H])C(=O)C([H])([H])C([H])([H])[H]"
@@ -206,15 +205,31 @@ def generate_ahfe_settings():
     settings.vacuum_equil_simulation_settings.production_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.production_length = 1000 * unit.picosecond
-    settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
-                                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                            1.0]  # fmt: skip
-    settings.lambda_settings.lambda_vdw = [0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
-                                           0.36, 0.48, 0.6, 0.7, 0.77, 0.85,
-                                           1.0]  # fmt: skip
+    settings.solvent_lambda_settings.lambda_elec = [
+        0.0, 0.25, 0.5, 0.75, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ]  # fmt: skip
+    settings.solvent_lambda_settings.lambda_vdw = [
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.12, 0.24, 0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0,
+    ]  # fmt: skip
+    settings.vacuum_lambda_settings.lambda_elec = [
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+    ]
+    settings.vacuum_lambda_settings.lambda_vdw = [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    ]
     settings.protocol_repeats = 3
     settings.solvent_simulation_settings.n_replicas = 14
-    settings.vacuum_simulation_settings.n_replicas = 14
+    settings.vacuum_simulation_settings.n_replicas = 5
     settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole  # fmt: skip
     settings.vacuum_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole  # fmt: skip
     settings.vacuum_engine_settings.compute_platform = "CPU"

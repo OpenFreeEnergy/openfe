@@ -31,11 +31,30 @@ The Lennard-Jones interactions are instead decoupled, meaning the intermolecular
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
-Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions. 
+Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions.
+
 A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 Both the soft-core potential functions from Beutler et al. [1]_ and from Gapsys et al. [2]_ are available and can be specified in the ``alchemical_settings.softcore_LJ`` settings
 (default: ``gapsys``).
-The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec`` and ``lambda_vdw``. Note that the ``lambda_restraints`` setting is ignored for the :class:`.AbsoluteSolvationProtocol`.
+
+Lambda schedules for the solvent and vacuum legs are defined by the ``lambda_elec`` and ``lambda_vdw`` entries of
+``solvent_lambda_settings`` and ``vacuum_lambda_settings`` respectively.
+A value of 0.0 means the interactions are fully on, and 1.0 means they are fully decoupled (or annihilated).
+
+.. note::
+    The lambda settings have a ``lambda_restraints`` entry that is ignored for the :class:`.AbsoluteSolvationProtocol`.
+
+By default, the solvent leg uses 14 lambda windows, while the vacuum leg uses only 5 lambda windows.
+This is because there are no intermolecular interactions to scale in vacuum. This means that only the electrostatic interactions,
+which are annihilated, need to be turned off gradually. Since decoupling the Lennard-Jones interactions has no effect in vacuum,
+``lambda_vdw`` is simply switched to 1.0 in the final window of the vacuum schedule.
+
+.. note::
+   If ``alchemical_settings.annihilate_sterics`` is set to ``True``, the intramolecular Lennard-Jones interactions are also turned off.
+   In this case the default vacuum lambda schedule is not appropriate, and intermediate ``lambda_vdw`` windows should be added to
+   ``vacuum_lambda_settings``.
+
+The number of lambda windows in each leg must match the number of replicas set in ``solvent_simulation_settings.n_replicas`` and ``vacuum_simulation_settings.n_replicas``.
 
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
@@ -76,6 +95,40 @@ which is different compared to the results in the :class:`.RelativeHybridTopolog
 In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
 
 .. todo: issue 792 change this reference to point to the new results section
+
+Analysis
+~~~~~~~~
+
+As with the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`,
+the protocol performs both energetic and structural analysis automatically after each simulation repeat.
+The energetic analysis (MBAR overlap matrix, replica exchange statistics, forward/reverse convergence)
+is identical to that described in the :ref:`multistate analysis section <multistate_analysis>`.
+
+Structural analysis
+"""""""""""""""""""
+
+After each simulation, the protocol automatically analyzes the production trajectories.
+
+.. note::
+   No structural analysis is currently carried out for the vacuum leg.
+   This will be fixed in a future version of openfe.
+
+For each lambda state, the **Ligand RMSD** is computed: a symmetry-corrected RMSD of the ligand relative to the first production frame.
+A symmetry-corrected RMSD is used to account for equivalent atom orderings in symmetric
+molecules (e.g. a flipping phenyl ring) instead of a standard mass-weighted RMSD.
+
+Results are saved as an `NPZ file <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`_ (``structural_analysis.npz``)
+and a plot (``ligand_RMSD.png``) is generated automatically.
+To customize the analysis, the frame stride can be configured via ``analysis_settings.skip`` in :class:`.AbsoluteSolvationSettings`.
+
+.. note::
+   This analysis requires the ligand atoms to be included in the trajectory output
+   (controlled by ``output_indices`` in ``solvent_output_settings``).
+   If no ligand atoms are written to the trajectory, the analysis is skipped and a
+   ``structural_analysis_error`` entry is added to the results instead.
+
+For further guidance on interpreting this plot, see the
+:ref:`multistate analysis section <multistate_analysis>` of the hybrid topology protocol documentation.
 
 
 See Also

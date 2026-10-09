@@ -32,6 +32,11 @@ zenodo_septop_structural = dict(
     fname="septop_structural_results.zip",
     known_hash="md5:cffc193dacb5ad8d26c5467ae05b1a00",
 )
+zenodo_abfe_structural = dict(
+    base_url="doi:10.5281/zenodo.23160051",
+    fname="abfe_simulation_outputs.zip",
+    known_hash="md5:e6afa6447960c473497f60036b0f8c5e",
+)
 
 zenodo_data_registry = [
     zenodo_rfe_simulation_nc,
@@ -40,4 +45,5 @@ zenodo_data_registry = [
     zenodo_resume_data,
     zenodo_md_resume_data,
     zenodo_septop_structural,
+    zenodo_abfe_structural,
 ]
