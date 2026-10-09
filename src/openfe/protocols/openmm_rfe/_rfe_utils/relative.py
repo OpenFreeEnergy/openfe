@@ -90,7 +90,8 @@ class HybridTopologyFactory:
                  softcore_alpha=0.5,
                  softcore_LJ_v2=True,
                  softcore_LJ_v2_alpha=0.85,
-                 interpolate_old_and_new_14s=False):
+                 interpolate_old_and_new_14s=False,
+                 alchemical_water_atoms=None):
         """
         Initialize the Hybrid topology factory.
 
@@ -128,6 +129,10 @@ class HybridTopologyFactory:
             Whether to turn off interactions for new exceptions (not just
             1,4s) at lambda = 0 and old exceptions at lambda = 1; if False,
             they are present in the nonbonded force.
+        alchemical_water_atoms : set of int, optional
+            Old-system indices of waters being turned into counterions. Their
+            charge change is interpolated on the same electrostatics schedule
+            as the ligand net charge change, keeping every window neutral.
         """
 
         # Assign system positions and force
@@ -146,6 +151,7 @@ class HybridTopologyFactory:
         # Other options
         self._use_dispersion_correction = use_dispersion_correction
         self._interpolate_14s = interpolate_old_and_new_14s
+        self._alchemical_water_atoms = set(alchemical_water_atoms or set())
 
         # Sofcore options
         self._softcore_alpha = softcore_alpha
@@ -1761,6 +1767,35 @@ class HybridTopologyFactory:
         old_nonbonded_terms = self._old_nonbonded_terms
         new_nonbonded_terms = self._new_nonbonded_terms
 
+        # Counterion (alchemical water) atoms: split their charge change over
+        # the ligand electrostatics schedules so every window stays neutral.
+        alchem_water_fracs = None
+        if self._alchemical_water_atoms:
+            q_uold = sum(
+                (old_nonbonded_terms[hybrid_to_old_map[i]][0]
+                 for i in self._atom_classes['unique_old_atoms']),
+                0.0 * unit.elementary_charge,
+            )
+            q_unew = sum(
+                (new_nonbonded_terms[hybrid_to_new_map[i]][0]
+                 for i in self._atom_classes['unique_new_atoms']),
+                0.0 * unit.elementary_charge,
+            )
+            dq_core = sum(
+                (new_nonbonded_terms[hybrid_to_new_map[i]][0]
+                 - old_nonbonded_terms[hybrid_to_old_map[i]][0]
+                 for i in self._atom_classes['core_atoms']
+                 if hybrid_to_old_map[i] not in self._alchemical_water_atoms),
+                0.0 * unit.elementary_charge,
+            )
+            denom = dq_core - q_uold + q_unew
+            if abs(denom / unit.elementary_charge) > 1e-3:
+                alchem_water_fracs = {
+                    'lambda_electrostatics_core': dq_core / denom,
+                    'lambda_electrostatics_delete': -q_uold / denom,
+                    'lambda_electrostatics_insert': q_unew / denom,
+                }
+
         # Define new global parameters for NonbondedForce
         self._hybrid_system_forces['standard_nonbonded_force'].addGlobalParameter('lambda_electrostatics_core', 0.0)
         self._hybrid_system_forces['standard_nonbonded_force'].addGlobalParameter('lambda_sterics_core', 0.0)
@@ -1855,12 +1890,20 @@ class HybridTopologyFactory:
                 # instead of core_sterics force so that core_sterics_force
                 # could just be softcore.
 
-                # Interpolate between old and new charge with
-                # lambda_electrostatics core make sure to keep sterics off
-                self._hybrid_system_forces['standard_nonbonded_force'].addParticleParameterOffset(
-                    'lambda_electrostatics_core', particle_index,
-                    (charge_new - charge_old), 0, 0
-                )
+                # Interpolate old -> new charge; counterion atoms track the
+                # ligand net-charge schedule, everything else is linear.
+                if (alchem_water_fracs is not None
+                        and old_index in self._alchemical_water_atoms):
+                    for param, frac in alchem_water_fracs.items():
+                        self._hybrid_system_forces['standard_nonbonded_force'].addParticleParameterOffset(
+                            param, particle_index,
+                            (charge_new - charge_old) * frac, 0, 0
+                        )
+                else:
+                    self._hybrid_system_forces['standard_nonbonded_force'].addParticleParameterOffset(
+                        'lambda_electrostatics_core', particle_index,
+                        (charge_new - charge_old), 0, 0
+                    )
 
             # Otherwise, the particle is in the environment
             else:
