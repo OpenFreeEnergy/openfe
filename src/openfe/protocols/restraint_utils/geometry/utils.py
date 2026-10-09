@@ -115,6 +115,7 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
 
     return ring_systems
 
+
 def get_aromatic_atom_idxs(rdmol: Chem.Mol) -> list[int]:
     """
     Helper method to get aromatic atoms idxs
