@@ -102,9 +102,10 @@ def test_aromatic_rings(smiles, expected):
     # get the rings
     rings = get_aromatic_rings(mol)
 
-    # check we have the right number of rings & their size
-    for i, r in enumerate(rings):
-        assert len(r) == expected[i]
+    # check we have the right number of rings
+    assert len(rings) == len(expected)
+    # Check the size of each ring system.
+    assert sorted(len(r) for r in rings) == sorted(expected)
 
     # check that there is no overlap in atoms between each ring
     for x, y in itertools.combinations(rings, 2):
