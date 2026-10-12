@@ -83,7 +83,7 @@ def test_mda_selection_atomgroup_string(eg5_pdb_universe):
         ["C1CCCCC1", []],
         ["[C@@H]1([C@@H]([C@@H](OC([C@@H]1O)O)C(=O)O)O)O", []],
         ["C1=CC=CC=C1", [6]],
-        ["C1=CC2C=CC1C=C2", [8]],
+        ["C1=CC2C=CC1C=C2", []],
         ["C1CC2=CC=CC=C2C1", [6]],
         ["C1=COC=C1", [5]],
         ["C1=CC=C2C=CC=CC2=C1", [10]],
