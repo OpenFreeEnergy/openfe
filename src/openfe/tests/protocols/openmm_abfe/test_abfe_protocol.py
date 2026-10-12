@@ -621,14 +621,10 @@ def test_sanitize_ligand_before_restraint_search(
     default_settings,
     tmp_path,
 ):
-    ligand = openfe.SmallMoleculeComponent.from_openff(
-        cdk8_ligands[1].to_openff()
-    )
+    ligand = openfe.SmallMoleculeComponent.from_openff(cdk8_ligands[1].to_openff())
 
     # OpenFF uses MDL aromaticity, which does not mark the five-membered ring as aromatic.
-    assert 5 not in {
-        len(ring) for ring in get_aromatic_rings(ligand.to_rdkit())
-    }
+    assert 5 not in {len(ring) for ring in get_aromatic_rings(ligand.to_rdkit())}
 
     solvent = SolventComponent()
 
@@ -655,9 +651,7 @@ def test_sanitize_ligand_before_restraint_search(
     )
 
     complex_setup_unit = [
-        unit
-        for unit in dag.protocol_units
-        if isinstance(unit, openmm_afe.ABFEComplexSetupUnit)
+        unit for unit in dag.protocol_units if isinstance(unit, openmm_afe.ABFEComplexSetupUnit)
     ]
     assert len(complex_setup_unit) == 1
     complex_setup_unit = complex_setup_unit[0]
@@ -676,9 +670,7 @@ def test_sanitize_ligand_before_restraint_search(
 
     guest_rdmol = get_restraint.call_args.args[1]
 
-    assert sorted(
-        len(ring) for ring in get_aromatic_rings(guest_rdmol)
-    ) == [5, 6, 9]
+    assert sorted(len(ring) for ring in get_aromatic_rings(guest_rdmol)) == [5, 6, 9]
 
 
 def test_user_restraint(benzene_modifications, T4_protein_component, tmp_path):
