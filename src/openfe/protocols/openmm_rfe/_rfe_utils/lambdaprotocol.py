@@ -73,11 +73,16 @@ class LambdaProtocol(object):
         and new ele these are scaled with lambda^0.5, so as to be linear in
         energy, rather than lambda
 
+        charge-conserving : three stages, (a) on new sterics, (b) all
+        electrostatics (core, off old, on new) following one shared
+        switching function, (c) off old sterics.
+
         Parameters
         ----------
         functions : str or dict
             One of the predefined lambda protocols
-            ['default','namd','quarters'] or a dictionary. Default "default".
+            ['default','namd','quarters','ele-scaled','charge-conserving']
+            or a dictionary. Default "default".
         windows : int
             Number of windows which this lambda schedule is intended to be used
             with. This value is used to validate the lambda function.
@@ -142,6 +147,10 @@ class LambdaProtocol(object):
                     'lambda_electrostatics_insert': lambda x: 0.0 if x < 0.5 else ((2*(x-0.5))**0.5),
                     'lambda_electrostatics_delete': lambda x: (2*x)**2 if x < 0.5 else 1.0
                 }
+            elif self.type == 'charge-conserving':
+                self.functions = self._charge_conserving_functions(
+                    windows = windows
+                )
             elif self.type == 'user-defined':
                 self.functions = functions
             else:
@@ -150,6 +159,82 @@ class LambdaProtocol(object):
 
         self._validate_functions(n=windows)
         self._check_for_naked_charges()
+
+    @staticmethod
+    def _charge_conserving_functions(windows: int) -> dict:
+        """
+        Build the 'charge-conserving' lambda functions for a given number of
+        uniformly spaced windows.
+
+        Three stages: (a) sterics on for unique new atoms, (b) all electrostatics
+        (core, unique old off, unique new on) following one shared switching
+        function, (c) sterics off for unique old atoms. Core sterics and valence
+        terms change half-way during (a) and the rest during (c), so stage (b) is
+        a pure charge change. Stage edges sit on windows: the ``windows - 1``
+        intervals are split as evenly as possible with (a) and (c) the same
+        length, e.g. 3/3/3 for 10 windows, 4/3/4 for 12 and 4/4/4 for 13.
+
+        Parameters
+        ----------
+        windows : int
+            Number of lambda windows. Must be at least 4 so that each of the
+            three stages gets at least one interval.
+
+        Returns
+        -------
+        functions : dict
+            The lambda functions, keyed by lambda parameter name.
+        """
+        intervals = windows - 1
+        if intervals < 3:
+            errmsg = ("The charge-conserving lambda functions need at least "
+                      f"4 windows, got {windows}")
+            raise ValueError(errmsg)
+
+        # Split the intervals as evenly as possible while keeping the
+        # sterics insertion and deletion stages the same length.
+        sterics_steps = (intervals + 1) // 3
+        electrostatics_steps = intervals - 2 * sterics_steps
+        electrostatics_start = sterics_steps
+        delete_start = sterics_steps + electrostatics_steps
+
+        def ramp(x, start, steps):
+            # Position in units of window intervals, snapped onto a window
+            # when it is only off by rounding error (e.g. 10 * 0.3), so that
+            # values at the stage edges are exactly 0 and 1.
+            position = intervals * x
+            nearest_window = round(position)
+            if abs(position - nearest_window) < 1e-9:
+                position = nearest_window
+            return min(max((position - start) / steps, 0.0), 1.0)
+
+        def sterics_insert(x):
+            return ramp(x, 0, sterics_steps)
+
+        # Core, insert and delete charges share this one function: this is
+        # what keeps the net charge constant.
+        def electrostatics(x):
+            return ramp(x, electrostatics_start, electrostatics_steps)
+
+        def sterics_delete(x):
+            return ramp(x, delete_start, sterics_steps)
+
+        # Core sterics and valence terms change during the sterics stages
+        # only, so the electrostatics stage is a pure charge change.
+        def core(x):
+            return 0.5 * (sterics_insert(x) + sterics_delete(x))
+
+        return {
+            'lambda_sterics_core': core,
+            'lambda_electrostatics_core': electrostatics,
+            'lambda_sterics_insert': sterics_insert,
+            'lambda_sterics_delete': sterics_delete,
+            'lambda_electrostatics_insert': electrostatics,
+            'lambda_electrostatics_delete': electrostatics,
+            'lambda_bonds': core,
+            'lambda_angles': core,
+            'lambda_torsions': core,
+        }
 
     @staticmethod
     def _validate_schedule(schedule, windows):
