@@ -42,6 +42,7 @@ from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
 )
 from openfe.protocols.restraint_utils.geometry import BoreschRestraintGeometry
+from openfe.protocols.restraint_utils.geometry.utils import get_aromatic_rings
 
 from .utils import UNIT_TYPES, _get_units
 
@@ -612,6 +613,72 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         s.solvent_integrator_settings.barostat_frequency = 100.0 * offunit.timestep
         s.thermo_settings.pressure = 1.1 * offunit.bar
         return s
+
+
+def test_sanitize_ligand_before_restraint_search(
+    cdk8_ligands,
+    cdk8_protein,
+    default_settings,
+    tmp_path,
+):
+    ligand = openfe.SmallMoleculeComponent.from_openff(
+        cdk8_ligands[1].to_openff()
+    )
+
+    # OpenFF uses MDL aromaticity, which does not mark the five-membered ring as aromatic.
+    assert 5 not in {
+        len(ring) for ring in get_aromatic_rings(ligand.to_rdkit())
+    }
+
+    solvent = SolventComponent()
+
+    stateA = ChemicalSystem(
+        {
+            "ligand": ligand,
+            "protein": cdk8_protein,
+            "solvent": solvent,
+        }
+    )
+    stateB = ChemicalSystem(
+        {
+            "protein": cdk8_protein,
+            "solvent": solvent,
+        }
+    )
+    default_settings.protocol_repeats = 1
+    default_settings.engine_settings.compute_platform = "cpu"
+    protocol = AbsoluteBindingProtocol(settings=default_settings)
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+
+    complex_setup_unit = [
+        unit
+        for unit in dag.protocol_units
+        if isinstance(unit, openmm_afe.ABFEComplexSetupUnit)
+    ]
+    assert len(complex_setup_unit) == 1
+    complex_setup_unit = complex_setup_unit[0]
+
+    with mock.patch.object(
+        complex_setup_unit,
+        "_get_boresch_restraint",
+        side_effect=RuntimeError("aromaticity checked"),
+    ) as get_restraint:
+        with pytest.raises(RuntimeError, match="aromaticity checked"):
+            complex_setup_unit.run(
+                dry=True,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
+            )
+
+    guest_rdmol = get_restraint.call_args.args[1]
+
+    assert sorted(
+        len(ring) for ring in get_aromatic_rings(guest_rdmol)
+    ) == [5, 6, 9]
 
 
 def test_user_restraint(benzene_modifications, T4_protein_component, tmp_path):

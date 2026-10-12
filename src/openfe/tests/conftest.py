@@ -364,6 +364,24 @@ def eg5_ligands(eg5_ligands_sdf) -> list[SmallMoleculeComponent]:
 def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
     return SmallMoleculeComponent.from_sdf_file(eg5_cofactor_sdf)
 
+@pytest.fixture()
+def cdk8_ligands_sdf():
+    with resources.as_file(resources.files("openfe.tests.data.cdk8")) as d:
+        yield str(d / "cdk8_ligands.sdf")
+
+@pytest.fixture()
+def cdk8_ligands(cdk8_ligands_sdf) -> list[SmallMoleculeComponent]:
+    return [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(cdk8_ligands_sdf, removeHs=False)]
+
+@pytest.fixture(scope="session")
+def cdk8_protein_pdb():
+    with resources.as_file(resources.files("openfe.tests.data.cdk8")) as d:
+        yield str(d / "cdk8_protein.pdb")
+
+@pytest.fixture()
+def cdk8_protein(cdk8_protein_pdb) -> openfe.ProteinComponent:
+    return openfe.ProteinComponent.from_pdb_file(cdk8_protein_pdb)
+
 
 @pytest.fixture(scope="session")
 def a2a_ligands_sdf():
