@@ -217,21 +217,21 @@ class Worker:
         task = self._checkout_task()
         if task is None:
             return None
-        db, taskid, unit = task
-        # 2. Construct the context
-        # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
-        # However, to satisfy the current work, we will use this implementation where we
-        # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
-        shared_store = self.warehouse.stores["shared"]
-        if not isinstance(shared_store, FileStorage):
-            raise TypeError("Expected a FileStorage backend for the shared store")
-        shared_root_dir = shared_store.root_dir
-        task_scratch, task_shared = self._task_workspace_paths(taskid, scratch, shared_root_dir)
-        task_scratch.mkdir(parents=True, exist_ok=True)
-        task_shared.mkdir(parents=True, exist_ok=True)
-        ctx = Context(task_scratch, shared=task_shared)
-        # 3. Execute unit
         try:
+            db, taskid, unit = task
+            # 2. Construct the context
+            # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
+            # However, to satisfy the current work, we will use this implementation where we
+            # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
+            shared_store = self.warehouse.stores["shared"]
+            if not isinstance(shared_store, FileStorage):
+                raise TypeError("Expected a FileStorage backend for the shared store")
+            shared_root_dir = shared_store.root_dir
+            task_scratch, task_shared = self._task_workspace_paths(taskid, scratch, shared_root_dir)
+            task_scratch.mkdir(parents=True, exist_ok=True)
+            task_shared.mkdir(parents=True, exist_ok=True)
+            ctx = Context(task_scratch, shared=task_shared)
+
             # TODO: this var naming is confusing
             results: dict[GufeKey, ProtocolUnitResult] = self._build_input_result_mapping(unit)
             inputs: dict[GufeKey, ProtocolUnitResult] = _pu_to_pur(unit.inputs, results)
@@ -239,6 +239,8 @@ class Worker:
         except Exception:
             db.mark_task_completed(taskid, success=False)
             raise
+        else:
+            db.mark_task_completed(taskid, success=False)
 
         db.mark_task_completed(taskid, success=result.ok())
         # 4. output result to warehouse
