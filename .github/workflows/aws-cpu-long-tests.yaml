@@ -56,11 +56,13 @@ jobs:
             channels:
               - conda-forge
               - openeye
+
+          # espaloma only supports python<=3.12
           create-args: >-
             espaloma_charge==0.0.8
             espaloma==0.4.0
             openeye-toolkits
-            python=3.13
+            python=3.12
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
