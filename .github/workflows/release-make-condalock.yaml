@@ -43,7 +43,7 @@ jobs:
           - osx-arm64
         dependencies:
           - openfe==${{ steps.latest-version.outputs.VERSION }}
-          - python=3.12
+          - python=3.13
         EOF
 
     - name: Generate lock files

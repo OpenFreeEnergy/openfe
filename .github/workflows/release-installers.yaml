@@ -36,7 +36,7 @@ jobs:
       with:
         environment-name: installer
         create-args: >-
-          python=3.11
+          python=3.13
           jinja2
           constructor
         init-shell: bash
