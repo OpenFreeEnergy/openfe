@@ -24,6 +24,7 @@ def retrieve_registry_data(zenodo_registry: list[dict], path: str) -> None:
         else:
             return None
 
+    # TODO: parallelize this?
     for d in zenodo_registry:
         pooch.retrieve(
             url=str(Path(d["base_url"]) / d["fname"]),
