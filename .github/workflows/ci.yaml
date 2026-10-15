@@ -126,6 +126,7 @@ jobs:
 
       - name: Check Cache for Test Data
         uses: actions/cache@v6
+        id: check-cache
         with:
           path: |
             # linux cache location
@@ -137,6 +138,19 @@ jobs:
       - name: Download Test Data
         if: steps.cache.outputs.cache-hit != 'true'
         run: openfe test --download-only
+
+      - name: Cache Test Data
+        id: cache-test-data
+        # always() means the data is cached even if downstream tests fail or are cancelled
+        if: always() && steps.check-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            # linux cache location
+            ~/.cache/openfe
+            # osx cache location
+            ~/Library/Caches/openfe
+          key: pooch-${{ matrix.os }}-${{ steps.get-week.outputs.week }}
 
       - name: "Run tests"
         env:
