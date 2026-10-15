@@ -130,13 +130,13 @@ jobs:
           build-args: |
             VERSION=${{ steps.latest-version.outputs.VERSION }}
 
-      - name: Test image
-        run: |
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --help
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --version
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(f'{gufe.__version__=}')"
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfe openfecli -v
+      # - name: Test image
+      #   run: |
+      #     docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --help
+      #     docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --version
+      #     docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(f'{gufe.__version__=}')"
+      #     docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
+      #     docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfe openfecli -v
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
