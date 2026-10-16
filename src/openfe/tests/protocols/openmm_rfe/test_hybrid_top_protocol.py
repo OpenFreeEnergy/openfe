@@ -1248,6 +1248,94 @@ def test_lambda_schedule(windows):
     assert len(lambdas.lambda_schedule) == windows
 
 
+@pytest.mark.parametrize("windows", [4, 10, 11, 12, 13, 16])
+def test_lambda_functions_charge_conserving_shared_electrostatics(windows):
+    lambdas = openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(
+        functions="charge-conserving", windows=windows
+    )
+    for lam in np.linspace(0.0, 1.0, 101):
+        core = lambdas.functions["lambda_electrostatics_core"](lam)
+        assert lambdas.functions["lambda_electrostatics_insert"](lam) == core
+        assert lambdas.functions["lambda_electrostatics_delete"](lam) == core
+
+
+@pytest.mark.parametrize(
+    "windows, expected_steps",
+    [
+        (4, (1, 1, 1)),
+        (10, (3, 3, 3)),
+        (11, (3, 4, 3)),
+        (12, (4, 3, 4)),
+        (13, (4, 4, 4)),
+        (16, (5, 5, 5)),
+    ],
+)
+def test_lambda_functions_charge_conserving_stage_steps(windows, expected_steps):
+    lambdas = openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(
+        functions="charge-conserving", windows=windows
+    )
+
+    def changing_intervals(name):
+        values = [lambdas.functions[name](lam) for lam in lambdas.lambda_schedule]
+        return int(np.count_nonzero(np.diff(values)))
+
+    steps = tuple(
+        changing_intervals(name)
+        for name in (
+            "lambda_sterics_insert",
+            "lambda_electrostatics_core",
+            "lambda_sterics_delete",
+        )
+    )
+    assert steps == expected_steps
+    # each window changes exactly one stage: no overlap between stages
+    assert sum(steps) == windows - 1
+
+
+def test_lambda_functions_charge_conserving_twelve_windows():
+    lambdas = openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(
+        functions="charge-conserving", windows=12
+    )
+    values = {
+        name: [lambdas.functions[name](lam) for lam in lambdas.lambda_schedule]
+        for name in (
+            "lambda_sterics_insert",
+            "lambda_electrostatics_core",
+            "lambda_sterics_delete",
+            "lambda_sterics_core",
+        )
+    }
+    expected = {
+        "lambda_sterics_insert": [0, 0.25, 0.5, 0.75, 1, 1, 1, 1, 1, 1, 1, 1],
+        "lambda_electrostatics_core": [0, 0, 0, 0, 0, 1 / 3, 2 / 3, 1, 1, 1, 1, 1],
+        "lambda_sterics_delete": [0, 0, 0, 0, 0, 0, 0, 0, 0.25, 0.5, 0.75, 1],
+        "lambda_sterics_core": [0, 0.125, 0.25, 0.375, 0.5, 0.5, 0.5, 0.5, 0.625, 0.75, 0.875, 1],
+    }
+    for name, expected_values in expected.items():
+        assert values[name] == pytest.approx(expected_values)
+
+
+@pytest.mark.parametrize("windows", [10, 12, 13])
+def test_lambda_functions_charge_conserving_core_and_valence(windows):
+    functions = openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(
+        functions="charge-conserving", windows=windows
+    ).functions
+    for lam in np.linspace(0.0, 1.0, 101):
+        expected = 0.5 * (
+            functions["lambda_sterics_insert"](lam) + functions["lambda_sterics_delete"](lam)
+        )
+        for name in ("lambda_sterics_core", "lambda_bonds", "lambda_angles", "lambda_torsions"):
+            assert functions[name](lam) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("windows", [2, 3])
+def test_lambda_functions_charge_conserving_too_few_windows(windows):
+    with pytest.raises(ValueError, match="need at least 4 windows"):
+        openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(
+            functions="charge-conserving", windows=windows
+        )
+
+
 def test_setup_ligand_overlap_warning(
     benzene_vacuum_system, toluene_vacuum_system, benzene_to_toluene_mapping, vac_settings, tmp_path
 ):
