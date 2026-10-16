@@ -124,9 +124,9 @@ jobs:
         run: echo "week=$(/bin/date -u "+%W-%Y")" >> $GITHUB_OUTPUT
         shell: bash
 
-      - name: Check Cache for Test Data
-        uses: actions/cache@v6
-        id: check-cache
+      - name: Restore Test Data Cache
+        uses: actions/cache/restore@v5
+        id: restore-cache
         with:
           path: |
             # linux cache location
@@ -136,13 +136,13 @@ jobs:
           key: pooch-${{ matrix.os }}-${{ steps.get-week.outputs.week }}
 
       - name: Download Test Data
-        if: steps.check-cache.outputs.cache-hit != 'true'
+        # Pooch does its own caching, and will only pull down files that are new/changed
         run: openfe test --download-only
 
-      - name: Cache Test Data
+      - name: Cache New Test Data
         id: cache-test-data
         # always() means the data is cached even if downstream tests fail or are cancelled
-        if: always() && steps.check-cache.outputs.cache-hit != 'true'
+        if: always()
         uses: actions/cache/save@v5
         with:
           path: |
@@ -150,9 +150,9 @@ jobs:
             ~/.cache/openfe
             # osx cache location
             ~/Library/Caches/openfe
-          key: pooch-${{ matrix.os }}-${{ steps.get-week.outputs.week }}
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
-      - name: "Run tests"
+      - name: Run Tests
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
