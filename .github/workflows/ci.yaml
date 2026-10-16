@@ -117,20 +117,42 @@ jobs:
           # if we add more to this, consider changing to for + env vars
           python -Ic "import openfe; print(openfe.__version__)"
 
-      - name: Cache Pooch data
-        uses: actions/cache@v4
+      # Most thorough would be to hash every file that gets changed,
+      # but we just bump the cache every week to keep it simple.
+      - name: Get Week Number
+        id: get-week
+        run: echo "week=$(/bin/date -u "+%W-%Y")" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Restore Test Data Cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        id: restore-cache
         with:
           path: |
             # linux cache location
             ~/.cache/openfe
             # osx cache location
             ~/Library/Caches/openfe
-          # When files are added or changed in a pooch registry
-          # bump this key to create a new cache, for example if 
-          # the key is pooch-${{ matrix.os }}-1 change it to pooch-${{ matrix.os }}-2
-          key: pooch-${{ matrix.os }}-1
+          key: pooch-${{ matrix.os }}-${{ steps.get-week.outputs.week }}
 
-      - name: "Run tests"
+      - name: Download Test Data
+        # Pooch does its own caching, and will only pull down files that are new/changed
+        run: openfe test --download-only
+
+      - name: Cache New Test Data
+        id: cache-test-data
+        # always() means the data is cached even if downstream tests fail or are cancelled
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            # linux cache location
+            ~/.cache/openfe
+            # osx cache location
+            ~/Library/Caches/openfe
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+
+      - name: Run Tests
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
@@ -153,9 +175,9 @@ jobs:
         # we only want to upload a slow report if
         # 1) it isn't a schedule run
         # 2) it wasn't from a PR (we don't run slow tests on PRs)
-        if: ${{ github.repository == 'OpenFreeEnergy/openfe'  
-                && github.event_name != 'schedule'            
-                && github.event_name != 'pull_request' }}     
+        if: ${{ github.repository == 'OpenFreeEnergy/openfe'
+                && github.event_name != 'schedule'
+                && github.event_name != 'pull_request' }}
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
