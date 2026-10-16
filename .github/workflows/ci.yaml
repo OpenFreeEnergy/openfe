@@ -136,7 +136,7 @@ jobs:
           key: pooch-${{ matrix.os }}-${{ steps.get-week.outputs.week }}
 
       - name: Download Test Data
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.check-cache.outputs.cache-hit != 'true'
         run: openfe test --download-only
 
       - name: Cache Test Data
