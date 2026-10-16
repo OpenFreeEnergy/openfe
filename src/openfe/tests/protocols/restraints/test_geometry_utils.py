@@ -83,12 +83,17 @@ def test_mda_selection_atomgroup_string(eg5_pdb_universe):
         ["C1CCCCC1", []],
         ["[C@@H]1([C@@H]([C@@H](OC([C@@H]1O)O)C(=O)O)O)O", []],
         ["C1=CC=CC=C1", [6]],
-        ["C1=CC2C=CC1C=C2", [8]],
+        ["C1=CC2C=CC1C=C2", []],
         ["C1CC2=CC=CC=C2C1", [6]],
         ["C1=COC=C1", [5]],
         ["C1=CC=C2C=CC=CC2=C1", [10]],
         ["C1=CC=C(C=C1)C2=CC=CC=C2", [6, 6]],
         ["C1=CC=C(C=C1)C(C2=CC=CC=C2)(C3=CC=CC=C3Cl)N4C=CN=C4", [6, 6, 6, 5]],
+        # Regression tests for fused aromatic ring systems
+        ["c1ccc2cc3ccccc3cc2c1", [14]],  # anthracene
+        ["c1ccc2c(c1)ccc1ccccc12", [14]],  # phenanthrene
+        ["c1cc2ccc3cccc4ccc(c1)c2c34", [16]],  # pyrene
+        ["c1ccc2[nH]c3ccccc3c2c1", [13]],  # carbazole
     ],
 )
 def test_aromatic_rings(smiles, expected):
@@ -97,9 +102,10 @@ def test_aromatic_rings(smiles, expected):
     # get the rings
     rings = get_aromatic_rings(mol)
 
-    # check we have the right number of rings & their size
-    for i, r in enumerate(rings):
-        assert len(r) == expected[i]
+    # check we have the right number of rings
+    assert len(rings) == len(expected)
+    # Check the size of each ring system.
+    assert sorted(len(r) for r in rings) == sorted(expected)
 
     # check that there is no overlap in atoms between each ring
     for x, y in itertools.combinations(rings, 2):
