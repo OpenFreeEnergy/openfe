@@ -33,7 +33,7 @@ jobs:
           environment-file: openfe/environment.yml
           environment-name: openfe_env
           create-args: >-
-            python=3.12
+            python=3.13
             nbval
             nglview
           init-shell: bash

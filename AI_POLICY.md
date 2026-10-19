@@ -17,14 +17,16 @@ The following policies are specific only to this repository, and decided by the 
 In this repository, it is either acceptable (✅) or not acceptable (❌) to us LLMs for:
 
 - ✅️ Generating content that only the author sees, but affects their work (searching repositories, asking questions, finding bugs, self-review, linting).
-- ✅️ Generating code that is shared, but not committed to the code base (e.g. Minimally Reproducible Examples in issue text).
-- Generating content which the human author has:
 
-|                                                               |Code   |Docs   |PRs & Issues|Replies to humans|
-|---------------------------------------------------------------|:-----:|:-----:|:----------:|:---------------:|
-|Read thoroughly and understands every line before submission   |   ✅️  |   ✅️  |     ❌     |        ❌       |
-|Checked for obvious issues before submission                   |   ❌  |   ❌  |     ❌     |        ❌       |
-|Not reviewed before submission                                 |   ❌  |   ❌  |     ❌     |        ❌       |
+- ✅️ Generating code that is shared, but not committed to the code base (e.g. Minimally Reproducible Examples in issue text).
+
+
+
+|Using LLMs to generate content which the human author has:            |Code   |Docs   |PRs & Issues|Replies to humans|
+|----------------------------------------------------------------------|:-----:|:-----:|:----------:|:---------------:|
+|read thoroughly and understands and approves every line before submission.      |   ✅️  |   ✅️  |     ❌     |        ❌       |
+|checked for obvious issues before submission, but not reviewed line-by-line.    |   ❌  |   ❌  |     ❌     |        ❌       |
+|not reviewed before submission                                             |   ❌  |   ❌  |     ❌     |        ❌       |
 
 
 
