@@ -2072,10 +2072,7 @@ class LigandTrajectoryAnalysisMixin:
             apply_ligand_alignment_transformations(universe, ligand=lig)
 
             if time_ps is None:
-                time_ps = (
-                        np.arange(len(universe.trajectory))[::skip]
-                        * universe.trajectory.dt
-                )
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
             lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
             analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
