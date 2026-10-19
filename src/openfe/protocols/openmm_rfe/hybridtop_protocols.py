@@ -305,6 +305,9 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             RelativeHybridTopologyProtocol._check_for_bond_breaks(mapping=m)
             # check for the minimum number of mapped heavy atoms
             RelativeHybridTopologyProtocol._check_minimum_number_of_mapped_atoms(mapping=m)
+            # check for hybridization changes mapping single to triple bonds as these have always failed in testing
+            # without dummy atom valence corrections, which are not implemented in this protocol yet
+            RelativeHybridTopologyProtocol._check_for_single_to_triple_bond_mappings(mapping=m)
 
     @staticmethod
     def _check_for_bond_breaks(
@@ -403,6 +406,52 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             wmsg = f"The ratio of alchemical to mapped heavy atoms: {mapping_ratio} is large, please review the mapping if the simulation is unstable."
             warnings.warn(wmsg)
             logger.warning(wmsg)
+
+
+    @staticmethod
+    def _check_for_single_to_triple_bond_mappings(mapping: ComponentMapping) -> None:
+        """
+        Validates the provided mapping does not map single bonds to triple bonds as these lead to instabilities in the simulation.
+
+        Parameters
+        ----------
+        mapping : ComponentMapping
+          The mapping between transforming components.
+
+        Raises
+        ------
+        ValueError
+          * If the atom mapping maps a single bond to a triple bond.
+        """
+        from rdkit.Chem import BondType
+
+        mol_a = mapping.componentA.to_rdkit()
+        mol_b = mapping.componentB.to_rdkit()
+        atom_map = mapping.componentA_to_componentB
+
+        for atom in mol_a.GetAtoms():
+            atom_idx = atom.GetIdx()
+
+            if atom_idx not in atom_map:
+                continue
+
+            # check if each bond is mapped
+            for bond in atom.GetBonds():
+                other_atom = bond.GetOtherAtom(atom)
+                other_atom_idx = other_atom.GetIdx()
+                if other_atom_idx in atom_map:
+                    # find the mapped bond
+                    mapped_atom_idx = atom_map[atom_idx]
+                    mapped_other_atom_idx = atom_map[other_atom_idx]
+                    mapped_bond = mol_b.GetBondBetweenAtoms(mapped_atom_idx, mapped_other_atom_idx)
+                    if mapped_bond is not None:
+                        if (bond_a := bond.GetBondType()) != (bond_b := mapped_bond.GetBondType()):
+                            if {bond_a, bond_b} == {BondType.SINGLE, BondType.TRIPLE}:
+                                # TODO do double to triple bonds also cause instabilities? If so, add that check here as well
+                                raise ValueError(
+                                    f"Hybridization change detected for bond: {atom_idx}->{other_atom_idx}:type:{bond.GetBondType()} which is mapped to {mapped_atom_idx}:{mapped_other_atom_idx}:type:{mapped_bond.GetBondType()} which can lead to instabilities."
+                                )
+
 
     @staticmethod
     def _validate_smcs(
