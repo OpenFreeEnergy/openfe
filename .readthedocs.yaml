@@ -15,4 +15,5 @@ build:
          - pixi install -e docs
       build:
          html:
+            - cd docs/
             - pixi run -e docs sphinx-build -T -b html docs $READTHEDOCS_OUTPUT/html
