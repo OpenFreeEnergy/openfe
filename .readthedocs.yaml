@@ -1,19 +1,18 @@
 version: 2
 
 build:
-  os: "ubuntu-24.04"
-  tools:
-    python: "miniconda3-3.12-24.9"
-
-sphinx:
-   configuration: docs/conf.py
-   fail_on_warning: true
-
-conda:
-  environment: docs/environment.yaml
-
-python:
-  # Install our python package before building the docs
-  install:
-    - method: pip
-      path: .
+   os: ubuntu-24.04
+   tools:
+       python: "3.12"
+   jobs:
+      create_environment:
+         - asdf plugin add pixi
+         - asdf install pixi latest
+         - asdf global pixi latest
+      install:
+         # assuming you have an environment called "docs"
+         - cd docs/
+         - pixi install -e docs
+      build:
+         html:
+            - pixi run -e docs sphinx-build -T -b html docs $READTHEDOCS_OUTPUT/html
