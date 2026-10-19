@@ -31,6 +31,7 @@ plugcli = ">=0.2.1"
 python = "*"
 pydantic = ">=2.0.0,<2.12.0"
 sphinx = "==7.2.6"
+sphinx-autobuild = "*"  # make optional
 sphinx-click = "*"
 sphinx-design = "*"
 sphinx-toolbox = "*"
@@ -46,3 +47,7 @@ kartograf = { git = "https://github.com/OpenFreeEnergy/kartograf", rev = "main" 
 konnektor = { git = "https://github.com/OpenFreeEnergy/konnektor", rev = "main" }
 lomap2 = { git = "https://github.com/OpenFreeEnergy/lomap", rev = "main" }
 openfe = { path = ".", editable = true }
+
+[environments.docs.tasks]
+docs-build = { cmd = "sphinx-build -T -b html . _build/html", cwd = "docs" , description = "Build docs as html with sphinx."}
+docs-autobuild = { cmd = "sphinx-autobuild -T -b html . _build/html", cwd = "docs", description = "Serve auto-updating docs with sphinx-autodoc."}
