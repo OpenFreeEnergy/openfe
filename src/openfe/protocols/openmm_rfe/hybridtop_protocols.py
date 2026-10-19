@@ -407,7 +407,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             warnings.warn(wmsg)
             logger.warning(wmsg)
 
-
     @staticmethod
     def _check_for_single_to_triple_bond_mappings(mapping: ComponentMapping) -> None:
         """
@@ -451,7 +450,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                                 raise ValueError(
                                     f"Hybridization change detected for bond: {atom_idx}->{other_atom_idx}:type:{bond.GetBondType()} which is mapped to {mapped_atom_idx}:{mapped_other_atom_idx}:type:{mapped_bond.GetBondType()} which can lead to instabilities."
                                 )
-
 
     @staticmethod
     def _validate_smcs(
