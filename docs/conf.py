@@ -99,7 +99,6 @@ exclude_patterns = [
     "_sass",
     "**/README.md",
     "ExampleNotebooks",
-    ".pixi",
 ]
 
 autodoc_mock_imports = [
