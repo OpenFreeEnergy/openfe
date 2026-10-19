@@ -1982,14 +1982,13 @@ class ComplexTrajectoryAnalysisMixin:
 
         # Read the topology once and reuse across all lambda states
         u_top = mda.Universe(topology)
-        # Guess bonds for the protein
-        protein = u_top.select_atoms("protein")
-        if protein:
-            if protein.bonds:
-                u_top.delete_bonds(protein.bonds)
-            protein.guess_bonds()
+        # Guess bonds for the host
+        host = u_top.select_atoms(protein_selection)
+        host_atoms = host.residues.atoms
+        if host_atoms:
+            host_atoms.guess_bonds()
 
-        prot_indices = u_top.select_atoms(protein_selection).indices
+        prot_indices = host.indices
 
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
@@ -2014,6 +2013,8 @@ class ComplexTrajectoryAnalysisMixin:
 
             lig_drift = LigandCOMDrift(lig).run()
             analysis_data["ligand_COM_drift"].append(lig_drift.results.com_drift)
+
+            del universe
 
         return analysis_data, time_ps
 
@@ -2072,6 +2073,8 @@ class LigandTrajectoryAnalysisMixin:
 
             lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
             analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
+
+            del universe
 
         # Assign time based on the final state's universe
         time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt

@@ -1331,6 +1331,8 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
                 if time_ps is None:
                     time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
+                del universe
+
         return per_state_data, time_ps
 
 
@@ -1396,14 +1398,13 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
         # Passing u_top._topology to create_universe_single_state avoids
         # reading the PDB file from disk for every lambda.
         u_top = mda.Universe(pdb_file)
-        # Ensure required protein connectivity exists.
-        protein = u_top.select_atoms("protein")
-        if protein:
-            if protein.bonds:
-                u_top.delete_bonds(protein.bonds)
-            protein.guess_bonds()
+        # Ensure required host connectivity exists.
+        host = u_top.select_atoms(protein_selection)
+        host_atoms = host.residues.atoms
+        if host_atoms:
+            host_atoms.guess_bonds()
 
-        prot_indices = u_top.select_atoms(protein_selection).indices
+        prot_indices = host.indices
 
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
@@ -1433,5 +1434,7 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
 
                 lig_drift = LigandCOMDrift(lig).run()
                 per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
+
+            del universe
 
         return per_state_data, time_ps
