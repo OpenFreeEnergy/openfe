@@ -85,8 +85,7 @@ system and the alchemical method being used.
 General scope and limitations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Molecular system and parameterization
-"""""""""""""""""""""""""""""""""""""
+**Molecular system and parameterization**
 
 **openfe** supports molecular systems that can be parameterized using
 the available force fields. Systems containing non-standard
@@ -97,23 +96,20 @@ are unavailable.
 The binding free energy protocols do not support alchemical
 transformations of protein residues, such as protein mutations, or covalently bound ligands.
 
-Chemical states
-"""""""""""""""
+**Chemical states**
 
 The protocols use fixed protonation and tautomeric states.
 Changes in the populations of these states upon binding are not
 accounted for automatically.
 
-Sampling challenges
-"""""""""""""""""""
+**Sampling challenges**
 
 Some systems may require additional sampling beyond the default
 protocol settings. Examples include large receptor conformational
 changes, transitions between alternative ligand binding modes, and slow exchange of
 buried water molecules.
 
-System types
-""""""""""""
+**System types**
 
 The binding free energy protocols support soluble proteins and
 protein-membrane systems. Membrane systems require a fully prepared,
