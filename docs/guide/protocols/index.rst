@@ -45,35 +45,40 @@ Different binding free energy protocols are suited to different
 applications. The table below provides guidance on choosing a
 protocol, although more than one may be suitable for a given problem.
 
-
 .. list-table:: Guidance for selecting a binding free energy protocol
    :header-rows: 1
-   :widths: 34 26 40
+   :widths: 28 20 34 18
 
    * - Scientific problem
      - Protocol to consider
      - Important considerations
+     - Relative cost
    * - Compare binding affinities of structurally related ligands.
      - :ref:`Relative Hybrid Topology
        <userguide_relative_hybrid_topology_protocol>`
      - Requires a suitable atom mapping. Mappings that break or
        form bonds are not supported.
-   * - Compare binding affinities of chemically diverse ligands,
-       including scaffold hops or ligand pairs without a suitable
-       common core.
+     - Lowest per edge
+   * - Compare binding affinities of chemically diverse ligands, including
+       scaffold hops or ligand pairs without a suitable common core.
      - :ref:`Separated Topologies <userguide_septop_protocol>`
      - Does not require an atom mapping. Requires well-defined
        binding poses for selecting suitable restraints.
+     - Higher per edge (more λ windows, longer simulation time)
    * - Compare binding affinities of ligands that differ in net charge.
      - :ref:`Relative Hybrid Topology
        <userguide_relative_hybrid_topology_protocol>`
-     - Supports charge-changing transformations using an explicit
-       charge correction.
+     - The only protocol that currently supports net-charge-changing
+       transformations.
+     - Higher per edge (longer sampling)
    * - Calculate the absolute binding free energy of an individual ligand.
      - :ref:`Absolute Binding <userguide_abfe_protocol>`
      - Requires a well-defined binding pose for selecting
        suitable restraints.
+     - Higher per ligand (more λ windows, longer simulation time)
 
+Costs are relative, using default settings. To see the exact settings
+for your installed version, inspect the protocol's ``default_settings()``.
 
 
 Domain of applicability
@@ -83,19 +88,126 @@ OpenFE's binding free energy protocols are primarily designed
 to calculate the noncovalent binding of small molecules to proteins.
 Not all molecular systems or alchemical transformations are supported.
 
-General scope and limitations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+System types and transformations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Molecular system and parameterization**
+The table below summarises which molecular systems and alchemical
+transformations can be studied using OpenFE's binding free energy
+protocols.
 
-**openfe** supports molecular systems that can be parameterized using
-the available force fields. Systems containing non-standard
-residues, post-translational modifications, or metal coordination
-sites may not be supported if suitable force field parameters
-are unavailable.
+Support depends on the selected protocol, force fields, and
+system preparation. **openfe** uses `openmmforcefields
+<https://github.com/openmm/openmmforcefields>`_ for system
+parameterization. The force fields can be configured through
+``forcefield_settings``
+(:class:`~openfe.protocols.openmm_utils.omm_settings.OpenMMSystemGeneratorFFSettings`).
 
-The binding free energy protocols do not support alchemical
-transformations of protein residues, such as protein mutations, or covalently bound ligands.
+Evidence is classified as **Benchmarked** (published quantitative
+comparison with experimental data), **Internally tested**
+(unpublished testing by the OpenFE team), or **No published
+evidence identified**.
+
+.. list-table:: System types and transformations
+   :header-rows: 1
+   :widths: 12 20 20 18 30
+
+   * - Category
+     - System or transformation
+     - Supported by
+     - Evidence
+     - Notes
+
+   * - Target
+     - Soluble proteins
+     - All binding protocols
+     - **Benchmarked:** `industry benchmark`_
+       (Relative Hybrid Topology)
+     - Standard application for noncovalent protein-ligand
+       binding.
+
+   * - Target
+     - Membrane proteins
+     - All binding protocols
+     - **Internally tested**
+     - Requires a prepared, solvated and pre-equilibrated
+       system with valid periodic box vectors.
+
+   * - Complex
+     - Ternary complexes (molecular glues)
+     - Relative Hybrid Topology (benchmarked)
+     - **Benchmarked:** `molecular glue preprint`_
+       (community study)
+     - Applicability of other protocols has not been established.
+
+   * - Target
+     - Nucleic acid targets
+     - Depends on force field compatibility
+     - No published evidence identified
+     - Requires suitable nucleic acid force fields
+       and system preparation.
+
+   * - Target
+     - Metalloproteins
+     - Depends on the force field model
+     - No published OpenFE validation identified
+     - Standard nonbonded models may not accurately describe
+       metal coordination, particularly when the ligand
+       coordinates directly to the metal. See
+       `Melse et al. (2023) <https://doi.org/10.1002/jcc.27052>`_.
+
+   * - Target
+     - Proteins with modified residues
+     - Depends on force field support
+     - **Benchmarked:** `industry benchmark`_
+     - Parameters for phosphorylated residues are included in the
+       default force fields. Input structures must use matching
+       residue names (e.g. ``SEP``, ``TPO``) and the required
+       ``CONECT`` records. Other modified residues may require
+       additional force field parameters.
+
+   * - Ligand
+     - Peptide ligands
+     - Depends on parameterization and system setup
+     - No published evidence identified
+     -
+
+   * - Ligand
+     - Macrocycles
+     - Protocol-dependent
+     - **Internally tested**
+     - Relative Hybrid Topology requires bond-preserving atom mappings.
+       Ring-opening, ring-closing, and some ring-size-changing
+       transformations are therefore not supported. SepTop may be an
+       alternative for comparing such ligands.
+
+   * - Ligand
+     - Covalently bound ligands
+     - Not supported
+     -
+     - The standard binding free energy protocols do not
+       support ligands covalently bonded to the receptor.
+
+   * - Transformation
+     - Net-charge-changing ligand transformations
+     - Relative Hybrid Topology
+     - **Benchmarked:** `industry benchmark`_
+       (Relative Hybrid Topology)
+     - Requires explicit charge correction. Charge changes greater
+       than one elementary charge are not supported.
+
+   * - Transformation
+     - Protein mutations
+     - Not supported
+     -
+     - Alchemical transformations of protein residues
+       are not implemented by these protocols, but available through the community developed protocols at `feflow
+       <https://github.com/OpenFreeEnergy/feflow>`_.
+
+.. _industry benchmark: https://doi.org/10.1021/acs.jcim.6c00089
+.. _molecular glue preprint: https://doi.org/10.26434/chemrxiv-2025-tb29n
+
+General methodological limitations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Chemical states**
 
@@ -111,15 +223,6 @@ water molecules, may not be adequately sampled within standard
 simulation timescales. Such systems may require specialized
 sampling approaches beyond the standard OpenFE protocols.
 
-**System types**
-
-OpenFE supports soluble and membrane proteins. Membrane systems
-must be provided as prepared, solvated, and pre-equilibrated
-structures with valid periodic box vectors.
-
-Calculations involving peptide ligands or nucleic acid targets
-may be possible, but these applications have not been validated
-by the OpenFE team.
 
 Protocol-specific limitations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
