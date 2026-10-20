@@ -1274,7 +1274,11 @@ def test_setup_ligand_overlap_warning(
     mapping = benzene_to_toluene_mapping.copy_with_replacements(componentA=new_ligand)
 
     # Specifically check that the first pair throws a warning
-    with pytest.warns(UserWarning, match="0 : 4 deviates"):
+    with pytest.warns(
+        UserWarning,
+        match=r"old atom 0 \(residue LIG \d+, chain X, atom C1x\) to new "
+        r"atom 4 \(residue LIG \d+, chain 1, atom C2x\) deviates",
+    ):
         dag = protocol.create(
             stateA=sysA,
             stateB=toluene_vacuum_system,

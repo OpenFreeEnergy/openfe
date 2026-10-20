@@ -749,6 +749,8 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     new_idxs = list(mapping['old_to_new_atom_map'].values())
     old_idxs = list(mapping['old_to_new_atom_map'].keys())
     new_mol_idxs = mapping['new_mol_indices']
+    old_atoms = list(old_topology.atoms())
+    new_atoms = list(new_topology.atoms())
 
     # copy over the old positions for mapped atoms
     new_pos_array[new_idxs, :] = old_pos_array[old_idxs, :]
@@ -757,10 +759,22 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
 
     # loop through all mapped atoms and make sure we don't deviate by more than
     # tolerance - not super necessary, but it's a nice sanity check
+    def atom_description(atom):
+        """Return an atom label that can be located in a molecular component."""
+        residue = atom.residue
+        chain = f", chain {residue.chain.id}" if residue.chain.id else ""
+        return f"residue {residue.name} {residue.id}{chain}, atom {atom.name}"
+
     for key, val in mapping['old_to_new_atom_map'].items():
         if np.any(
             np.abs(new_pos_array[val] - old_pos_array[key]) > tolerance):
-            wmsg = f"mapping {key} : {val} deviates by more than {tolerance}"
+            old_atom = old_atoms[key]
+            new_atom = new_atoms[val]
+            wmsg = (
+                f"mapping old atom {key} ({atom_description(old_atom)}) to new "
+                f"atom {val} ({atom_description(new_atom)}) deviates by "
+                f"more than {tolerance}"
+            )
             warnings.warn(wmsg)
             logging.warning(wmsg)
 
