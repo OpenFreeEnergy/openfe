@@ -120,7 +120,7 @@ evidence identified**.
    * - Target
      - Soluble proteins
      - All binding protocols
-     - **Benchmarked:** `industry benchmark`_
+     - **Benchmarked:** `Baumann, Horton et al. (2026) <https://doi.org/10.1021/acs.jcim.6c00089>`_
        (Relative Hybrid Topology); **Internally tested** (SepTop and ABFE)
      - Standard application for noncovalent protein-ligand
        binding.
@@ -135,7 +135,7 @@ evidence identified**.
    * - Complex
      - Ternary complexes (molecular glues)
      - Relative Hybrid Topology (benchmarked)
-     - **Benchmarked:** `molecular glue preprint`_
+     - **Benchmarked:** `Lukauskis et al. (2025) <https://doi.org/10.26434/chemrxiv-2025-tb29n>`_
      - Applicability of other protocols has not been tested yet.
 
    * - Target
@@ -156,7 +156,7 @@ evidence identified**.
    * - Target
      - Proteins with modified residues
      - Depends on force field support
-     - **Benchmarked:** `industry benchmark`_
+     - **Benchmarked:** `Baumann, Horton et al. (2026) <https://doi.org/10.1021/acs.jcim.6c00089>`_
      - Parameters for phosphorylated residues are included in the
        default force fields. Input structures must use matching
        residue names (e.g. ``SEP``, ``TPO``) and the required
@@ -188,7 +188,7 @@ evidence identified**.
    * - Transformation
      - Net-charge-changing ligand transformations
      - Relative Hybrid Topology
-     - **Benchmarked:** `industry benchmark`_
+     - **Benchmarked:** `Baumann, Horton et al. (2026) <https://doi.org/10.1021/acs.jcim.6c00089>`_
        (Relative Hybrid Topology)
      - Requires explicit charge correction. Charge changes greater
        than one elementary charge are not supported.
@@ -198,11 +198,8 @@ evidence identified**.
      - Not supported
      -
      - Alchemical transformations of protein residues
-       are not implemented by these protocols, but available through the community developed protocols at `feflow
+       are not implemented by the **openfe** protocols, but available through the community developed protocols at `feflow
        <https://github.com/OpenFreeEnergy/feflow>`_.
-
-.. _industry benchmark: https://doi.org/10.1021/acs.jcim.6c00089
-.. _molecular glue preprint: https://doi.org/10.26434/chemrxiv-2025-tb29n
 
 General methodological limitations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
