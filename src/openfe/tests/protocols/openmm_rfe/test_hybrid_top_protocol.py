@@ -2661,3 +2661,33 @@ def test_high_heavy_atom_mapping_ratio_warning(atom_mapping_basic_test_files, va
         "The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable."
         in caplog.text
     )
+
+
+def test_single_to_triple_bond_mapping_validation(vac_settings, single_to_triple_bond_mapping):
+    # make sure an error is raised if a single bond is mapped to a triple bond
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    with pytest.raises(ValueError, match="Hybridization change detected for bond: 1->2:type:SINGLE which is mapped to 1:2:type:TRIPLE which can lead to instabilities."):
+        _ = protocol.validate(
+            stateA=gufe.ChemicalSystem({"ligand": single_to_triple_bond_mapping.componentA}),
+            stateB=gufe.ChemicalSystem({"ligand": single_to_triple_bond_mapping.componentB}),
+            mapping=single_to_triple_bond_mapping,
+        )
+
+    # try removing the bond from the mapping and make sure validation passes
+    atom_map = single_to_triple_bond_mapping.componentA_to_componentB.copy()
+    # remove the ether linker and methyl group from the mapping to avoid the hybridization change
+    for atom_idx in [1, 0, 31, 32, 33]:
+        del atom_map[atom_idx]
+
+    mapping_no_bond = gufe.LigandAtomMapping(
+        componentA=single_to_triple_bond_mapping.componentA,
+        componentB=single_to_triple_bond_mapping.componentB,
+        componentA_to_componentB=atom_map
+    )
+
+    _ = protocol.validate(
+        stateA=gufe.ChemicalSystem({"ligand": mapping_no_bond.componentA}),
+        stateB=gufe.ChemicalSystem({"ligand": mapping_no_bond.componentB}),
+        mapping=mapping_no_bond,
+    )

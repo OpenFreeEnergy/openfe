@@ -277,6 +277,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           * If the atom mapping is empty.
           * If the atom mapping would break or form a bond.
           * If the atom mapping contains less than 4 heavy atoms and the components have more than 6 atoms.
+          * If the atom mapping maps a single to a triple bond.
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
@@ -410,7 +411,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
     @staticmethod
     def _check_for_single_to_triple_bond_mappings(mapping: ComponentMapping) -> None:
         """
-        Validates the provided mapping does not map single bonds to triple bonds as these lead to instabilities in the simulation.
+        Validates the provided mapping does not map single to triple bonds as these lead to instabilities in the simulation.
 
         Parameters
         ----------
