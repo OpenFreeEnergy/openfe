@@ -19,10 +19,11 @@ Available binding free energy protocols
    calculate relative hydration free energies.
 
 :ref:`Separated Topologies Protocol <userguide_septop_protocol>`
-   Computes the relative binding free energy (:math:`\Delta\Delta G`) between two ligands by simultaneously inserting
-   one ligand and removing the other, using orientational restraints to keep both in the
-   binding site. No atom mapping is required, so it can handle chemically diverse pairs such
-   as scaffold hops.
+   Computes the relative binding free energy (:math:`\Delta\Delta G`) between two ligands
+   by simultaneously inserting one ligand and removing the other,
+   using orientational restraints to maintain their positions
+   in the binding site. Unlike the hybrid topology protocol,
+   it does not require an atom mapping.
 
 :ref:`Absolute Binding Protocol <userguide_abfe_protocol>`
    Computes the absolute binding free energy (:math:`\Delta G`) of a single ligand by decoupling it from
@@ -40,10 +41,10 @@ Other protocols
 Choosing a protocol
 -------------------
 
-Protocol selection depends on the quantity you wish to calculate, the
-relationship between the ligands, and the characteristics of the molecular
-system. The table below provides starting points rather than definitive
-recommendations: more than one protocol may be applicable to a given problem.
+Different binding free energy protocols are suited to different
+applications. The table below provides guidance on choosing a
+protocol, although more than one may be suitable for a given problem.
+
 
 .. list-table:: Guidance for selecting a binding free energy protocol
    :header-rows: 1
@@ -55,32 +56,32 @@ recommendations: more than one protocol may be applicable to a given problem.
    * - Compare binding affinities of structurally related ligands.
      - :ref:`Relative Hybrid Topology
        <userguide_relative_hybrid_topology_protocol>`
-     - Requires a suitable atom mapping. Mappings that break or form bonds,
-       including ring-opening transformations, are not supported.
-   * - Compare binding affinities of chemically diverse ligands, including
-       scaffold hops or ligand pairs without a suitable common core.
+     - Requires a suitable atom mapping. Mappings that break or
+       form bonds are not supported.
+   * - Compare binding affinities of chemically diverse ligands,
+       including scaffold hops or ligand pairs without a suitable
+       common core.
      - :ref:`Separated Topologies <userguide_septop_protocol>`
-     - Does not require an atom mapping. Requires a stable, well-defined
-       binding pose for both ligands, as restraint atoms are selected
-       automatically after a short equilibration.
+     - Does not require an atom mapping. Requires well-defined
+       binding poses for selecting suitable restraints.
    * - Compare binding affinities of ligands that differ in net charge.
      - :ref:`Relative Hybrid Topology
        <userguide_relative_hybrid_topology_protocol>`
-     - The only protocol that currently supports net-charge-changing
-       transformations.
+     - Supports charge-changing transformations using an explicit
+       charge correction.
    * - Calculate the absolute binding free energy of an individual ligand.
      - :ref:`Absolute Binding <userguide_abfe_protocol>`
-     - Requires a stable, well-defined binding pose, as restraint atoms are
-       selected automatically after a short equilibration.
+     - Requires a well-defined binding pose for selecting
+       suitable restraints.
+
 
 
 Domain of applicability
 -----------------------
 
-OpenFE's binding free energy protocols are primarily intended for
-noncovalent binding of small molecules to proteins.
-Applicability depends on both the molecular
-system and the alchemical method being used.
+OpenFE's binding free energy protocols are primarily designed
+to calculate the noncovalent binding of small molecules to proteins.
+Not all molecular systems or alchemical transformations are supported.
 
 General scope and limitations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,18 +143,18 @@ from its alchemical method and implementation.
          not supported.
        * Net-charge-changing transformations use an alchemical water
          molecule to keep the system neutral, and typically need
-         longer simulations to converge.
+         longer simulations to converge. Charge changes greater than one are not supported.
    * - :ref:`Separated Topologies
        <userguide_septop_protocol>`
      - * Requires a stable, well-defined binding pose for both ligands,
-         as restraint atoms are selected automatically. Flexible ligands
+         as restraint atoms are selected automatically after a short equilibration. Flexible ligands
          may sample poorly once decoupled.
        * Net-charge-changing transformations are not currently
          supported.
    * - :ref:`Absolute Binding
        <userguide_abfe_protocol>`
      - * Requires a stable, well-defined binding pose, as restraint atoms
-         are selected automatically. Flexible ligands may sample poorly
+         are selected automatically after a short equilibration. Flexible ligands may sample poorly
          once decoupled.
        * Charged ligands are not currently supported.
        * Large protein conformational changes upon ligand binding require
