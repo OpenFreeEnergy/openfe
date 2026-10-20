@@ -70,7 +70,7 @@ protocol, although more than one may be suitable for a given problem.
        <userguide_relative_hybrid_topology_protocol>`
      - The only protocol that currently supports net-charge-changing
        transformations.
-     - Higher per edge (longer sampling)
+     - Higher per edge (more λ windows, longer simulation time)
    * - Calculate the absolute binding free energy of an individual ligand.
      - :ref:`Absolute Binding <userguide_abfe_protocol>`
      - Requires a well-defined binding pose for selecting
@@ -121,7 +121,7 @@ evidence identified**.
      - Soluble proteins
      - All binding protocols
      - **Benchmarked:** `industry benchmark`_
-       (Relative Hybrid Topology)
+       (Relative Hybrid Topology); **Internally tested** (SepTop and ABFE)
      - Standard application for noncovalent protein-ligand
        binding.
 
@@ -136,15 +136,13 @@ evidence identified**.
      - Ternary complexes (molecular glues)
      - Relative Hybrid Topology (benchmarked)
      - **Benchmarked:** `molecular glue preprint`_
-       (community study)
-     - Applicability of other protocols has not been established.
+     - Applicability of other protocols has not been tested yet.
 
    * - Target
      - Nucleic acid targets
      - Depends on force field compatibility
      - No published evidence identified
-     - Requires suitable nucleic acid force fields
-       and system preparation.
+     - Requires suitable nucleic acid force fields.
 
    * - Target
      - Metalloproteins
