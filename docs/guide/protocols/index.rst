@@ -103,25 +103,23 @@ The protocols use fixed protonation and tautomeric states.
 Changes in the populations of these states upon binding are not
 accounted for automatically.
 
-**Sampling challenges**
+**Sampling limitations**
 
-Some systems may require additional sampling beyond the default
-protocol settings. Examples include large receptor conformational
-changes, transitions between alternative ligand binding modes, and slow exchange of
-buried water molecules.
+Slow processes, such as large protein conformational changes,
+transitions between ligand binding modes, or exchange of buried
+water molecules, may not be adequately sampled within standard
+simulation timescales. Such systems may require specialized
+sampling approaches beyond the standard OpenFE protocols.
 
 **System types**
 
-The binding free energy protocols support soluble proteins and
-protein-membrane systems. Membrane systems require a fully prepared,
-solvated, and pre-equilibrated structure with valid periodic box
-vectors.
+OpenFE supports soluble and membrane proteins. Membrane systems
+must be provided as prepared, solvated, and pre-equilibrated
+structures with valid periodic box vectors.
 
-Applications involving peptide ligands or nucleic acid targets
-may be possible, but their applicability depends on suitable
-system preparation, parameterization, and sampling. These
-applications have not been validated by the
-OpenFE team.
+Calculations involving peptide ligands or nucleic acid targets
+may be possible, but these applications have not been validated
+by the OpenFE team.
 
 Protocol-specific limitations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,26 +139,20 @@ from its alchemical method and implementation.
      - * Requires a suitable atom mapping. Mappings that break or
          form bonds, including ring-opening transformations, are
          not supported.
-       * Net-charge-changing transformations use an alchemical water
-         molecule to keep the system neutral, and typically need
-         longer simulations to converge. Charge changes greater than one are not supported.
+       * Net-charge-changing transformations require explicit
+         charge correction using an alchemical water molecule.
+         Charge changes greater than one are not supported.
    * - :ref:`Separated Topologies
        <userguide_septop_protocol>`
-     - * Requires a stable, well-defined binding pose for both ligands,
-         as restraint atoms are selected automatically after a short equilibration. Flexible ligands
-         may sample poorly once decoupled.
+     - * Restraint selection and sampling can be challenging for
+         highly flexible ligands.
        * Net-charge-changing transformations are not currently
          supported.
    * - :ref:`Absolute Binding
        <userguide_abfe_protocol>`
-     - * Requires a stable, well-defined binding pose, as restraint atoms
-         are selected automatically after a short equilibration. Flexible ligands may sample poorly
-         once decoupled.
+     - * Restraint selection and sampling can be challenging for
+         highly flexible ligands.
        * Charged ligands are not currently supported.
-       * Large protein conformational changes upon ligand binding require
-         additional sampling. Unlike in relative calculations, where
-         protein reorganisation partly cancels between ligands, it
-         contributes directly to the absolute binding free energy.
 
 
 See also
