@@ -36,6 +36,21 @@ Once tests pass, the PR is approved, and you're ready to merge:
   1. merge in the **gufe** PR
   2. switch `openfe/env.yaml` and `openfe/docs/env.yaml` back to `gufe@main`, then re-run CI.
 
+### Option: Building docs using pixi
+
+As an alternative to mamba, you can use [pixi](https://pixi.prefix.dev/latest/) to build the docs environment:
+
+``` bash
+pixi run docs-build
+```
+
+or to use [sphinx-autobuild](https://github.com/sphinx-doc/sphinx-autobuild/tree/main#sphinx-autobuild):
+
+``` bash
+pixi run docs-autobuild
+```
+
+
 ## Contribution Guidelines
 
 ### Rules for new / infrequent contributors

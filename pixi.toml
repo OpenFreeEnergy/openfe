@@ -1,7 +1,7 @@
 # pixi config for **docs only**
 [workspace]
 channels = ["conda-forge"]
-name = "docs"
+name = "openfe"
 platforms = ["linux-64", "osx-64", "osx-arm64"]
 
 [tasks]
