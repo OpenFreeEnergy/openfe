@@ -365,7 +365,7 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
     return SmallMoleculeComponent.from_sdf_file(eg5_cofactor_sdf)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def cdk8_ligands_sdf():
     with resources.as_file(resources.files("openfe.tests.data.cdk8")) as d:
         yield str(d / "cdk8_ligands.sdf")
