@@ -76,7 +76,8 @@ def _get_mda_selection(
 def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     """
     Get one set of atom indices for each aromatic ring system in an RDKit molecule.
-    Aromatic rings that share atoms are merged into a single ring system.
+    Rings whose bonds are all aromatic are included. Aromatic rings that
+    share atoms are merged into a single ring system.
 
     Parameters
     ----------
@@ -90,7 +91,7 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     """
     graph = nx.Graph()
 
-    # Add each fully aromatic ring to the graph as a cycle of atom indices
+    # Add each ring whose bonds are all aromatic to the graph.
     for ring in rdmol.GetRingInfo().BondRings():
         bonds = [rdmol.GetBondWithIdx(idx) for idx in ring]
         if all(bond.GetIsAromatic() for bond in bonds):
