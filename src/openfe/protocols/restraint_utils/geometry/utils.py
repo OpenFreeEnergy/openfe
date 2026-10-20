@@ -94,10 +94,7 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     for ring in rdmol.GetRingInfo().BondRings():
         bonds = [rdmol.GetBondWithIdx(idx) for idx in ring]
         if all(bond.GetIsAromatic() for bond in bonds):
-            graph.add_edges_from(
-                (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
-            for bond in bonds
-            )
+            graph.add_edges_from((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()) for bond in bonds)
 
     # Rings that share atoms form a single connected component.
     return [set(component) for component in nx.connected_components(graph)]
