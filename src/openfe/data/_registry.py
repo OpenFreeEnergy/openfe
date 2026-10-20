@@ -38,7 +38,7 @@ zenodo_abfe_structural = dict(
     known_hash="md5:e6afa6447960c473497f60036b0f8c5e",
 )
 
-zenodo_data_registry = [
+zenodo_data_registry: list[dict[str, str]] = [
     zenodo_rfe_simulation_nc,
     zenodo_t4_lysozyme_traj,
     zenodo_industry_benchmark_systems,

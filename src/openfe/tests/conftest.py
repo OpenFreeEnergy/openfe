@@ -371,7 +371,7 @@ def cdk8_ligands_sdf():
         yield str(d / "cdk8_ligands.sdf")
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def cdk8_ligands(cdk8_ligands_sdf) -> list[SmallMoleculeComponent]:
     return [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(cdk8_ligands_sdf, removeHs=False)]
 
@@ -382,7 +382,7 @@ def cdk8_protein_pdb():
         yield str(d / "cdk8_protein.pdb")
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def cdk8_protein(cdk8_protein_pdb) -> openfe.ProteinComponent:
     return openfe.ProteinComponent.from_pdb_file(cdk8_protein_pdb)
 
