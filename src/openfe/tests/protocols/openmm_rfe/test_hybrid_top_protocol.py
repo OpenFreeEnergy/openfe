@@ -2667,7 +2667,10 @@ def test_single_to_triple_bond_mapping_validation(vac_settings, single_to_triple
     # make sure an error is raised if a single bond is mapped to a triple bond
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
 
-    with pytest.raises(ValueError, match="Hybridization change detected for bond: 1->2:type:SINGLE which is mapped to 1:2:type:TRIPLE which can lead to instabilities."):
+    with pytest.raises(
+        ValueError,
+        match="Hybridization change detected for bond: 1->2:type:SINGLE which is mapped to 1:2:type:TRIPLE which can lead to instabilities.",
+    ):
         _ = protocol.validate(
             stateA=gufe.ChemicalSystem({"ligand": single_to_triple_bond_mapping.componentA}),
             stateB=gufe.ChemicalSystem({"ligand": single_to_triple_bond_mapping.componentB}),
@@ -2683,7 +2686,7 @@ def test_single_to_triple_bond_mapping_validation(vac_settings, single_to_triple
     mapping_no_bond = gufe.LigandAtomMapping(
         componentA=single_to_triple_bond_mapping.componentA,
         componentB=single_to_triple_bond_mapping.componentB,
-        componentA_to_componentB=atom_map
+        componentA_to_componentB=atom_map,
     )
 
     _ = protocol.validate(
