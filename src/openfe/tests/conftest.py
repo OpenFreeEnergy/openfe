@@ -382,7 +382,7 @@ def cdk8_protein_pdb():
         yield str(d / "cdk8_protein.pdb")
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def cdk8_protein(cdk8_protein_pdb) -> openfe.ProteinComponent:
     return openfe.ProteinComponent.from_pdb_file(cdk8_protein_pdb)
 
