@@ -88,14 +88,16 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     list[set[int]]
       One set of atom indices for each aromatic ring system.
     """
-
-    arom_idxs = set(get_aromatic_atom_idxs(rdmol))
     graph = nx.Graph()
 
     # Add each fully aromatic ring to the graph as a cycle of atom indices
-    for ring in rdmol.GetRingInfo().AtomRings():
-        if arom_idxs.issuperset(ring):
-            nx.add_cycle(graph, ring)
+    for ring in rdmol.GetRingInfo().BondRings():
+        bonds = [rdmol.GetBondWithIdx(idx) for idx in ring]
+        if all(bond.GetIsAromatic() for bond in bonds):
+            graph.add_edges_from(
+                (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
+            for bond in bonds
+            )
 
     # Rings that share atoms form a single connected component.
     return [set(component) for component in nx.connected_components(graph)]
