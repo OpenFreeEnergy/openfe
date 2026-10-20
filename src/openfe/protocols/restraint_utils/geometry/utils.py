@@ -9,7 +9,7 @@ TODO
 """
 
 import warnings
-from itertools import combinations, groupby
+from itertools import groupby
 from typing import Optional, Union
 
 import MDAnalysis as mda
