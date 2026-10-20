@@ -107,54 +107,50 @@ comparison with experimental data), **Internally tested**
 (unpublished testing by the OpenFE team), or **No published
 evidence identified**.
 
+
 .. list-table:: System types and transformations
    :header-rows: 1
-   :widths: 12 20 20 18 30
+   :widths: 24 20 22 34
 
-   * - Category
-     - System or transformation
-     - Supported by
+   * - System or transformation
+     - Protocol support
      - Evidence
      - Notes
 
-   * - Target
-     - Soluble proteins
+   * - Soluble proteins
      - All binding protocols
-     - **Benchmarked:** `Baumann, Horton et al. (2026) <https://doi.org/10.1021/acs.jcim.6c00089>`_
-       (Relative Hybrid Topology); **Internally tested** (SepTop and ABFE)
+     - **Benchmarked:** `Baumann, Horton et al. (2026)
+       <https://doi.org/10.1021/acs.jcim.6c00089>`_
+       (Relative Hybrid Topology)
      - Standard application for noncovalent protein-ligand
        binding.
 
-   * - Target
-     - Membrane proteins
+   * - Membrane proteins
      - All binding protocols
      - **Internally tested**
      - Requires a prepared, solvated and pre-equilibrated
        system with valid periodic box vectors.
 
-   * - Complex
-     - Ternary complexes (molecular glues)
-     - Relative Hybrid Topology (benchmarked)
-     - **Benchmarked:** `Lukauskis et al. (2025) <https://doi.org/10.26434/chemrxiv-2025-tb29n>`_
-     - Applicability of other protocols has not been tested yet.
-
-   * - Target
-     - Nucleic acid targets
-     - Depends on force field compatibility
-     - No published evidence identified
-     - Requires suitable nucleic acid force fields.
-
-   * - Target
-     - Metalloproteins
+   * - Metalloproteins
      - Depends on the force field model
      - No published OpenFE validation identified
      - Standard nonbonded models may not accurately describe
        metal coordination, particularly when the ligand
        coordinates directly to the metal. See
-       `Melse et al. (2023) <https://doi.org/10.1002/jcc.27052>`_.
+       `Melse et al. (2023)
+       <https://doi.org/10.1002/jcc.27052>`_.
 
-   * - Target
-     - Proteins with modified residues
+   * - Ternary complexes (molecular glues)
+     - Relative Hybrid Topology (benchmarked)
+     - **Benchmarked:** `Lukauskis et al. (2025) <https://doi.org/10.26434/chemrxiv-2025-tb29n>`_
+     - Applicability of other protocols has not been tested yet.
+
+   * - Nucleic acid targets
+     - Depends on force field compatibility
+     - No published evidence identified
+     - Requires suitable nucleic acid force fields.
+
+   * - Proteins with modified residues
      - Depends on force field support
      - **Benchmarked:** `Baumann, Horton et al. (2026) <https://doi.org/10.1021/acs.jcim.6c00089>`_
      - Parameters for phosphorylated residues are included in the
@@ -163,14 +159,12 @@ evidence identified**.
        ``CONECT`` records. Other modified residues may require
        additional force field parameters.
 
-   * - Ligand
-     - Peptide ligands
+   * - Peptide ligands
      - Depends on parameterization and system setup
      - No published evidence identified
      -
 
-   * - Ligand
-     - Macrocycles
+   * - Macrocycles
      - Protocol-dependent
      - **Internally tested**
      - Relative Hybrid Topology requires bond-preserving atom mappings.
@@ -178,23 +172,20 @@ evidence identified**.
        transformations are therefore not supported. SepTop may be an
        alternative for comparing such ligands.
 
-   * - Ligand
-     - Covalently bound ligands
+   * - Covalently bound ligands
      - Not supported
      -
      - The standard binding free energy protocols do not
        support ligands covalently bonded to the receptor.
 
-   * - Transformation
-     - Net-charge-changing ligand transformations
+   * - Net-charge-changing ligand transformations
      - Relative Hybrid Topology
      - **Benchmarked:** `Baumann, Horton et al. (2026) <https://doi.org/10.1021/acs.jcim.6c00089>`_
        (Relative Hybrid Topology)
      - Requires explicit charge correction. Charge changes greater
        than one elementary charge are not supported.
 
-   * - Transformation
-     - Protein mutations
+   * - Protein mutations
      - Not supported
      -
      - Alchemical transformations of protein residues
