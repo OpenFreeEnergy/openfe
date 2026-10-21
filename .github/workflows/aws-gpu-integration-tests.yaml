@@ -115,7 +115,7 @@ jobs:
           role-to-assume: arn:aws:iam::010438489691:role/GHARunnerAWS
           aws-region: us-east-2
       - name: Stop instances
-        uses: omsf/stop-aws-gha-runner@8523c3b2474a899636f06e6cab4829c853e107dc  # v1.4.0
+        uses: omsf/stop-aws-gha-runner@a3d2e34cba8571eaf9b40ae00705d6b2b77402f6  # v1.0.0
         with:
           instance_mapping: ${{ needs.start-aws-runner.outputs.mapping }}
         env:
