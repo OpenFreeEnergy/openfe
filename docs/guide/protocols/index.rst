@@ -12,13 +12,13 @@ between them, and their main limitations.
 Available protocols
 -------------------
 
-**Relative binding free energies**
+Relative binding free energies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Relative protocols compute the difference in binding free energy
-(:math:`\Delta\Delta G`) between two ligands.
+Relative protocols compute the difference in binding free energy (:math:`\Delta\Delta G`) between two ligands.
 
 :ref:`Relative Hybrid Topology Protocol <userguide_relative_hybrid_topology_protocol>`
-   Alchemically transforms one ligand into the other using a hybrid
+   Transforms one ligand into the other using a hybrid
    topology defined by an atom mapping. Can also
    calculate relative hydration free energies.
 
@@ -27,7 +27,8 @@ Relative protocols compute the difference in binding free energy
    using orientational restraints to maintain their positions
    in the binding site. No atom mapping required.
 
-**Absolute binding free energies**
+Absolute binding free energies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Absolute protocols compute the binding free energy (:math:`\Delta G`)
 of a single ligand.
@@ -55,7 +56,7 @@ suitable for a given problem.
 
 .. list-table:: Guidance for selecting a binding free energy protocol
    :header-rows: 1
-   :widths: 28 20 34 18
+   :widths: 16 30 38 16
 
    * - Protocol
      - Best suited for
@@ -112,52 +113,55 @@ Well tested
 
 .. list-table::
    :header-rows: 1
-   :widths: 26 24 50
+   :widths: 30 70
 
    * - System or transformation
-     - Supported by
      - Notes
    * - Soluble proteins
-     - All binding protocols
      - Standard application for noncovalent protein-ligand binding.
-       Tested in `Baumann, Horton et al. (2026)` [3]_ (Relative Hybrid
-       Topology).
+       Tested by OpenFE [3]_ (Relative Hybrid Topology).
    * - Membrane proteins
-     - All binding protocols
-     - Tested internally by the OpenFE team. Lipids are limited to those parameterised by the Amber Lipid17 and Lipid21 force fields.
-       Requires a prepared, solvated and pre-equilibrated system with valid periodic box vectors.
+     - * Tested internally by the OpenFE team.
+       * Lipids are limited to those parameterised by the Amber Lipid17
+         and Lipid21 force fields.
+       * Requires a prepared, solvated and pre-equilibrated system with
+         valid periodic box vectors.
    * - Net-charge-changing ligand transformations
-     - Relative Hybrid Topology
-     - Tested by OpenFE [3]_. Requires explicit charge correction, and longer simulations than
-       neutral transformations to converge. Charge changes greater than one elementary charge are not supported.
+     - * Relative Hybrid Topology only. Tested by OpenFE [3]_.
+       * Requires explicit charge correction, and longer simulations
+         than neutral transformations to converge.
+       * Charge changes greater than one elementary charge are not
+         supported.
+
 
 Limited testing
 """""""""""""""
 
 .. list-table::
    :header-rows: 1
-   :widths: 26 24 50
+   :widths: 30 70
 
    * - System or transformation
-     - Supported by
      - Notes
    * - Ternary complexes (molecular glues)
-     - Relative Hybrid Topology
-     - Single published study by another group (`Lukauskis et al. (2025) <https://doi.org/10.26434/chemrxiv-2025-tb29n>`_).
+     - * Single published study using Relative Hybrid Topology
+         (`Lukauskis et al. (2025) <https://doi.org/10.26434/chemrxiv-2025-tb29n>`_).
+       * Other protocols have not been tested.
    * - Phosphorylated residues
-     - All binding protocols
-     - Only phosphoserine (``SEP``) and phosphothreonine (``TPO``) are
-       supported. Input structures must use these residue names and
-       include the required ``CONECT`` records.
+     - * Only phosphoserine (``SEP``) and phosphothreonine (``TPO``) are
+         supported.
+       * Input structures must use these residue names and include the
+         required ``CONECT`` records.
    * - Macrocycles
-     - All binding protocols
-     - Limited internal testing. Relative Hybrid Topology requires
-       bond-preserving atom mappings, so ring-opening, ring-closing and
-       some ring-size-changing transformations are not supported;
-       Separated Topologies may be an alternative for such ligands.
+     - * Limited internal testing.
+       * Relative Hybrid Topology requires bond-preserving atom mappings,
+         so ring-opening, ring-closing and some ring-size-changing
+         transformations are not supported.
+       * Separated Topologies may be an alternative for such ligands.
    * - Peptide ligands
-     - All binding protocols
-     - Limited internal testing. Requires NAGL partial charges and potentially the OpenFF Rosemary force field.
+     - * Limited internal testing.
+       * Requires NAGL partial charges and potentially the OpenFF
+         Rosemary force field.
 
 Untested, may be possible
 """""""""""""""""""""""""
@@ -174,10 +178,10 @@ Untested, may be possible
        ``amber14/DNA.OL15.xml`` for DNA or ``amber14/RNA.OL3.xml`` for
        RNA.
    * - Metalloproteins
-     - Only non-bonded ion models of metal sites are supported.
-       Iron-containing proteins are not supported. See
-       `Melse et al. (2023) <https://doi.org/10.1002/jcc.27052>`_
-       for an analysis of metal models in free energy calculations.
+     - * Only non-bonded ion models of metal sites are supported.
+       * Iron-containing proteins are not supported.
+       * See `Melse et al. (2023) <https://doi.org/10.1002/jcc.27052>`_
+         for an analysis of metal models in free energy calculations.
 
 Not supported
 """""""""""""
@@ -196,8 +200,10 @@ Not supported
    * - Covalently bound ligands
      - Ligands covalently bonded to the receptor are not supported.
    * - Protein mutations
-     - Alchemical transformations of protein residues are not implemented by the **openfe** protocols, but experimental
-       support is available in the community developed protocol `feflow <https://github.com/OpenFreeEnergy/feflow>`_.
+     - * Alchemical transformations of protein residues are not
+         implemented by the **openfe** protocols.
+       * Experimental support is available in the community-developed
+         protocol `feflow <https://github.com/OpenFreeEnergy/feflow>`_.
 
 
 Known limitations
@@ -216,14 +222,15 @@ These limitations apply to all binding free energy protocols.
        simulation. Changes in these states upon binding are not
        accounted for.
    * - Slow conformational transitions
-     - Large protein conformational changes and transitions between
-       ligand binding modes may not be sampled within standard
-       simulation timescales. No enhanced sampling methods (besides Hamiltonian Replica Exchange) are
-       currently available.
+     - * Large protein conformational changes and transitions between
+         ligand binding modes may not be sampled within standard
+         simulation timescales.
+       * No enhanced sampling methods other than Hamiltonian replica
+         exchange are currently available.
    * - Water sampling
-     - Exchange of buried or occluded water molecules may not be sampled
-       within standard simulation timescales. No enhanced water sampling
-       methods are currently available.
+     - * Exchange of buried or occluded water molecules may not be
+         sampled within standard simulation timescales.
+       * No enhanced water sampling methods are currently available.
 
 
 See also
