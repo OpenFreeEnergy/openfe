@@ -81,26 +81,26 @@ def test_mda_selection_atomgroup_string(eg5_pdb_universe):
     "smiles, expected",
     [
         # Non-aromatic controls
-        ["C1CCCCC1", []], #cyclohexane
+        ["C1CCCCC1", []],  # cyclohexane
         ["[C@@H]1([C@@H]([C@@H](OC([C@@H]1O)O)C(=O)O)O)O", []],
-        ["C1=CC2C=CC1C=C2", []], # barrelene
+        ["C1=CC2C=CC1C=C2", []],  # barrelene
         # Single aromatic ring systems
         ["C1=CC=CC=C1", [6]],
-        ["C1CC2=CC=CC=C2C1", [6]], # indane
-        ["C1=COC=C1", [5]], # furan
+        ["C1CC2=CC=CC=C2C1", [6]],  # indane
+        ["C1=COC=C1", [5]],  # furan
         # Fused aromatic ring systems
-        ["C1=CC=C2C=CC=CC2=C1", [10]], # naphthalene
+        ["C1=CC=C2C=CC=CC2=C1", [10]],  # naphthalene
         ["c1ccc2cc3ccccc3cc2c1", [14]],  # anthracene
         ["c1ccc2c(c1)ccc1ccccc12", [14]],  # phenanthrene
         ["c1cc2ccc3cccc4ccc(c1)c2c34", [16]],  # pyrene
         ["c1ccc2[nH]c3ccccc3c2c1", [13]],  # carbazole
         # Separate aromatic ring systems
-        ["C1=CC=C(C=C1)C2=CC=CC=C2", [6, 6]], # biphenyl
-        ["C1=CC=C(C=C1)C(C2=CC=CC=C2)(C3=CC=CC=C3Cl)N4C=CN=C4", [6, 6, 6, 5]], # clotrimazole
+        ["C1=CC=C(C=C1)C2=CC=CC=C2", [6, 6]],  # biphenyl
+        ["C1=CC=C(C=C1)C(C2=CC=CC=C2)(C3=CC=CC=C3Cl)N4C=CN=C4", [6, 6, 6, 5]],  # clotrimazole
         # Aromatic-bond connectivity edge cases
         ["c1ccc2c(c1)-c1ccccc1-2", [6, 6]],  # biphenylene
-        ["c1ccc2cccc2cc1", [10]], # azulene
-        ["C1=CC=C2C(=C1)C3=CC=CC4=C3C2=CC=C4", [6, 10]], # fluoranthene
+        ["c1ccc2cccc2cc1", [10]],  # azulene
+        ["C1=CC=C2C(=C1)C3=CC=CC4=C3C2=CC=C4", [6, 10]],  # fluoranthene
     ],
 )
 def test_aromatic_rings(smiles, expected):
