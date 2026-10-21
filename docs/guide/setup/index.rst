@@ -32,7 +32,7 @@ More detailed guidance is available in the following sections:
 .. toctree::
    :maxdepth: 1
 
-   preparing inputs
+   input_preparation
    chemical_systems_and_thermodynamic_cycles
    creating_atom_mappings_and_scores
    defining_protocols
