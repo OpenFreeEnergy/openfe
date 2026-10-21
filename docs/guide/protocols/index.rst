@@ -118,7 +118,7 @@ Well tested
    * - System or transformation
      - Notes
    * - Soluble proteins
-     - Standard application for noncovalent protein-ligand binding.
+     - * Standard application for noncovalent protein-ligand binding.
        Tested by OpenFE [3]_ (Relative Hybrid Topology).
    * - Membrane proteins
      - * Tested internally by the OpenFE team.
@@ -147,11 +147,6 @@ Limited testing
      - * Single published study using Relative Hybrid Topology
          (`Lukauskis et al. (2025) <https://doi.org/10.26434/chemrxiv-2025-tb29n>`_).
        * Other protocols have not been tested.
-   * - Phosphorylated residues
-     - * Only phosphoserine (``SEP``) and phosphothreonine (``TPO``) are
-         supported.
-       * Input structures must use these residue names and include the
-         required ``CONECT`` records.
    * - Macrocycles
      - * Limited internal testing.
        * Relative Hybrid Topology requires bond-preserving atom mappings,
@@ -162,6 +157,11 @@ Limited testing
      - * Limited internal testing.
        * Requires NAGL partial charges and potentially the OpenFF
          Rosemary force field.
+   * - Phosphorylated residues
+     - * Only phosphoserine (``SEP``) and phosphothreonine (``TPO``) are
+         supported.
+       * Input structures must use these residue names and include the
+         required ``CONECT`` records.
 
 Untested, may be possible
 """""""""""""""""""""""""
@@ -207,7 +207,7 @@ Not supported
 
 
 Known limitations
-~~~~~~~~~~~~~~~~~
+"""""""""""""""""
 
 These limitations apply to all binding free energy protocols.
 
