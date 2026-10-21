@@ -96,6 +96,7 @@ def test_mda_selection_atomgroup_string(eg5_pdb_universe):
         ["c1ccc2[nH]c3ccccc3c2c1", [13]],  # carbazole
         # Fused but middle ring not aromatic
         ["c1ccc2c(c1)-c1ccccc1-2", [6, 6]],  # biphenylene
+        ["c1ccc2cccc2cc1", [10]], # azulene
     ],
 )
 def test_aromatic_rings(smiles, expected):
