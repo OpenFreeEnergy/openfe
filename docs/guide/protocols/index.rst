@@ -17,12 +17,12 @@ Relative binding free energies
 
 Relative protocols compute the difference in binding free energy (:math:`\Delta\Delta G`) between two ligands.
 
-:ref:`Relative Hybrid Topology Protocol <userguide_relative_hybrid_topology_protocol>`
+:ref:`Relative Hybrid Topology Protocol <userguide_relative_hybrid_topology_protocol>` [1]_
    Transforms one ligand into the other using a hybrid
    topology defined by an atom mapping. Can also
    calculate relative hydration free energies.
 
-:ref:`Separated Topologies Protocol <userguide_septop_protocol>` [1]_, [2]_
+:ref:`Separated Topologies Protocol <userguide_septop_protocol>` [2]_, [3]_
    Inserts one ligand while removing the other,
    using orientational restraints to maintain their positions
    in the binding site. No atom mapping required.
@@ -119,7 +119,7 @@ Well tested
      - Notes
    * - Soluble proteins
      - * Standard application for noncovalent protein-ligand binding.
-       Tested by OpenFE [3]_ (Relative Hybrid Topology).
+       * Tested by OpenFE [1]_ (Relative Hybrid Topology).
    * - Membrane proteins
      - * Tested internally by the OpenFE team.
        * Lipids are limited to those parameterised by the Amber Lipid17
@@ -127,7 +127,7 @@ Well tested
        * Requires a prepared, solvated and pre-equilibrated system with
          valid periodic box vectors.
    * - Net-charge-changing ligand transformations
-     - * Relative Hybrid Topology only. Tested by OpenFE [3]_.
+     - * Relative Hybrid Topology only. Tested by OpenFE [1]_.
        * Requires explicit charge correction, and longer simulations
          than neutral transformations to converge.
        * Charge changes greater than one elementary charge are not
@@ -251,6 +251,6 @@ See also
 References
 ----------
 
-.. [1] Separated topologies--a method for relative binding free energy calculations using orientational restraints, G. Rocklin, D. Mobley, K. Dill; J. Chem. Phys., 2013; 138(8):085104. doi: 10.1063/1.4792251
-.. [2] Broadening the Scope of Binding Free Energy Calculations Using a Separated Topologies Approach, H. Baumann, E. Dybeck, C. McClendon, F. Pickard IV, V. Gapsys, L. Pérez-Benito, D. Hahn, G. Tresadern, A. Mathiowetz, D. Mobley, J. Chem. Theory Comput., 2023, 19, 15, 5058–5076. doi: 10.1021/acs.jctc.3c00282
-.. [3] Large-Scale Collaborative Assessment of Binding Free Energy Calculations for Drug Discovery Using OpenFE, H. Baumann, J Horton et al., J. Chem. Inf. Model., 2026, 66, 11, 6429–6452. doi: 10.1021/acs.jcim.6c00089
+.. [1] Large-Scale Collaborative Assessment of Binding Free Energy Calculations for Drug Discovery Using OpenFE, H. Baumann, J Horton et al., J. Chem. Inf. Model., 2026, 66, 11, 6429–6452. doi: 10.1021/acs.jcim.6c00089
+.. [2] Separated topologies--a method for relative binding free energy calculations using orientational restraints, G. Rocklin, D. Mobley, K. Dill; J. Chem. Phys., 2013; 138(8):085104. doi: 10.1063/1.4792251
+.. [3] Broadening the Scope of Binding Free Energy Calculations Using a Separated Topologies Approach, H. Baumann, E. Dybeck, C. McClendon, F. Pickard IV, V. Gapsys, L. Pérez-Benito, D. Hahn, G. Tresadern, A. Mathiowetz, D. Mobley, J. Chem. Theory Comput., 2023, 19, 15, 5058–5076. doi: 10.1021/acs.jctc.3c00282
