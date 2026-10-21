@@ -180,8 +180,8 @@ Untested, may be possible
    * - Metalloproteins
      - * Only non-bonded ion models of metal sites are supported.
        * Iron-containing proteins are not supported.
-       * See `Melse et al. (2023) <https://doi.org/10.1002/jcc.27052>`_
-         for an analysis of metal models in free energy calculations.
+       * See `Güven et al. (2024) <https://doi.org/10.1021/acs.jpcb.4c06379>`_ for a comparison
+         of metal models in free energy calculations.
 
 Not supported
 """""""""""""
