@@ -97,9 +97,10 @@ Not all molecular systems or alchemical transformations are supported.
 System types and transformations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The tables below summarise which molecular systems and alchemical
-transformations can be studied with the **openfe** binding free energy
-protocols, grouped by how thoroughly they have been tested.
+The following tables group molecular systems and transformations
+according to the available testing and validation evidence.
+These categories indicate the current level of experience with
+OpenFE, rather than a guarantee of accuracy for a given system.
 
 Support also depends on the selected force fields and on system
 preparation.
@@ -197,12 +198,6 @@ Not supported
    * - Protein mutations
      - Alchemical transformations of protein residues are not implemented by the **openfe** protocols, but experimental
        support is available in the community developed protocol `feflow <https://github.com/OpenFreeEnergy/feflow>`_.
-   * - Protonation or tautomer changes upon binding
-     - Not supported
-     - n/a
-     - Protonation and tautomeric states are fixed for the whole
-       simulation. Changes in these states upon binding are not
-       accounted for.
 
 
 Known limitations
@@ -225,7 +220,7 @@ These limitations apply to all binding free energy protocols.
        ligand binding modes may not be sampled within standard
        simulation timescales. No enhanced sampling methods (besides Hamiltonian Replica Exchange) are
        currently available.
-   * - Hard-to-sample water molecules
+   * - Water sampling
      - Exchange of buried or occluded water molecules may not be sampled
        within standard simulation timescales. No enhanced water sampling
        methods are currently available.
