@@ -180,3 +180,7 @@ docs/ExampleNotebooks/
 
 # Rever
 rever/
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
