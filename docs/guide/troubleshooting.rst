@@ -205,3 +205,8 @@ For more information, see these issues on github:
 - https://github.com/choderalab/pymbar/issues/564
 - https://github.com/OpenFreeEnergy/openfe/issues/1534
 - https://github.com/OpenFreeEnergy/openfe/issues/1654
+
+CUDA-related errors
+-------------------
+
+See https://docs.openfree.energy/en/stable/installation.html#supported-hardware and https://docs.openfree.energy/en/stable/installation.html#supported-hardware
