@@ -192,7 +192,7 @@ Not supported
 
    * - System or transformation
      - Notes
-   * - Other modified residues
+   * - Post translational modifications
      - Modified residues other than ``SEP`` and ``TPO`` (e.g.
        glycosylation, lipidation, methylation, acetylation) cannot
        currently be read from PDB files, regardless of the force field
