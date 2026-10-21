@@ -92,7 +92,7 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
 
     # Connect atoms joined by aromatic bonds
     for bond in rdmol.GetBonds():
-        if bond.GetIsAromatic():
+        if bond.GetIsAromatic() and bond.IsInRing():
             graph.add_edge(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
 
     return [set(component) for component in nx.connected_components(graph)]
