@@ -14,7 +14,6 @@ channels = ["https://conda.anaconda.org/conda-forge"]
 
 [environments.docs.dependencies]
 autodoc-pydantic = ">=2.1"
-docutils = "==0.20"
 exorcist = "*"
 gitpython = "*"
 libsass = "*"
@@ -22,14 +21,14 @@ myst-parser = "*"
 nbsphinx = "*"
 nbsphinx-link = "*"
 openfe-analysis = ">=0.5.0"
-openff-toolkit-base = "==0.17.0"
+openff-toolkit-base = ">=0.17.0"
 openff-units = "==0.3.1"
-openmm = "==8.3.1"
+openmm = "~=8.4"
 packaging = "*"
 pip = ">=26.2.2"  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
 plugcli = ">=0.2.1"
-python = "*"
-pydantic = ">=2.0.0,<2.12.0"
+python = "==3.13"
+pydantic = "~=2.13.0"
 sphinx = "==7.2.6"  # TODO: debug "duplicate object" warning with later versions
 sphinx-autobuild = "*"  # TODO: make optional
 sphinx-click = "*"

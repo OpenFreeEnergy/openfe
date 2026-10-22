@@ -32,7 +32,7 @@ dependencies:
   - pip >=26.2.2  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
   - pooch >= 1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
   - py3dmol
-  - pydantic >=2.13.0
+  - pydantic ~=2.13
   - pygraphviz
   - pytest
   - pytest-xdist
