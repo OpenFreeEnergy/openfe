@@ -27,6 +27,7 @@ If it is omitted, the current directory will be used.
 The ``-o`` flag controls where the results file will be written.
 If it is omitted, results are written to a file named ``<transformation_key>_results.json`` in the working directory, where ``<transformation_key>`` is a unique identifier.
 
+.. _userguide_quickrun_resume:
 
 Resuming a halted job
 ---------------------
