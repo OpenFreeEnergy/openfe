@@ -144,7 +144,7 @@ Limited testing
    * - System or transformation
      - Notes
    * - Ternary complexes (molecular glues)
-     - * Single published study using Relative Hybrid Topology
+     - * Single study (preprint) using Relative Hybrid Topology
          (`Lukauskis et al. (2025) <https://doi.org/10.26434/chemrxiv-2025-tb29n>`_).
        * Other protocols have not been tested.
    * - Macrocycles
