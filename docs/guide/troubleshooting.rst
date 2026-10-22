@@ -213,3 +213,9 @@ For more information, see these issues on github:
 - https://github.com/choderalab/pymbar/issues/564
 - https://github.com/OpenFreeEnergy/openfe/issues/1534
 - https://github.com/OpenFreeEnergy/openfe/issues/1654
+
+CUDA-related errors
+-------------------
+
+You may see CUDA errors, such as ``openmm.OpenMMException: Error loading CUDA module``, especially when running across multiple machines, e.g. HPC systems.
+Refer to :ref:`installation-troubleshooting` for guidance on debugging your installation and :ref:`installation-cuda-errors` for suggestions for how to resolve CUDA-specific errors.
