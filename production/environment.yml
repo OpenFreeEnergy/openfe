@@ -12,3 +12,5 @@ dependencies:
   - pytest-xdist
   - python==3.13.*
   - rdkit~=2025.09.1  # https://github.com/OpenFreeEnergy/gufe/pull/665, https://github.com/OpenFreeEnergy/openfe/pull/2068
+  - run_constrained:
+    - certifi >=2026.10.19  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576

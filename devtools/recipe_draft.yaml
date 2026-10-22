@@ -70,6 +70,7 @@ outputs:
         - dask >=2025  # drop this constraint when handled upstream in espaloma-feedstock  
         - smirnoff99frosst >=1.1.0.1  # https://github.com/openforcefield/smirnoff99Frosst/issues/109
         - openff-interchange-base ~=0.5.4  # adds pydantic 2.13 support
+        - certifi >=2026.10.19  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
     tests:
       - python:
           imports:
