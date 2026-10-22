@@ -24,16 +24,14 @@ Relative protocols compute the difference in binding free energy (:math:`\Delta\
    .. grid-item-card:: :ref:`Relative Hybrid Topology Protocol <userguide_relative_hybrid_topology_protocol>` [1]_
       :shadow: none
 
-      Transforms one ligand into another using a hybrid topology
-      defined by an atom mapping. Can also calculate relative
-      hydration free energies.
+      * Transforms one ligand into another using a hybrid topology defined by an atom mapping.
+      * Can also calculate relative hydration free energies.
 
    .. grid-item-card:: :ref:`Separated Topologies Protocol <userguide_septop_protocol>` [2]_, [3]_
       :shadow: none
 
-      Inserts one ligand while removing the other, using
-      orientational restraints. No atom mapping required.
-
+      * Inserts one ligand while removing the other, using orientational restraints.
+      * No atom mapping required.
 
 Absolute binding free energies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,14 +41,10 @@ Absolute protocols compute the binding free energy (:math:`\Delta G`) of a singl
 .. grid:: 1
    :gutter: 2
 
-   .. grid-item-card:: Absolute Binding
+   .. grid-item-card:: :ref:`Absolute binding protocol <userguide_abfe_protocol>`
       :shadow: none
 
-      Decouples the ligand from the binding site and solvent,
-      using orientational restraints in the complex.
-
-      :ref:`Learn more <userguide_abfe_protocol>`
-
+      * Decouples the ligand from the binding site and solvent, using orientational restraints in the complex.
 
 Other protocols
 ~~~~~~~~~~~~~~~
