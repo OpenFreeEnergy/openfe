@@ -1,20 +1,17 @@
 import pathlib
-from importlib import resources
 
 import pytest
 from click.testing import CliRunner
 
+from openfe.tests.conftest import warehouse_data_dir
 from openfecli.commands.setup_task_campaign import setup_task_campaign
 
 from ..utils import assert_click_success
 
 
 @pytest.fixture
-def alchemical_network_mcl1_path() -> pathlib.Path:
-    with resources.path(
-        "openfe.tests.data.warehouse_data", "alchemicalNetwork_mc1_small.json"
-    ) as fspath:
-        return fspath
+def alchemical_network_mcl1_path(warehouse_data_dir) -> pathlib.Path:
+    return warehouse_data_dir / "alchemicalNetwork_mc1_small.json"
 
 
 def test_setup_task_campaign(alchemical_network_mcl1_path):
