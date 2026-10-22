@@ -81,7 +81,7 @@ suitable for a given problem.
      - * Absolute binding free energies of individual ligands.
      - * Requires a well-defined binding pose for restraint selection.
        * Highly flexible ligands may sample poorly.
-       * Charged ligands are not supported.
+       * Ligands with non-zero formal charges are not supported.
      - Higher per ligand
 
 Costs are relative, using default settings. To see the exact settings
