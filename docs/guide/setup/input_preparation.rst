@@ -94,7 +94,7 @@ protonated at the sulfur atoms.
 Non-standard residues must be compatible with the selected force
 fields. Phosphoserine (``SEP``) and phosphothreonine (``TPO``)
 are supported with the required ``CONECT`` records. Other
-modifications may not be supported and should be replaced
+modifications are not currently supported. For now, our recommendation is to replace these
 with canonical residues.
 
 Crystallographic waters and ions
@@ -157,7 +157,7 @@ separate SDF files.
 The :ref:`ligand preparation requirements <prep_ligands>` also
 apply to cofactors, including correct bonding, protonation,
 explicit hydrogens and coordinates.
-Iron-containing cofactors, such as heme, are not supported.
+Metal-containing cofactors, such as heme, are not supported.
 
 Checking prepared structures
 ----------------------------
