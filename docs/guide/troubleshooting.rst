@@ -217,5 +217,5 @@ For more information, see these issues on github:
 CUDA-related errors
 -------------------
 
-You may see CUDA errors, such as ``openmm.OpenMMException: Error loading CUDA module``, when running on HPCs.
+You may see CUDA errors, such as ``openmm.OpenMMException: Error loading CUDA module``, especially when running across multiple machines, e.g. HPC systems.
 Refer to :ref:`installation-troubleshooting` for guidance on debugging your installation and :ref:`installation-cuda-errors` for suggestions for how to resolve CUDA-specific errors.
