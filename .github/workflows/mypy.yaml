@@ -17,14 +17,14 @@ jobs:
   mypy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Get current date
         id: date
         run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@f457c30a868e4760d3a6fcea5f25dc655b8edf39  # v3.2.1
         with:
           environment-file: environment.yml
           environment-name: openfe_env
