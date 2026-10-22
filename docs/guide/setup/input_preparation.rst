@@ -1,7 +1,7 @@
 .. _userguide_preparing_inputs:
 
-Preparing input structures for OpenFE
-=====================================
+Preparing input structures for **openfe**
+=========================================
 
 Before running a free energy calculation, input structures must be
 prepared with the correct chemistry, coordinates, and connectivity.
@@ -15,7 +15,7 @@ inputs to look like, and how to handle common edge cases.
 Input files
 -----------
 
-The table below lists the input files typically used for protein--ligand calculations with OpenFE.
+The table below lists the input files typically used for protein--ligand calculations with **openfe**.
 The filenames shown are examples.
 
 .. list-table:: Input files
@@ -42,46 +42,54 @@ Bulk solvent is added during simulation setup using a ``SolventComponent``.
 
    Membrane and pre-solvated systems instead use ``ProteinMembraneComponent`` or ``SolvatedPDBComponent``
    with explicit solvent and valid periodic box vectors.
-   See :doc:`the membrane RBFE tutorial  </tutorials/rbfe_membrane_protein>`.
+   See :doc:`the membrane RBFE tutorial </tutorials/rbfe_membrane_protein>`.
 
 .. _prep_protein:
 
 Preparing the protein
 ---------------------
 
-**Missing atoms, residues and chain termini**
+.. rubric:: Missing atoms, residues and chain termini
 
 Missing atoms need to be reconstructed to ensure residues match
-their force field templates. Missing residues should ideally be
+their force field templates. Use standard PDB atom names and correct element
+symbols, as incorrect naming or element assignments can
+prevent residue recognition and parameterization.
+Missing residues should ideally be
 modelled, especially near the binding site. If gaps remain,
 the exposed termini may need ``ACE`` (N-terminal) or ``NME``
 (C-terminal) caps.
 
 .. note::
 
-   Some tools, such as PyMOL, may misplace caps or insert ``TER``
-   records between a cap and its terminal residue. Ensure that caps are correctly positioned and that
-   no ``TER`` records separate a cap from the residue it caps.
+   Some structure preparation tools require special care when
+   adding terminal caps:
 
-**Alternative locations (altLoc)**
+   * **Maestro:** Hydrogen-only caps (H-caps) are not supported. Use ``ACE``/``NME`` caps instead.
+   * **PyMOL:** Caps may be incorrectly positioned or separated
+     from their terminal residues by ``TER`` records. Check the
+     cap placement and ensure no ``TER`` record separates a cap
+     from the residue it caps.
+
+.. rubric:: Alternative locations (altLoc)
 
 Resolve alternative atom positions (``altLoc``) by selecting a
 consistent conformation and removing unused alternatives.
 
-**Protonation states and hydrogen atoms**
+.. rubric:: Protonation states and hydrogen atoms
 
 Assign the intended protonation states and include all required
-hydrogens. Ensure that atom names and protonation
+hydrogens. Ensure that atom and residue names, and protonation
 states are compatible with the selected force fields.
 
-**Disulfide bonds**
+.. rubric:: Disulfide bonds
 
 Disulfide bonds may be detected automatically from the distance
 between cysteine sulfur (``SG``) atoms, but including ``CONECT``
 records is recommended. Ensure bonded cysteines are not
 protonated at the sulfur atoms.
 
-**Non-standard and modified residues**
+.. rubric:: Non-standard and modified residues
 
 Non-standard residues must be compatible with the selected force
 fields. Phosphoserine (``SEP``) and phosphothreonine (``TPO``)
@@ -115,7 +123,7 @@ them into a separate SDF file and treat them as
 Preparing ligands
 -----------------
 
-**Chemical structure**
+.. rubric:: Chemical structure
 
 Provide ligands in SDF format, as PDB files do not reliably
 preserve bond orders. Each ligand must have:
@@ -128,7 +136,7 @@ The protocols assign partial charges during setup, but these can
 also be assigned in advance (using e.g. ``openfe charge-molecules``) for
 reproducibility and to avoid repeated charge calculations.
 
-**Binding poses**
+.. rubric:: Binding poses
 
 Ligands must have 3D coordinates representing their intended binding
 poses in the same coordinate frame as the prepared protein. Check for
@@ -154,17 +162,20 @@ Iron-containing cofactors, such as heme, are not supported.
 Checking prepared structures
 ----------------------------
 
-Before planning or running a calculation, verify that:
+.. card:: :octicon:`checklist;1em;sd-text-success` Before running a calculation
+   :class-card: sd-shadow-sm sd-mb-3
 
-* The protein structure is complete, with correct protonation,
-  termini, disulfide bonds and connectivity.
-* Waters, ions and cofactors are appropriately retained or removed,
-  without duplicate components.
-* Ligands have correct chemistry, explicit hydrogens and binding
-  poses aligned with the prepared protein.
-* All components are compatible with the selected force fields.
-* OpenFE can load, parameterize and initialize the system without
-  errors or unexpected structural changes.
+   Verify that:
+
+   * The :ref:`protein structure <prep_protein>` is complete, with
+     correct protonation, termini, disulfide bonds and connectivity.
+   * Waters, ions and :ref:`cofactors <prep_cofactors>` are
+     appropriately retained or removed, without duplicate components.
+   * :ref:`Ligands <prep_ligands>` have correct chemistry, explicit
+     hydrogens and binding poses aligned with the prepared protein.
+   * All components are compatible with the selected force fields.
+   * **openfe** can load, parameterize and initialize the system
+     without errors or unexpected structural changes.
 
 See also
 --------
