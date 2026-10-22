@@ -5,7 +5,6 @@ channels:
 # explicit pins to speed up build:
 dependencies:
 - autodoc-pydantic >= 2.1
-- docutils == 0.20
 - exorcist
 - gitpython
 - libsass
