@@ -86,7 +86,7 @@ protonated at the sulfur atoms.
 Non-standard residues must be compatible with the selected force
 fields. Phosphoserine (``SEP``) and phosphothreonine (``TPO``)
 are supported with the required ``CONECT`` records. Other
-modifications may not be supported and should be replaced
+modifications are not currently supported. For now, our recommendation is to replace these
 with canonical residues.
 
 Crystallographic waters and ions
