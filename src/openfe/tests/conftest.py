@@ -966,6 +966,14 @@ def single_to_triple_bond_mapping() -> LigandAtomMapping:
             },
         )
 
+@pytest.fixture()
+def triple_to_single_bond_mapping(single_to_triple_bond_mapping) -> LigandAtomMapping:
+    # return the reverse mapping of the single to triple bond mapping
+    return LigandAtomMapping(
+        componentA=single_to_triple_bond_mapping.componentB,
+        componentB=single_to_triple_bond_mapping.componentA,
+        componentA_to_componentB=single_to_triple_bond_mapping.componentB_to_componentA,
+    )
 
 @pytest.fixture
 def solvent_kcl() -> SolventComponent:

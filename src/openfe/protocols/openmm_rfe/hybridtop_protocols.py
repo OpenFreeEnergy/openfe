@@ -32,6 +32,7 @@ from gufe import (
     SolventComponent,
     settings,
 )
+from gufe.protocols import ProtocolValidationError
 from openff.units import unit as offunit
 
 from openfe.due import Doi, due
@@ -277,6 +278,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           * If the atom mapping is empty.
           * If the atom mapping would break or form a bond.
           * If the atom mapping contains less than 4 heavy atoms and the components have more than 6 atoms.
+
+        ProtocolValidationError
           * If the atom mapping maps a single to a triple bond.
         """
         # if a single mapping is provided, convert to list
@@ -420,7 +423,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         Raises
         ------
-        ValueError
+        ProtocolValidationError
           * If the atom mapping maps a single bond to a triple bond.
         """
         from rdkit.Chem import BondType
@@ -429,29 +432,21 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         mol_b = mapping.componentB.to_rdkit()
         atom_map = mapping.componentA_to_componentB
 
-        for atom in mol_a.GetAtoms():
-            atom_idx = atom.GetIdx()
+        for bond in mol_a.GetBonds():
+            atom_a_idx = bond.GetBeginAtomIdx()
+            atom_b_idx = bond.GetEndAtomIdx()
 
-            if atom_idx not in atom_map:
-                continue
+            if atom_a_idx in atom_map and atom_b_idx in atom_map:
+                mapped_atom_a_idx = atom_map[atom_a_idx]
+                mapped_atom_b_idx = atom_map[atom_b_idx]
+                mapped_bond = mol_b.GetBondBetweenAtoms(mapped_atom_a_idx, mapped_atom_b_idx)
+                if mapped_bond is not None:
+                    if {bond.GetBondType(), mapped_bond.GetBondType()} == {BondType.SINGLE, BondType.TRIPLE}:
+                        raise ProtocolValidationError(
+                            f"Single to triple bond mapping found between componentA {atom_a_idx}->{atom_b_idx}:type:{bond.GetBondType()} and componentB {mapped_atom_a_idx}->{mapped_atom_b_idx}:type:{mapped_bond.GetBondType()}, which leads to instabilities. "
+                            "This can be fixed by removing the atoms involved in this bond from the atom mapping."
+                        )
 
-            # check if each bond is mapped
-            for bond in atom.GetBonds():
-                other_atom = bond.GetOtherAtom(atom)
-                other_atom_idx = other_atom.GetIdx()
-                if other_atom_idx in atom_map:
-                    # find the mapped bond
-                    mapped_atom_idx = atom_map[atom_idx]
-                    mapped_other_atom_idx = atom_map[other_atom_idx]
-                    mapped_bond = mol_b.GetBondBetweenAtoms(mapped_atom_idx, mapped_other_atom_idx)
-                    if mapped_bond is not None:
-                        if (bond_a := bond.GetBondType()) != (bond_b := mapped_bond.GetBondType()):
-                            if {bond_a, bond_b} == {BondType.SINGLE, BondType.TRIPLE}:
-                                # TODO do double to triple bonds also cause instabilities? If so, add that check here as well
-                                raise ValueError(
-                                    f"Hybridization change detected for bond: {atom_idx}->{other_atom_idx}:type:{bond.GetBondType()} which is mapped to {mapped_atom_idx}->{mapped_other_atom_idx}:type:{mapped_bond.GetBondType()} which can lead to instabilities. "
-                                    "This can be fixed by unmapping the atoms involved in this bond."
-                                )
 
     @staticmethod
     def _validate_smcs(

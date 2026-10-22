@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* ``RelativeHybridTopologyProtocol`` will now raise a ``ValueError`` during validation if the atom mapping maps a single to triple bond, which leads to unstable simulations, preventing execution of the simulation ((`PR #2270 <https://github.com/OpenFreeEnergy/openfe/pull/2270>`_).
+* ``RelativeHybridTopologyProtocol`` will now raise a ``ProtocolValidationError`` during validation if the atom mapping maps a single to triple bond, which leads to unstable simulations, preventing execution of the simulation (`PR #2270 <https://github.com/OpenFreeEnergy/openfe/pull/2270>`_).
 
 **Deprecated:**
 
