@@ -18,7 +18,7 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
       with:
         fetch-depth: 0
 
@@ -32,7 +32,7 @@ jobs:
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Install constructor environment with Micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@add3a49764cedee8ee24e82dfde87f5bc2914462  # v2.0.7
       with:
         environment-name: installer
         create-args: >-
@@ -62,14 +62,14 @@ jobs:
         # Inspired by https://github.com/conda-forge/miniforge/blob/main/.github/workflows/ci.yml
         cp ${{ steps.file-name.outputs.FILE_NAME }} $(echo ${{ steps.file-name.outputs.FILE_NAME }} | sed -e 's/-[^-]*//')
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: ${{ steps.file-name.outputs.FILE_NAME }}
         path: OpenFEforge*
         if-no-files-found: error
 
     - name: Upload openfe forge to release
-      uses: svenstaro/upload-release-action@v2
+      uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de  # v2.11.5
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: OpenFEforge*
