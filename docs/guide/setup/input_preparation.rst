@@ -149,7 +149,7 @@ separate SDF files.
 The :ref:`ligand preparation requirements <prep_ligands>` also
 apply to cofactors, including correct bonding, protonation,
 explicit hydrogens and coordinates.
-Iron-containing cofactors, such as heme, are not supported.
+Metal-containing cofactors, such as heme, are not supported.
 
 Checking prepared structures
 ----------------------------
