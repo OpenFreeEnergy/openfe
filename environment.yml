@@ -12,6 +12,7 @@ dependencies:
   - dill  # temporary, needed by kartograf. remove when gufe v1.13 is released
   - konnektor>=0.5.0
   - exorcist
+  - libtorch >=2.13
   - lomap2>=3.3.0
   - networkx
   - numpy
