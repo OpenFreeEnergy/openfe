@@ -1,6 +1,4 @@
-import shutil
 import tempfile
-from importlib import resources
 from pathlib import Path
 from typing import Literal
 from unittest import mock
