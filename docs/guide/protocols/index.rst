@@ -34,7 +34,7 @@ Absolute protocols compute the binding free energy (:math:`\Delta G`)
 of a single ligand.
 
 :ref:`Absolute Binding Protocol <userguide_abfe_protocol>`
-   decouples the ligand from
+   Decouples the ligand from
    the binding site and from solvent, using orientational restraints in the complex.
 
 Other protocols
