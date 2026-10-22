@@ -1118,7 +1118,7 @@ def radial_alchemical_network(
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def warehouse_data_dir():
     with resources.path("openfe.tests", "data") as data_dir:
         warehouse_dir = data_dir / "warehouse_data"
@@ -1127,7 +1127,7 @@ def warehouse_data_dir():
     return warehouse_dir
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def warehouse_partial_failure(warehouse_data_dir):
     with resources.path("openfe.tests", "data") as data_dir:
         warehouse = FileSystemWarehouse.from_dir(root_dir=warehouse_data_dir / "warehouse_mcl1")
