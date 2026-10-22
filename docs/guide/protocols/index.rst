@@ -84,7 +84,7 @@ suitable for a given problem.
        * Ligands with non-zero formal charges are not supported.
      - Higher per ligand
 
-Costs are relative, using default settings. To see the exact settings
+Cost estimates are based on using the default settings. To see the exact settings
 for your installed version, inspect the protocol's ``default_settings()``.
 
 
@@ -108,8 +108,8 @@ preparation.
 
 .. TODO: Link to a dedicated page on force fields and system parameterization.
 
-Well tested
-"""""""""""
+:octicon:`check-circle-fill;1em;sd-text-success` Well tested
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 .. list-table::
    :header-rows: 1
@@ -134,8 +134,8 @@ Well tested
          supported.
 
 
-Limited testing
-"""""""""""""""
+:octicon:`check-circle;1em;sd-text-warning` Limited testing
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 .. list-table::
    :header-rows: 1
@@ -163,8 +163,8 @@ Limited testing
        * Input structures must use these residue names and include the
          required ``CONECT`` records.
 
-Untested, may be possible
-"""""""""""""""""""""""""
+:octicon:`question;1em;sd-text-secondary` Untested, may be possible
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 .. list-table::
    :header-rows: 1
@@ -173,9 +173,9 @@ Untested, may be possible
    * - System or transformation
      - Notes
    * - Nucleic acid targets
-     - May be possible by adding a suitable Amber nucleic acid force field
-       to ``forcefield_settings.forcefields``, e.g.
-       ``amber14/DNA.OL15.xml`` for DNA or ``amber14/RNA.OL3.xml`` for
+     - * May be possible by adding a suitable Amber nucleic acid force field
+         to ``forcefield_settings.forcefields``, e.g.
+         ``amber14/DNA.OL15.xml`` for DNA or ``amber14/RNA.OL3.xml`` for
        RNA.
    * - Metalloproteins
      - * Only non-bonded ion models of metal sites are supported.
@@ -183,8 +183,8 @@ Untested, may be possible
        * See `Güven et al. (2024) <https://doi.org/10.1021/acs.jpcb.4c06379>`_ for a comparison
          of metal models in free energy calculations.
 
-Not supported
-"""""""""""""
+:octicon:`x-circle-fill;1em;sd-text-danger` Not supported
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 .. list-table::
    :header-rows: 1
@@ -193,12 +193,11 @@ Not supported
    * - System or transformation
      - Notes
    * - Post translational modifications
-     - Modified residues other than ``SEP`` and ``TPO`` (e.g.
-       glycosylation, lipidation, methylation, acetylation) cannot
-       currently be read from PDB files, regardless of the force field
-       used.
+     - * Modified residues other than ``SEP`` and ``TPO`` (e.g.
+         glycosylation, lipidation, methylation, acetylation) cannot
+         currently be read from PDB files, regardless of the force field used.
    * - Covalently bound ligands
-     - Ligands covalently bonded to the receptor are not supported.
+     - * Ligands covalently bonded to the receptor are not supported.
    * - Protein mutations
      - * Alchemical transformations of protein residues are not
          implemented by the **openfe** protocols.
@@ -206,8 +205,8 @@ Not supported
          protocol `feflow <https://github.com/OpenFreeEnergy/feflow>`_.
 
 
-Known limitations
-"""""""""""""""""
+:octicon:`info;1em;sd-text-info` Known limitations
+""""""""""""""""""""""""""""""""""""""""""""""""""
 
 These limitations apply to all binding free energy protocols.
 
@@ -218,9 +217,9 @@ These limitations apply to all binding free energy protocols.
    * - Limitation
      - Notes
    * - Fixed protonation and tautomeric states
-     - Protonation and tautomeric states are fixed for the whole
-       simulation. Changes in these states upon binding are not
-       accounted for.
+     - * Protonation and tautomeric states are fixed for the whole
+         simulation. Changes in these states upon binding are not
+         accounted for.
    * - Slow conformational transitions
      - * Large protein conformational changes and transitions between
          ligand binding modes may not be sampled within standard
