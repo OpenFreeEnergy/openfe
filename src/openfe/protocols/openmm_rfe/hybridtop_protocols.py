@@ -449,7 +449,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                             if {bond_a, bond_b} == {BondType.SINGLE, BondType.TRIPLE}:
                                 # TODO do double to triple bonds also cause instabilities? If so, add that check here as well
                                 raise ValueError(
-                                    f"Hybridization change detected for bond: {atom_idx}->{other_atom_idx}:type:{bond.GetBondType()} which is mapped to {mapped_atom_idx}:{mapped_other_atom_idx}:type:{mapped_bond.GetBondType()} which can lead to instabilities."
+                                    f"Hybridization change detected for bond: {atom_idx}->{other_atom_idx}:type:{bond.GetBondType()} which is mapped to {mapped_atom_idx}->{mapped_other_atom_idx}:type:{mapped_bond.GetBondType()} which can lead to instabilities. "
+                                    "This can be fixed by unmapping the atoms involved in this bond."
                                 )
 
     @staticmethod
