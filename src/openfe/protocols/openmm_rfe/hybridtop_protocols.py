@@ -441,12 +441,14 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                 mapped_atom_b_idx = atom_map[atom_b_idx]
                 mapped_bond = mol_b.GetBondBetweenAtoms(mapped_atom_a_idx, mapped_atom_b_idx)
                 if mapped_bond is not None:
-                    if {bond.GetBondType(), mapped_bond.GetBondType()} == {BondType.SINGLE, BondType.TRIPLE}:
+                    if {bond.GetBondType(), mapped_bond.GetBondType()} == {
+                        BondType.SINGLE,
+                        BondType.TRIPLE,
+                    }:
                         raise ProtocolValidationError(
                             f"Single to triple bond mapping found between componentA {atom_a_idx}->{atom_b_idx}:type:{bond.GetBondType()} and componentB {mapped_atom_a_idx}->{mapped_atom_b_idx}:type:{mapped_bond.GetBondType()}, which leads to instabilities. "
                             "This can be fixed by removing the atoms involved in this bond from the atom mapping."
                         )
-
 
     @staticmethod
     def _validate_smcs(

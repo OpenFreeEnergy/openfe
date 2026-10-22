@@ -2665,10 +2665,21 @@ def test_high_heavy_atom_mapping_ratio_warning(atom_mapping_basic_test_files, va
     )
 
 
-@pytest.mark.parametrize("mapping_name, error_msg", [
-    pytest.param("single_to_triple_bond_mapping", "Single to triple bond mapping found between componentA 1->2:type:SINGLE and componentB 1->2:type:TRIPLE, which leads to instabilities.", id="single_to_triple_bond_mapping"),
-    pytest.param("triple_to_single_bond_mapping", "Single to triple bond mapping found between componentA 1->2:type:TRIPLE and componentB 1->2:type:SINGLE, which leads to instabilities.", id="triple_to_single_bond_mapping"),
-])
+@pytest.mark.parametrize(
+    "mapping_name, error_msg",
+    [
+        pytest.param(
+            "single_to_triple_bond_mapping",
+            "Single to triple bond mapping found between componentA 1->2:type:SINGLE and componentB 1->2:type:TRIPLE, which leads to instabilities.",
+            id="single_to_triple_bond_mapping",
+        ),
+        pytest.param(
+            "triple_to_single_bond_mapping",
+            "Single to triple bond mapping found between componentA 1->2:type:TRIPLE and componentB 1->2:type:SINGLE, which leads to instabilities.",
+            id="triple_to_single_bond_mapping",
+        ),
+    ],
+)
 def test_single_to_triple_bond_mapping_validation(vac_settings, mapping_name, error_msg, request):
     # make sure an error is raised if a single bond is mapped to a triple bond or vice versa
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
@@ -2702,4 +2713,3 @@ def test_single_to_triple_bond_mapping_validation(vac_settings, mapping_name, er
         stateB=gufe.ChemicalSystem({"ligand": mapping_no_bond.componentB}),
         mapping=mapping_no_bond,
     )
-
