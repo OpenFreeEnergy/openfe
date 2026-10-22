@@ -1,7 +1,7 @@
 .. _userguide_preparing_inputs:
 
-Preparing input structures for **openfe**
-=========================================
+Preparing input structures
+==========================
 
 Before running a free energy calculation, input structures must be
 prepared with the correct chemistry, coordinates, and connectivity.
@@ -51,12 +51,12 @@ Preparing the protein
 
 .. rubric:: Missing atoms, residues and chain termini
 
-* Missing atoms need to be reconstructed to ensure residues match their force field templates.
-* Use standard PDB atom names and correct element
-  symbols, as incorrect naming or element assignments can
-  prevent residue recognition and parameterization.
-* Missing residues should ideally be modelled, especially near the binding site.
-* If gaps remain, the exposed termini may need ``ACE`` (N-terminal) or ``NME`` (C-terminal) caps.
+* **Missing atoms:** Reconstruct missing atoms and check that PDB
+  atom names and element symbols are correct for force field assignment.
+* **Missing residues:** Model missing residues, especially near
+  the binding site.
+* **Chain termini:** If gaps remain, the exposed termini may
+  require ``ACE`` (N-terminal) or ``NME`` (C-terminal) caps.
 
 .. note::
 
@@ -71,26 +71,23 @@ Preparing the protein
 
 .. rubric:: Alternative locations (altLoc)
 
-* Resolve alternative atom positions (``altLoc``) by selecting a
-  consistent conformation and removing unused alternatives.
+Resolve alternative atom positions (``altLoc``) by selecting a consistent conformation and removing unused alternatives.
 
 .. rubric:: Protonation states and hydrogen atoms
 
-* Assign the intended protonation states and include all required hydrogens.
-* Ensure that atom and residue names, and protonation states are compatible with the selected force fields.
+Assign the intended protonation states and include all required hydrogens.
+Ensure that atom and residue names, and protonation states are compatible with the selected force fields.
 
 .. rubric:: Disulfide bonds
 
-* Disulfide bonds may be detected automatically from the distance between cysteine sulfur (``SG``) atoms, but including
-  ``CONECT`` records is recommended.
-* Ensure bonded cysteines are not protonated at the sulfur atoms.
+Disulfide bonds may be detected automatically from the distance between cysteine sulfur (``SG``) atoms, but including
+``CONECT`` records is recommended.
+Ensure bonded cysteines are not protonated at the sulfur atoms.
 
 .. rubric:: Non-standard and modified residues
 
-* Non-standard residues must be compatible with the selected force fields.
-* Phosphoserine (``SEP``) and phosphothreonine (``TPO``) are supported with the required ``CONECT`` records.
-* Other modifications are not currently supported. For now, our recommendation is to replace these
-  with canonical residues.
+Only phosphoserine (``SEP``) and phosphothreonine (``TPO``) are supported, and require ``CONECT`` records.
+Other modified residues cannot currently be read; replace them with their canonical residues.
 
 Crystallographic waters and ions
 --------------------------------
@@ -108,7 +105,7 @@ Crystallographic waters and ions
   they are compatible with the selected force fields.
 * Remove crystallisation additives, such as sulfate, glycerol or polyethylene
   glycol, unless they are relevant to the system.
-* If retained, extract them into a separate SDF file and treat them as :ref:`cofactors <prep_cofactors>`.
+* If additives are retained, extract them into a separate SDF file and treat them as :ref:`cofactors <prep_cofactors>`.
 
 .. _prep_ligands:
 
@@ -117,16 +114,16 @@ Preparing ligands
 
 .. rubric:: Chemical structure
 
-* Provide ligands in SDF format, as PDB files do not reliably preserve bond orders.
-* Each ligand must have:
+Provide ligands in SDF format, as PDB files do not reliably
+preserve bond orders. Each ligand must have:
 
-  * Correct connectivity, bond orders, formal charges and stereochemistry.
-  * The intended protonation and tautomeric state, with all hydrogens present.
-  * A unique name in the SDF title line, used to label results.
+* Correct connectivity, bond orders, formal charges and stereochemistry.
+* The intended protonation and tautomeric state, with explicit hydrogens.
+* A unique name in the SDF title line, used to label results.
 
-* The protocols assign partial charges during setup, but these can
-  also be assigned in advance (using e.g. ``openfe charge-molecules``) for
-  reproducibility and to avoid repeated charge calculations.
+Partial charges are assigned during protocol setup but can also
+be assigned in advance using ``openfe charge-molecules`` for
+reproducibility and to avoid repeated calculations.
 
 .. rubric:: Binding poses
 
@@ -147,7 +144,7 @@ Cofactors and other small molecules
 * The :ref:`ligand preparation requirements <prep_ligands>` also
   apply to cofactors, including correct bonding, protonation,
   explicit hydrogens and coordinates.
-* Metal-containing cofactors, such as heme, are not supported.
+* Metal-containing cofactors, such as heme, are not supported by the standard preparation workflow.
 
 Checking prepared structures
 ----------------------------
