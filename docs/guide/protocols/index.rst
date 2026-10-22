@@ -9,6 +9,7 @@ provides an overview of the available protocols, guidance on choosing
 between them, and their main limitations.
 
 
+
 Available protocols
 -------------------
 
@@ -17,31 +18,45 @@ Relative binding free energies
 
 Relative protocols compute the difference in binding free energy (:math:`\Delta\Delta G`) between two ligands.
 
-:ref:`Relative Hybrid Topology Protocol <userguide_relative_hybrid_topology_protocol>` [1]_
-   Transforms one ligand into the other using a hybrid
-   topology defined by an atom mapping. Can also
-   calculate relative hydration free energies.
+.. grid:: 1 1 2 2
+   :gutter: 2
 
-:ref:`Separated Topologies Protocol <userguide_septop_protocol>` [2]_, [3]_
-   Inserts one ligand while removing the other,
-   using orientational restraints to maintain their positions
-   in the binding site. No atom mapping required.
+   .. grid-item-card:: :ref:`Relative Hybrid Topology Protocol <userguide_relative_hybrid_topology_protocol>` [1]_
+      :shadow: none
+
+      Transforms one ligand into another using a hybrid topology
+      defined by an atom mapping. Can also calculate relative
+      hydration free energies.
+
+   .. grid-item-card:: :ref:`Separated Topologies Protocol <userguide_septop_protocol>` [2]_, [3]_
+      :shadow: none
+
+      Inserts one ligand while removing the other, using
+      orientational restraints. No atom mapping required.
+
 
 Absolute binding free energies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Absolute protocols compute the binding free energy (:math:`\Delta G`)
-of a single ligand.
+Absolute protocols compute the binding free energy (:math:`\Delta G`) of a single ligand.
 
-:ref:`Absolute Binding Protocol <userguide_abfe_protocol>`
-   Decouples the ligand from
-   the binding site and from solvent, using orientational restraints in the complex.
+.. grid:: 1
+   :gutter: 2
+
+   .. grid-item-card:: Absolute Binding
+      :shadow: none
+
+      Decouples the ligand from the binding site and solvent,
+      using orientational restraints in the complex.
+
+      :ref:`Learn more <userguide_abfe_protocol>`
+
 
 Other protocols
 ~~~~~~~~~~~~~~~
 
-* :doc:`Absolute Solvation Protocol <absolutesolvation>`: absolute hydration free energy of a
-  small molecule.
+* :doc:`Absolute Solvation Protocol <absolutesolvation>`:
+  absolute hydration free energy of a small molecule.
 * :doc:`Plain MD Protocol <plainmd>`: conventional (non-alchemical) molecular dynamics, for
   example to check the stability of a binding pose before running free energy calculations.
 
@@ -91,7 +106,7 @@ for your installed version, inspect the protocol's ``default_settings()``.
 Domain of applicability
 -----------------------
 
-OpenFE's binding free energy protocols are primarily designed
+The **openfe** binding free energy protocols are primarily designed
 to calculate the noncovalent binding of small molecules to proteins.
 Not all molecular systems or alchemical transformations are supported.
 
@@ -101,7 +116,7 @@ System types and transformations
 The following tables group molecular systems and transformations
 according to the available testing and validation evidence.
 These categories indicate the current level of experience with
-OpenFE, rather than a guarantee of accuracy for a given system.
+**openfe**, rather than a guarantee of accuracy for a given system.
 
 Support also depends on the selected force fields and on system
 preparation.
@@ -175,8 +190,7 @@ preparation.
    * - Nucleic acid targets
      - * May be possible by adding a suitable Amber nucleic acid force field
          to ``forcefield_settings.forcefields``, e.g.
-         ``amber14/DNA.OL15.xml`` for DNA or ``amber14/RNA.OL3.xml`` for
-       RNA.
+         ``amber14/DNA.OL15.xml`` for DNA or ``amber14/RNA.OL3.xml`` for RNA.
    * - Metalloproteins
      - * Only non-bonded ion models of metal sites are supported.
        * Iron-containing proteins are not supported.
