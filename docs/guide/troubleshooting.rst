@@ -112,6 +112,14 @@ The state of the system and integrator before the error are often saved in a ``n
 
 .. _troubleshooting-log-debug-information:
 
+Resuming Interrupted Simulations
+--------------------------------
+
+In the case where your ``openfe quickrun`` execution has timed out, was cancelled, or was otherwise interrupted, you can attempt to resume the simulation using the ``--resume`` flag, which is available as of openfe v1.11.0.
+
+See :ref:`Resuming Interrupted Simulations <userguide_quickrun_resume>` for more details.
+
+
 Log Debug information
 ---------------------
 
@@ -205,3 +213,9 @@ For more information, see these issues on github:
 - https://github.com/choderalab/pymbar/issues/564
 - https://github.com/OpenFreeEnergy/openfe/issues/1534
 - https://github.com/OpenFreeEnergy/openfe/issues/1654
+
+CUDA-related errors
+-------------------
+
+You may see CUDA errors, such as ``openmm.OpenMMException: Error loading CUDA module``, especially when running across multiple machines, e.g. HPC systems.
+Refer to :ref:`installation-troubleshooting` for guidance on debugging your installation and :ref:`installation-cuda-errors` for suggestions for how to resolve CUDA-specific errors.

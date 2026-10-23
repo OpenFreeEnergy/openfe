@@ -29,10 +29,10 @@ dependencies:
   - parmed >=4.3.1  # fix to support numpy >=2.3: https://github.com/ParmEd/ParmEd/pull/1387
   - plugcli
   - pint>=0.24.0
-  - pip
+  - pip >=26.2.2  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
   - pooch >= 1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
   - py3dmol
-  - pydantic >=2.13.0
+  - pydantic ~=2.13
   - pygraphviz
   - pytest
   - pytest-xdist
@@ -59,3 +59,4 @@ dependencies:
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
+    - certifi >=2026.10.19
