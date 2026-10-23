@@ -5,7 +5,6 @@ channels:
 # explicit pins to speed up build:
 dependencies:
 - autodoc-pydantic >= 2.1
-- docutils == 0.20
 - exorcist
 - gitpython
 - libsass
@@ -13,14 +12,14 @@ dependencies:
 - nbsphinx
 - nbsphinx-link
 - openfe-analysis>=0.5.0
-- openff-toolkit-base == 0.17.0
+- openff-toolkit-base >= 0.17.0
 - openff-units == 0.3.1
-- openmm == 8.3.1
+- openmm ~=8.4.0
 - packaging
 - pip >=26.2.2  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
 - plugcli >= 0.2.1
 - python
-- pydantic >=2.0.0, <2.12.0  # https://github.com/openforcefield/openff-interchange/issues/1346
+- pydantic ~=2.13
 - sphinx ==7.2.6 # TODO: debug "duplicate object" warning with later versions
 - sphinx-click
 - sphinx-design
