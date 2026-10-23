@@ -15,8 +15,12 @@ inputs to look like, and how to handle common edge cases.
 Input files
 -----------
 
-The table below lists the input files typically used for protein--ligand calculations with **openfe**.
-The filenames shown are examples.
+The table below lists the input files typically used for protein--ligand calculations (filenames are examples).
+
+In **openfe**, *components* represent parts of a molecular system,
+such as proteins, ligands or solvent. They are combined into a
+``ChemicalSystem``. See :doc:`Components and Chemical Systems
+<chemical_systems_and_thermodynamic_cycles>` for details.
 
 .. list-table::
    :header-rows: 1
@@ -41,7 +45,8 @@ Bulk solvent is added during simulation setup using a ``SolventComponent``.
 .. note::
 
    Membrane and pre-solvated systems use ``ProteinMembraneComponent`` or ``SolvatedPDBComponent``
-   instead, with explicit solvent and valid periodic box vectors.
+   instead. These must include explicit solvent and valid periodic box vectors, so no additional
+   ``SolventComponent`` is needed for the complex leg.
    See :doc:`the membrane RBFE tutorial </tutorials/rbfe_membrane_protein>`.
 
 .. _prep_protein:
@@ -53,6 +58,8 @@ Preparing the protein
 
 * **Missing atoms:** Reconstruct missing atoms and check that PDB
   atom names and element symbols are correct for force field assignment.
+* **Naming conventions:** Use standard PDB or AMBER-compatible
+  residue and atom names, and ensure element symbols are correct.
 * **Missing residues:** Model missing residues, especially near
   the binding site.
 * **Chain termini:** If gaps remain, the exposed termini may
@@ -96,7 +103,7 @@ Crystallographic waters and ions
 
 * Retain binding-site and structurally important waters, but check for clashes with all ligands in the series and
   remove conflicting waters where appropriate.
-* Waters can remain in the protein PDB but must include explicit hydrogens.
+* Waters can remain in the protein PDB but must have explicit hydrogens and recognised residue names, such as ``HOH`` or ``WAT``.
 * During solvation, the protocols add bulk water without replacing existing waters.
 
 .. rubric:: Ions and additives
@@ -122,16 +129,18 @@ preserve bond orders. Each ligand must have:
 * A unique name in the SDF title line, used to label results.
 
 Partial charges are assigned during protocol setup but can also
-be assigned in advance using ``openfe charge-molecules`` for
-reproducibility and to avoid repeated calculations.
+be assigned in advance for reproducibility and to avoid repeated calculations.
+See :doc:`Generating Partial Charges with the OpenFE CLI </tutorials/charge_molecules_cli_tutorial>`.
 
 .. rubric:: Binding poses
 
 * Ligands must have 3D coordinates representing their intended binding
   poses in the same coordinate frame as the prepared protein.
 * Check for clashes with the protein, retained waters and cofactors.
-* For Relative Hybrid Topology, ligands should be well aligned on their
-  common core. The atom mapping should also be inspected separately.
+* For :ref:`Relative Hybrid Topology
+  <userguide_relative_hybrid_topology_protocol>`, ligands should be
+  aligned on their common core, and the atom mapping should be
+  inspected separately.
 
 .. _prep_cofactors:
 
