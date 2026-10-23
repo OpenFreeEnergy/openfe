@@ -5,6 +5,7 @@ import pytest
 from rdkit import Chem
 
 from openfe import ProteinComponent, ProteinMembraneComponent
+from openfe.tests.conftest import a2a_protein_membrane_pdb
 from openfecli.parameters.protein import _get_protein, _get_protein_membrane
 from openfecli.tests.commands.test_plan_rbfe_network import protein_membrane_args
 
