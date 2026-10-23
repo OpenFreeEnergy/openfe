@@ -38,7 +38,7 @@ such as proteins, ligands or solvent. They are combined into a
      - Ligands with correct chemistry, explicit hydrogens, and 3D coordinates of their binding poses.
    * - :ref:`cofactors.sdf <prep_cofactors>` (optional)
      - ``SmallMoleculeComponent`` for each cofactor
-     - Noncovalent cofactors with correct chemistry and coordinates.
+     - Noncovalent cofactors with correct chemistry, explicit hydrogens, and 3D coordinates of their binding poses.
 
 Bulk solvent is added during simulation setup using a ``SolventComponent``.
 
