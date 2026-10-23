@@ -94,6 +94,22 @@ interpolated linearly. The available options differ only in *when* the electrost
 
    Strength of the electrostatic (dashed) and steric (solid) interactions of the unique atoms of state A (blue)
    and state B (red) as a function of ``lambda``, for each of the available ``lambda_functions``.
+   The points mark the ``lambda`` values of the default 11 window schedule.
+
+For the core (mapped) atoms, all lambda functions interpolate the charge, :math:`\sigma` and :math:`\epsilon`
+linearly between their state A and state B values, so the choice of ``lambda_functions`` does not affect them.
+
+.. figure:: /_static/lambda_functions_core.png
+   :alt: Linear interpolation of the charge, sigma and epsilon of a core atom between its state A and state B values.
+
+   Interpolation of the nonbonded parameters of a core atom (charge, :math:`\sigma` and :math:`\epsilon`) from their
+   state A value to their state B value. The points mark the ``lambda`` values of the default 11 window schedule.
+
+.. note:: We recommend the ``default`` option as it has been extensively tested and validated in
+         benchmarks of the protocol, so its performance is best characterised. ``namd`` and ``quarters`` are provided for
+         users who want to explore alternative alchemical pathways, but they have not been benchmarked to the same extent.
+         If you do change the function, it is good practice to check the overlap between neighbouring windows
+         (see :ref:`Energetic and replica exchange analysis <guide/protocols/relativehybridtopology:Energetic and replica exchange analysis>`) and, if needed, increase ``lambda_windows``.
 
 The choice of lambda function can be configured via the protocol settings, for example:
 
