@@ -3,7 +3,6 @@ import pathlib
 import pytest
 from click.testing import CliRunner
 
-from openfe.tests.conftest import warehouse_data_dir
 from openfecli.commands.setup_task_campaign import setup_task_campaign
 
 from ..utils import assert_click_success

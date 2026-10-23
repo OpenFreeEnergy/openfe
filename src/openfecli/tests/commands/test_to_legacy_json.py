@@ -2,7 +2,6 @@ from unittest import mock
 
 from click.testing import CliRunner
 
-from openfe.tests.conftest import warehouse_data_dir, warehouse_partial_failure
 from openfecli.commands.to_legacy_json import to_legacy_json
 
 from ..utils import assert_click_success
