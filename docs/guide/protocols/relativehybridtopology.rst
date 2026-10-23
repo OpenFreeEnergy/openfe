@@ -89,7 +89,7 @@ interpolated linearly. The available options differ only in *when* the electrost
      - Sterics: 0.5–0.75; electrostatics: 0.75–1.0
      - Four sequential stages, with only one interaction type being changed at a time.
 
-.. figure:: /_static/lambda_functions.png
+.. figure:: img/lambda_functions.png
    :alt: Interaction strength of the electrostatic and steric terms as a function of lambda for the default, namd and quarters lambda functions.
 
    Strength of the electrostatic (dashed) and steric (solid) interactions of the unique atoms of state A (blue)
@@ -99,7 +99,8 @@ interpolated linearly. The available options differ only in *when* the electrost
 For the core (mapped) atoms, all lambda functions interpolate the charge, :math:`\sigma` and :math:`\epsilon`
 linearly between their state A and state B values, so the choice of ``lambda_functions`` does not affect them.
 
-.. figure:: /_static/lambda_functions_core.png
+.. figure:: img/lambda_functions_core.png
+   :width: 50%
    :alt: Linear interpolation of the charge, sigma and epsilon of a core atom between its state A and state B values.
 
    Interpolation of the nonbonded parameters of a core atom (charge, :math:`\sigma` and :math:`\epsilon`) from their
