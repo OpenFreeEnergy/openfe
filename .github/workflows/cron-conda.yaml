@@ -2,8 +2,8 @@ name: "cron: conda builds daily tests"
 on:
   workflow_dispatch:
   schedule:
-    # At 05:00 UTC every day
-    - cron: "0 5 * * *"
+    # At 05:17 UTC monday-friday
+    - cron: "17 5 * * 1-5"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
