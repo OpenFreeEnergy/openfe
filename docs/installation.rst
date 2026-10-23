@@ -464,6 +464,7 @@ This test suite contains several hundred individual tests.
 This may take up to an hour, and all tests should complete with status either passed, skipped, or xfailed (expected fail).
 This "long" test suite should be run as a job on the compute hardware intended to run openfe jobs, as it will test GPU specific features.
 
+.. _installation-troubleshooting:
 
 Troubleshooting Your Installation
 ---------------------------------
@@ -486,18 +487,6 @@ The output of the script will also be printed to standard out as it is executed.
 While no sensitive information is extracted, it is good practice to review the output before sending it or posting it to ensure that nothing needs to be redacted.
 For example, if your python path was ``/data/SECRET_COMPOUND_NAME/python`` then that would show up in ``debug.log``.
 
-
-Common Errors
--------------
-
-.. parsed-literal::
-
-  openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VERSION (222)
-
-This error likely means that the CUDA version that ``openmm`` was built with is incompatible with the CUDA driver.
-Try re-making the environment while specifying the correct CUDA toolkit version for your hardware and driver.
-See :ref:`installation:mamba_hpc` for more details.
-
 Optional dependencies
 ---------------------
 
@@ -506,6 +495,20 @@ Certain functionalities are only available if you also install optional packages
 * **OpenEye tools**: To use functionality requiring OpenEye, you must install ``openeye-toolkits`` and hold a valid OpenEye license. To install, use::
 
     $ mamba install -c openeye openeye-toolkits
+
+.. _installation-cuda-errors:
+
+CUDA Errors
+-----------
+
+.. parsed-literal::
+
+  openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VERSION (222)
+
+This error likely means the CUDA version that ``openmm`` was built with is incompatible with the CUDA driver.
+Try re-making the environment while specifying the correct CUDA toolkit version for your hardware and driver.
+See :ref:`installation:mamba_hpc` for more details.
+
 
 Supported Hardware
 ------------------
