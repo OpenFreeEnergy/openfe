@@ -66,9 +66,13 @@ jobs:
           micromamba info
           micromamba list
 
+      - id: download-test-data
+        name: "Download test data"
+        run: |
+          openfe test --download-only
+
       - id: run-tests
         name: "Run tests"
         run: |
-          openfe test --download-only
           # note: this only runs the fast tests
           pytest -n auto --pyargs openfe openfecli
