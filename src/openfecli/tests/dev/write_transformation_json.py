@@ -12,7 +12,6 @@ USAGE:
 """
 
 import argparse
-import json
 import pathlib
 
 import gufe
