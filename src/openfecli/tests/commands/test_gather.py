@@ -1,10 +1,8 @@
 import glob
-import gzip
 import os
 import pathlib
 from unittest import mock
 
-import pandas as pd
 import pooch
 import pytest
 from click.testing import CliRunner
