@@ -1981,26 +1981,39 @@ class ComplexTrajectoryAnalysisMixin:
 
         # Read the topology once and reuse across all lambda states
         u_top = mda.Universe(topology)
-        prot_indices = u_top.select_atoms(protein_selection).indices
+        # Guess bonds for the host
+        host = u_top.select_atoms(protein_selection)
+        host_atoms = host.residues.atoms
+        if host_atoms:
+            host_atoms.guess_bonds()
+
+        prot_indices = host.indices
+        time_ps: np.ndarray | None = None
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
             prot = universe.atoms[prot_indices]
             lig = universe.atoms[ligand_indices]
             apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig])
 
+            # Assign time based on the state's universe before transferring to memory
+            if time_ps is None:
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
+            # unwrap/shift/align run once per frame, here
+            universe.transfer_to_memory(step=skip)
+
             # Protein selection is empty - e.g. not looking at a protein host
             if prot:
-                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
+                prot_rmsd2d = Protein2DRMSD(prot).run()
                 analysis_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
 
-            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run()
             analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
 
-            lig_drift = LigandCOMDrift(lig).run(step=skip)
+            lig_drift = LigandCOMDrift(lig).run()
             analysis_data["ligand_COM_drift"].append(lig_drift.results.com_drift)
 
-        # Assign time based on the final state's universe
-        time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+            del universe
 
         return analysis_data, time_ps
 
@@ -2052,16 +2065,19 @@ class LigandTrajectoryAnalysisMixin:
 
         # Read the topology once and reuse across all lambda states
         u_top = mda.Universe(topology)
+        time_ps: np.ndarray | None = None
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
             lig = universe.atoms[ligand_indices]
             apply_ligand_alignment_transformations(universe, ligand=lig)
 
+            if time_ps is None:
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
             lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
             analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
 
-        # Assign time based on the final state's universe
-        time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+            del universe
 
         return analysis_data, time_ps
 
