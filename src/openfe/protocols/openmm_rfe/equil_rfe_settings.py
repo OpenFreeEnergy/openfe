@@ -39,9 +39,9 @@ class LambdaSettings(SettingsBaseModel):
     Settings controlling the lambda schedule, these include the switching
     function type, and the number of windows.
     """
-    lambda_functions: str = "default"
+    lambda_functions: Literal["default", "namd", "quarters"] = "default"
     """
-    Key of which switching functions to use for alchemical mutation.
+    Key of which pre-defined switching functions to use for alchemical mutation.
     Default 'default'.
     """
     lambda_windows: int = 11
