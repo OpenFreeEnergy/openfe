@@ -131,7 +131,17 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     """
     solvent_padding: NanometerQuantity | None = 1.5 * unit.nanometer
     """
-    Minimum distance from any solute bounding sphere to the edge of the box.
+    Padding distance used to size the periodic box around the solute.
+
+    This value is passed directly to OpenMM's
+    :meth:`openmm.app.Modeller.addSolvent`. OpenMM places the solute in a
+    bounding sphere and sets the box width to the larger of
+    (sphere diameter + padding) and (2 * padding). The padding is therefore
+    the minimum distance between any solute atom and its nearest periodic
+    image, i.e. roughly half the padding separates the solute from each box
+    edge. For solutes whose diameter is smaller than the padding (e.g. a
+    single small molecule), the box width is 2 * padding irrespective of the
+    solute size.
 
     Note
     ----

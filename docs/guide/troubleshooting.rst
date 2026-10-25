@@ -107,6 +107,7 @@ diagnostics, including agreement between independent repeats.
 
 - Check the input ligand and starting pose for clashes or poor geometry, try to relax the ligand in the receptor before running the protocol.
 - If possible, rebuild or re-prep the input structures before rerunning the protocol.
+  See :ref:`preparing-protein-inputs` for what the protocols assume of a protein structure.
 
 The state of the system and integrator before the error are often saved in a ``nan-error-logs`` directory, which can help with debugging.
 

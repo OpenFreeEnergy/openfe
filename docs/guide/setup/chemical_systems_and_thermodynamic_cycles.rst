@@ -50,6 +50,31 @@ Component types — overview
      - Subclass of :class:`.SolvatedPDBComponent`. Includes protein, membrane, solvent,
        and box vectors. Replaces :class:`.ProteinComponent` in membrane systems.
 
+.. _preparing-protein-inputs:
+
+Preparing protein inputs
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+OpenFE protocols do not prepare the structures they are given. A
+:class:`.ProteinComponent` is used as-is, so it should already be:
+
+* complete, with missing residues, loops and heavy atoms modelled and
+  capping groups added where chains are truncated;
+* protonated, with the hydrogen positions and protonation states that you
+  intend to simulate;
+* relaxed under the target thermodynamic conditions, for example by a short
+  minimisation followed by a brief equilibration run.
+
+.. note::
+   The free energy protocols perform only a short minimisation and
+   equilibration, without positional restraints or temperature annealing,
+   before production sampling. Starting from an unrelaxed structure (for
+   instance a raw crystal structure with clashes or strained contacts) can
+   make the simulation numerically unstable and lead to ``NaN`` errors early
+   in the run; see :ref:`troubleshooting-nan-errors-during-simulation`.
+   The :class:`.PlainMDProtocol` can be used to generate an equilibrated
+   structure before setting up free energy calculations.
+
 .. _userguide_solvation_models:
 
 Abstract vs explicit solvation
