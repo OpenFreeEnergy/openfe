@@ -9,7 +9,7 @@ TODO
 """
 
 import warnings
-from itertools import combinations, groupby
+from itertools import groupby
 from typing import Optional, Union
 
 import MDAnalysis as mda
@@ -75,7 +75,8 @@ def _get_mda_selection(
 
 def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     """
-    Get a list of tuples with the indices for each ring in an rdkit Molecule.
+    Get one set of atom indices for each aromatic ring system in an RDKit molecule.
+    Aromatically connected atoms are grouped into a single ring system.
 
     Parameters
     ----------
@@ -84,27 +85,17 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
 
     Returns
     -------
-    list[set[[int]]
-      List of tuples for each ring.
+    list[set[int]]
+      One set of atom indices for each aromatic ring system.
     """
+    graph = nx.Graph()
 
-    ringinfo = rdmol.GetRingInfo()
-    arom_idxs = get_aromatic_atom_idxs(rdmol)
+    # Connect atoms joined by aromatic bonds
+    for bond in rdmol.GetBonds():
+        if bond.GetIsAromatic() and bond.IsInRing():
+            graph.add_edge(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
 
-    aromatic_rings = []
-
-    # Add to the aromatic_rings list if all the atoms in a ring are aromatic
-    for ring in ringinfo.AtomRings():
-        if all(a in arom_idxs for a in ring):
-            aromatic_rings.append(set(ring))
-
-    # Reduce the ring list by merging any rings that have colliding atoms
-    for x, y in combinations(aromatic_rings, 2):
-        if not x.isdisjoint(y):
-            x.update(y)
-            aromatic_rings.remove(y)
-
-    return aromatic_rings
+    return [set(component) for component in nx.connected_components(graph)]
 
 
 def get_aromatic_atom_idxs(rdmol: Chem.Mol) -> list[int]:

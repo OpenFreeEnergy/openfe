@@ -12,13 +12,13 @@ jobs:
       mapping: ${{ steps.aws-start.outputs.mapping }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a  # v4.3.1
         with:
           role-to-assume: arn:aws:iam::010438489691:role/GHARunnerAWS
           aws-region: us-east-2
       - name: Create cloud runner
         id: aws-start
-        uses: omsf/start-aws-gha-runner@v1.0.0
+        uses: omsf/start-aws-gha-runner@ab8ad839c760c94ae44e6782a1b20e3f591827fd  # v1.0.0
         with:
           aws_image_id: ami-076a54ed41e67782d
           aws_instance_type: g4dn.xlarge
@@ -39,8 +39,7 @@ jobs:
     needs:
       - start-aws-runner
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Print disk usage
         run: "df -h"
 
@@ -51,7 +50,7 @@ jobs:
         run: "nvidia-smi"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@f457c30a868e4760d3a6fcea5f25dc655b8edf39  # v3.2.1
         with:
           environment-file: environment.yml
           environment-name: openfe_env
@@ -60,10 +59,7 @@ jobs:
               - conda-forge
               - openeye
 
-          # espaloma only supports python<=3.12
           create-args: >-
-            espaloma_charge==0.0.8
-            espaloma==0.4.0
             openeye-toolkits
             python=3.12
             cuda-version=12.8
@@ -111,12 +107,12 @@ jobs:
     if: ${{ always() }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a  # v4.3.1
         with:
           role-to-assume: arn:aws:iam::010438489691:role/GHARunnerAWS
           aws-region: us-east-2
       - name: Stop instances
-        uses: omsf/stop-aws-gha-runner@v1.0.0
+        uses: omsf/stop-aws-gha-runner@a3d2e34cba8571eaf9b40ae00705d6b2b77402f6  # v1.0.0
         with:
           instance_mapping: ${{ needs.start-aws-runner.outputs.mapping }}
         env:

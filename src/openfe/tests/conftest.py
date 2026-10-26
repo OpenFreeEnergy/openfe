@@ -366,6 +366,28 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 
 
 @pytest.fixture(scope="session")
+def cdk8_ligands_sdf():
+    with resources.as_file(resources.files("openfe.tests.data.cdk8")) as d:
+        yield str(d / "cdk8_ligands.sdf")
+
+
+@pytest.fixture(scope="session")
+def cdk8_ligands(cdk8_ligands_sdf) -> list[SmallMoleculeComponent]:
+    return [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(cdk8_ligands_sdf, removeHs=False)]
+
+
+@pytest.fixture(scope="session")
+def cdk8_protein_pdb():
+    with resources.as_file(resources.files("openfe.tests.data.cdk8")) as d:
+        yield str(d / "cdk8_protein.pdb")
+
+
+@pytest.fixture(scope="session")
+def cdk8_protein(cdk8_protein_pdb) -> openfe.ProteinComponent:
+    return openfe.ProteinComponent.from_pdb_file(cdk8_protein_pdb)
+
+
+@pytest.fixture(scope="session")
 def a2a_ligands_sdf():
     with resources.as_file(resources.files("openfe.tests.data.a2a")) as d:
         yield str(d / "ligands.sdf.gz")
@@ -896,6 +918,84 @@ def appearing_bond_mapping(chlorobenzene) -> LigandAtomMapping:
         componentA=ethyl_benzene,
         componentB=chlorobenzene,
         componentA_to_componentB={5: 0, 7: 1, 8: 2, 9: 3, 10: 4, 11: 5, 12: 6},
+    )
+
+
+@pytest.fixture()
+def single_to_triple_bond_mapping() -> LigandAtomMapping:
+    # Create a mapping from the janssen bace dataset which has a single to triple bond transformation
+    with resources.as_file(resources.files("openfe.tests.data")) as f:
+        supplier = Chem.SDMolSupplier(str(f / "single_to_triple_mapping.sdf"), removeHs=False)
+        smcs = [SmallMoleculeComponent(m) for m in supplier if m is not None]
+
+        return LigandAtomMapping(
+            componentA=smcs[0],
+            componentB=smcs[1],
+            componentA_to_componentB={
+                31: 33,
+                32: 31,
+                33: 32,
+                36: 34,
+                37: 35,
+                38: 36,
+                39: 37,
+                40: 38,
+                41: 39,
+                42: 40,
+                43: 41,
+                44: 44,
+                45: 43,
+                46: 42,
+                47: 45,
+                48: 46,
+                49: 49,
+                50: 47,
+                51: 48,
+                52: 50,
+                53: 51,
+                54: 52,
+                0: 0,
+                1: 1,
+                2: 2,
+                3: 3,
+                4: 4,
+                5: 5,
+                6: 6,
+                7: 7,
+                8: 8,
+                9: 9,
+                10: 10,
+                11: 11,
+                12: 12,
+                13: 13,
+                14: 14,
+                15: 15,
+                16: 16,
+                17: 17,
+                18: 18,
+                19: 19,
+                20: 20,
+                21: 21,
+                22: 22,
+                23: 23,
+                24: 24,
+                25: 25,
+                26: 26,
+                27: 27,
+                28: 28,
+                29: 29,
+                30: 30,
+            },
+        )
+
+
+@pytest.fixture()
+def triple_to_single_bond_mapping(single_to_triple_bond_mapping) -> LigandAtomMapping:
+    # return the reverse mapping of the single to triple bond mapping
+    return LigandAtomMapping(
+        componentA=single_to_triple_bond_mapping.componentB,
+        componentB=single_to_triple_bond_mapping.componentA,
+        componentA_to_componentB=single_to_triple_bond_mapping.componentB_to_componentA,
     )
 
 
