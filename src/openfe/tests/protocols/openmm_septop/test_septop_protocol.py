@@ -1,9 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import itertools
-import json
 import math
-import pathlib
 from collections import Counter
 from unittest import mock
 
@@ -45,6 +42,7 @@ from openfe.protocols.openmm_septop import (
 )
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
+from openfe.protocols.restraint_utils.geometry.utils import get_aromatic_rings
 from openfe.protocols.restraint_utils.settings import BoreschRestraintSettings
 from openfe.tests.protocols.conftest import compute_energy
 from openfe.tests.protocols.openmm_ahfe.test_ahfe_protocol import (
@@ -961,6 +959,66 @@ def test_user_restraint_complex(
         assert pytest.approx(geom.phi_A0.to("radians").m, rel=1e-4) == 0.86035
         assert pytest.approx(geom.phi_B0.to("radians").m, rel=1e-4) == 1.59444
         assert pytest.approx(geom.phi_C0.to("radians").m, rel=1e-4) == 2.92365
+
+
+def test_sanitize_ligand_before_restraint_search(
+    cdk8_ligands,
+    cdk8_protein,
+    protocol_dry_settings,
+    tmp_path,
+):
+    ligand_A = openfe.SmallMoleculeComponent.from_openff(cdk8_ligands[1].to_openff())
+    ligand_B = openfe.SmallMoleculeComponent.from_openff(cdk8_ligands[2].to_openff())
+
+    # OpenFF uses MDL aromaticity, which does not mark the standalone
+    # five-membered ring as aromatic.
+    assert 5 not in {len(ring) for ring in get_aromatic_rings(ligand_A.to_rdkit())}
+
+    solvent = SolventComponent()
+
+    stateA = ChemicalSystem(
+        {
+            "ligand": ligand_A,
+            "protein": cdk8_protein,
+            "solvent": solvent,
+        }
+    )
+    stateB = ChemicalSystem(
+        {
+            "ligand": ligand_B,
+            "protein": cdk8_protein,
+            "solvent": solvent,
+        }
+    )
+
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+
+    complex_setup_unit = [
+        unit for unit in dag.protocol_units if isinstance(unit, SepTopComplexSetupUnit)
+    ]
+    assert len(complex_setup_unit) == 1
+    complex_setup_unit = complex_setup_unit[0]
+
+    with mock.patch.object(
+        complex_setup_unit,
+        "_get_boresch_restraint",
+        side_effect=RuntimeError("aromaticity checked"),
+    ) as get_restraint:
+        with pytest.raises(RuntimeError, match="aromaticity checked"):
+            complex_setup_unit.run(
+                dry=True,
+                scratch_basepath=tmp_path,
+                shared_basepath=tmp_path,
+            )
+
+    guest_rdmol = get_restraint.call_args.args[1]
+
+    assert sorted(len(ring) for ring in get_aromatic_rings(guest_rdmol)) == [5, 6, 9]
 
 
 @pytest.fixture

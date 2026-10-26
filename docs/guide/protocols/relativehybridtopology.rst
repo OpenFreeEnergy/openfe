@@ -58,6 +58,67 @@ A soft-core potential is applied to the Lennard-Jones potential to avoid instabl
 Both the soft-core potential functions from Beutler et al. [2]_ and from Gapsys et al. [3]_ are available and can be specified in the ``alchemical_settings.softcore_LJ`` settings
 (default: ``gapsys``).
 
+Choosing a lambda function
+""""""""""""""""""""""""""
+
+The ``lambda_settings.lambda_functions`` setting selects how the nonbonded interactions of the unique (dummy) atoms
+are switched off in state A and on in state B as ``lambda`` goes from 0 to 1. Mapped (core) atoms and bonded terms are always
+interpolated linearly. The available options differ only in *when* the electrostatic and steric (Lennard-Jones) terms are changed:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 20 20 45
+
+   * - Option
+     - State A removed
+     - State B inserted
+     - Description
+   * - ``default``
+     - Electrostatics: 0.0–0.5; sterics: 0.5–1.0
+     - Sterics: 0.0–0.5; electrostatics: 0.5–1.0
+     - Two stages. Electrostatics of A are turned off while the sterics of B are turned on, then the sterics of A
+       are turned off while the electrostatics of B are turned on. Charges are never present on atoms with
+       incompletely-formed sterics.
+   * - ``namd``
+     - Electrostatics: 0.0–0.5; sterics: 0.33–1.0
+     - Sterics: 0.0–0.67; electrostatics: 0.5–1.0
+     - Similar to ``default`` but the steric changes are spread over a wider range, so sterics and electrostatics
+       are changed simultaneously for part of the path (following Jiang, Chipot and Roux [6]_).
+   * - ``quarters``
+     - Electrostatics: 0.0–0.25; sterics: 0.25–0.5
+     - Sterics: 0.5–0.75; electrostatics: 0.75–1.0
+     - Four sequential stages, with only one interaction type being changed at a time.
+
+.. figure:: img/lambda_functions.png
+   :alt: Interaction strength of the electrostatic and steric terms as a function of lambda for the default, namd and quarters lambda functions.
+
+   Strength of the electrostatic (dashed) and steric (solid) interactions of the unique atoms of state A (blue)
+   and state B (red) as a function of ``lambda``, for each of the available ``lambda_functions``.
+   The points mark the ``lambda`` values of the default 11 window schedule.
+
+For the core (mapped) atoms, all lambda functions interpolate the charge, :math:`\sigma` and :math:`\epsilon`
+linearly between their state A and state B values, so the choice of ``lambda_functions`` does not affect them.
+
+.. figure:: img/lambda_functions_core.png
+   :width: 50%
+   :alt: Linear interpolation of the charge, sigma and epsilon of a core atom between its state A and state B values.
+
+   Interpolation of the nonbonded parameters of a core atom (charge, :math:`\sigma` and :math:`\epsilon`) from their
+   state A value to their state B value. The points mark the ``lambda`` values of the default 11 window schedule.
+
+.. note:: We recommend the ``default`` option as it has been extensively tested and validated in
+         benchmarks of the protocol, so its performance is best characterised. ``namd`` and ``quarters`` are provided for
+         users who want to explore alternative alchemical pathways, but they have not been benchmarked to the same extent.
+         If you do change the function, it is good practice to check the overlap between neighbouring windows
+         (see :ref:`Energetic and replica exchange analysis <guide/protocols/relativehybridtopology:Energetic and replica exchange analysis>`) and, if needed, increase ``lambda_windows``.
+
+The choice of lambda function can be configured via the protocol settings, for example:
+
+.. code-block:: python
+
+   settings = RelativeHybridTopologyProtocol.default_settings()
+   settings.lambda_settings.lambda_functions = "namd"
+
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
@@ -231,5 +292,6 @@ References
 .. [3] New Soft-Core Potential Function for Molecular Dynamics Based Alchemical Free Energy Calculations, V. Gapsys, D. Seeliger, and B.L. de Groot, J. Chem. Theor. Comput., 8 2373-2382 (2012)
 .. [4] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
 .. [5] Guidelines for the analysis of free energy calculations, Pavel V. Klimovich, Michael R. Shirts, and David L. Mobley, J Comput Aided Mol Des. 2015 May; 29(5):397-411. doi: 10.1007/s10822-015-9840-9
+.. [6] Computing Relative Binding Affinity of Ligands to Receptor: An Effective Hybrid Single-Dual-Topology Free-Energy Perturbation Approach in NAMD, Wei Jiang, Christophe Chipot, and Benoît Roux, J. Chem. Inf. Model. 2019, 59, 9, 3794-3802
 
 .. _openfe_analysis: https://github.com/OpenFreeEnergy/openfe_analysis

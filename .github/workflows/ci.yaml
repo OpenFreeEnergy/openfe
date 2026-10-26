@@ -53,7 +53,7 @@ jobs:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
@@ -62,25 +62,7 @@ jobs:
         run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
 
       - name: "Setup Micromamba"
-        # espaloma only installable with python<=3.12
-        if: ${{ matrix.python-version == '3.12' }}
-        uses: mamba-org/setup-micromamba@v2
-        with:
-          environment-file: environment.yml
-          environment-name: openfe_env
-          cache-environment: true
-          cache-downloads: true
-          cache-environment-key: environment-${{ steps.date.outputs.date }}
-          cache-downloads-key: downloads-${{ steps.date.outputs.date }}
-          create-args: >-
-            espaloma=0.4.0
-            python=${{ matrix.python-version }}
-            pydantic=${{ matrix.pydantic-version }}
-          init-shell: bash
-
-      - name: "Setup Micromamba"
-        if: ${{ matrix.python-version != '3.12' }}
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@f457c30a868e4760d3a6fcea5f25dc655b8edf39  # v3.2.1
         with:
           environment-file: environment.yml
           environment-name: openfe_env
@@ -117,20 +99,42 @@ jobs:
           # if we add more to this, consider changing to for + env vars
           python -Ic "import openfe; print(openfe.__version__)"
 
-      - name: Cache Pooch data
-        uses: actions/cache@v4
+      # Most thorough would be to hash every file that gets changed,
+      # but we just bump the cache every week to keep it simple.
+      - name: Get Week Number
+        id: get-week
+        run: echo "week=$(/bin/date -u "+%W-%Y")" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Restore Test Data Cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        id: restore-cache
         with:
           path: |
             # linux cache location
             ~/.cache/openfe
             # osx cache location
             ~/Library/Caches/openfe
-          # When files are added or changed in a pooch registry
-          # bump this key to create a new cache, for example if 
-          # the key is pooch-${{ matrix.os }}-1 change it to pooch-${{ matrix.os }}-2
-          key: pooch-${{ matrix.os }}-1
+          key: pooch-${{ matrix.os }}-${{ steps.get-week.outputs.week }}
 
-      - name: "Run tests"
+      - name: Download Test Data
+        # Pooch does its own caching, and will only pull down files that are new/changed
+        run: openfe test --download-only
+
+      - name: Cache New Test Data
+        id: cache-test-data
+        # always() means the data is cached even if downstream tests fail or are cancelled
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            # linux cache location
+            ~/.cache/openfe
+            # osx cache location
+            ~/Library/Caches/openfe
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+
+      - name: Run Tests
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
@@ -141,7 +145,7 @@ jobs:
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
                 && github.event_name == 'pull_request' }}
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml
@@ -153,10 +157,10 @@ jobs:
         # we only want to upload a slow report if
         # 1) it isn't a schedule run
         # 2) it wasn't from a PR (we don't run slow tests on PRs)
-        if: ${{ github.repository == 'OpenFreeEnergy/openfe'  
-                && github.event_name != 'schedule'            
-                && github.event_name != 'pull_request' }}     
-        uses: codecov/codecov-action@v4
+        if: ${{ github.repository == 'OpenFreeEnergy/openfe'
+                && github.event_name != 'schedule'
+                && github.event_name != 'pull_request' }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml

@@ -1,11 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import glob
-import itertools
 import pathlib
 
 import click
-from plugcli.params import NOT_PARSED, MultiStrategyGetter, Option
+from plugcli.params import Option
 
 
 # MOVE TO GUFE ####################################################

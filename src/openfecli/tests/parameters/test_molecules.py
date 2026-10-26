@@ -1,11 +1,7 @@
-import os
 from importlib import resources
 
-import click
 import pytest
 
-import openfe
-from openfe import SmallMoleculeComponent
 from openfecli.parameters.molecules import load_molecules
 
 

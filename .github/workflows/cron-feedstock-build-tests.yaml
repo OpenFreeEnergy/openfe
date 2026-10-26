@@ -21,12 +21,12 @@ jobs:
     
     steps:
       - name: Checkout openfe repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           path: openfe
       
       - name: Checkout conda-forge feedstock
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: conda-forge/openfe-feedstock
           path: openfe-feedstock
