@@ -224,7 +224,7 @@ Checklist for preparing input ``Components``
 See also
 --------
 
-* :doc:`Loading Molecules and Chemical Systems /cookbook/loading_molecules>`
+* :doc:`Loading Molecules and Chemical Systems </cookbook/loading_molecules>`
 * :doc:`Components, Chemical Systems and Thermodynamic Cycles <chemical_systems_and_thermodynamic_cycles>`
 * :doc:`Membrane RBFE tutorial </tutorials/rbfe_membrane_protein>`
 * :ref:`Protocols and domain of applicability <userguide_protocols>`
