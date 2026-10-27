@@ -71,11 +71,11 @@ The inputs are loaded as follows:
 
       * **Ligands and cofactors:** create a ``SmallMoleculeComponent`` from
         an RDKit molecule (``SmallMoleculeComponent.from_rdkit``) or an
-        OpenFF ``Molecule`` (``SmallMoleculeComponent.from_openff``). For
-        multi-molecule SDF files, load the molecules with RDKit's
-        ``SDMolSupplier(..., removeHs=False)``, since
-        ``SmallMoleculeComponent.from_sdf_file`` only reads the first
-        molecule.
+        OpenFF ``Molecule`` (``SmallMoleculeComponent.from_openff``).
+        ``SmallMoleculeComponent.from_sdf_file`` only accepts files containing a
+        single molecule; for multi-molecule SDF files, load the molecules with
+        RDKit's ``SDMolSupplier(..., removeHs=False)`` and create one component
+        from each.
       * **Protein:** ``ProteinComponent.from_pdb_file`` (or
         ``from_pdbx_file``).
       * **Pre-solvated systems:** ``SolvatedPDBComponent.from_pdb_file`` or
