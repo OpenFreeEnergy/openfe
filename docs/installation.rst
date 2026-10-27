@@ -8,7 +8,7 @@ We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as fa
 
 - OpenMM 8.0, 8.1.2, 8.2, and 8.4 - **OpenMM v8.3.0 is not supported**
 
-When you install **openfe** through any of the methods described below, you will install both the core library and the command line interface (CLI).
+When you install **openfe** through any of the methods described below, you will install both the core Python library and the command line interface (CLI).
 
 Installation with ``micromamba`` (recommended)
 ----------------------------------------------
@@ -29,9 +29,9 @@ Once you have one of `micromamba <https://mamba.readthedocs.io/en/latest/install
 Reproducible builds with a ``conda-lock`` file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
 
-We recommend building from **openfe**'s ``conda-lock`` file in most cases, since it allows for building packages in a reproducible way on multiple platforms.
+We recommend building from **openfe**'s `conda-lock <https://conda.github.io/conda-lock/>`_ file in most cases, since it allows for building packages in a reproducible way on multiple platforms.
+
 
 Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
 
@@ -108,9 +108,9 @@ The installer can be installed in batch mode or interactively  ::
   $ chmod +x ./OpenFEforge-Linux-x86_64.sh # Make installer executable
   $ ./OpenFEforge-Linux-x86_64.sh # Run the installer
 
-Example installer output is shown below (click to expand "Installer Output")
+Example installer output is shown below
 
-.. collapse:: Installer Output
+.. collapse:: example installer output (click to expand)
 
   .. code-block::
 

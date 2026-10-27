@@ -11,7 +11,7 @@ command line interface.
 .. toctree::
     :maxdepth: 2
 
-    api/index
     cli/index
+    api/index
 
 .. _gufe: https://gufe.readthedocs.io/en/latest/api.html

@@ -20,30 +20,31 @@ libsass = "*"
 myst-parser = "*"
 nbsphinx = "*"
 nbsphinx-link = "*"
-openfe-analysis = ">=0.5.0"
+# openfe-analysis = ">=0.5.0"
 openff-toolkit-base = ">=0.17.0"
 openff-units = "==0.3.1"
 openmm = "~=8.4"
-packaging = "*"
+# packaging = "*"
 pip = ">=26.2.2"  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
 plugcli = ">=0.2.1"
 python = "==3.13"
 pydantic = "~=2.13.0"
-sphinx = "==7.2.6"  # TODO: debug "duplicate object" warning with later versions
-sphinx-autobuild = "*"  # TODO: make optional
+sphinx = "==7.2.6"  # down-pinned because nbsphinx-link https://github.com/vidartf/nbsphinx-link/issues/25
+# sphinx-autobuild = "*"  # TODO: make optional
+furo = "*"
 sphinx-click = "*"
 sphinx-design = "*"
 sphinx-toolbox = "*"
-threadpoolctl = "*"
-tqdm = "*"
-mock = "*"
-pillow = "*"
+# threadpoolctl = "*"
+# tqdm = "*"
+# mock = "*"
+# pillow = "*"
+annotated-types = "*"
 
 [environments.docs.pypi-dependencies]
 gufe = { git = "https://github.com/OpenFreeEnergy/gufe", rev = "main" }
-ofe-sphinx-theme = { git = "https://github.com/OpenFreeEnergy/ofe-sphinx-theme", rev = "v0.3.1" }
 kartograf = { git = "https://github.com/OpenFreeEnergy/kartograf", rev = "main" }
-konnektor = { git = "https://github.com/OpenFreeEnergy/konnektor", rev = "main" }
+# konnektor = { git = "https://github.com/OpenFreeEnergy/konnektor", rev = "main" }
 lomap2 = { git = "https://github.com/OpenFreeEnergy/lomap", rev = "main" }
 openfe = { path = ".", editable = true }
 

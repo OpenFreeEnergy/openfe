@@ -1,0 +1,166 @@
+// OFE color palette
+html {
+    --ofe-color-midnight-purple: #3f033b ;
+    --ofe-color-baja-teal: #00bdaa;
+    --ofe-color-cantina-purple: #8a2283;
+    --ofe-color-darkmode-purple: #ae4ca7;
+    --ofe-color-darkmode-teal: #008a7c;
+    --ofe-color-pale-purple: #eedfed;
+    --ofe-color-queso-orange: #f29727;
+    --ofe-color-diablo-red: #b00020;
+    --ofe-color-darkest-grey: #121212;
+    --ofe-color-dark-grey: #242424;
+    --ofe-color-beastly-grey: #666666;
+    --ofe-color-light-grey: #d5d5d5;
+    --ofe-color-lightest-grey: #f3f3f3;
+    --ofe-color-not-quite-black: #270224;
+    --ofe-color-search-highlight: #96b8c4
+}
+
+// Dark and light themes
+@mixin dark_theme {
+    --ofe-color-accent: #{accent_color_darkmode()};
+    // Colors come from the OFE color palette
+    // or the default PyData colour scheme
+    --pst-color-primary: var(--ofe-color-darkmode-purple);
+    --pst-color-primary-text: var(--ofe-color-midnight-purple);
+    --pst-color-primary-highlight: var(--ofe-color-beastly-grey);
+    --pst-color-secondary: var(--ofe-color-accent);
+    // --pst-color-secondary-text: #fff;
+    // --pst-color-secondary-highlight: #cf6912;
+    // --pst-color-success: #228a67;
+    // --pst-color-success-text: #fff;
+    // --pst-color-success-highlight: #2d5537;
+    --pst-color-info: var(--ofe-color-search-highlight);
+    // --pst-color-info-text: #fff;
+    --pst-color-info-highlight: var(--ofe-color-search-highlight);
+    // --pst-color-warning: #ee9040;
+    // --pst-color-warning-text: #fff;
+    // --pst-color-warning-highlight: #cf6912;
+    // --pst-color-danger: #cb4653;
+    // --pst-color-danger-text: #fff;
+    // --pst-color-danger-highlight: #992b36;
+    // --pst-color-light: #c9c9c9;
+    // --pst-color-light-text: #000;
+    // --pst-color-light-highlight: #a3a3a3;
+    // --pst-color-muted: #a6a6a6;
+    // --pst-color-muted-text: #fff;
+    // --pst-color-muted-highlight: gray;
+    // --pst-color-dark: #cecece;
+    // --pst-color-dark-text: #000;
+    // --pst-color-dark-highlight: #a8a8a8;
+    // --pst-color-black: #000;
+    // --pst-color-black-text: #fff;
+    // --pst-color-black-highlight: #000;
+    // --pst-color-white: #fff;
+    // --pst-color-white-text: #000;
+    // --pst-color-white-highlight: #d9d9d9;
+    // --pst-color-attention: var(--ofe-color-queso-orange);
+    --pst-color-text-base: var(--ofe-color-light-grey);
+    // --pst-color-text-muted: var(--ofe-color-pale-purple);
+    // --pst-color-shadow: var(--ofe-color-darkest-grey);
+    // --pst-color-border: silver;
+    // --pst-color-inline-code: var(--ofe-color-lightest-grey);
+    --pst-color-target: var(--pst-color-info-highlight);
+    // --pst-color-background: var(--ofe-color-darkest-grey);
+    // --pst-color-on-background: var(--ofe-color-dark-grey);
+    // --pst-color-surface: var(--ofe-color-dark-grey);
+    // --pst-color-on-surface:  var(--ofe-color-cantina-purple);
+    // --pst-color-link: var(--ofe-color-accent);
+    --pst-color-link-hover: var(--ofe-color-darkmode-teal);
+    --pst-color-inline-code-links: var(--ofe-color-darkmode-teal);
+}
+
+@mixin light_theme {
+    --ofe-color-accent: #{accent_color()};
+    --pst-color-primary: var(--ofe-color-cantina-purple);
+    --pst-color-primary-text: var(--ofe-color-light-grey);
+    --pst-color-primary-highlight: var(--ofe-color-lightest-grey);
+    --pst-color-secondary: var(--ofe-color-accent);
+    --pst-color-secondary-text: #fff;
+    --pst-color-secondary-highlight: #cf6912;
+    --pst-color-success: #228a67;
+    --pst-color-success-text: #fff;
+    --pst-color-success-highlight: #19692c;
+    --pst-color-info: var(--ofe-color-search-highlight);
+    --pst-color-info-text: #fff;
+    --pst-color-info-highlight: var(--ofe-color-search-highlight);
+    --pst-color-warning: #ee9040;
+    --pst-color-warning-text: #fff;
+    --pst-color-warning-highlight: #cf6912;
+    --pst-color-danger: #dc3545;
+    --pst-color-danger-text: #fff;
+    --pst-color-danger-highlight: #a71d2a;
+    --pst-color-light: #c9c9c9;
+    --pst-color-light-text: #000;
+    --pst-color-light-highlight: #a3a3a3;
+    --pst-color-muted: #646464;
+    --pst-color-muted-text: #fff;
+    --pst-color-muted-highlight: #3e3e3e;
+    --pst-color-dark: #323232;
+    --pst-color-dark-text: #fff;
+    --pst-color-dark-highlight: #0c0c0c;
+    --pst-color-black: #000;
+    --pst-color-black-text: #fff;
+    --pst-color-black-highlight: #000;
+    --pst-color-white: #fff;
+    --pst-color-white-text: #000;
+    --pst-color-white-highlight: #d9d9d9;
+    --pst-color-attention: var(--ofe-color-queso-orange);
+    --pst-color-text-base: var(--ofe-color-not-quite-black);
+    --pst-color-text-muted: var(--ofe-color-midnight-purple);
+    --pst-color-shadow: #d8d8d8;
+    --pst-color-border: #c9c9c9;
+    --pst-color-inline-code: var(--ofe-color-cantina-purple);
+    --pst-color-target: var(--pst-color-info);
+    --pst-color-background:#fff;
+    --pst-color-on-background:var(--ofe-color-lightest-grey);
+    --pst-color-surface: #f5f5f5;
+    --pst-color-on-surface: #e1e1e1;
+    --pst-color-link: var(--ofe-color-accent);
+    --pst-color-link-hover: var(--ofe-color-baja-teal);
+    --pst-color-inline-code-links: var(--ofe-color-baja-teal);
+}
+
+html[data-theme=light]{
+    @include light_theme();
+}
+
+html[data-theme=dark] {
+    @include dark_theme();
+}
+
+
+// Set Sphinx Design colors to corresponding PyData theme colors
+html {
+    --sd-color-secondary: var(--pst-color-secondary);
+    --sd-color-secondary-text: var(--pst-color-secondary-text);
+    --sd-color-secondary-highlight: var(--pst-color-secondary-highlight);
+    --sd-color-success: var(--pst-color-success);
+    --sd-color-success-text: var(--pst-color-success-text);
+    --sd-color-success-highlight: var(--pst-color-success-highlight);
+    --sd-color-info: var(--pst-color-info);
+    --sd-color-info-text: var(--pst-color-info-text);
+    --sd-color-info-highlight: var(--pst-color-info-highlight);
+    --sd-color-warning: var(--pst-color-warning);
+    --sd-color-warning-text: var(--pst-color-warning-text);
+    --sd-color-warning-highlight: var(--pst-color-warning-highlight);
+    --sd-color-danger: var(--pst-color-danger);
+    --sd-color-danger-text: var(--pst-color-danger-text);
+    --sd-color-danger-highlight: var(--pst-color-danger-highlight);
+    --sd-color-light: var(--pst-color-light);
+    --sd-color-light-text: var(--pst-color-light-text);
+    --sd-color-light-highlight: var(--pst-color-light-highlight);
+    --sd-color-muted: var(--pst-color-muted);
+    --sd-color-muted-text: var(--pst-color-muted-text);
+    --sd-color-muted-highlight: var(--pst-color-muted-highlight);
+    --sd-color-dark: var(--pst-color-dark);
+    --sd-color-dark-text: var(--pst-color-dark-text);
+    --sd-color-dark-highlight: var(--pst-color-dark-highlight);
+    --sd-color-black: var(--pst-color-black);
+    --sd-color-black-text: var(--pst-color-black-text);
+    --sd-color-black-highlight: var(--pst-color-black-highlight);
+    --sd-color-white: var(--pst-color-white);
+    --sd-color-white-text: var(--pst-color-white-text);
+    --sd-color-white-highlight: var(--pst-color-white-highlight);
+}

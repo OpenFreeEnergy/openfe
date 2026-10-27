@@ -1,0 +1,34 @@
+@import url(https://rsms.me/inter/inter.css);
+
+:root { font-family: Inter, sans-serif; }
+  @supports (font-variation-settings: normal) {
+    :root { font-family: InterVariable, sans-serif; }
+}
+
+html {
+    --pst-font-family-base: Inter, sans-serif ;
+    --pst-font-weight-base: 100 900;
+
+    --pst-font-family-heading: Inter, sans-serif;
+    --pst-font-weight-heading: 100 900;
+
+    --pst-font-family-monospace: 'Fira Mono', var(--pst-font-family-monospace-system);
+    --pst-font-weight-monospace: 400;
+}
+
+// Make more headings use heading font settings
+.toctree-wrapper p.caption,
+.prev-next-area a .prev-next-info .prev-next-subtitle,
+p.rubric
+{
+    font-family: var(--pst-font-family-heading);
+    font-weight: var(--pst-font-weight-heading);
+}
+
+p.rubric {
+    font-size: var(--pst-font-size-h4);
+}
+
+.prev-next-area a .prev-next-info .prev-next-subtitle {
+    font-size: var(--pst-font-size-h6);
+}
