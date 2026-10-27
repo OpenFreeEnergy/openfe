@@ -22,8 +22,12 @@
 
 # sys.path.insert(0, os.path.abspath("../"))
 
-
 # os.environ["SPHINX"] = "True"
+
+
+def setup(app):
+    app.add_css_file("_static/_fonts.scss")
+
 
 # # -- Project information -----------------------------------------------------
 
@@ -84,7 +88,7 @@
 # }
 # toc_object_entries_show_parents = "hide"
 
-# # Add any paths that contain templates here, relative to this directory.
+# Add any paths that contain templates here, relative to this directory.
 # templates_path = ["_templates"]
 
 # # List of patterns, relative to source directory, that match files and
@@ -138,6 +142,11 @@ html_theme = "furo"
 html_theme_options = {
     "source_repository": "https://github.com/OpenFreeEnergy/openfe",
     "top_of_page_buttons": ["view", "edit"],
+    "light_css_variables": {
+        "font-stack": "Inter, sans-serif",
+        "font-stack--headings": "Inter, sans-serif",
+        "font-stack--monospace": "Fira Mono, monospace",
+    },
 }
 
 #     "icon_links": [
