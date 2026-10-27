@@ -49,7 +49,7 @@ extensions = [
     #     "sphinxcontrib.autodoc_pydantic",
     "sphinx_toolbox.collapse",
     #     "sphinx.ext.autosectionlabel",
-    #     "sphinx_design",
+    "sphinx_design",
     #     "sphinx.ext.intersphinx",
     #     "sphinx.ext.autosummary",
     #     "docs._ext.sass",

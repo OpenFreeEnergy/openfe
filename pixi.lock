@@ -104,6 +104,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-9.2.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-autodoc-typehints-3.5.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-basic-ng-1.0.0b2-pyhd8ed1ab_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-design-0.7.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-jinja2-compat-0.4.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-prompt-1.10.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-tabs-3.5.0-pyhd8ed1ab_0.conda
@@ -171,6 +172,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-9.2.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-autodoc-typehints-3.5.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-basic-ng-1.0.0b2-pyhd8ed1ab_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-design-0.7.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-jinja2-compat-0.4.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-prompt-1.10.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-tabs-3.5.0-pyhd8ed1ab_0.conda
@@ -261,6 +263,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-9.2.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-autodoc-typehints-3.5.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-basic-ng-1.0.0b2-pyhd8ed1ab_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-design-0.7.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-jinja2-compat-0.4.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-prompt-1.10.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-tabs-3.5.0-pyhd8ed1ab_0.conda
@@ -1403,6 +1406,19 @@ packages:
   run_exports: {}
   size: 20495
   timestamp: 1737748706101
+- conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-design-0.7.0-pyhd8ed1ab_0.conda
+  sha256: 7f8437a97e6311bebf230cfd2ae3c5bdb2230e681c41daebdb894280bf8b4ab6
+  md5: 28eddfb8b9ecdd044a6f609f985398a7
+  depends:
+  - python >=3.11
+  - sphinx >=7,<10
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/sphinx-design?source=hash-mapping
+  run_exports: {}
+  size: 931118
+  timestamp: 1769032711360
 - conda: https://conda.anaconda.org/conda-forge/noarch/sphinx-jinja2-compat-0.4.1-pyhd8ed1ab_0.conda
   sha256: 115f4306ace812d90b4ffab5ac27cc01c2fac13df67c5dcc37931130c8ebea13
   md5: 7ecc82915cd2c4654fa26ddc4d3650f7

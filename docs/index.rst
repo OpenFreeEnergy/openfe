@@ -6,4 +6,5 @@ openfe documentation
   :maxdepth: 1
 
   installation
+  user_guide/index
   CHANGELOG
