@@ -22,7 +22,7 @@ import nbsphinx
 
 # from packaging.version import parse
 
-# sys.path.insert(0, os.path.abspath("../"))
+sys.path.insert(0, os.path.abspath("../"))  # to find docs._ext.sass
 
 os.environ["SPHINX"] = "True"
 
@@ -54,7 +54,7 @@ extensions = [
     "sphinx_design",
     #     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
-    #     "docs._ext.sass",
+    "docs._ext.sass",
     #     "myst_parser",
     "nbsphinx",
     "nbsphinx_link",
@@ -128,15 +128,15 @@ autodoc_mock_imports = [
 ]
 
 # # Extensions for the myst parser
-# myst_enable_extensions = [
-#     "dollarmath",
-#     "colon_fence",
-#     "smartquotes",
-#     "replacements",
-#     "deflist",
-#     "attrs_inline",
-# ]
-# myst_heading_anchors = 3
+myst_enable_extensions = [
+    # "dollarmath",
+    # "colon_fence",
+    # "smartquotes",
+    # "replacements",
+    "deflist",
+    # "attrs_inline",
+]
+myst_heading_anchors = 3
 
 # # -- Options for HTML output -------------------------------------------------
 
@@ -189,16 +189,16 @@ html_logo = "_static/OFE-color-horizontal.png"
 # # Add any paths that contain custom static files (such as style sheets) here,
 # # relative to this directory. They are copied after the builtin static files,
 # # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ["_static"]
-# html_css_files = [
-#     "css/custom.css",
-#     "css/custom-api.css",
-#     "css/deflist-flowchart.css",
-# ]
+html_static_path = ["_static"]
+html_css_files = [
+    "css/custom.css",
+    "css/custom-api.css",
+    "css/deflist-flowchart.css",
+]
 
-# # custom-api.css is compiled from custom-api.scss
-# sass_src_dir = "_sass"
-# sass_out_dir = "_static/css"
+# custom-api.css is compiled from custom-api.scss
+sass_src_dir = "_sass"
+sass_out_dir = "_static/css"
 
 # Clone or update ExampleNotebooks
 example_notebooks_path = Path("ExampleNotebooks")
