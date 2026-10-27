@@ -117,7 +117,7 @@ Resolve alternative atom positions (``altLoc``) by selecting a consistent confor
 .. rubric:: Protonation states and hydrogen atoms
 
 Assign the intended protonation states and include all required hydrogens.
-Ensure that atom names, residue names, and protonation states are compatible with the selected force fields.
+Ensure that atom names, residue names, and protonation states are compatible with the force fields you intend to use.
 
 .. rubric:: Disulfide bonds
 
@@ -144,7 +144,7 @@ Crystallographic waters and ions
 .. rubric:: Ions and additives
 
 * Retain structurally important ions in the protein PDB and ensure
-  they are compatible with the selected force fields.
+  they are compatible with the force fields you intend to use.
 * Remove crystallisation additives, such as sulfate, glycerol or polyethylene
   glycol, unless they are relevant to the system.
 * If additives are retained, extract them into a separate SDF file and treat them as :ref:`cofactors <prep_cofactors>`.
@@ -218,16 +218,13 @@ Checklist for preparing input ``Components``
      retained or removed, without duplicates, e.g. a cofactor in both the protein PDB and the cofactor SDF.
    * :ref:`Ligands <prep_ligands>` have correct chemistry, explicit
      hydrogens and binding poses aligned with the prepared protein.
-   * All ``Components`` are compatible with the selected force fields.
-   * **openfe** can load, parameterize and initialize the system
-     without errors.
+   * All ``Components`` are compatible with the force fields you intend to use.
+   * **openfe** can load, parameterize and initialize the system without errors.
 
 See also
 --------
 
-* :doc:`Loading Molecules and Chemical Systems
-  </cookbook/loading_molecules>`
-* :doc:`Components, Chemical Systems and Thermodynamic Cycles
-  <chemical_systems_and_thermodynamic_cycles>`
+* :doc:`Loading Molecules and Chemical Systems /cookbook/loading_molecules>`
+* :doc:`Components, Chemical Systems and Thermodynamic Cycles <chemical_systems_and_thermodynamic_cycles>`
 * :doc:`Membrane RBFE tutorial </tutorials/rbfe_membrane_protein>`
 * :ref:`Protocols and domain of applicability <userguide_protocols>`
