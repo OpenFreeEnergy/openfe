@@ -2,96 +2,57 @@
 
 .. module:: openfe
 
-=====================================
-Welcome to OpenFE's documentation!
-=====================================
+OpenFE Documentation
+~~~~~~~~~~~~~~~~~~~~
+The **OpenFE** ecosystem is a free and open-source framework for planning, running, and analyzing alchemical free energy calculations.
 
-The **OpenFE** toolkit provides a free and open-source framework for alchemical free energy calculations.
-Using this toolkit you can plan, execute, and analyze free energy calculations using a variety of methods.
-
-**Useful Links**:
-`OpenFE Website <https://openfree.energy/>`__ |
-`Example Tutorial notebooks <https://github.com/OpenFreeEnergy/ExampleNotebooks/>`__ |
-`Source Repository <https://github.com/OpenFreeEnergy/openfe/>`__ |
-`Issues & Ideas <https://github.com/OpenFreeEnergy/openfe/issues/>`__
-
-.. grid:: 1 2 2 4
+.. grid:: 1 3 3 3
     :gutter: 3
 
-    .. grid-item-card:: :fas:`download` Install openfe
-        :text-align: center
-        :link: installation
-        :link-type: doc
-
-        Follow our installation guide to get **openfe** running on your machine!
-
-    .. grid-item-card:: :fas:`laptop-code` CLI Quickstart
+    .. grid-item-card:: :fas:`rocket` Get Started
         :text-align: center
         :link: tutorials/rbfe_cli_tutorial
         :link-type: doc
 
-        Get started with **openfe**\'s command line interface.
+        Run a free energy calculation with our CLI tutorial.
 
-    .. grid-item-card:: :fas:`person-chalkboard` Tutorials
-        :text-align: center
-        :link: tutorials/index
-        :link-type: doc
-
-        Step-by-step examples showing how to use the OpenFE ecosystem.
-
-    .. grid-item-card:: :fas:`book-open-reader` User Guide
-        :text-align: center
-        :link: guide/index
-        :link-type: doc
-
-        Explanations of key concepts underlying **openfe**.
-
-    .. grid-item-card:: :fas:`table-list` Cookbooks
-        :text-align: center
-        :link: cookbook/index
-        :link-type: doc
-
-        How-to guides for common tasks.
-
-    .. grid-item-card:: :fas:`code` API Reference
-        :text-align: center
-        :link: reference/index
-        :link-type: doc
-
-        Comprehensive details of the **openfe** Python and CLI APIs.
 
     .. grid-item-card:: :fas:`gears` Protocols
         :text-align: center
         :link: guide/protocols/index
         :link-type: doc
 
-        Details of the specific Free Energy Protocols included in **openfe**.
+        Free Energy Protocols available in **openfe**.
 
-    .. grid-item-card:: :fas:`clock-rotate-left` Changelog 
+    .. grid-item-card:: :fas:`circle-question` Ask for Help
         :text-align: center
-        :link: CHANGELOG
+        :link: guide/troubleshooting
         :link-type: doc
 
-        A history of **openfe** releases.
+        Troubleshooting guide and how to get in touch with the team.
+
 
 .. toctree::
    :maxdepth: 2
    :hidden:
 
    installation
-   tutorials/index
    guide/index
+   tutorials/index
    cookbook/index
    reference/index
    CHANGELOG
 
-Frequently Asked Questions:
----------------------------
 
-Running into errors? See :doc:`guide/troubleshooting` for common failure modes and how to fix them.
+**Useful Links**:
+`OpenFE Website <https://openfree.energy/>`__ |
+`Example Notebooks Repo <https://github.com/OpenFreeEnergy/ExampleNotebooks/>`__ |
+`Source Repo <https://github.com/OpenFreeEnergy/openfe/>`__ |
+`Issue Board <https://github.com/OpenFreeEnergy/openfe/issues/>`__
 
-Other OpenFE Ecosystem Projects:
---------------------------------
+
+OpenFE Ecosystem Projects:
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **openfe** is Open Free Energy's user-facing software for performing alchemical free energy calculations.
 Below are other software projects the Open Free Energy team maintains, many of which are used by **openfe** itself.
@@ -103,11 +64,12 @@ Below are other software projects the Open Free Energy team maintains, many of w
 * `gufe <https://gufe.openfree.energy/en/latest/>`_ : data structures and models underlying the OpenFE ecosystem
 
 Community-Developed Projects:
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution, developed by `Datryllic <https://datryllic.com/>`_.
 
 Ecosystem Rules and Guidelines:
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 * `Code of Conduct <https://github.com/OpenFreeEnergy/openfe/?tab=coc-ov-file>`_
 * `Contributing Guide <https://github.com/OpenFreeEnergy/openfe/?tab=contributing-ov-file>`_
