@@ -134,12 +134,10 @@
 # # The theme to use for HTML and HTML Help pages.  See the documentation for
 # # a list of builtin themes.
 # #
-html_theme = "sphinx_book_theme"
+html_theme = "furo"
 html_theme_options = {
-    "repository_url": "https://github.com/OpenFreeEnergy/openfe",
-    "use_repository_button": True,
-    "use_issues_button": True,
-    "use_fullscreen_button": False,
+    "source_repository": "https://github.com/OpenFreeEnergy/openfe",
+    "top_of_page_buttons": ["view", "edit"],
 }
 
 #     "icon_links": [
@@ -154,9 +152,8 @@ html_theme_options = {
 #     "navigation_with_keys": False,
 #     "announcement": "Please take our <a href=https://docs.google.com/forms/d/e/1FAIpQLScw-vxBzlzFQT_6JHO64tgRuvzN4hmkPYjkXoJKQEsiA2anFw/viewform>user survey</a> to help us improve our documentation and training materials!",
 # }
-
-html_title = "OpenFE Docs"
-# html_logo = "_static/OFE-color-icon.svg"
+html_title = " "
+html_logo = "_static/OFE-color-horizontal.png"
 # html_favicon = "_static/OFE-color-icon.svg"
 # # temporary fix, see https://github.com/pydata/pydata-sphinx-theme/issues/1662
 # html_sidebars = {

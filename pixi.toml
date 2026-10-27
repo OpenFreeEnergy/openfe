@@ -31,7 +31,7 @@ channels = ["https://conda.anaconda.org/conda-forge"]
 # pydantic = "~=2.13.0"
 sphinx = ">=9.0"  # TODO: debug "duplicate object" warning with later versions
 # sphinx-autobuild = "*"  # TODO: make optional
-sphinx-book-theme = "*"
+furo = "*"
 # sphinx-click = "*"
 # sphinx-design = "*"
 # sphinx-toolbox = "*"
