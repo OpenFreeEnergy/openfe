@@ -55,7 +55,7 @@ extensions = [
     #     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
     "docs._ext.sass",
-    #     "myst_parser",
+    "myst_parser",
     "nbsphinx",
     "nbsphinx_link",
     #     "sphinx.ext.mathjax",
