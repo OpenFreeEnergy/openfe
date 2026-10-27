@@ -15,12 +15,12 @@ inputs to look like, and how to handle common edge cases.
 Input files
 -----------
 
-The table below lists the input files typically used for protein--ligand calculations (filenames are examples).
-
-In **openfe**, *components* represent parts of a molecular system,
+In **openfe**, ``Components`` represent parts of a molecular system,
 such as proteins, ligands or solvent. They are combined into a
 ``ChemicalSystem``. See :doc:`Components and Chemical Systems
 <chemical_systems_and_thermodynamic_cycles>` for details.
+
+The table below lists the inputs typically used for protein--ligand calculations (filenames are examples).
 
 .. list-table::
    :header-rows: 1
@@ -33,21 +33,55 @@ such as proteins, ligands or solvent. They are combined into a
      - ``ProteinComponent``
      - Prepared protein, including retained crystallographic waters
        and structural ions, but excluding ligands and cofactors.
+       For fully solvated systems, see the note below.
    * - :ref:`ligands.sdf <prep_ligands>`
      - ``SmallMoleculeComponent`` for each ligand
      - Ligands with correct chemistry, explicit hydrogens, and 3D coordinates of their binding poses.
    * - :ref:`cofactors.sdf <prep_cofactors>` (optional)
      - ``SmallMoleculeComponent`` for each cofactor
      - Noncovalent cofactors with correct chemistry, explicit hydrogens, and 3D coordinates of their binding poses.
-
-Bulk solvent is added during simulation setup using a ``SolventComponent``.
+   * - None
+     - ``SolventComponent``
+     - Bulk water and ions, added around the solute during system setup.
+       Retained crystallographic waters belong in ``protein.pdb``.
 
 .. note::
 
-   Membrane and pre-solvated systems use ``ProteinMembraneComponent`` or ``SolvatedPDBComponent``
-   instead. These must include explicit solvent and valid periodic box vectors, so no additional
-   ``SolventComponent`` is needed for the complex leg.
-   See :doc:`the membrane RBFE tutorial </tutorials/rbfe_membrane_protein>`.
+   Membrane and other pre-solvated systems replace ``protein.pdb`` and the
+   ``SolventComponent`` in the complex leg with a single PDB file (for
+   example ``solvated_complex.pdb``), loaded as a ``ProteinMembraneComponent``
+   or ``SolvatedPDBComponent``. The file must include the explicit solvent
+   and valid periodic box vectors (the ``CRYST1`` record). The solvent leg
+   still uses a ``SolventComponent``. See :doc:`the membrane RBFE tutorial
+   </tutorials/rbfe_membrane_protein>`.
+
+.. _prep_loading:
+The inputs are loaded as follows:
+
+.. tab-set::
+
+   .. tab-item:: CLI
+
+      Pass the files to the planning commands, for example
+      ``openfe plan-rbfe-network -M ligands.sdf -p protein.pdb``. Use
+      ``-C cofactors.sdf`` for cofactors, and ``--protein-membrane`` instead
+      of ``-p`` for membrane systems.
+
+   .. tab-item:: Python API
+
+      * **Ligands and cofactors:** create a ``SmallMoleculeComponent`` from
+        an RDKit molecule (``SmallMoleculeComponent.from_rdkit``) or an
+        OpenFF ``Molecule`` (``SmallMoleculeComponent.from_openff``). For
+        multi-molecule SDF files, load the molecules with RDKit's
+        ``SDMolSupplier(..., removeHs=False)``, since
+        ``SmallMoleculeComponent.from_sdf_file`` only reads the first
+        molecule.
+      * **Protein:** ``ProteinComponent.from_pdb_file`` (or
+        ``from_pdbx_file``).
+      * **Pre-solvated systems:** ``SolvatedPDBComponent.from_pdb_file`` or
+        ``ProteinMembraneComponent.from_pdb_file``.
+
+      See :doc:`Loading Molecules and Chemical Systems </cookbook/loading_molecules>` for examples.
 
 .. _prep_protein:
 
@@ -83,7 +117,7 @@ Resolve alternative atom positions (``altLoc``) by selecting a consistent confor
 .. rubric:: Protonation states and hydrogen atoms
 
 Assign the intended protonation states and include all required hydrogens.
-Ensure that atom and residue names, and protonation states are compatible with the selected force fields.
+Ensure that atom names, residue names, and protonation states are compatible with the selected force fields.
 
 .. rubric:: Disulfide bonds
 
@@ -104,7 +138,8 @@ Crystallographic waters and ions
 * Retain binding-site and structurally important waters, but check for clashes with all ligands in the series and
   remove conflicting waters where appropriate.
 * Waters can remain in the protein PDB but must have explicit hydrogens and recognised residue names, such as ``HOH`` or ``WAT``.
-* During solvation, the protocols add bulk water without replacing existing waters.
+* Bulk water and ions defined by the ``SolventComponent`` are added
+  around the system during setup. Retained waters are kept, not replaced.
 
 .. rubric:: Ions and additives
 
@@ -114,6 +149,15 @@ Crystallographic waters and ions
   glycol, unless they are relevant to the system.
 * If additives are retained, extract them into a separate SDF file and treat them as :ref:`cofactors <prep_cofactors>`.
 
+.. note::
+
+   For pre-solvated systems (``SolvatedPDBComponent`` or
+   ``ProteinMembraneComponent``), no solvent is added during setup. The PDB
+   file must therefore contain all waters and ions, including bulk solvent
+   and any ions needed for neutralisation and ionic strength. Remove waters
+   and ions that clash with any ligand in the series, not only the ligand
+   in the reference structure.
+
 .. _prep_ligands:
 
 Preparing ligands
@@ -121,26 +165,31 @@ Preparing ligands
 
 .. rubric:: Chemical structure
 
-Provide ligands in SDF format, as PDB files do not reliably
-preserve bond orders. Each ligand must have:
+SDF is the recommended file format for ligands, as it reliably stores
+their full chemistry, unlike formats such as PDB. With the Python API,
+ligands can also be created directly from RDKit or OpenFF molecules
+(see :ref:`loading the inputs <prep_loading>`). Whatever the source, each ligand must have:
 
 * Correct connectivity, bond orders, formal charges and stereochemistry.
 * The intended protonation and tautomeric state, with explicit hydrogens.
-* A unique name in the SDF title line, used to label results.
+
+We strongly recommend giving each ligand a unique name (the SDF title line
+or the ``name`` argument), as names are used to label transformations and
+results.
 
 Partial charges are assigned during protocol setup but can also
 be assigned in advance for reproducibility and to avoid repeated calculations.
-See :doc:`Generating Partial Charges with the OpenFE CLI </tutorials/charge_molecules_cli_tutorial>`.
+See :doc:`Assigning partial charges </cookbook/user_charges>` (Python API) or
+:doc:`Generating Partial Charges with the OpenFE CLI </tutorials/charge_molecules_cli_tutorial>`.
 
 .. rubric:: Binding poses
 
 * Ligands must have 3D coordinates representing their intended binding
   poses in the same coordinate frame as the prepared protein.
 * Check for clashes with the protein, retained waters and cofactors.
-* For :ref:`Relative Hybrid Topology
-  <userguide_relative_hybrid_topology_protocol>`, ligands should be
+* For :ref:`Relative Hybrid Topology <userguide_relative_hybrid_topology_protocol>`, ligands should be
   aligned on their common core, and the atom mapping should be
-  inspected separately.
+  inspected (see :doc:`Creating atom mappings </guide/setup/creating_atom_mappings_and_scores>`).
 
 .. _prep_cofactors:
 
@@ -155,8 +204,8 @@ Cofactors and other small molecules
   explicit hydrogens and coordinates.
 * Metal-containing cofactors, such as heme, are not supported by the standard preparation workflow.
 
-Checking prepared structures
-----------------------------
+Checklist for preparing input ``Components``
+--------------------------------------------
 
 .. card:: :octicon:`checklist;1em;sd-text-success` Before running a calculation
    :class-card: sd-shadow-sm sd-mb-3
@@ -165,13 +214,13 @@ Checking prepared structures
 
    * The :ref:`protein structure <prep_protein>` is complete, with
      correct protonation, termini, disulfide bonds and connectivity.
-   * Waters, ions and :ref:`cofactors <prep_cofactors>` are
-     appropriately retained or removed, without duplicate components.
+   * Waters, ions and :ref:`cofactors <prep_cofactors>` are appropriately
+     retained or removed, without duplicates, e.g. a cofactor in both the protein PDB and the cofactor SDF.
    * :ref:`Ligands <prep_ligands>` have correct chemistry, explicit
      hydrogens and binding poses aligned with the prepared protein.
-   * All components are compatible with the selected force fields.
+   * All ``Components`` are compatible with the selected force fields.
    * **openfe** can load, parameterize and initialize the system
-     without errors or unexpected structural changes.
+     without errors.
 
 See also
 --------
