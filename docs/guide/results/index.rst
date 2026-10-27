@@ -10,3 +10,4 @@ and entire networks of results analysed.
 .. toctree::
    working_with_results
    working_with_networks
+   simulation_health

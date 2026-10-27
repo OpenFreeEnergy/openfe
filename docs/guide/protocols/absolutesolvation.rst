@@ -94,41 +94,26 @@ which is different compared to the results in the :class:`.RelativeHybridTopolog
 
 In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
 
-.. todo: issue 792 change this reference to point to the new results section
-
 Analysis
 ~~~~~~~~
 
-As with the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`,
-the protocol performs both energetic and structural analysis automatically after each simulation repeat.
-The energetic analysis (MBAR overlap matrix, replica exchange statistics, forward/reverse convergence)
-is identical to that described in the :ref:`multistate analysis section <multistate_analysis>`.
+After each simulation repeat, the protocol automatically analyses the
+energetics of the sampled λ states (MBAR overlap, replica exchange and
+forward/reverse convergence) and the structural changes in each state. For
+how to interpret these analyses, see :ref:`userguide_simulation_health`.
 
-Structural analysis
-"""""""""""""""""""
+The structural analysis differs between the two legs:
 
-After each simulation, the protocol automatically analyzes the production trajectories.
+* **Solvent leg:** symmetry-corrected ligand RMSD.
+* **Vacuum leg:** no structural analysis is currently performed.
 
-.. note::
-   No structural analysis is currently carried out for the vacuum leg.
-   This will be fixed in a future version of openfe.
-
-For each lambda state, the **Ligand RMSD** is computed: a symmetry-corrected RMSD of the ligand relative to the first production frame.
-A symmetry-corrected RMSD is used to account for equivalent atom orderings in symmetric
-molecules (e.g. a flipping phenyl ring) instead of a standard mass-weighted RMSD.
-
-Results are saved as an `NPZ file <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`_ (``structural_analysis.npz``)
-and a plot (``ligand_RMSD.png``) is generated automatically.
-To customize the analysis, the frame stride can be configured via ``analysis_settings.skip`` in :class:`.AbsoluteSolvationSettings`.
-
-.. note::
-   This analysis requires the ligand atoms to be included in the trajectory output
-   (controlled by ``output_indices`` in ``solvent_output_settings``).
-   If no ligand atoms are written to the trajectory, the analysis is skipped and a
-   ``structural_analysis_error`` entry is added to the results instead.
-
-For further guidance on interpreting this plot, see the
-:ref:`multistate analysis section <multistate_analysis>` of the hybrid topology protocol documentation.
+The frame stride can be set through ``analysis_settings.skip`` in
+:class:`.AbsoluteSolvationSettings` (by default, about 500 frames are
+analysed per state). The ligand atoms must be included in the trajectory
+output, through ``output_indices`` in ``solvent_output_settings``; otherwise
+the structural analysis is skipped. The multistate trajectories
+(``solvent.nc`` and ``vacuum.nc``) can be analysed further using
+`openfe_analysis`_.
 
 
 See Also
@@ -165,3 +150,5 @@ References
 .. [1] Avoiding singularities and numerical instabilities in free energy calculations based on molecular simulations, T.C. Beutler, A.E. Mark, R.C. van Schaik, P.R. Greber, and W.F. van Gunsteren, Chem. Phys. Lett., 222 529–539 (1994)
 .. [2] New Soft-Core Potential Function for Molecular Dynamics Based Alchemical Free Energy Calculations, V. Gapsys, D. Seeliger, and B.L. de Groot, J. Chem. Theor. Comput., 8 2373-2382 (2012)
 .. [3] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
+
+.. _openfe_analysis: https://github.com/OpenFreeEnergy/openfe_analysis
