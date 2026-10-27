@@ -7,5 +7,6 @@ openfe documentation
 
   installation
   user_guide/index
+  cookbook/index
   reference/index
   CHANGELOG

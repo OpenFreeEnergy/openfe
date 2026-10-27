@@ -9,20 +9,22 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
+import os
+import sys
+
 # from importlib.metadata import version
 # from inspect import cleandoc
-# from pathlib import Path
+from pathlib import Path
 
-# import git
-# import nbformat
-# import nbsphinx
+import git
+import nbformat
+import nbsphinx
+
 # from packaging.version import parse
 
 # sys.path.insert(0, os.path.abspath("../"))
 
-# os.environ["SPHINX"] = "True"
+os.environ["SPHINX"] = "True"
 
 
 def setup(app):
@@ -54,8 +56,8 @@ extensions = [
     "sphinx.ext.autosummary",
     #     "docs._ext.sass",
     #     "myst_parser",
-    #     "nbsphinx",
-    #     "nbsphinx_link",
+    "nbsphinx",
+    "nbsphinx_link",
     #     "sphinx.ext.mathjax",
 ]
 # suppress_warnings = ["config.cache"]  # https://github.com/sphinx-doc/sphinx/issues/12300
@@ -198,30 +200,30 @@ html_logo = "_static/OFE-color-horizontal.png"
 # sass_src_dir = "_sass"
 # sass_out_dir = "_static/css"
 
-# # Clone or update ExampleNotebooks
-# example_notebooks_path = Path("ExampleNotebooks")
-# try:
-#     if example_notebooks_path.exists():
-#         repo = git.Repo(example_notebooks_path)
-#         try:
-#             repo.remote("origin").pull()
-#         except git.exc.GitCommandError:
-#             # cannot pull if on a tag
-#             pass
-#     else:
-#         repo = git.Repo.clone_from(
-#             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-#             branch="main",
-#             to_path=example_notebooks_path,
-#         )
-# except Exception as e:
-#     from sphinx.util.logging import getLogger
+# Clone or update ExampleNotebooks
+example_notebooks_path = Path("ExampleNotebooks")
+try:
+    if example_notebooks_path.exists():
+        repo = git.Repo(example_notebooks_path)
+        try:
+            repo.remote("origin").pull()
+        except git.exc.GitCommandError:
+            # cannot pull if on a tag
+            pass
+    else:
+        repo = git.Repo.clone_from(
+            "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
+            branch="main",
+            to_path=example_notebooks_path,
+        )
+except Exception as e:
+    from sphinx.util.logging import getLogger
 
-#     filename = e.__traceback__.tb_frame.f_code.co_filename
-#     lineno = e.__traceback__.tb_lineno
-#     getLogger("sphinx.ext.openfe_git").warning(
-#         f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
-#     )
+    filename = e.__traceback__.tb_frame.f_code.co_filename
+    lineno = e.__traceback__.tb_lineno
+    getLogger("sphinx.ext.openfe_git").warning(
+        f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
+    )
 
 
 # # First, create links at top of notebook pages
