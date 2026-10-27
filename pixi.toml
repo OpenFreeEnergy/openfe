@@ -34,7 +34,7 @@ sphinx = ">=9.0"  # TODO: debug "duplicate object" warning with later versions
 furo = "*"
 # sphinx-click = "*"
 # sphinx-design = "*"
-# sphinx-toolbox = "*"
+sphinx-toolbox = "*"
 # threadpoolctl = "*"
 # tqdm = "*"
 # mock = "*"

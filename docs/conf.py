@@ -39,25 +39,25 @@ author = "The OpenFE Development Team"
 
 # # -- General configuration ---------------------------------------------------
 
-# # Add any Sphinx extension module names here, as strings. They can be
-# # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# # ones.
-# extensions = [
-#     "sphinx.ext.autodoc",
-#     "sphinx.ext.napoleon",
-#     "sphinx_click.ext",
-#     "sphinxcontrib.autodoc_pydantic",
-#     "sphinx_toolbox.collapse",
-#     "sphinx.ext.autosectionlabel",
-#     "sphinx_design",
-#     "sphinx.ext.intersphinx",
-#     "sphinx.ext.autosummary",
-#     "docs._ext.sass",
-#     "myst_parser",
-#     "nbsphinx",
-#     "nbsphinx_link",
-#     "sphinx.ext.mathjax",
-# ]
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# ones.
+extensions = [
+    #     "sphinx.ext.autodoc",
+    #     "sphinx.ext.napoleon",
+    #     "sphinx_click.ext",
+    #     "sphinxcontrib.autodoc_pydantic",
+    "sphinx_toolbox.collapse",
+    #     "sphinx.ext.autosectionlabel",
+    #     "sphinx_design",
+    #     "sphinx.ext.intersphinx",
+    #     "sphinx.ext.autosummary",
+    #     "docs._ext.sass",
+    #     "myst_parser",
+    #     "nbsphinx",
+    #     "nbsphinx_link",
+    #     "sphinx.ext.mathjax",
+]
 # suppress_warnings = ["config.cache"]  # https://github.com/sphinx-doc/sphinx/issues/12300
 
 # intersphinx_mapping = {
