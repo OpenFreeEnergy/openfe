@@ -12,5 +12,6 @@ command line interface.
     :maxdepth: 2
 
     cli/index
+    api/index
 
 .. _gufe: https://gufe.readthedocs.io/en/latest/api.html
