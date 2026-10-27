@@ -7,4 +7,5 @@ openfe documentation
 
   installation
   user_guide/index
+  reference/index
   CHANGELOG

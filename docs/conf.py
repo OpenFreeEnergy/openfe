@@ -45,7 +45,7 @@ author = "The OpenFE Development Team"
 extensions = [
     #     "sphinx.ext.autodoc",
     #     "sphinx.ext.napoleon",
-    #     "sphinx_click.ext",
+    "sphinx_click.ext",
     #     "sphinxcontrib.autodoc_pydantic",
     "sphinx_toolbox.collapse",
     #     "sphinx.ext.autosectionlabel",
@@ -64,8 +64,8 @@ extensions = [
 #     "python": ("https://docs.python.org/3.9", None),
 #     "numpy": ("https://numpy.org/doc/stable", None),
 #     "scikit.learn": ("https://scikit-learn.org/stable", None),
-#     "openmm": ("https://docs.openmm.org/latest/api-python/", None),
-#     "rdkit": ("https://www.rdkit.org/docs", None),
+#  "openmm": ("https://docs.openmm.org/latest/api-python/", None),
+#  "rdkit": ("https://www.rdkit.org/docs", None),
 #     "openeye": ("https://docs.eyesopen.com/toolkits/python/", None),
 #     "mdtraj": ("https://www.mdtraj.org/1.9.5/", None),
 #     "openff.units": ("https://docs.openforcefield.org/projects/units/en/stable", None),
@@ -104,23 +104,25 @@ extensions = [
 #     "ExampleNotebooks",
 # ]
 
-# autodoc_mock_imports = [
-#     "cinnabar",
-#     "dill",
-#     "MDAnalysis",
-#     "matplotlib",
-#     "mdtraj",
-#     "openfe_analysis",
-#     "openmmforcefields",
-#     "openmmtools",
-#     "pymbar",
-#     "openff.interchange",
-#     "openmmforcefields",
-#     "psutil",
-#     "py3Dmol",
-#     "pytest",
-#     "zstandard",
-# ]
+autodoc_mock_imports = [
+    # "cinnabar",
+    # "dill",
+    # "MDAnalysis",
+    # "matplotlib",
+    # "mdtraj",
+    # "openfe_analysis",
+    # "openmmforcefields",
+    # "openmmtools",
+    # "pymbar",
+    # "openff.interchange",
+    # "openmmforcefields",
+    # "psutil",
+    "pydantic",
+    # "py3Dmol",
+    "pytest",
+    "zstandard",
+    "yaml",
+]
 
 # # Extensions for the myst parser
 # myst_enable_extensions = [
