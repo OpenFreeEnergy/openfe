@@ -31,10 +31,10 @@ def setup(app):
 
 # # -- Project information -----------------------------------------------------
 
-# project = "OpenFE"
-# copyright = "2022, The OpenFE Development Team"
-# author = "The OpenFE Development Team"
-# # don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
+project = "openfe"
+copyright = "2022, The OpenFE Development Team"
+author = "The OpenFE Development Team"
+# don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
 # version = f"{parse(version('openfe')).major}.{parse(version('openfe')).minor}"
 
 # # -- General configuration ---------------------------------------------------
@@ -142,11 +142,15 @@ html_theme = "furo"
 html_theme_options = {
     "source_repository": "https://github.com/OpenFreeEnergy/openfe",
     "top_of_page_buttons": ["view", "edit"],
+    "navigation_with_keys": True,
     "light_css_variables": {
         "font-stack": "Inter, sans-serif",
         "font-stack--headings": "Inter, sans-serif",
         "font-stack--monospace": "Fira Mono, monospace",
+        "color-brand-primary": "#3f033b",
+        "color-brand-content": "#121212",
     },
+    "announcement": "Please take our <a href=https://docs.google.com/forms/d/e/1FAIpQLScw-vxBzlzFQT_6JHO64tgRuvzN4hmkPYjkXoJKQEsiA2anFw/viewform>user survey</a> to help us improve our documentation and training materials!",
 }
 
 #     "icon_links": [
@@ -157,9 +161,6 @@ html_theme_options = {
 #             "type": "fontawesome",
 #         }
 #     ],
-#     "accent_color": "cantina-purple",
-#     "navigation_with_keys": False,
-#     "announcement": "Please take our <a href=https://docs.google.com/forms/d/e/1FAIpQLScw-vxBzlzFQT_6JHO64tgRuvzN4hmkPYjkXoJKQEsiA2anFw/viewform>user survey</a> to help us improve our documentation and training materials!",
 # }
 html_title = " "
 html_logo = "_static/OFE-color-horizontal.png"

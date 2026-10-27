@@ -1,5 +1,5 @@
-OpenFE
-======
+openfe documentation
+====================
 
 
 .. toctree::
