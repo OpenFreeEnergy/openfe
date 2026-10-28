@@ -3,6 +3,7 @@
 import gzip
 import os
 import pathlib
+import shutil
 import urllib.error
 import urllib.request
 from importlib import resources
@@ -37,6 +38,7 @@ from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from openfe.protocols.openmm_rfe._rfe_utils.relative import HybridTopologyFactory
 from openfe.protocols.openmm_utils.serialization import deserialize
+from openfe.storage.warehouse import FileSystemWarehouse
 from openfe.tests.protocols.openmm_rfe.helpers import make_htf
 
 
@@ -1114,3 +1116,19 @@ def radial_alchemical_network(
         list(toluene_solvated_transformations.values())
         + list(solvated_complex_transformations.values())
     )
+
+
+@pytest.fixture(scope="session")
+def warehouse_data_dir():
+    with resources.path("openfe.tests", "data") as data_dir:
+        warehouse_dir = data_dir / "warehouse_data"
+        if not (warehouse_dir).exists():
+            shutil.unpack_archive(warehouse_dir.with_suffix(".tar.gz"), data_dir, format="gztar")
+    return warehouse_dir
+
+
+@pytest.fixture(scope="session")
+def warehouse_partial_failure(warehouse_data_dir):
+    with resources.path("openfe.tests", "data") as data_dir:
+        warehouse = FileSystemWarehouse.from_dir(root_dir=warehouse_data_dir / "warehouse_mcl1")
+        return warehouse
