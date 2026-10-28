@@ -66,11 +66,8 @@ Python.
 :sup:`*` Reads the trajectory and checkpoint files, which must still be at
 the paths recorded in the results.
 
-These methods are available on the protocol result objects. They return one
-entry per repeat, grouped by leg for protocols with several legs. Replica
-exchange diagnostics require a replica exchange sampler, and the structural
-plots available depend on the system and protocol (see
-:ref:`health_structure`).
+Replica exchange diagnostics require a replica exchange sampler, and the structural
+plots available depend on the system and protocol (see :ref:`health_structure`).
 
 
 Quick health checklist
@@ -101,8 +98,7 @@ Uncertainty and repeats
 Three uncertainties are reported, and they measure different things:
 
 * **Per-repeat MBAR uncertainty** (``unit_estimate_error``): statistical
-  uncertainty from the samples within one repeat, estimated by
-  bootstrapping.
+  uncertainty from the samples within one repeat, estimated by bootstrapping.
 * **Between-repeat uncertainty** (``get_uncertainty()``): the sample standard
   deviation of the repeat estimates.
 * **Forward/reverse error bars**: analytical MBAR errors for subsets of the
@@ -148,7 +144,8 @@ rule of thumb, each should be at least 0.03 [1]_. In the plot, this appears
 as an unbroken band along the diagonal.
 
 If a neighbouring pair falls below this threshold, the estimate may be
-unreliable even if its reported uncertainty is small. See :ref:`health_next_steps` for how to improve overlap.
+unreliable even if its reported uncertainty is small.
+See :ref:`health_next_steps` for how to improve overlap.
 
 .. image:: ../protocols/img/mbar_overlap_matrix.png
    :alt: Example MBAR overlap matrix showing overlap between alchemical states.
@@ -191,7 +188,7 @@ Convergence and equilibration
 The **forward and reverse analysis** recalculates the free energy from
 increasing fractions of the data, taken from the start and from the end of
 the simulation. Both curves should flatten and agree within error before
-all data are included [1]_; continued drift indicates that more sampling is
+all data are included [1]_. Continued drift indicates that more sampling is
 needed. The error bars are analytical MBAR errors.
 
 .. image:: ../protocols/img/forward_reverse_convergence.png
@@ -312,7 +309,7 @@ restraint geometry stays well defined during the simulation (see
 .. rubric:: Further trajectory analysis
 
 Inspect trajectories for changes in binding modes, ring flips, pocket waters,
-important interactions or unexpected receptor rearrangements. The multistate ``simulation.nc`` trajectory and its
+important interactions or unexpected protein rearrangements. The multistate ``simulation.nc`` trajectory and its
 topology (set by ``output_settings.output_structure``, e.g. ``hybrid_system.pdb`` for Relative Hybrid Topology)
 can be analysed using `openfe_analysis`_. See the `structural analysis tutorial
 <https://openfe-analysis.openfree.energy/en/latest/tutorials/structural_analysis.html>`_
@@ -335,41 +332,35 @@ structural diagnostics together before changing settings.
    * - Observation
      - What it may indicate
      - What to try
-   * - Poor overlap between neighbouring states
+   * - MBAR overlap matrix: elements next to the diagonal below 0.03
      - Large changes between neighbouring λ states
      - Add λ windows where the gap is.
-   * - Poor replica mixing or isolated groups
+   * - Replica state timeseries: replicas stay within a subset of λ states,
+       or the replica exchange matrix shows isolated blocks
      - A gap in overlap, or a slow conformational change
      - If the overlap matrix shows a gap, add λ windows. Otherwise check the
        structural analysis and consider longer production.
-   * - Forward and reverse estimates disagree
+   * - Forward and reverse analysis: the estimates only agree at the full
+       data set, or the forward estimate is still drifting
      - The system is still relaxing, or sampling is insufficient
      - Check ``equilibration_iterations`` and the structural analysis;
        run longer production.
-   * - Independent repeats disagree
+   * - Repeat estimates differ by more than their MBAR errors
      - Repeats sample different conformations or slow degrees of freedom
      - Compare the structural analysis between repeats. Longer production
        may help; more repeats (``protocol_repeats``) better characterise
        the variability.
-   * - Large ligand RMSD or COM drift
-     - In bound states, a binding-mode change or loss of the pose. Expected
-       in weakly interacting or decoupled states.
-     - Check the prepared pose, protonation states and restraints; see
-       :ref:`userguide_preparing_inputs`.
-   * - Charge-changing transformation converges poorly
+   * - Ligand RMSD or COM drift keeps increasing in the fully interacting bound states
+     - A change in binding mode, or loss of the pose. Large values are
+       expected in weakly interacting or decoupled states.
+     - Check the prepared pose against the poses sampled in the
+       trajectory. For Absolute Binding and Separated Topologies, also check the restraints.
+   * - Charge-changing transformation: large spread between repeats, or
+       forward and reverse estimates disagree
      - Slow solvent or ion rearrangements, or insufficient sampling
      - For Relative Hybrid Topology, use the
        :doc:`adaptive settings </guide/setup/defining_protocols>`: explicit
        charge correction, 22 λ windows and 20 ns production per window.
-
-Setting names differ between protocols. In Relative Hybrid Topology, the
-number of λ windows is set by ``lambda_settings.lambda_windows`` and the
-production length by ``simulation_settings.production_length``. Separated
-Topologies, Absolute Binding and Absolute Solvation have separate settings
-for each leg (for example ``complex_lambda_settings`` and
-``complex_simulation_settings``), and define the λ schedule through the
-``lambda_elec``, ``lambda_vdw`` and ``lambda_restraints`` lists. In all
-protocols, ``n_replicas`` must equal the number of λ windows.
 
 For simulations that fail with an error, see
 :doc:`Troubleshooting simulations </guide/troubleshooting>`.
@@ -382,7 +373,7 @@ Some problems only show up across a network. Relative free energies around a
 cycle should sum to zero within their uncertainties, and each edge should
 agree with the value implied by the rest of the network. Large deviations
 point to unreliable edges worth checking with the diagnostics above. These checks need a network with redundant edges
-(see :doc:`/cookbook/generate_ligand_network`).
+(see :doc:`Generate ligand networks </cookbook/generate_ligand_network>`).
 To calculate cycle closure errors, see the `cinnabar cycle closure tutorial
 <https://cinnabar.openfree.energy/en/latest/tutorials/cycle-closure.html>`_.
 
