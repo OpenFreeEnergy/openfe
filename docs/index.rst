@@ -24,12 +24,12 @@ The **OpenFE** ecosystem is a free and open-source framework for planning, runni
 
         Free Energy Protocols available in **openfe**.
 
-    .. grid-item-card:: :fas:`circle-question` Ask for Help
+    .. grid-item-card:: :fas:`circle-question` Troubleshooting
         :text-align: center
         :link: guide/troubleshooting
         :link-type: doc
 
-        Troubleshooting guide and how to get in touch with the team.
+        FAQs and troubleshooting guide.
 
 
 .. toctree::
@@ -73,3 +73,4 @@ Ecosystem Rules and Guidelines:
 
 * `Code of Conduct <https://github.com/OpenFreeEnergy/openfe/?tab=coc-ov-file>`_
 * `Contributing Guide <https://github.com/OpenFreeEnergy/openfe/?tab=contributing-ov-file>`_
+
