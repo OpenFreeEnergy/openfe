@@ -63,9 +63,9 @@ lint.isort.known-first-party = [ "openfe" ]
 
 [tool.mypy]
 files = "src/openfe"  # TODO: add src/openfecli
-# exclude = "src/openfe/protocols/*settings*"
+exclude = "src/openfe/protocols/*settings*"
 ignore_missing_imports = true
-# warn_unused_ignores = true
+warn_unused_ignores = false
 
 [tool.coverage]
 run.omit = [
