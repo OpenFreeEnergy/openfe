@@ -10,3 +10,10 @@ and entire networks of results analysed.
 .. toctree::
    working_with_results
    working_with_networks
+
+.. admonition:: How-to guides
+
+   * :doc:`/cookbook/dumping_transformation`
+   * :doc:`/cookbook/jq_inspection`
+
+.. TODO: add the gather, load results, cinnabar and openfe_analysis how-tos
