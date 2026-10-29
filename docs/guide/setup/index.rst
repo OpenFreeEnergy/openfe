@@ -49,7 +49,7 @@ See :ref:`dumping transformations <dumping_transformations>` for more details.
    * :doc:`/cookbook/user_charges`
    * :doc:`/cookbook/bespoke_parameters`
 
-   **Ligand networks**
+   **Planning: Ligand networks**
 
    * :doc:`/cookbook/generate_ligand_network`
    * :doc:`/cookbook/hand_write_ligand_network`
@@ -57,7 +57,7 @@ See :ref:`dumping transformations <dumping_transformations>` for more details.
    * :doc:`/cookbook/ligandnetwork_vis`
    * :doc:`/cookbook/repairing_broken_networks`
 
-   **Protocols and alchemical networks**
+   **Planning: Protocols and alchemical networks**
 
    * :doc:`/cookbook/choose_protocol`
    * :doc:`/cookbook/rfe_alchemical_planners`

@@ -29,7 +29,7 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Ligand networks
+   :caption: Planning: Ligand networks
 
    generate_ligand_network
    hand_write_ligand_network
@@ -41,7 +41,7 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Protocols and alchemical networks
+   :caption: Planning: Protocols and alchemical networks
 
    choose_protocol
    rfe_alchemical_planners
