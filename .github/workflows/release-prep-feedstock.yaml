@@ -19,18 +19,18 @@ jobs:
     
     steps:
       - name: Checkout openfe repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           path: openfe
       
       - name: Checkout conda-forge feedstock
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: conda-forge/openfe-feedstock
           path: openfe-feedstock
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: '3.x'
       
@@ -60,6 +60,9 @@ jobs:
             # Backup original recipe.yaml
             cp recipe/recipe.yaml recipe/recipe.yaml.bak
 
+            # Copy draft recipe from openfe repo
+            cp recipe/openfe_source/devtools/recipe_draft.yaml recipe/recipe.yaml
+
             # Add path after 'source:' and delete url line
             yq -i '.source.path="./openfe_source"' recipe/recipe.yaml
             yq -i 'del(.source.url)' recipe/recipe.yaml
@@ -67,7 +70,6 @@ jobs:
             # remove existing gufe entry and add the gufe pin we want
             yq -i 'del(.outputs.[0].requirements.run[] | select(. =="*gufe*"))' recipe/recipe.yaml
             yq -i '.outputs.[0].requirements.run += "gufe==${{ steps.latest-gufe-version.outputs.VERSION }}"' recipe/recipe.yaml
-            
             
             echo "Modified recipe.yaml:"
             cat recipe/recipe.yaml

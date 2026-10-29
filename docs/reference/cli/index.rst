@@ -21,6 +21,7 @@ Execution Commands
 
     run_task
     status
+    update_task_db
     quickrun
 
 Results Gathering Commands

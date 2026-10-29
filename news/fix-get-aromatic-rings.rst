@@ -16,7 +16,7 @@
 
 **Fixed:**
 
-* Ligands are now returned in the input order by ``bulk_assign_partial_charges`` and the CLI when using more than one processor to assign charges.
+* Fixed get_aromatic_rings() to correctly merge fused aromatic systems, preventing failures during automatic Boresch restraint selection (PR #2259).
 
 **Security:**
 

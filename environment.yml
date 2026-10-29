@@ -3,16 +3,16 @@ channels:
   - conda-forge
 dependencies:
   - cinnabar >=0.6.0  # min pin for some API breaks and behavior changes in 0.6.0
-  - click >=8.2.0
+  - click >=8.2.0, <8.5.0  # until the deprecation warnings are addressed by https://github.com/OpenFreeEnergy/openfe/pull/2251
   - coverage
   - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
   - duecredit
   - citeproc-py <0.10.3  # the default harvard1 style used by duecredit was changed in 0.10.3, this avoids needing an extra dependency on citeproc-py-styles
   - kartograf~=2.0
   - dill  # temporary, needed by kartograf. remove when gufe v1.13 is released
-  - konnektor>=0.4.0
+  - konnektor>=0.5.0
   - exorcist
-  - lomap2>=3.2.1
+  - lomap2>=3.3.0
   - networkx
   - numpy
   - openfe-analysis>=0.5.0
@@ -29,10 +29,10 @@ dependencies:
   - parmed >=4.3.1  # fix to support numpy >=2.3: https://github.com/ParmEd/ParmEd/pull/1387
   - plugcli
   - pint>=0.24.0
-  - pip
+  - pip >=26.2.2  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
   - pooch >= 1.9.0  # min needed for https://github.com/fatiando/pooch/issues/502
   - py3dmol
-  - pydantic >=2.13.0
+  - pydantic ~=2.13
   - pygraphviz
   - pytest
   - pytest-xdist
@@ -59,3 +59,4 @@ dependencies:
   - run_constrained:
     # drop this pin when handled upstream in espaloma-feedstock
     - smirnoff99frosst>=1.1.0.1  #https://github.com/openforcefield/smirnoff99Frosst/issues/109
+    - certifi >=2026.10.19

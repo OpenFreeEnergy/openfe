@@ -32,6 +32,7 @@ from gufe import (
     SolventComponent,
     settings,
 )
+from gufe.protocols import ProtocolValidationError
 from openff.units import unit as offunit
 
 from openfe.due import Doi, due
@@ -277,6 +278,9 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           * If the atom mapping is empty.
           * If the atom mapping would break or form a bond.
           * If the atom mapping contains less than 4 heavy atoms and the components have more than 6 atoms.
+
+        ProtocolValidationError
+          * If the atom mapping maps a single to a triple bond.
         """
         # if a single mapping is provided, convert to list
         if isinstance(mapping, ComponentMapping):
@@ -305,6 +309,9 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             RelativeHybridTopologyProtocol._check_for_bond_breaks(mapping=m)
             # check for the minimum number of mapped heavy atoms
             RelativeHybridTopologyProtocol._check_minimum_number_of_mapped_atoms(mapping=m)
+            # check for hybridization changes mapping single to triple bonds as these have always failed in testing
+            # without dummy atom valence corrections, which are not implemented in this protocol yet
+            RelativeHybridTopologyProtocol._check_for_single_to_triple_bond_mappings(mapping=m)
 
     @staticmethod
     def _check_for_bond_breaks(
@@ -403,6 +410,45 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             wmsg = f"The ratio of alchemical to mapped heavy atoms: {mapping_ratio} is large, please review the mapping if the simulation is unstable."
             warnings.warn(wmsg)
             logger.warning(wmsg)
+
+    @staticmethod
+    def _check_for_single_to_triple_bond_mappings(mapping: ComponentMapping) -> None:
+        """
+        Validates the provided mapping does not map single to triple bonds as these lead to instabilities in the simulation.
+
+        Parameters
+        ----------
+        mapping : ComponentMapping
+          The mapping between transforming components.
+
+        Raises
+        ------
+        ProtocolValidationError
+          * If the atom mapping maps a single bond to a triple bond.
+        """
+        from rdkit.Chem import BondType
+
+        mol_a = mapping.componentA.to_rdkit()
+        mol_b = mapping.componentB.to_rdkit()
+        atom_map = mapping.componentA_to_componentB
+
+        for bond in mol_a.GetBonds():
+            atom_a_idx = bond.GetBeginAtomIdx()
+            atom_b_idx = bond.GetEndAtomIdx()
+
+            if atom_a_idx in atom_map and atom_b_idx in atom_map:
+                mapped_atom_a_idx = atom_map[atom_a_idx]
+                mapped_atom_b_idx = atom_map[atom_b_idx]
+                mapped_bond = mol_b.GetBondBetweenAtoms(mapped_atom_a_idx, mapped_atom_b_idx)
+                if mapped_bond is not None:
+                    if {bond.GetBondType(), mapped_bond.GetBondType()} == {
+                        BondType.SINGLE,
+                        BondType.TRIPLE,
+                    }:
+                        raise ProtocolValidationError(
+                            f"Single to triple bond mapping found between componentA {atom_a_idx}->{atom_b_idx}:type:{bond.GetBondType()} and componentB {mapped_atom_a_idx}->{mapped_atom_b_idx}:type:{mapped_bond.GetBondType()}, which leads to instabilities. "
+                            "This can be fixed by removing the atoms involved in this bond from the atom mapping."
+                        )
 
     @staticmethod
     def _validate_smcs(

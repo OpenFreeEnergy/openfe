@@ -258,7 +258,11 @@ class TestProtocolResult:
 
         ovp1 = ovp[key][0]
         assert isinstance(ovp1["matrix"], np.ndarray)
-        assert ovp1["matrix"].shape == (14, 14)
+        if key == "vacuum":
+            count = 5
+        else:
+            count = 14
+        assert ovp1["matrix"].shape == (count, count)
 
     @pytest.mark.parametrize("key", ["solvent", "vacuum"])
     def test_get_replica_transition_statistics(self, key, protocolresult):
@@ -270,8 +274,12 @@ class TestProtocolResult:
         rpx1 = rpx[key][0]
         assert "eigenvalues" in rpx1
         assert "matrix" in rpx1
-        assert rpx1["eigenvalues"].shape == (14,)
-        assert rpx1["matrix"].shape == (14, 14)
+        if key == "vacuum":
+            count = 5
+        else:
+            count = 14
+        assert rpx1["eigenvalues"].shape == (count,)
+        assert rpx1["matrix"].shape == (count, count)
 
     @pytest.mark.parametrize("key", ["solvent", "vacuum"])
     def test_equilibration_iterations(self, key, protocolresult):
