@@ -83,7 +83,7 @@ interpolated linearly. The available options differ only in *when* the electrost
      - Electrostatics: 0.0–0.5; sterics: 0.33–1.0
      - Sterics: 0.0–0.67; electrostatics: 0.5–1.0
      - Similar to ``default`` but the steric changes are spread over a wider range, so sterics and electrostatics
-       are changed simultaneously for part of the path (following Jiang, Chipot and Roux [6]_).
+       are changed simultaneously for part of the path (following Jiang, Chipot and Roux [5]_).
    * - ``quarters``
      - Electrostatics: 0.0–0.25; sterics: 0.25–0.5
      - Sterics: 0.5–0.75; electrostatics: 0.75–1.0
@@ -160,103 +160,47 @@ Getting the free energy estimate
 The free energy differences are obtained from simulation data using the `MBAR estimator <https://www.alchemistry.org/wiki/Multistate_Bennett_Acceptance_Ratio>`_ (multistate Bennett acceptance ratio estimator)
 as implemented in the `PyMBAR package <https://pymbar.readthedocs.io/en/master/mbar.html>`_.
 In addition to the MBAR estimates of the two legs of the thermodynamic cycle and the overall relative binding free energy difference,
-the protocol also returns some metrics to help assess convergence of the results,
-these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
+the protocol also returns some metrics to help assess convergence of the results.
+For how to interpret these analyses, see :ref:`userguide_simulation_health`.
 
 .. note:: The MBAR uncertainty of each individual transformation is estimated using bootstrapping for 1000 iterations,
           this leads to larger errors compared to the previous error estimate method. The only exception are
           the forward and reverse convergence plots which use the MBAR analytical error.
 
-.. todo: issue 792, consolidate this page into its own analysis page and link both RBFE and AFE pages to it
-.. _multistate_analysis:
-
 Analysis
 ~~~~~~~~
 
-As standard, some analysis of the each simulation repeat is performed.
-This analysis is made available through either the dictionary of results in the execution output,
-or through some ready-made plots for quick inspection.
-This analysis can be categorised as relating
-to the energetics of the different lambda states that were sampled,
-or to the analysis of the change in structural conformation over time in each state.
+After each simulation repeat, the protocol automatically analyses the
+energetics of the sampled λ states (MBAR overlap, replica exchange and
+forward/reverse convergence) and the structural changes in each state. For
+how to interpret these analyses and what to do when a check raises
+concerns, see :ref:`userguide_simulation_health`.
 
-Energetic and replica exchange analysis
-"""""""""""""""""""""""""""""""""""""""
+The structural analysis differs between the two legs:
 
-These analyses consider the swapping and energetic overlap between the
-different simulated states to help assess the convergence and correctness of the estimate of free energy
-difference produced.
+* **Complex leg:** ligand RMSD, ligand COM drift and protein 2D RMSD, after
+  aligning the trajectory on the protein Cα atoms.
+* **Solvent leg:** ligand RMSD only.
 
-.. list-table:: Energetic Analysis examples
-  :widths: 75 25
-  :header-rows: 1
+The ligand RMSD is computed for the hybrid ligand, including dummy atoms,
+and is not symmetry-corrected. The ligand atoms must be included in the
+trajectory output (``output_settings.output_indices``, which includes them by
+default); otherwise the structural analysis is skipped. Unlike other
+protocols, the protein selection and frame stride cannot currently be
+configured. The ``structural_analysis.npz`` file also contains a 1D protein
+Cα RMSD (``protein_RMSD``), which is not plotted.
 
-  * - Description
-    - Example
-  * - **MBAR overlap matrix.**
+.. caution::
 
-      This plot is used to assess if the different lambda states simulated overlapped energetically.
-      Each matrix element represents the probability of a sample from a given row state being observable in a given column
-      state.
-      Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very
-      important metric.
-      This plot should show that the diagonal of the matrix has some "width" so that the two end states are connected,
-      with elements adjacent to the diagonal being at least 0.03 [5]_.
-    - .. image:: img/mbar_overlap_matrix.png
-  * - **Replica exchange probability matrix** (for replica exchange sampler simulations only).
+Ligand RMSD is calculated for the hybrid ligand, including dummy
+atoms. Movement of these atoms can inflate RMSD values even when
+the interacting part of the ligand remains in its binding pose.
+Inspect the trajectory before interpreting a high RMSD as
+evidence of ligand displacement.
 
-      Similar to the MBAR overlap matrix, this shows the probability of a given lambda state being exchanged with another.
-      Again, the diagonal of this matrix should be at least tridiagonal wide for the two end states to be connected.
-    - .. image:: img/replica_exchange_matrix.png
-  * - **Forward and reverse convergence of free energy estimates.**
-
-      Using increasingly larger portions of the total data,
-      this analysis calculates the free energy difference, both in forward and backward directions.
-      In this analysis, forward and backward estimates that agree within error using only a fraction of the total data
-      suggest convergence [5]_. Note: the error bars reported in this plot are
-      MBAR analytical errors instead of bootstrap errors.
-    - .. image:: img/forward_reverse_convergence.png
-  * - **Timeseries of replica states.**
-
-      This plot shows the time evolution of the different system configurations as they are
-      exchanged between different lambda states.
-      This plot should show that the states are freely mixing and that there are no cliques forming.
-    - .. image:: img/replica_state_timeseries.png
-
-Structural analysis
-"""""""""""""""""""
-
-If a protein was present, these analyses first center and align the system so that
-the protein is considered the frame of reference.
-Further analysis can be performed by inspecting the ``simulation.nc`` and ``hybrid_system.pdb`` files,
-which contain a multistate trajectory and topology for the hybrid system respectively.
-These files can be loaded into an MDAnalysis Universe object using the `openfe_analysis`_ package.
-
-.. list-table:: Structural Analysis examples
-  :widths: 75 25
-  :header-rows: 1
-
-  * - Description
-    - Example
-  * - **Ligand RMSD.**
-
-      This produces a plot called ``ligand_RMSD.png`` and a results entry ``ligand_RMSD`` which gives the
-      RMSD of the ligand molecule over time relative to the first frame of the production phase, for each simulated state.
-      Large RMSD values, e.g. greater than 5 angstrom (system dependent), would indicate an unstable ligand binding mode.
-    - .. image:: img/ligand_RMSD.png
-  * - **Ligand COM drift.**
-
-      For simulations with a protein present, this metric gives the total distance of the ligand COM
-      from its initial starting (docked) position.  If this metric increases over the course of the simulation (beyond 5
-      angstrom) it indicates that the ligand drifted from the binding pocket, and the simulation is unreliable.
-      This produces a plot called ``ligand_COM_drift.png`` and a results entry ``ligand_COM_drift``.
-    - .. image:: img/ligand_COM_drift.png
-  * - **Protein 2D RMSD.**
-
-      For simulations with a protein present, this metric gives, for each lambda state, the RMSD of the
-      protein structure over time, using each frame analysed as a reference frame, to produce a 2 dimensional heatmap.
-      This plot should show no significant spikes in RMSD (which will appear as brightly coloured areas).
-    - .. image:: img/protein_2D_RMSD.png
+The multistate trajectory (``simulation.nc``) and the hybrid topology
+(``hybrid_system.pdb``) can be analysed further using `openfe_analysis`_.
+.. TODO: Link to the trajectory visualisation cookbook when published.
 
 
 See Also
@@ -291,7 +235,6 @@ References
 .. [2] Avoiding singularities and numerical instabilities in free energy calculations based on molecular simulations, T.C. Beutler, A.E. Mark, R.C. van Schaik, P.R. Greber, and W.F. van Gunsteren, Chem. Phys. Lett., 222 529–539 (1994)
 .. [3] New Soft-Core Potential Function for Molecular Dynamics Based Alchemical Free Energy Calculations, V. Gapsys, D. Seeliger, and B.L. de Groot, J. Chem. Theor. Comput., 8 2373-2382 (2012)
 .. [4] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
-.. [5] Guidelines for the analysis of free energy calculations, Pavel V. Klimovich, Michael R. Shirts, and David L. Mobley, J Comput Aided Mol Des. 2015 May; 29(5):397-411. doi: 10.1007/s10822-015-9840-9
-.. [6] Computing Relative Binding Affinity of Ligands to Receptor: An Effective Hybrid Single-Dual-Topology Free-Energy Perturbation Approach in NAMD, Wei Jiang, Christophe Chipot, and Benoît Roux, J. Chem. Inf. Model. 2019, 59, 9, 3794-3802
+.. [5] Computing Relative Binding Affinity of Ligands to Receptor: An Effective Hybrid Single-Dual-Topology Free-Energy Perturbation Approach in NAMD, Wei Jiang, Christophe Chipot, and Benoît Roux, J. Chem. Inf. Model. 2019, 59, 9, 3794-3802
 
 .. _openfe_analysis: https://github.com/OpenFreeEnergy/openfe_analysis

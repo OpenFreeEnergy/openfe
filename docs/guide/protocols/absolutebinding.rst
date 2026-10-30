@@ -105,41 +105,33 @@ In addition to the estimates of the free energy changes and their uncertainty, t
 Analysis
 ~~~~~~~~
 
-As with the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`,
-the protocol performs both energetic and structural analysis automatically after each simulation repeat.
-The energetic analysis (MBAR overlap matrix, replica exchange statistics, forward/reverse convergence)
-is identical to that described in the :ref:`multistate analysis section <multistate_analysis>`.
+After each simulation repeat, the protocol automatically analyses the
+energetics of the sampled λ states (MBAR overlap, replica exchange and
+forward/reverse convergence) and the structural changes in each state. For
+how to interpret these analyses, see :ref:`userguide_simulation_health`.
 
-Structural analysis
-"""""""""""""""""""
+The structural analysis differs between the two legs:
 
-After each simulation, the protocol automatically analyzes the production trajectories of each lambda state.
+* **Complex leg:** symmetry-corrected ligand RMSD, ligand COM drift and
+  protein 2D RMSD, after aligning the trajectory on the selected protein
+  atoms.
+* **Solvent leg:** symmetry-corrected ligand RMSD only.
 
-In the complex leg, the trajectories are first centered and aligned so that the selected protein atoms are
-the frame of reference, and the following metrics are computed:
+The analysis can be configured through ``analysis_settings`` in
+:class:`.AbsoluteBindingSettings`: ``protein_selection`` sets the protein
+atoms used for alignment and RMSD, and ``skip`` sets the frame stride (by
+default, about 500 frames are analysed per state). The ligand atoms must be
+included in the trajectory output, through ``output_indices`` in
+``complex_output_settings`` and ``solvent_output_settings``; otherwise the
+structural analysis is skipped.
 
-* **Ligand RMSD**: symmetry-corrected RMSD of the ligand at each lambda state.
-  The RMSD is relative to the first production frame at that given lambda state.
-  A symmetry-corrected RMSD is used to account for equivalent atom orderings in symmetric
-  molecules (e.g. a flipping phenyl ring) instead of a standard mass-weighted RMSD.
-* **Ligand COM drift**: centre-of-mass displacement of the ligand at each lambda state.
-  The COM is calculated from the ligand's initial production simulation position at that lambda state.
-* **Protein 2D RMSD**:  pairwise RMSD matrix between all analyzed frames for each lambda state.
-
-In the solvent leg, only the symmetry-corrected **Ligand RMSD** is computed.
-
-Results are saved as an `NPZ file <https://numpy.org/doc/stable/reference/generated/numpy.savez.html>`_ (``structural_analysis.npz``)
-and plots (``ligand_RMSD.png``, and for the complex leg ``ligand_COM_drift.png`` and ``protein_2D_RMSD.png``) are generated automatically.
-To customize the analysis, the protein selection string (``protein_selection``) and frame stride (``stride``) can be configured via ``analysis_settings`` in :class:`.AbsoluteBindingSettings`.
-
-.. note::
-   This analysis requires the ligand atoms to be included in the trajectory output
-   (controlled by ``output_indices`` in ``solvent_output_settings`` and ``complex_output_settings``).
-   If no ligand atoms are written to the trajectory, the analysis is skipped and a
-   ``structural_analysis_error`` entry is added to the results instead.
-
-For further guidance on interpreting these plots, see the
-:ref:`multistate analysis section <multistate_analysis>` of the hybrid topology protocol documentation.
+Because the ligand is held in place by orientational restraints in the
+complex leg, also check that the restraint geometry stays well defined; see
+the `Boresch restraint analysis tutorial
+<https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_.
+The multistate trajectory (``simulation.nc``) and its topology
+(``alchemical_system.pdb``) can be analysed further using `openfe_analysis`_.
+.. TODO: Link to the trajectory visualisation cookbook when published.
 
 See Also
 --------
@@ -174,3 +166,5 @@ References
 .. [2] Evaluating the use of absolute binding free energy in the fragment optimisation process, I. Alibay, A. Magarkar, D. Seeliger, P. Biggin, Commun Chem 5, 105 (2022)
 .. [3] Avoiding singularities and numerical instabilities in free energy calculations based on molecular simulations, T.C. Beutler, A.E. Mark, R.C. van Schaik, P.R. Greber, and W.F. van Gunsteren, Chem. Phys. Lett., 222 529–539 (1994)
 .. [4] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
+
+.. _openfe_analysis: https://github.com/OpenFreeEnergy/openfe_analysis
