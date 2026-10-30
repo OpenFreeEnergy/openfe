@@ -54,6 +54,8 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    :maxdepth: 1
    :caption: Running calculations
 
+   dumping_transformation
+
 .. TODO: add: run a transformation with quickrun,
    run repeats in parallel, run on a SLURM cluster, resume interrupted calculations and
    share a GPU using NVIDIA MPS (from guide/execution/quickrun_execution), and task-based
@@ -63,7 +65,6 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    :maxdepth: 1
    :caption: Working with results
 
-   dumping_transformation
    jq_inspection
 
 .. TODO: add "Gather free energy results" and "Load results in Python" (from
