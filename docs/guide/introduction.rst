@@ -24,135 +24,88 @@ example, you are likely to make use of HPC or cloud computing resources to
 run the simulation campaign. Because of this, each stage has a defined output which 
 is then the input for the next stage:
 
-.. container:: deflist-flowchart
+.. rubric:: Setup
 
-    * Setup
-        - .. container:: flowchart-sidebyside
+.. grid:: 1 1 2 2
+   :gutter: 2
 
-            -   -
-                    .. rst-class:: flowchart-spacer
-                -
+   .. grid-item-card:: Choose a protocol
+      :shadow: none
 
-                    .. rst-class:: arrow-down arrow-from-nothing
-                - :any:`choose_protocol`
+      :any:`choose_protocol`
 
-                - :class:`Protocol`
-                    Simulation procedure for an alchemic mutation.
+      A :class:`Protocol` specifies how each alchemical
+      transformation will be simulated.
 
-                    .. rst-class:: arrow-down arrow-tail arrow-combine-right
-                -
+   .. grid-item-card:: Load molecular components
+      :shadow: none
 
-            -   -
-                    .. rst-class:: width-8
-                -  Chemical component definition
-                    SDF, PDB, RDKit, OpenFF Molecule, solvent spec, etc.
+      :any:`Loading small molecules`, :any:`Loading proteins`,
+      and :any:`Defining solvents`.
 
-                - .. container:: flowchart-sidebyside
+      Build :class:`SmallMoleculeComponent` objects for ligands,
+      together with :class:`ProteinComponent` and
+      :class:`SolventComponent` objects as needed.
 
-                    - .. rst-class:: width-3
+.. rst-class:: sd-text-center
 
-                        -
+:octicon:`arrow-down;1.5em`
 
-                            .. rst-class:: arrow-down arrow-multiple
-                        - :any:`Loading proteins`, :any:`Defining solvents`
+.. card:: Plan the ligand network
+   :shadow: none
 
-                        - :class:`SolventComponent` and :class:`ProteinComponent`
-                            Other chemical components needed to simulate the ligand.
+   :any:`generate_ligand_network`,
+   :any:`hand_write_ligand_network`, or
+   :any:`network_from_orion_fepp` to create a
+   :class:`LigandNetwork <openfe.setup.LigandNetwork>`.
 
-                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine
-                        -
+   Optionally, :any:`ligandnetwork_vis`.
 
-                    -   - .. container:: flowchart-sidebyside
+.. rst-class:: sd-text-center
 
-                            - .. rst-class:: width-5
+:octicon:`arrow-down;1.5em`
 
-                                -
-                                    .. rst-class:: arrow-down arrow-multiple
-                                - :any:`Loading small molecules`
+.. card:: Create an alchemical network
+   :shadow: none
 
+   :any:`create_alchemical_network` using the protocol,
+   chemical components, and ligand network.
 
-                                - :class:`SmallMoleculeComponent`
-                                    The ligands that will be mutated.
+   The resulting :class:`AlchemicalNetwork` defines the
+   complete simulation campaign.
 
-                            - .. rst-class:: width-3
+.. rst-class:: sd-text-center
 
-                                -
-                                    .. rst-class:: flowchart-spacer
-                                -
+:octicon:`arrow-down;1.5em`
 
-                                - Orion/FEP+
-                                    Network from another tool.
+.. card:: Export transformations
+   :shadow: none
 
+   :any:`dumping_transformations` to JSON files for execution.
 
-                        - .. container:: flowchart-sidebyside
+.. rst-class:: sd-text-center
 
-                            - .. rst-class:: width-2
+:octicon:`arrow-down;1.5em`
 
-                                -
-                                    .. rst-class:: arrow-down arrow-multiple
-                                - :any:`generate_ligand_network`
+.. rubric:: Run
 
-                            - .. rst-class:: width-2
+.. card:: Execute transformations
+   :shadow: none
 
-                                -
-                                    .. rst-class:: arrow-down arrow-multiple
-                                - :any:`hand_write_ligand_network`
+   Use :any:`openfe quickrun <cli_quickrun>` to run each
+   transformation.
 
-                            - .. rst-class:: width-1
+.. rst-class:: sd-text-center
 
-                                -
-                                    .. rst-class:: arrow-down arrow-tail arrow-multiple arrow-combine-right
-                                -
+:octicon:`arrow-down;1.5em`
 
-                                    .. rst-class:: flowchart-spacer
-                                -
+.. rubric:: Gather
 
-                            - .. rst-class:: width-3
+.. card:: Gather results
+   :shadow: none
 
-                                -
-                                    .. rst-class:: arrow-down arrow-tail arrow-combine-left
-                                -
-
-                                    .. rst-class:: arrow-down arrow-head flowchart-spacer
-                                - :any:`network_from_orion_fepp`
-
-                        - :class:`LigandNetwork <openfe.setup.LigandNetwork>`
-                            A network of ligand transformations.
-
-                        - .. container:: flowchart-sidebyside
-
-                            -   -
-                                    .. rst-class:: arrow-down arrow-tail arrow-combine-left width-4
-                                -
-
-                            -   -
-                                    .. rst-class:: arrow-cycle width-4
-                                -
-
-                                - :any:`ligandnetwork_vis`
-
-
-            .. rst-class:: arrow-down arrow-head
-        - :any:`create_alchemical_network`
-
-        - :class:`AlchemicalNetwork`
-            A complete simulation campaign.
-
-      .. rst-class:: arrow-down
-    * :any:`dumping_transformations`
-
-    * Run
-        - :any:`openfe quickrun <cli_quickrun>`
-            OpenFE recommends using the ``openfe quickrun`` CLI command to execute a transformation.
-
-      .. rst-class:: arrow-down
-    *
-
-    * Gather
-        - :any:`openfe gather <cli_gather>`
-            OpenFE recommends using the ``openfe gather`` CLI command to collect the results of a transformation.
-
-    The main stages of a free energy calculation in OpenFE, and the intermediates between them.
+   Use :any:`openfe gather <cli_gather>` to collect the
+   results of the transformations.
 
 The output of the :ref:`simulation setup <userguide_setup>` stage is an :class:`.AlchemicalNetwork`. This contains all
 the information about what is being simulated (e.g., what ligands, host proteins, solvation details, etc.) and the
