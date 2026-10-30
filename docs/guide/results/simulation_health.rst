@@ -83,8 +83,9 @@ to guidance below.
    λ states? Replica exchange only. (:ref:`details <health_exchange>`)
 #. **Convergence:** Do the forward and reverse estimates flatten and agree
    before all data are included? (:ref:`details <health_convergence>`)
-#. **Structure:** In the bound states, does the ligand keep its pose and the
-   protein its conformation, and do any restraints stay well defined?
+#. **Structure:** Are the ligand binding poses and protein
+   conformations consistent with the expected behaviour,
+   and do any restraints remain well defined?
    (:ref:`details <health_structure>`)
 
 If a check raises concerns, see :ref:`health_next_steps`.
@@ -113,8 +114,9 @@ looks like an ordinary estimate with a large uncertainty. Looking at the
 individual estimates (``get_individual_estimates()``) shows that one repeat
 behaves differently, and its trajectory is the one to inspect.
 For binding free energies, comparing the legs also shows where a problem
-lies. If the repeats of the complex leg disagree but those of the solvent
-leg agree, the problem is most likely in the binding site.
+lies. Comparing the thermodynamic legs can help localise sampling
+problems. If complex-leg repeats disagree while solvent-leg
+repeats agree, focus the investigation on the complex system.
 
 Additional repeats help characterise this variability; longer or more effective sampling may be needed to resolve it.
 
@@ -195,11 +197,12 @@ needed. The error bars are analytical MBAR errors.
    :alt: Example forward and reverse free energy estimates as fractions of data are included.
    :align: center
 
-The analysis also discards the start of the production simulation if it has
-not yet equilibrated (``equilibration_iterations``), and counts the remaining
-uncorrelated samples (``production_iterations``). A large number of discarded
-iterations means the system was still relaxing after the equilibration phase;
-check the :ref:`structural analysis <health_structure>` for what is changing.
+The analysis also identifies an initial equilibration period
+(``equilibration_iterations``) and estimates the number of
+effectively uncorrelated production samples
+(``production_iterations``). If many iterations are discarded
+or few uncorrelated samples remain, inspect the trajectory
+for slow equilibration or insufficient sampling.
 
 
 .. _health_structure:
@@ -207,12 +210,16 @@ check the :ref:`structural analysis <health_structure>` for what is changing.
 Structural analysis
 -------------------
 
-For systems with a protein, the trajectory is aligned on the protein first.
-All metrics are computed for each λ state, relative to the first production
-frame of that state, so they do not capture changes during equilibration.
-Structural analysis requires the ligand atoms to be saved in the trajectory;
-otherwise it is skipped and a ``structural_analysis_error`` entry is
-recorded. The results are saved in ``structural_analysis.npz``.
+For systems containing a protein, trajectories are first aligned
+on the protein. Ligand RMSD and centre-of-mass drift are measured
+relative to the first production frame of each λ state, while
+protein 2D RMSD compares all analysed frames.
+
+These analyses do not capture structural changes during
+equilibration. Structural analysis requires the ligand atoms
+to be saved in the trajectory; otherwise it is skipped and a
+``structural_analysis_error`` entry is recorded.
+Results are saved in ``structural_analysis.npz``.
 
 .. _health_protocol_differences:
 
@@ -292,9 +299,9 @@ increasing beyond a few ångströms usually indicates a change in binding mode
 or loss of the pose. Larger movements are expected in weakly interacting or
 decoupled states.
 
-**Protein 2D RMSD** compares every pair of analysed frames. Blocks of low
-  RMSD (dark) along the diagonal are stable conformations; bright regions
-  between blocks mark a conformational change.
+**Protein 2D RMSD** compares every pair of analysed frames.
+Dark blocks indicate similar conformations, while brighter
+regions indicate larger structural differences.
 
 .. image:: ../protocols/img/protein_2D_RMSD.png
    :alt: Example protein pairwise RMSD matrix.
@@ -334,7 +341,7 @@ structural diagnostics together before changing settings.
      - What to try
    * - MBAR overlap matrix: elements next to the diagonal below 0.03
      - Large changes between neighbouring λ states
-     - Add λ windows where the gap is.
+     - Increase the number of λ windows or adjust the λ schedule to improve overlap.
    * - Replica state timeseries: replicas stay within a subset of λ states,
        or the replica exchange matrix shows isolated blocks
      - A gap in overlap, or a slow conformational change
@@ -358,9 +365,10 @@ structural diagnostics together before changing settings.
    * - Charge-changing transformation: large spread between repeats, or
        forward and reverse estimates disagree
      - Slow solvent or ion rearrangements, or insufficient sampling
-     - For Relative Hybrid Topology, use the
-       :doc:`adaptive settings </guide/setup/defining_protocols>`: explicit
-       charge correction, 22 λ windows and 20 ns production per window.
+     - For Relative Hybrid Topology, enable explicit charge correction
+       and consider the recommended adaptive settings (22 λ windows,
+       22 replicas and 20 ns production per window).
+
 
 For simulations that fail with an error, see
 :doc:`Troubleshooting simulations </guide/troubleshooting>`.
