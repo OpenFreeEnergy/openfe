@@ -53,7 +53,7 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             openfe=${{ steps.latest-version.outputs.VERSION }}
-            pytest
+            "pytest != 9.2.0"  # https://github.com/pytest-dev/pytest/issues/15284
             pytest-xdist
           condarc: |
             channels:
