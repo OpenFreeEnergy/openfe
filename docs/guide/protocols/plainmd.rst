@@ -57,6 +57,10 @@ See Also
 
 * :any:`MD tutorial <../../tutorials/md_tutorial>`
 
+**Guides**
+
+* :ref:`Validating your inputs with a plain MD simulation <troubleshooting-validate-inputs-with-plain-md>`
+
 **API Documentation**
 
 * :ref:`OpenMM plain MD protocol <md protocol api>`

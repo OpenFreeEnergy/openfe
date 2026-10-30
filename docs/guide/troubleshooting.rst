@@ -52,7 +52,9 @@ SMIRNOFF force field parameter assignment errors
 
 You may see errors like:
 
-- ``openff.interchange.exceptions.UnassignedBondError: BondHandler was not able to find parameters for the following valence terms: - Topology indices (0, 1): names and elements (C1 C), (Si1 Si),``
+.. code:: bash
+
+    openff.interchange.exceptions.UnassignedBondError: BondHandler was not able to find parameters for the following valence terms: - Topology indices (0, 1): names and elements (C1 C), (Si1 Si)
 
 This usually means the SMIRNOFF-style force field does not have parameters for part of the chemistry in the system.
 In the example above, the force field was unable to assign bond parameters for bonds involving silicon.
@@ -75,8 +77,14 @@ If the error lists specific bonds or valence terms, those terms are the ones tha
 
 You may see errors like:
 
-- ``openmm.OpenMMException: Particle coordinate is NaN.``
-- ``openmmtools.multistate.utils.SimulationNaNError: Propagating replica 0 at state 10 resulted in a NaN!``
+
+.. code:: bash
+
+    openmm.OpenMMException: Particle coordinate is NaN.
+
+.. code:: bash
+
+    openmmtools.multistate.utils.SimulationNaNError: Propagating replica 0 at state 10 resulted in a NaN!
 
 For more information on the OpenMM error, see the OpenMM FAQ entry on NaNs:
 https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#nan
@@ -110,7 +118,61 @@ diagnostics, including agreement between independent repeats.
 
 The state of the system and integrator before the error are often saved in a ``nan-error-logs`` directory, which can help with debugging.
 
-.. _troubleshooting-log-debug-information:
+.. _troubleshooting-validate-inputs-with-plain-md:
+
+Validating your inputs with a plain MD simulation
+-------------------------------------------------
+
+Many of the errors above (e.g. parameter assignment failures, ``NaN`` errors during simulation, box size errors) are due problems with the input structures which are not identified until protocol execution.
+A quick way to check this *before* running an expensive free energy protocol is to run a short, MD simulation of your system with the :class:`.PlainMDProtocol` (see the :doc:`Plain MD protocol guide <protocols/plainmd>`).
+
+This confirms that:
+
+- The receptor can be parameterized together with the ligand (e.g. no missing residues, caps or unsupported chemistry) by the same force fields you intend to use in your production protocol.
+- The system can be minimized and equilibrated producing a stable simulation without clashes or ``NaN`` errors.
+
+If a system is stable in plain MD it is much more likely to be suitable for other protocols, for failures see sections :ref:`troubleshooting-nan-errors-during-simulation` and :ref:`troubleshooting-smirnoff-force-field-parameter-assignment-errors` for next steps.
+We recommend running this for a representative subset of the ligands with the receptor, using the same force fields and solvent settings you intend to use in your production protocol.
+
+The simplest way to run this check is via the Python API with the example below which uses short equilibration and production lengths, which is enough to catch most setup problems:
+
+.. code-block:: python
+
+   import openfe
+   from gufe.protocols import execute_DAG
+   from openff.units import unit
+   from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocol
+   import pathlib
+
+   ligand = openfe.SmallMoleculeComponent.from_sdf_file("ligand.sdf")
+   protein = openfe.ProteinComponent.from_pdb_file("protein.pdb")
+   solvent = openfe.SolventComponent()  # use the same settings as your production run
+
+   system = openfe.ChemicalSystem(
+       {"ligand": ligand, "protein": protein, "solvent": solvent},
+       name="validation",
+   )
+
+   settings = PlainMDProtocol.default_settings()
+   settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
+   settings.simulation_settings.equilibration_length = 1 * unit.picosecond
+   settings.simulation_settings.production_length = 1 * unit.picosecond
+   settings.engine_settings.compute_platform = "CUDA"
+
+   protocol = PlainMDProtocol(settings=settings)
+   dag = protocol.create(stateA=system, stateB=system, mapping=None)
+   output_dir = pathlib.Path("plain_md_check")
+   output_dir.mkdir(exist_ok=True, parents=True)
+
+   result = execute_DAG(
+       dag,
+       shared_basedir=output_dir,
+       scratch_basedir=output_dir,
+       keep_shared=False,
+       raise_error=True,
+       n_retries=0
+   )
+
 
 Resuming Interrupted Simulations
 --------------------------------
@@ -119,6 +181,7 @@ In the case where your ``openfe quickrun`` execution has timed out, was cancelle
 
 See :ref:`Resuming Interrupted Simulations <userguide_quickrun_resume>` for more details.
 
+.. _troubleshooting-log-debug-information:
 
 Log Debug information
 ---------------------
