@@ -40,3 +40,27 @@ instructions can be found in the following sections:
 To set up your alchemical network using the Python interface, but run it using the CLI,
 you will need to export the network in the same format used by the CLI.
 See :ref:`dumping transformations <dumping_transformations>` for more details.
+
+.. admonition:: How-to guides
+
+   **Setup**
+
+   * :doc:`/cookbook/loading_molecules`
+   * :doc:`/cookbook/user_charges`
+   * :doc:`/cookbook/bespoke_parameters`
+
+   **Planning: Ligand networks**
+
+   * :doc:`/cookbook/generate_ligand_network`
+   * :doc:`/cookbook/hand_write_ligand_network`
+   * :doc:`/cookbook/network_from_orion_fepp`
+   * :doc:`/cookbook/ligandnetwork_vis`
+   * :doc:`/cookbook/repairing_broken_networks`
+
+   **Planning: Protocols and alchemical networks**
+
+   * :doc:`/cookbook/choose_protocol`
+   * :doc:`/cookbook/rfe_alchemical_planners`
+   * :doc:`/cookbook/create_alchemical_network`
+
+.. TODO: add the new Setup and Planning how-tos to this box as they are added.

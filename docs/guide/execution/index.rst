@@ -13,3 +13,5 @@ then :ref:`reading on the available Python functions<reference_execution>`.
    quickrun_execution
    task_based_execution
    execution_theory
+
+.. TODO: add a "How-to guides" box listing the Running calculations how-tos.
