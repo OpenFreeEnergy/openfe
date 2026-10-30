@@ -187,7 +187,7 @@ indicate a barrier, often where the overlap matrix has a gap.
 Convergence and equilibration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The **forward and reverse analysis** recalculates the free energy from
+The **forward and reverse analysis** recalculates the free energy change from
 increasing fractions of the data, taken from the start and from the end of
 the simulation. Both curves should flatten and agree within error before
 all data are included [1]_. Continued drift indicates that more sampling is
