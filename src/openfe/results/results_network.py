@@ -2,20 +2,18 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from collections.abc import Iterable, Self
+from functools import cache
 
 import networkx as nx
 from gufe import AlchemicalArchive, ChemicalSystem, TransformationBase
 from gufe.protocols import Protocol, ProtocolDAGResult
+from gufe.tokenizables import GufeTokenizable
 
 
-class AlchemicalResult:  #  taking suggestions for a better name
-    """Edge of a ResultsNetwork"""
-
-    _stateA: ChemicalSystem  # following Transformation naming convention for sanity
-    _stateB: ChemicalSystem
+class TransformationResult(GufeTokenizable):
     _protocol_dag_results: list[ProtocolDAGResult]
     _protocol: Protocol
-    _transformation: TransformationBase | None  # retrieve lazily?
+    _transformation: TransformationBase
 
     def __init__(self, protocol_dag_results):
         pass
@@ -40,16 +38,14 @@ class AlchemicalResult:  #  taking suggestions for a better name
 class ResultsNetwork:
     # NOTE: this is a class with mutable edges and nodes for the prototyping phase. we may decide to make this a gufe tokenizable or minimally make the nodes & edges tuples
     _name: str | None
-    _edges: list[AlchemicalResult]
-    _nodes: list[ChemicalSystem]
+    _edges: list[TransformationResult]
     _graph: nx.MultiDiGraph | None
 
     """A class for storing and inspecting results from openfe execution."""
 
     def __init__(self, results: Iterable[tuple[ProtocolDAGResult]], name: str | None = None):
         self._name = name
-        self._nodes: list[ChemicalSystem] = []
-        self._edges: list[AlchemicalResult] = []
+        self._edges: list[TransformationResult] = []
 
     @staticmethod
     def _generate_graph(edges) -> nx.MultiDiGraph:
@@ -59,19 +55,18 @@ class ResultsNetwork:
         # TODO: do we want the option to add lone nodes so that a disconnected graph is apparent?
         return nx.freeze(g)
 
+    @cache
     @property
     def graph(self) -> nx.MultiDiGraph:
         """networkx graph representation of the ResultsNetwork"""
-        if self._graph is None:
-            self._graph = self._generate_graph(self._edges, self._nodes)
-        return self._graph.copy(as_view=True)
+        graph = self._generate_graph(self._edges, self._nodes)
+        return graph.copy(as_view=True)
 
     @property
-    def nodes(self) -> Iterable[ChemicalSystem]:
-        return self._nodes
+    def nodes(self) -> Iterable[ChemicalSystem]: ...
 
     @property
-    def edges(self) -> Iterable[AlchemicalResult]:
+    def edges(self) -> Iterable[TransformationResult]:
         pass
 
     @property
