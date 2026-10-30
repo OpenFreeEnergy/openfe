@@ -114,6 +114,7 @@ output, through ``output_indices`` in ``solvent_output_settings``; otherwise
 the structural analysis is skipped. The multistate trajectories
 (``solvent.nc`` and ``vacuum.nc``) can be analysed further using
 `openfe_analysis`_.
+.. TODO: Link to the trajectory visualisation cookbook when published.
 
 
 See Also

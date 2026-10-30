@@ -3,21 +3,27 @@
 Assessing simulation health
 ===========================
 
-A plausible free energy estimate does not necessarily mean that a simulation
-has sampled adequately. Poor overlap between alchemical states, slow replica
-mixing, unconverged estimates or structural changes can all make a
-result unreliable, without raising an error.
+A free energy calculation can complete without errors even when the
+result is unreliable. Poor overlap between alchemical states, slow replica
+mixing, unconverged estimates or unexpected structural changes can
+compromise the result.
 
 **openfe** automatically performs energetic analysis of its multistate
 simulations and, where supported, structural analysis of the saved
 trajectories. This page explains how to interpret these diagnostics,
 identify sampling problems and decide what to check next.
 
-The guidance applies to :ref:`Relative Hybrid Topology
-<userguide_relative_hybrid_topology_protocol>`, :ref:`Separated Topologies
-<userguide_septop_protocol>`, :ref:`Absolute Binding <userguide_abfe_protocol>`
-and :doc:`Absolute Solvation </guide/protocols/absolutesolvation>`.
-Protocol-specific differences are noted below and on each protocol's page.
+For further discussion of best practices in free energy calculations
+and their analysis, see Klimovich et al. [1]_ and Mey et al. [2]_.
+
+The guidance applies to the following multistate protocols:
+
+* :ref:`Relative Hybrid Topology <userguide_relative_hybrid_topology_protocol>`
+* :ref:`Separated Topologies <userguide_septop_protocol>`
+* :ref:`Absolute Binding <userguide_abfe_protocol>`
+* :doc:`Absolute Solvation </guide/protocols/absolutesolvation>`
+
+Protocol-specific differences are noted where relevant.
 
 
 Where to find the analysis
@@ -105,8 +111,10 @@ Three uncertainties are reported, and they measure different things:
 * **Forward/reverse error bars**: analytical MBAR errors for subsets of the
   data (see :ref:`health_convergence`).
 
-A small MBAR uncertainty can coexist with large differences between repeats
-if they sample different conformations.
+.. important::
+
+   A small MBAR uncertainty can coexist with large differences
+   between repeats if they sample different conformations.
 
 The combined result can hide a single problematic repeat. For example,
 repeats of −8.1, −8.3 and −10.2 kcal/mol give −8.9 ± 1.2 kcal/mol, which
@@ -118,8 +126,8 @@ lies. Comparing the thermodynamic legs can help localise sampling
 problems. If complex-leg repeats disagree while solvent-leg
 repeats agree, focus the investigation on the complex system.
 
-Additional repeats help characterise this variability; longer or more effective sampling may be needed to resolve it.
-
+Additional repeats can help characterise this variability.
+Inspect the trajectories and consider longer simulations or more λ windows to achieve converged estimates.
 
 .. _multistate_analysis:
 
@@ -145,7 +153,10 @@ to the diagonal, which show the overlap between neighbouring states. As a
 rule of thumb, each should be at least 0.03 [1]_. In the plot, this appears
 as an unbroken band along the diagonal.
 
-If a neighbouring pair falls below this threshold, the estimate may be
+This guideline assumes sufficient sampling. Check that enough
+uncorrelated production samples are available for the estimator (``production_iterations()``).
+
+If a neighbouring pair falls below this 0.03 overlap threshold, the estimate may be
 unreliable even if its reported uncertainty is small.
 See :ref:`health_next_steps` for how to improve overlap.
 
@@ -169,17 +180,20 @@ travels across the full range of λ states.
 
 The **replica exchange matrix** shows the probability that a replica in
 state *i* moves to state *j*. As with the overlap matrix, check the elements
-next to the diagonal: a near-zero element splits the matrix into blocks that
-replicas cannot cross between.
+next to the diagonal: near-zero values indicate bottlenecks
+that limit replica movement between λ states.
 
 .. image:: ../protocols/img/replica_state_timeseries.png
    :alt: Example timeseries showing movement of replicas between alchemical states.
    :align: center
 
-The **replica state timeseries** shows which state each replica occupies
-over time. Each replica should move across the full range, ideally between
-both end states several times. Replicas confined to a subset of states
-indicate a barrier, often where the overlap matrix has a gap.
+The **replica state timeseries** shows which λ state each replica occupies
+over time. Good mixing is characterised by repeated
+replica round trips between the two end states. Replicas
+confined to a subset of states indicate poor mixing or bottlenecks.
+
+Round-trip counts and times can be calculated from the replica
+state histories returned by ``get_replica_states()``.
 
 
 .. _health_convergence:
@@ -187,23 +201,37 @@ indicate a barrier, often where the overlap matrix has a gap.
 Convergence and equilibration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The **forward and reverse analysis** recalculates the free energy change from
-increasing fractions of the data, taken from the start and from the end of
-the simulation. Both curves should flatten and agree within error before
-all data are included [1]_. Continued drift indicates that more sampling is
-needed. The error bars are analytical MBAR errors.
+The **forward and reverse analysis** calculates free energy estimates
+from increasing fractions of the data, taken from the beginning
+(forward) and end (reverse) of the simulation. The shaded horizontal
+band shows the final estimate and its uncertainty.
 
-.. image:: ../protocols/img/forward_reverse_convergence.png
-   :alt: Example forward and reverse free energy estimates as fractions of data are included.
+Both estimates should stabilise near the final estimate and agree
+within their uncertainties [1]_. The **50% point** is particularly
+informative, as it compares estimates from the first and second halves
+of the data. Large differences indicate that the free energy estimate
+may not have converged. At 100%, both estimates necessarily agree
+because they use the same data.
+
+.. figure:: ../protocols/img/forward_reverse_convergence.png
    :align: center
+
+   **Better convergence:** The estimates approach the final value relatively quickly and show smaller fluctuations.
+
+.. figure:: ../protocols/img/forward_reverse_convergence_bad.png
+   :align: center
+
+   **Poor convergence:** Forward and reverse estimates remain substantially
+   separated, and the reverse estimate changes sharply between 80% and
+   100% of the data. The estimates only agree when the full dataset is included.
 
 The analysis also identifies an initial equilibration period
 (``equilibration_iterations``) and estimates the number of
 effectively uncorrelated production samples
 (``production_iterations``). If many iterations are discarded
-or few uncorrelated samples remain, inspect the trajectory
-for slow equilibration or insufficient sampling.
-
+or few uncorrelated samples remain, or these values differ
+substantially between repeats, inspect the trajectories for
+potential sampling problems.
 
 .. _health_structure:
 
@@ -316,12 +344,17 @@ restraint geometry stays well defined during the simulation (see
 .. rubric:: Further trajectory analysis
 
 Inspect trajectories for changes in binding modes, ring flips, pocket waters,
-important interactions or unexpected protein rearrangements. The multistate ``simulation.nc`` trajectory and its
-topology (set by ``output_settings.output_structure``, e.g. ``hybrid_system.pdb`` for Relative Hybrid Topology)
-can be analysed using `openfe_analysis`_. See the `structural analysis tutorial
+important interactions or unexpected protein rearrangements.
+The multistate trajectory (``simulation.nc``) and its topology
+(set by ``output_settings.output_structure``, e.g. ``hybrid_system.pdb`` for Relative Hybrid Topology)
+can be inspected using `openfe_analysis`_.
+See the `structural analysis tutorial
 <https://openfe-analysis.openfree.energy/en/latest/tutorials/structural_analysis.html>`_
-and, for Separated Topologies and Absolute Binding, the `Boresch restraint analysis tutorial
-<https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_.
+for analysing trajectories and the visualisation notebook for inspecting molecular structures and motions.
+
+For Separated Topologies and Absolute Binding, see also the `Boresch restraint analysis tutorial
+<https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_
+for checking restraint geometry.
 
 
 .. _health_next_steps:
@@ -341,7 +374,10 @@ structural diagnostics together before changing settings.
      - What to try
    * - MBAR overlap matrix: elements next to the diagonal below 0.03
      - Large changes between neighbouring λ states
-     - Increase the number of λ windows or adjust the λ schedule to improve overlap.
+     - Increase the number of λ windows or adjust the λ schedule.
+       For Relative Hybrid Topology, also inspect the atom mapping
+       and consider splitting challenging transformations into
+       smaller steps using intermediate ligands.
    * - Replica state timeseries: replicas stay within a subset of λ states,
        or the replica exchange matrix shows isolated blocks
      - A gap in overlap, or a slow conformational change
@@ -418,5 +454,10 @@ References
    *Journal of Computer-Aided Molecular Design*, 29, 397--411.
    doi: `10.1007/s10822-015-9840-9
    <https://doi.org/10.1007/s10822-015-9840-9>`_.
+.. [2] Mey, A. S. J. S. et al. (2020).
+   Best Practices for Alchemical Free Energy Calculations.
+   *Living Journal of Computational Molecular Science*, 2(1), 18378.
+   doi: `10.33011/livecoms.2.1.18378
+   <https://doi.org/10.33011/livecoms.2.1.18378>`_.
 
 .. _openfe_analysis: https://openfe-analysis.openfree.energy/en/latest/

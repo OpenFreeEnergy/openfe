@@ -190,8 +190,17 @@ protocols, the protein selection and frame stride cannot currently be
 configured. The ``structural_analysis.npz`` file also contains a 1D protein
 Cα RMSD (``protein_RMSD``), which is not plotted.
 
+.. caution::
+
+Ligand RMSD is calculated for the hybrid ligand, including dummy
+atoms. Movement of these atoms can inflate RMSD values even when
+the interacting part of the ligand remains in its binding pose.
+Inspect the trajectory before interpreting a high RMSD as
+evidence of ligand displacement.
+
 The multistate trajectory (``simulation.nc``) and the hybrid topology
 (``hybrid_system.pdb``) can be analysed further using `openfe_analysis`_.
+.. TODO: Link to the trajectory visualisation cookbook when published.
 
 
 See Also
