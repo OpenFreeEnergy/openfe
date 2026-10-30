@@ -24,88 +24,140 @@ example, you are likely to make use of HPC or cloud computing resources to
 run the simulation campaign. Because of this, each stage has a defined output which 
 is then the input for the next stage:
 
-.. rubric:: Setup
+.. container:: deflist-flowchart
 
-.. grid:: 1 1 2 2
-   :gutter: 2
+    * Setup
+        - .. container:: flowchart-sidebyside
 
-   .. grid-item-card:: Choose a protocol
-      :shadow: none
+            -   -
+                  .. rst-class:: flowchart-spacer
+                -
 
-      :any:`choose_protocol`
+                - :class:`Protocol`
+                    Simulation procedure for an alchemic mutation.
 
-      A :class:`Protocol` specifies how each alchemical
-      transformation will be simulated.
+                    .. rst-class:: arrow-down arrow-tail arrow-combine-right
+                -
 
-   .. grid-item-card:: Load molecular components
-      :shadow: none
+            -   - Chemical component definition
+                    SDF, PDB, RDKit, OpenFF Molecule, solvent spec, etc.
 
-      :any:`Loading small molecules`, :any:`Loading proteins`,
-      and :any:`Defining solvents`.
+                  .. rst-class:: arrow-down arrow-tail
+                - :any:`Loading Molecules`
 
-      Build :class:`SmallMoleculeComponent` objects for ligands,
-      together with :class:`ProteinComponent` and
-      :class:`SolventComponent` objects as needed.
+                - .. container:: flowchart-sidebyside
 
-.. rst-class:: sd-text-center
+                    -   -
+                            .. rst-class:: arrow-down arrow-head arrow-combine-right
+                        -
 
-:octicon:`arrow-down;1.5em`
+                        - :class:`SmallMoleculeComponent`
+                            The ligands that will be mutated.
 
-.. card:: Plan the ligand network
-   :shadow: none
+                            .. rst-class:: arrow-down
+                        - :any:`Creating Atom Mappings`
 
-   :any:`generate_ligand_network`,
-   :any:`hand_write_ligand_network`, or
-   :any:`network_from_orion_fepp` to create a
-   :class:`LigandNetwork <openfe.setup.LigandNetwork>`.
+                        - :class:`LigandAtomMapping`
+                            Corresponds atoms in one small molecule to those in another.
 
-   Optionally, :any:`ligandnetwork_vis`.
+                            .. rst-class:: arrow-down arrow-tail arrow-combine
+                        -
 
-.. rst-class:: sd-text-center
+                    -   -
+                            .. rst-class:: arrow-down arrow-head arrow-combine-left
+                        -
 
-:octicon:`arrow-down;1.5em`
+                        - :class:`SmallMoleculeComponent`, :class:`SolventComponent` and :class:`ProteinComponent`
+                            The components that make up the chemical system.
 
-.. card:: Create an alchemical network
-   :shadow: none
+                            .. rst-class:: arrow-down arrow-multiple-combine
+                        - :any:`Assembling into ChemicalSystems`
 
-   :any:`create_alchemical_network` using the protocol,
-   chemical components, and ligand network.
+                        - :class:`ChemicalSystem`
+                            Each of the chemical systems, composed of components, that the :class:`Transformation` mutates between.
 
-   The resulting :class:`AlchemicalNetwork` defines the
-   complete simulation campaign.
+                            .. rst-class:: arrow-down arrow-tail arrow-combine-left arrow-multiple
+                        -
 
-.. rst-class:: sd-text-center
+            .. rst-class:: arrow-down arrow-head
+        -
 
-:octicon:`arrow-down;1.5em`
+        - :class:`Transformation`
+            A single alchemic mutation from one chemical system to another.
 
-.. card:: Export transformations
-   :shadow: none
+      .. rst-class:: arrow-down
+    *
 
-   :any:`dumping_transformations` to JSON files for execution.
+    * Run
+        - :class:`Transformation`
+            A single alchemic mutation from one chemical system to another.
 
-.. rst-class:: sd-text-center
+            .. rst-class:: arrow-down
+        -
 
-:octicon:`arrow-down;1.5em`
+        - :class:`ProtocolDAG`
+            A directed acyclic graph describing how to compute a :class:`Transformation`.
 
-.. rubric:: Run
+        - .. container:: flowchart-sidebyside
 
-.. card:: Execute transformations
-   :shadow: none
+            -
+                -
+                    .. rst-class:: arrow-down arrow-multiple
+                -
 
-   Use :any:`openfe quickrun <cli_quickrun>` to run each
-   transformation.
+                - :class:`ProtocolUnit`
+                    A single unit of computation within a :class:`ProtocolDAG`
 
-.. rst-class:: sd-text-center
+                    .. rst-class:: arrow-down
+                -
 
-:octicon:`arrow-down;1.5em`
+                - :class:`ProtocolUnitResult`
+                    The result of a completed :class:`ProtocolUnit`
 
-.. rubric:: Gather
+                    .. rst-class:: arrow-down arrow-multiple-combine
+                -
 
-.. card:: Gather results
-   :shadow: none
+            -
+                -
+                    .. rst-class:: arrow-down
+                - :any:`executors`
 
-   Use :any:`openfe gather <cli_gather>` to collect the
-   results of the transformations.
+        - :class:`ProtocolDAGResult`
+            A completed transformation.
+
+      .. rst-class:: arrow-down
+    *
+
+    * Gather
+        - .. container:: flowchart-sidebyside
+
+            -
+
+                - :class:`Transformation`
+                    The specification for the alchemic mutation.
+
+                    .. rst-class:: arrow-down
+                -
+
+                - :class:`Protocol`
+                    A completed single run of a transformation.
+
+                    .. rst-class:: arrow-down arrow-combine-right arrow-tail
+                -
+
+            -
+
+                - :class:`ProtocolResult`
+                    A completed single run of a transformation.
+
+                    .. rst-class:: arrow-down arrow-combine-left arrow-multiple arrow-tail
+                -
+
+            .. rst-class:: arrow-down arrow-head
+        -
+
+        - :class:`ProtocolDAGResult`
+                A completed transformation with multiple user-defined replicas.
 
 The output of the :ref:`simulation setup <userguide_setup>` stage is an :class:`.AlchemicalNetwork`. This contains all
 the information about what is being simulated (e.g., what ligands, host proteins, solvation details, etc.) and the
