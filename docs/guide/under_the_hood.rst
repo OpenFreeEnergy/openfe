@@ -118,21 +118,21 @@ If you want to implement your own atom mapper or free energy procedure, or you w
             -
 
                 - :class:`Transformation`
-                    The specification for the alchemic mutation.
+                    The specification for the alchemical mutation.
 
                     .. rst-class:: arrow-down
                 -
 
                 - :class:`Protocol`
-                    A completed single run of a transformation.
+                    Its ``gather`` method combines the results of each repeat.
 
                     .. rst-class:: arrow-down arrow-combine-right arrow-tail
                 -
 
             -
 
-                - :class:`ProtocolResult`
-                    A completed single run of a transformation.
+                - :class:`ProtocolDAGResult`
+                    One completed repeat of the transformation.
 
                     .. rst-class:: arrow-down arrow-combine-left arrow-multiple arrow-tail
                 -
@@ -140,6 +140,5 @@ If you want to implement your own atom mapper or free energy procedure, or you w
             .. rst-class:: arrow-down arrow-head
         -
 
-        - :class:`ProtocolDAGResult`
-                A completed transformation with multiple user-defined replicas.
-
+        - :class:`ProtocolResult`
+            The free energy estimate aggregated over all repeats.
