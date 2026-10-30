@@ -12,6 +12,7 @@ import numpy as np
 import openmm
 import openmm.app
 import openmm.unit
+from pint.testing import assert_allclose as assert_quantity_almost_equal
 import pytest
 from numpy.testing import assert_allclose
 from openff.units import unit as offunit
@@ -334,9 +335,9 @@ class TestProtocolResult:
         assert isinstance(geom[0][0], BoreschRestraintGeometry)
         assert geom[0][0].guest_atoms == [1779, 1778, 1777]
         assert geom[0][0].host_atoms == [802, 801, 800]
-        assert pytest.approx(geom[0][0].r_aA0, abs=0.01) == 0.75 * offunit.nanometer
-        assert pytest.approx(geom[0][0].theta_A0, abs=0.01) == 1.95 * offunit.radian
-        assert pytest.approx(geom[0][0].theta_B0, abs=0.01) == 1.33 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_A0, abs=0.01) == 1.01 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_B0, abs=0.01) == -1.24 * offunit.radian
-        assert pytest.approx(geom[0][0].phi_C0, abs=0.01) == -1.08 * offunit.radian
+        assert_quantity_almost_equal(geom[0][0].r_aA0, 0.75 * offunit.nanometer, atol=0.01)
+        assert_quantity_almost_equal(geom[0][0].theta_A0, 1.95 * offunit.radian, atol=0.01)
+        assert_quantity_almost_equal(geom[0][0].theta_B0, 1.33 * offunit.radian, atol=0.01)
+        assert_quantity_almost_equal(geom[0][0].phi_A0, 1.01 * offunit.radian, atol=0.01)
+        assert_quantity_almost_equal(geom[0][0].phi_B0, -1.24 * offunit.radian, atol=0.01)
+        assert_quantity_almost_equal(geom[0][0].phi_C0, -1.08 * offunit.radian, atol=0.01)
