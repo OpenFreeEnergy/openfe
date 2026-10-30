@@ -9,9 +9,9 @@ from unittest import mock
 import gufe
 import numpy as np
 import openmm
+import pytest
 from openff.units import unit as offunit
 from pint.testing import assert_allclose as assert_quantity_almost_equal
-import pytest
 
 import openfe
 from openfe.protocols import openmm_afe

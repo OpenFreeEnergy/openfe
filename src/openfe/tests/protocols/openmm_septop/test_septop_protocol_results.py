@@ -12,7 +12,6 @@ import numpy as np
 import openmm
 import openmm.app
 import openmm.unit
-from pint.testing import assert_allclose as assert_quantity_almost_equal
 import pytest
 from numpy.testing import assert_allclose
 from openff.units import unit as offunit
@@ -30,6 +29,7 @@ from openmm import (
 )
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
+from pint.testing import assert_allclose as assert_quantity_almost_equal
 
 import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
