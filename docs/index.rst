@@ -67,6 +67,7 @@ Community-Developed Projects:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution, developed by `Datryllic <https://datryllic.com/>`_.
+* `feflow <https://github.com/OpenFreeEnergy/feflow>`_: Protocols and tooling based on openmmtools/perses and OpenFE, including a nonequilibrium cycling protocol with support for protein mutations.
 
 Ecosystem Rules and Guidelines:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
