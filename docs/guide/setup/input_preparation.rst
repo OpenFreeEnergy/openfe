@@ -56,6 +56,7 @@ The table below lists the inputs typically used for protein--ligand calculations
    </tutorials/rbfe_membrane_protein>`.
 
 .. _prep_loading:
+
 The inputs are loaded as follows:
 
 .. tab-set::
