@@ -36,7 +36,6 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    hand_write_ligand_network
    network_from_orion_fepp
    ligandnetwork_vis
-   repairing_broken_networks
 
 .. TODO: add howto on scorers
 
@@ -61,6 +60,12 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    run repeats in parallel, run on a SLURM cluster, resume interrupted calculations and
    share a GPU using NVIDIA MPS (from guide/execution/quickrun_execution), and task-based
    execution.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Repairing and extending networks
+
+   repairing_broken_networks
 
 .. toctree::
    :maxdepth: 1
