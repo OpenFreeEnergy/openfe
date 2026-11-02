@@ -5,11 +5,12 @@ Simulation Setup
 
 This section provides details on how to set up a free energy calculation or MD simulations.
 
-All protocols in OpenFE follow the same general structure: 
+Setting up a calculation generally involves:
 
-* Reading in input structures and creating :class:`.ChemicalSystem` \s
+* :ref:`Preparing the input structures <userguide_preparing_inputs>`.
+* Loading the structures and creating :class:`.ChemicalSystem` objects.
 * Defining the :class:`.Protocol` with specific `ProtocolSettings`.
-* Creating :class:`.LigandAtomMapping` \s for relative free energy calculation `Protocols`.
+* Creating :class:`.LigandAtomMapping` objects for relative free energy calculation `Protocols`.
 
 .. image:: img/setup_1x.png
    :width: 70%
@@ -25,12 +26,13 @@ network of ligand transformations starting from input SDF / MOL2 / PDB files:
    :alt: Concept of a LigandNetwork and AlchemicalNetwork
 
 The procedure for setting up a simulation depends on the
-type of free energy calculation you are running. More detailed
-instructions can be found in the following sections:
+type of free energy calculation you are running.
+More detailed guidance is available in the following sections:
 
 .. toctree::
    :maxdepth: 1
 
+   input_preparation
    chemical_systems_and_thermodynamic_cycles
    creating_atom_mappings_and_scores
    defining_protocols
