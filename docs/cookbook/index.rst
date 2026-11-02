@@ -76,3 +76,5 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
 .. TODO: add "Gather free energy results" and "Load results in Python" (from
    guide/results/working_with_results), "Analyze an RBFE network with cinnabar" (from
    guide/results/working_with_networks) and "Visualize trajectories with openfe_analysis".
+.. TODO: merge dumping_transformation and jq_inspection into a single
+   "Save and inspect OpenFE JSON files" how-to.

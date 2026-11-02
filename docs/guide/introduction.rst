@@ -26,7 +26,7 @@ is then the input for the next stage:
 
 .. container:: deflist-flowchart
 
-    * Setup
+    * Simulation setup
         - .. container:: flowchart-sidebyside
 
             -   -
@@ -88,7 +88,7 @@ is then the input for the next stage:
       .. rst-class:: arrow-down
     *
 
-    * Run
+    * Execution
         - :class:`Transformation`
             A single alchemic mutation from one chemical system to another.
 
@@ -128,7 +128,7 @@ is then the input for the next stage:
       .. rst-class:: arrow-down
     *
 
-    * Gather
+    * Gather results
         - .. container:: flowchart-sidebyside
 
             -

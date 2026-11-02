@@ -14,4 +14,9 @@ then :ref:`reading on the available Python functions<reference_execution>`.
    task_based_execution
    execution_theory
 
-.. TODO: add a "How-to guides" box listing the Running calculations how-tos.
+.. admonition:: How-to guides
+
+   * :doc:`/cookbook/dumping_transformation`
+
+.. TODO: add the Running calculations how-tos (quickrun, repeats in parallel, SLURM,
+   resuming, NVIDIA MPS, task-based execution) to this box.

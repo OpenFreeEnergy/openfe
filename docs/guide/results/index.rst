@@ -16,4 +16,8 @@ and entire networks of results analysed.
    * :doc:`/cookbook/dumping_transformation`
    * :doc:`/cookbook/jq_inspection`
 
-.. TODO: add the gather, load results, cinnabar and openfe_analysis how-tos
+.. admonition:: How-to guides
+
+   * :doc:`/cookbook/jq_inspection`
+
+.. TODO: add the gather, load results, cinnabar and openfe_analysis how-tos.
