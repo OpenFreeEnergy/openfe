@@ -57,7 +57,7 @@ See Also
 
 * :any:`MD tutorial <../../tutorials/md_tutorial>`
 
-**Guides**
+**User Guide**
 
 * :ref:`Validating your inputs with a plain MD simulation <troubleshooting-validate-inputs-with-plain-md>`
 

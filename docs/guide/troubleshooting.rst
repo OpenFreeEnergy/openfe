@@ -123,8 +123,8 @@ The state of the system and integrator before the error are often saved in a ``n
 Validating your inputs with a plain MD simulation
 -------------------------------------------------
 
-Many of the errors above (e.g. parameter assignment failures, ``NaN`` errors during simulation, box size errors) are due problems with the input structures which are not identified until protocol execution.
-A quick way to check this *before* running an expensive free energy protocol is to run a short, MD simulation of your system with the :class:`.PlainMDProtocol` (see the :doc:`Plain MD protocol guide <protocols/plainmd>`).
+Many of the errors above (e.g. parameter assignment failures, ``NaN`` errors during simulation, box size errors) are due to problems with the input structures which are not identified until protocol execution.
+A quick way to check this *before* running an expensive free energy protocol is to run a short MD simulation of your system with the :class:`.PlainMDProtocol` (see the :doc:`Plain MD protocol guide <protocols/plainmd>`).
 
 This confirms that:
 
@@ -134,7 +134,7 @@ This confirms that:
 If a system is stable in plain MD it is much more likely to be suitable for other protocols, for failures see sections :ref:`troubleshooting-nan-errors-during-simulation` and :ref:`troubleshooting-smirnoff-force-field-parameter-assignment-errors` for next steps.
 We recommend running this for a representative subset of the ligands with the receptor, using the same force fields and solvent settings you intend to use in your production protocol.
 
-The simplest way to run this check is via the Python API with the example below which uses short equilibration and production lengths, which is enough to catch most setup problems:
+The simplest way to run this check is via the Python API with the example below which uses short equilibration and production lengths, which can catch common setup problems:
 
 .. code-block:: python
 
