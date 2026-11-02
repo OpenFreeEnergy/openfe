@@ -25,8 +25,8 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    bespoke_parameters
    packmol_memgen_setup
 
-.. TODO: add "Load protein, ligands and cofactors" (merge cofactors_rbfe into loading_molecules),
-   "Create a ChemicalSystem", "Specify custom force fields", membrane packmol-memgen and OpenFold3 notebooks.
+.. TODO: merge cofactors_rbfe into loading_molecules,
+   "Create a ChemicalSystem", "Specify custom force fields", OpenFold3 notebooks.
 
 .. toctree::
    :maxdepth: 1
