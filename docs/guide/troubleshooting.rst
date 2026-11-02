@@ -126,10 +126,10 @@ Validating your inputs with a plain MD simulation
 Many of the errors above (e.g. parameter assignment failures, ``NaN`` errors during simulation, box size errors) are due to problems with the input structures which are not identified until protocol execution.
 A quick way to check this *before* running an expensive free energy protocol is to run a short MD simulation of your system with the :class:`.PlainMDProtocol` (see the :doc:`Plain MD protocol guide <protocols/plainmd>`).
 
-This confirms that:
+This helps check that:
 
 - The receptor can be parameterized together with the ligand (e.g. no missing residues, caps or unsupported chemistry) by the same force fields you intend to use in your production protocol.
-- The system can be minimized and equilibrated producing a stable simulation without clashes or ``NaN`` errors.
+- The **non-alchemical** system can be minimized and equilibrated producing a stable simulation without clashes or ``NaN`` errors.
 
 If a system is stable in plain MD it is much more likely to be suitable for other protocols, for failures see sections :ref:`troubleshooting-nan-errors-during-simulation` and :ref:`troubleshooting-smirnoff-force-field-parameter-assignment-errors` for next steps.
 We recommend running this for a representative subset of the ligands with the receptor, using the same force fields and solvent settings you intend to use in your production protocol.
@@ -144,12 +144,19 @@ The simplest way to run this check is via the Python API with the example below 
    from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocol
    import pathlib
 
-   ligand = openfe.SmallMoleculeComponent.from_sdf_file("ligand.sdf")
-   protein = openfe.ProteinComponent.from_pdb_file("protein.pdb")
+   ligand = openfe.SmallMoleculeComponent.from_sdf_file("ligand.sdf")  # load your ligand from your SDF file
+   protein = openfe.ProteinComponent.from_pdb_file("protein.pdb")  # load your protein from your PDB file
    solvent = openfe.SolventComponent()  # use the same settings as your production run
 
+   # If you have cofactors in the system load them here as SmallMoleculeComponents and include them in the ChemicalSystem below.
+   # cofactor = openfe.SmallMoleculeComponent.from_sdf_file("cofactor.sdf")
    system = openfe.ChemicalSystem(
-       {"ligand": ligand, "protein": protein, "solvent": solvent},
+       {
+       "ligand": ligand,
+       "protein": protein,
+       "solvent": solvent,
+       # "cofactor": cofactor  # include any cofactors here
+       },
        name="validation",
    )
 
@@ -157,6 +164,7 @@ The simplest way to run this check is via the Python API with the example below 
    settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
    settings.simulation_settings.equilibration_length = 1 * unit.picosecond
    settings.simulation_settings.production_length = 1 * unit.picosecond
+   # You will need a GPU with CUDA installed to run this quick check, we recommend using the same platform as your production simulations.
    settings.engine_settings.compute_platform = "CUDA"
 
    protocol = PlainMDProtocol(settings=settings)
@@ -168,10 +176,16 @@ The simplest way to run this check is via the Python API with the example below 
        dag,
        shared_basedir=output_dir,
        scratch_basedir=output_dir,
-       keep_shared=False,
+       keep_shared=True,
        raise_error=True,
        n_retries=0
    )
+
+   # Check for any errors in the execution
+   if not result.ok():
+       for failure in result.protocol_unit_failures:
+           # If we find a failure print the traceback to help with debugging
+           print(f"Protocol unit {failure.name} failed with error: {failure.traceback}")
 
 
 Resuming Interrupted Simulations
