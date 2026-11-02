@@ -82,7 +82,7 @@ Quick health checklist
 Inspect **all repeats and all relevant thermodynamic legs**. Each check links
 to guidance below.
 
-#. **Repeats:** Do the individual repeat estimates agree? (:ref:`details <health_repeats>`)
+#. **Repeats:** Are the repeat estimates reasonably consistent, without large discrepancies? (:ref:details <health_repeats>)
 #. **MBAR overlap:** Are the elements next to the diagonal about 0.03 or
    higher, with no gaps? (:ref:`details <health_overlap>`)
 #. **Replica mixing:** Does each replica travel across the full range of
