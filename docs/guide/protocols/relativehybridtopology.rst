@@ -206,9 +206,10 @@ The multistate trajectory (``simulation.nc``) and the hybrid topology
 See Also
 --------
 
-**Setting up RFE calculations**
+**User Guide**
 
 * :ref:`Setting up alchemical networks <alchemical_network_creation>`
+* :ref:`Assessing simulation health <userguide_simulation_health>`
 
 **Tutorials**
 

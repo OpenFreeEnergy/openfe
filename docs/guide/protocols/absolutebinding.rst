@@ -136,14 +136,20 @@ The multistate trajectory (``simulation.nc``) and its topology
 See Also
 --------
 
-**Setting up AFE calculations**
+**User Guide**
 
 * :ref:`Defining the Protocol <defining-protocols>`
+* :ref:`Assessing simulation health <userguide_simulation_health>`
 
 
 **Tutorials**
 
 * :any:`Absolute Binding Free Energies tutorial <../../tutorials/abfe_tutorial>`
+
+**Further analysis**
+
+* `Boresch restraint analysis tutorial
+  <https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_
 
 **Cookbooks**
 

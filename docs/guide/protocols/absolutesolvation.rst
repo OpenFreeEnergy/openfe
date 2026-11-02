@@ -120,9 +120,10 @@ the structural analysis is skipped. The multistate trajectories
 See Also
 --------
 
-**Setting up AFE calculations**
+**User Guide**
 
 * :ref:`Defining the Protocol <defining-protocols>`
+* :ref:`Assessing simulation health <userguide_simulation_health>`
 
 ..
   To be added: Setting up AHFE calculations

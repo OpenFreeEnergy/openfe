@@ -148,9 +148,19 @@ The multistate trajectory (``simulation.nc``) and its topology
 See Also
 --------
 
+**User Guide**
+
+* :ref:`Defining the Protocol <defining-protocols>`
+* :ref:`Assessing simulation health <userguide_simulation_health>`
+
 **Tutorials**
 
 * :any:`Separated Topologies Free Energies tutorial <../../tutorials/septop_tutorial>`
+
+**Further analysis**
+
+* `Boresch restraint analysis tutorial
+  <https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_
 
 **Cookbooks**
 
@@ -158,6 +168,7 @@ See Also
 
 **API Documentation**
 
+* :doc:`OpenMM Separated Topologies Protocol </reference/api/openmm_septop>`
 * :ref:`OpenMM Protocol Settings <openmm protocol settings api>`
 
 References
