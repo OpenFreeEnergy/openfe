@@ -160,7 +160,7 @@ If a neighbouring pair falls below this 0.03 overlap threshold, the estimate may
 unreliable even if its reported uncertainty is small.
 See :ref:`health_next_steps` for how to improve overlap.
 
-.. image:: ../protocols/img/mbar_overlap_matrix.png
+.. figure:: ../protocols/img/mbar_overlap_matrix.png
    :align: center
 
    **Good overlap:** Neighbouring λ states show sufficient
