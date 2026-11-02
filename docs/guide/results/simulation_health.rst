@@ -121,13 +121,13 @@ repeats of −8.1, −8.3 and −10.2 kcal/mol give −8.9 ± 1.2 kcal/mol, whic
 looks like an ordinary estimate with a large uncertainty. Looking at the
 individual estimates (``get_individual_estimates()``) shows that one repeat
 behaves differently, and its trajectory is the one to inspect.
-For binding free energies, comparing the legs also shows where a problem
-lies. Comparing the thermodynamic legs can help localise sampling
+Comparing the thermodynamic legs can help localise sampling
 problems. If complex-leg repeats disagree while solvent-leg
 repeats agree, focus the investigation on the complex system.
 
-Additional repeats can help characterise this variability.
-Inspect the trajectories and consider longer simulations or more λ windows to achieve converged estimates.
+Inspect the trajectories to identify potential sampling problems.
+Longer simulations may help, while additional repeats can better
+characterise the variability.
 
 .. _multistate_analysis:
 
@@ -161,8 +161,18 @@ unreliable even if its reported uncertainty is small.
 See :ref:`health_next_steps` for how to improve overlap.
 
 .. image:: ../protocols/img/mbar_overlap_matrix.png
-   :alt: Example MBAR overlap matrix showing overlap between alchemical states.
    :align: center
+
+   **Good overlap:** Neighbouring λ states show sufficient
+   overlap, forming a continuous band along the diagonal.
+
+.. figure:: ../protocols/img/mbar_overlap_matrix_bad.png
+   :align: center
+
+   **Poor overlap:** The gaps between states 7 and 8 and 8 and 9
+   indicate insufficient overlap between neighbouring states.
+   This prevents reliable estimation of the free energy
+   difference across the full alchemical pathway.
 
 
 .. _health_exchange:
@@ -175,8 +185,10 @@ where replicas periodically swap λ states. Good mixing means every replica
 travels across the full range of λ states.
 
 .. image:: ../protocols/img/replica_exchange_matrix.png
-   :alt: Example replica exchange transition matrix.
    :align: center
+
+   **Good mixing:** Replicas move across the λ schedule,
+   completing repeated round trips between the end states.
 
 The **replica exchange matrix** shows the probability that a replica in
 state *i* moves to state *j*. As with the overlap matrix, check the elements
@@ -194,6 +206,14 @@ confined to a subset of states indicate poor mixing or bottlenecks.
 
 Round-trip counts and times can be calculated from the replica
 state histories returned by ``get_replica_states()``.
+
+.. figure:: ../protocols/img/replica_state_timeseries_bad.png
+   :align: center
+
+   **Poor mixing:** Replicas exchange between some λ states,
+   but states near the upper end remain largely isolated.
+   Replicas do not complete round trips across the full
+   λ schedule, indicating poor mixing.
 
 
 .. _health_convergence:
