@@ -5,8 +5,7 @@ Assessing simulation health
 
 A free energy calculation can complete without errors even when the
 result is unreliable. Poor overlap between alchemical states, slow replica
-mixing, unconverged estimates or unexpected structural changes can
-compromise the result.
+mixing or unexpected structural changes can compromise the result.
 
 **openfe** automatically performs energetic analysis of its multistate
 simulations and, where supported, structural analysis of the saved
@@ -102,19 +101,21 @@ If a check raises concerns, see :ref:`health_next_steps`.
 Uncertainty and repeats
 -----------------------
 
-Three uncertainties are reported, and they measure different things:
+Two uncertainties are reported, and they measure different things:
 
 * **Per-repeat MBAR uncertainty** (``unit_estimate_error``): statistical
   uncertainty from the samples within one repeat, estimated by bootstrapping.
 * **Between-repeat uncertainty** (``get_uncertainty()``): the sample standard
   deviation of the repeat estimates.
-* **Forward/reverse error bars**: analytical MBAR errors for subsets of the
-  data (see :ref:`health_convergence`).
 
 .. important::
 
    A small MBAR uncertainty can coexist with large differences
    between repeats if they sample different conformations.
+
+Independent repeats are separate simulations of the same transformation,
+distinct from the replicas that exchange between λ states within a
+simulation.
 
 The combined result can hide a single problematic repeat. For example,
 repeats of −8.1, −8.3 and −10.2 kcal/mol give −8.9 ± 1.2 kcal/mol, which
@@ -126,8 +127,6 @@ problems. If complex-leg repeats disagree while solvent-leg
 repeats agree, focus the investigation on the complex system.
 
 Inspect the trajectories to identify potential sampling problems.
-Longer simulations may help, while additional repeats can better
-characterise the variability.
 
 .. _multistate_analysis:
 
@@ -135,12 +134,20 @@ Energetic analysis
 ------------------
 
 During the simulation, the energy of every sample is evaluated in every λ
-state. The energetic diagnostics use these energies to check three things:
-whether neighbouring λ states overlap enough for MBAR to connect the end
-states (:ref:`health_overlap`), whether replicas move freely between states
-(:ref:`health_exchange`), and whether the free energy estimate has stopped
-changing as more data are added (:ref:`health_convergence`).
+state. The energetic diagnostics assess whether neighbouring λ states overlap
+enough for MBAR to connect the end states (:ref:health_overlap).
+This overlap also affects replica exchange: insufficient overlap can
+create bottlenecks that restrict replica movement (:ref:health_exchange).
+Finally, forward/reverse analysis checks whether the free energy estimate
+stabilises as more data are included (:ref:health_convergence).
 
+While a simulation is running, **openfe** periodically writes
+``simulation_real_time_analysis.yaml`` to the simulation unit's
+directory. This file contains intermediate free energy estimates,
+MBAR uncertainties and the number of effectively uncorrelated samples,
+allowing you to monitor sampling progress before the simulation
+completes. Persistently large uncertainties or slow accumulation of
+uncorrelated samples may indicate sampling problems.
 
 .. _health_overlap:
 
@@ -153,12 +160,15 @@ to the diagonal, which show the overlap between neighbouring states. As a
 rule of thumb, each should be at least 0.03 [1]_. In the plot, this appears
 as an unbroken band along the diagonal.
 
-This guideline assumes sufficient sampling. Check that enough
-uncorrelated production samples are available for the estimator (``production_iterations()``).
-
 If a neighbouring pair falls below this 0.03 overlap threshold, the estimate may be
 unreliable even if its reported uncertainty is small.
 See :ref:`health_next_steps` for how to improve overlap.
+
+.. note::
+
+   This guideline assumes sufficient sampling. Check that enough
+   uncorrelated production samples are available for the estimator
+   (``production_iterations()``).
 
 .. figure:: ../protocols/img/mbar_overlap_matrix.png
    :align: center
@@ -202,7 +212,7 @@ that limit replica movement between λ states.
 The **replica state timeseries** shows which λ state each replica occupies
 over time. Good mixing is characterised by repeated
 replica round trips between the two end states. Replicas
-confined to a subset of states indicate poor mixing or bottlenecks.
+confined to a subset of states may indicate poor mixing or bottlenecks.
 
 Round-trip counts and times can be calculated from the replica
 state histories returned by ``get_replica_states()``.
@@ -225,6 +235,7 @@ The **forward and reverse analysis** calculates free energy estimates
 from increasing fractions of the data, taken from the beginning
 (forward) and end (reverse) of the simulation. The shaded horizontal
 band shows the final estimate and its uncertainty.
+The error bars represent the MBAR analytical errors.
 
 Both estimates should stabilise near the final estimate and agree
 within their uncertainties [1]_. The **50% point** is particularly
@@ -261,7 +272,7 @@ Structural analysis
 For systems containing a protein, trajectories are first aligned
 on the protein. Ligand RMSD and centre-of-mass drift are measured
 relative to the first production frame of each λ state, while
-protein 2D RMSD compares all analysed frames.
+protein 2D RMSD compares all analysed frames within the same λ state.
 
 These analyses do not capture structural changes during
 equilibration. Structural analysis requires the ligand atoms
@@ -336,7 +347,7 @@ conformation.
    :align: center
 
 **Ligand centre-of-mass (COM) drift** measures only translation, so it shows
-whether the ligand is leaving the binding site but not whether it rotates.
+whether the ligand is leaving its original binding site position but not whether it rotates.
 
 .. image:: ../protocols/img/ligand_COM_drift.png
    :alt: Example ligand centre-of-mass drift time series.
@@ -410,12 +421,11 @@ structural diagnostics together before changing settings.
        run longer production.
    * - Repeat estimates differ by more than their MBAR errors
      - Repeats sample different conformations or slow degrees of freedom
-     - Compare the structural analysis between repeats. Longer production
-       may help; more repeats (``protocol_repeats``) better characterise
-       the variability.
+     - Compare the structural analysis between repeats. Additional repeats
+       (``protocol_repeats``) can improve estimates of the mean free
+       energy change and its uncertainty.
    * - Ligand RMSD or COM drift keeps increasing in the fully interacting bound states
-     - A change in binding mode, or loss of the pose. Large values are
-       expected in weakly interacting or decoupled states.
+     - A change in binding mode or loss of the pose
      - Check the prepared pose against the poses sampled in the
        trajectory. For Absolute Binding and Separated Topologies, also check the restraints.
    * - Charge-changing transformation: large spread between repeats, or

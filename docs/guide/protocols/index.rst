@@ -244,6 +244,7 @@ See also
 --------
 
 * :doc:`Choose and configure a protocol </cookbook/choose_protocol>`
+* :ref:`Assessing simulation health <userguide_simulation_health>`
 * :doc:`Troubleshooting simulations </guide/troubleshooting>`
 
 .. toctree::
