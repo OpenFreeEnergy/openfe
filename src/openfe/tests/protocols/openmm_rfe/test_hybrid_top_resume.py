@@ -7,7 +7,6 @@ import pathlib
 import shutil
 
 import gufe
-import numpy as np
 import openmm
 import pooch
 import pytest

@@ -3,7 +3,6 @@ from importlib import resources
 import click
 import pytest
 
-import openfe
 from openfe import SmallMoleculeComponent
 from openfecli.parameters.mol import get_molecule
 

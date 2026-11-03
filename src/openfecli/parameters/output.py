@@ -1,7 +1,5 @@
-import pathlib
-
 import click
-from plugcli.params import NOT_PARSED, MultiStrategyGetter, Option
+from plugcli.params import Option
 
 
 def get_file_and_extension(user_input, context):

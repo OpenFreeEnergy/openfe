@@ -8,7 +8,7 @@ import copy
 import sys
 import typing
 import warnings
-from typing import Callable, Literal
+from typing import Literal
 
 import numpy as np
 from gufe import SmallMoleculeComponent

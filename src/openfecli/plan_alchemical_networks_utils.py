@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import pathlib
-from pathlib import Path
-from typing import Optional
 
 from openfe import AlchemicalNetwork, LigandNetwork
 from openfe.orchestration.exorcist_utils import setup_task_campaign

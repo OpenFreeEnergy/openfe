@@ -7,7 +7,7 @@ Protocols.
 
 import logging
 import warnings
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import openmm

@@ -3,11 +3,9 @@
 
 # MOVE SINGLEMODULEPLUGINLOADER UPSTREAM TO PLUGCLI
 import importlib
-import shutil
-import urllib
 
 import click
-from plugcli.cli import CLI, CONTEXT_SETTINGS
+from plugcli.cli import CLI
 from plugcli.plugin_management import CLIPluginLoader
 
 from openfecli import OFECommandPlugin

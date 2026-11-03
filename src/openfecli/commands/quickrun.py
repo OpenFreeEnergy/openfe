@@ -4,7 +4,6 @@
 import hashlib
 import json
 import pathlib
-import warnings
 
 import click
 
