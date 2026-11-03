@@ -1,6 +1,6 @@
 .. _cookbooks:
 
-How-to guides
+How-To Guides
 =============
 
 These guides show how to carry out specific tasks with **openfe**, mostly using the Python API.
