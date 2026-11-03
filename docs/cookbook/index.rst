@@ -8,17 +8,13 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
 To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
 
 .. TODO: remove the quickrun sentence above once moved to "Running calculations"
-.. TODO: remove the work-in-progress note and rename the "Cookbooks" labels in the
-   protocol pages once all content is moved.
-
-.. note:: This section is a work-in-progress.
 
 .. module:: openfe
     :noindex:
 
 .. toctree::
    :maxdepth: 1
-   :caption: Setup
+   :caption: Setting up chemical systems
 
    loading_molecules
    user_charges
@@ -63,12 +59,6 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Repairing and extending networks
-
-   repairing_broken_networks
-
-.. toctree::
-   :maxdepth: 1
    :caption: Working with results
 
    jq_inspection
@@ -78,3 +68,10 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    guide/results/working_with_networks) and "Visualize trajectories with openfe_analysis".
 .. TODO: merge dumping_transformation and jq_inspection into a single
    "Save and inspect OpenFE JSON files" how-to.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Repairing and extending networks
+
+   repairing_broken_networks
+

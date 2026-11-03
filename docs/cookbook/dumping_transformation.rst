@@ -1,7 +1,7 @@
 .. _dumping_transformations:
 
-Dumping a ``Transformation`` to JSON
-====================================
+Dump a ``Transformation`` to JSON
+=================================
 
 If you're trying to run a full campaign of simulations representing an
 alchemical network, we generally recommend saving objects using our storage
