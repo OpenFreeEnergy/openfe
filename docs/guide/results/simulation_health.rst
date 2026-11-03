@@ -190,7 +190,7 @@ See :ref:`health_next_steps` for how to improve overlap.
 Replica exchange and mixing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-These diagnostics apply to simulations using a replica exchange sampler,
+These diagnostics apply to simulations using a replica exchange sampler ( or `repex` in the protocol settings) ,
 where replicas periodically swap λ states. Good mixing means every replica
 travels across the full range of λ states.
 
