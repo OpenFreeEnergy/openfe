@@ -13,3 +13,5 @@ into non-Python workflows.
 .. toctree::
    cli_basics
    cli_yaml
+
+.. TODO: add a "How-to guides" box listing the CLI YAML how-to.

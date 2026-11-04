@@ -217,9 +217,9 @@ See Also
 * :any:`Relative Free Energies with the OpenFE CLI <rbfe_cli_tutorial>`
 * :any:`Relative Free Energies with the OpenFE Python API <tutorials/rbfe_python_tutorial.nblink>`
 
-**Cookbooks**
+**How-to guides**
 
-:ref:`Cookbooks <cookbooks>`
+:ref:`How-to guides <cookbooks>`
 
 **API Documentation**
 
