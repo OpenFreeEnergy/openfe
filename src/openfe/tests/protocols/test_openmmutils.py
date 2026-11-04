@@ -437,9 +437,9 @@ class TestFEAnalysis:
             return sampled_energy_matrix
 
         u_ln = analyzer.analyzer._unbiased_decorrelated_u_ln
-        N_l = analyzer.analyzer._unbiased_decorrelated_N_l
+        n_replicas = analyzer.analyzer.n_replicas
 
-        u_kln = analyzer._get_ukln_from_uln(u_ln, len(N_l), N_l[0])
+        u_kln = analyzer._get_ukln_from_uln(u_ln, n_replicas, u_ln.shape[1] // n_replicas)
 
         assert (u_kln == _recreate_ukln(analyzer.analyzer)).all()
 
@@ -451,13 +451,72 @@ class TestFEAnalysis:
         # Check the exceptions we could raise ahead of the conversion
         u_ln = np.zeros((2, 100))
 
-        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 3"
-        with pytest.raises(ValueError, match=errmsg):
-            analyzer._get_ukln_from_uln(u_ln, 3, 100)
-
-        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_states 2 and num_samples 75"
+        errmsg = r"u_ln shape \(2, 100\) is not compatible with n_replicas 2 and n_iterations 75"
         with pytest.raises(ValueError, match=errmsg):
             analyzer._get_ukln_from_uln(u_ln, 2, 75)
+
+    def test_forward_and_reverse_unequal_samples(self, analyzer):
+        """
+        Check that the forward and reverse analysis works when the number of
+        samples is not equal across states (e.g. SAMS), see issue #1102.
+
+        We mimic this by only keeping the samples from a subset of the
+        replicas, which do not visit each state equally.
+        """
+        ana = analyzer.analyzer
+        u_ln = ana._unbiased_decorrelated_u_ln
+        n_iterations = u_ln.shape[1] // ana.n_replicas
+        n_kept = 2
+        kept_u_ln = u_ln[:, : n_kept * n_iterations]
+        kept_states = ana._decorrelated_state_indices_ln[: n_kept * n_iterations]
+        kept_N_l = np.bincount(kept_states, minlength=ana.n_states)
+
+        # Make sure we are actually testing unequal samples
+        assert not np.all(kept_N_l == kept_N_l[0])
+
+        fake_analyzer = mock.Mock(
+            _unbiased_decorrelated_u_ln=kept_u_ln,
+            _unbiased_decorrelated_N_l=kept_N_l,
+            _decorrelated_state_indices_ln=kept_states,
+            n_replicas=n_kept,
+            n_states=ana.n_states,
+            kT=ana.kT,
+        )
+
+        with mock.patch.object(analyzer, "analyzer", fake_analyzer):
+            ret = analyzer.get_forward_and_reverse_analysis(num_samples=10)
+
+        assert ret is not None
+        assert len(ret["fractions"]) == 10
+        assert ret["fractions"][-1] == pytest.approx(1.0)
+
+        # The full fraction should match the analytical MBAR estimate
+        # over all the kept samples in both directions
+        DG, _ = analyzer._get_free_energy(
+            fake_analyzer, kept_u_ln, kept_N_l, 0, unit.kilocalorie_per_mole
+        )
+        assert ret["forward_DGs"][-1].m == pytest.approx(DG.m)
+        assert ret["reverse_DGs"][-1].m == pytest.approx(DG.m)
+
+    def test_forward_and_reverse_unmappable_samples(self, analyzer):
+        """
+        If the u_ln columns can't be mapped back to iterations (e.g. samples
+        were dropped by a restraint cutoff), the analysis is skipped.
+        """
+        ana = analyzer.analyzer
+        fake_analyzer = mock.Mock(
+            _unbiased_decorrelated_u_ln=ana._unbiased_decorrelated_u_ln[:, :-1],
+            _unbiased_decorrelated_N_l=ana._unbiased_decorrelated_N_l,
+            _decorrelated_state_indices_ln=ana._decorrelated_state_indices_ln,
+            n_replicas=ana.n_replicas,
+            n_states=ana.n_states,
+        )
+
+        with mock.patch.object(analyzer, "analyzer", fake_analyzer):
+            with pytest.warns(UserWarning, match="Could not map the decorrelated samples"):
+                ret = analyzer.get_forward_and_reverse_analysis(num_samples=10)
+
+        assert ret is None
 
     @pytest.mark.parametrize("fail_on_call", [1, 2], ids=["forward_fails", "reverse_fails"])
     def test_forward_and_reverse_nan_on_mbar_failure(self, analyzer, fail_on_call):
