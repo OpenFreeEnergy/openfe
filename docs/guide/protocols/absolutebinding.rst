@@ -153,9 +153,9 @@ See Also
 
 * :any:`Absolute Binding Free Energies tutorial <../../tutorials/abfe_tutorial>`
 
-**Cookbooks**
+**How-to guides**
 
-:ref:`Cookbooks <cookbooks>`
+:ref:`How-to guides <cookbooks>`
 
 **API Documentation**
 

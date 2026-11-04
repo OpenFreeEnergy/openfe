@@ -156,9 +156,9 @@ See Also
 
 * :any:`Separated Topologies Free Energies tutorial <../../tutorials/septop_tutorial>`
 
-**Cookbooks**
+**How-to guides**
 
-:ref:`Cookbooks <cookbooks>`
+:ref:`How-to guides <cookbooks>`
 
 **API Documentation**
 

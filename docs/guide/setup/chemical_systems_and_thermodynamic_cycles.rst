@@ -243,5 +243,5 @@ is required:
 See Also
 --------
 
-* To see how to construct a :class:`.ChemicalSystem` from your files, see :ref:`the cookbook entry on loading molecules <Loading Molecules>`
+* To see how to construct a :class:`.ChemicalSystem` from your files, see :ref:`the How-to guide on loading molecules <Loading Molecules>`
 * For details of which thermodynamic cycles to construct, consult the :ref:`pages for each specific Protocol <userguide_protocols>`
