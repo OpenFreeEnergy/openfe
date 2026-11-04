@@ -259,10 +259,12 @@ because they use the same data.
 The analysis also identifies an initial equilibration period
 (``equilibration_iterations``) and estimates the number of
 effectively uncorrelated production samples
-(``production_iterations``). If many iterations are discarded
-or few uncorrelated samples remain, or these values differ
-substantially between repeats, inspect the trajectories for
-potential sampling problems.
+(``production_iterations``), using the automated equilibration
+detection method described by Chodera [3]_ and implemented in
+PyMBAR <https://pymbar.readthedocs.io/en/stable/timeseries.html>_.
+If many iterations are discarded or few uncorrelated samples remain,
+or these values differ substantially between repeats, inspect the
+trajectories for potential sampling problems.
 
 .. _health_structure:
 
@@ -489,5 +491,11 @@ References
    *Living Journal of Computational Molecular Science*, 2(1), 18378.
    doi: `10.33011/livecoms.2.1.18378
    <https://doi.org/10.33011/livecoms.2.1.18378>`_.
+.. [3] Chodera, J. D. (2016).
+   A Simple Method for Automated Equilibration Detection in Molecular
+   Simulations. *Journal of Chemical Theory and Computation*, 12,
+   1799--1805.
+   doi: `10.1021/acs.jctc.5b00784
+   <https://doi.org/10.1021/acs.jctc.5b00784>`_.
 
 .. _openfe_analysis: https://openfe-analysis.openfree.energy/en/latest/
