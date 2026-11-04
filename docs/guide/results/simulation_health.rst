@@ -137,7 +137,7 @@ During the simulation, the energy of every sample is evaluated in every λ
 state. The energetic diagnostics assess whether neighbouring λ states overlap
 enough for MBAR to connect the end states (:ref:`health_overlap`).
 This overlap also affects replica exchange: insufficient overlap can
-create bottlenecks that restrict replica movement (:ref:health_exchange).
+create bottlenecks that restrict replica movement (:ref:`health_exchange`).
 Finally, forward/reverse analysis checks whether the free energy estimate
 stabilises as more data are included (:ref:`health_convergence`).
 
