@@ -200,6 +200,7 @@ evidence of ligand displacement.
 
 The multistate trajectory (``simulation.nc``) and the hybrid topology
 (``hybrid_system.pdb``) can be analysed further using `openfe_analysis`_.
+
 .. TODO: Link to the trajectory visualisation cookbook when published.
 
 
