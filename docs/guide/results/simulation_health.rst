@@ -141,9 +141,11 @@ create bottlenecks that restrict replica movement (:ref:`health_exchange`).
 Finally, forward/reverse analysis checks whether the free energy estimate
 stabilises as more data are included (:ref:`health_convergence`).
 
-While a simulation is running, **openfe** periodically writes
-``simulation_real_time_analysis.yaml`` to the simulation unit's
-directory. This file contains intermediate free energy estimates,
+When real-time analysis is enabled
+(``simulation_settings.real_time_analysis_interval``), **openfe**
+periodically writes a YAML file to the simulation unit's directory
+(``simulation_real_time_analysis.yaml`` by default).
+This file contains intermediate free energy estimates,
 MBAR uncertainties and the number of effectively uncorrelated samples,
 allowing you to monitor sampling progress before the simulation
 completes. Persistently large uncertainties or slow accumulation of
@@ -190,24 +192,27 @@ See :ref:`health_next_steps` for how to improve overlap.
 Replica exchange and mixing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-These diagnostics apply to simulations using a replica exchange sampler ( or ``repex`` in the protocol settings) ,
-where replicas periodically swap λ states. Good mixing means every replica
+These diagnostics apply to simulations using a replica exchange sampler
+(``simulation_settings.sampler_method = "repex"``), where replicas
+periodically swap λ states. Good mixing means every replica
 travels across the full range of λ states.
 
-.. image:: ../protocols/img/replica_exchange_matrix.png
+.. figure:: ../protocols/img/replica_exchange_matrix.png
    :align: center
 
-   **Good mixing:** Replicas move across the λ schedule,
-   completing repeated round trips between the end states.
+   **Replica exchange:** Transitions between neighbouring λ states
+   occur throughout the schedule, without obvious bottlenecks.
 
 The **replica exchange matrix** shows the probability that a replica in
 state *i* moves to state *j*. As with the overlap matrix, check the elements
 next to the diagonal: near-zero values indicate bottlenecks
 that limit replica movement between λ states.
 
-.. image:: ../protocols/img/replica_state_timeseries.png
-   :alt: Example timeseries showing movement of replicas between alchemical states.
+.. figure:: ../protocols/img/replica_state_timeseries.png
    :align: center
+
+   **Good mixing:** Replicas move across the λ schedule,
+   completing repeated round trips between the end states.
 
 The **replica state timeseries** shows which λ state each replica occupies
 over time. Good mixing is characterised by repeated
@@ -261,7 +266,7 @@ The analysis also identifies an initial equilibration period
 effectively uncorrelated production samples
 (``production_iterations``), using the automated equilibration
 detection method described by Chodera [3]_ and implemented in
-PyMBAR <https://pymbar.readthedocs.io/en/stable/timeseries.html>_.
+`PyMBAR <https://pymbar.readthedocs.io/en/stable/timeseries.html>`_.
 If many iterations are discarded or few uncorrelated samples remain,
 or these values differ substantially between repeats, inspect the
 trajectories for potential sampling problems.
@@ -356,7 +361,7 @@ whether the ligand is leaving its original binding site position but not whether
    :align: center
 
 In **fully interacting bound states**, a ligand RMSD or COM drift that keeps
-increasing beyond a few ångströms usually indicates a change in binding mode
+increasing beyond a few ångströms may indicate a change in binding mode
 or loss of the pose. Larger movements are expected in weakly interacting or
 decoupled states.
 
