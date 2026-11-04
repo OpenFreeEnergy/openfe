@@ -132,9 +132,9 @@ See Also
 
 * :any:`Absolute Hydration Free Energies tutorial <../../tutorials/ahfe_tutorial>`
 
-**Cookbooks**
+**How-to guides**
 
-:ref:`Cookbooks <cookbooks>`
+:ref:`How-to guides <cookbooks>`
 
 **API Documentation**
 

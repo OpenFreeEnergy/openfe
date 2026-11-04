@@ -151,9 +151,9 @@ See Also
 * `Boresch restraint analysis tutorial
   <https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_
 
-**Cookbooks**
+**How-to guides**
 
-:ref:`Cookbooks <cookbooks>`
+:ref:`How-to guides <cookbooks>`
 
 **API Documentation**
 
