@@ -7,8 +7,6 @@ These guides show how to carry out specific tasks with **openfe**, mostly using 
 For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
 To run a transformation with ``openfe quickrun``, see :ref:`howto_run_quickrun`.
 
-.. TODO: remove the quickrun sentence above once moved to "Running calculations"
-
 .. module:: openfe
     :noindex:
 

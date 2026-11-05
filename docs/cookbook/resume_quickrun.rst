@@ -42,7 +42,7 @@ Choose a different output filename for the new run.
 
 The ``--resume`` flag cannot be used after a task failure because quickrun removes the cache when execution finishes.
 
-.. _userguide_quickrun_resume:
+.. _howto_quickrun_resume:
 
 If the job was interrupted
 --------------------------
