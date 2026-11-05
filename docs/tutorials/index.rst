@@ -32,6 +32,10 @@ Molecular Dynamics (MD)
 
 - :any:`MD protocol <md_tutorial>`: A walk-through of running a conventional (non-alchemical) MD simulation of benzene bound to T4-lysozyme L99A.
 
+Mixed Protocol Networks
+-----------------------
+
+- :any:`Mixed Protocol Networks <mixed_protocol_network_tutorial>`: A step-by-step tutorial on combining multiple relative (RBFE & SepTop) free energy methods to estimate absolute free energies of BACE1 ligands across three diverse ligand series with the Python API.
 
 Execution
 ---------
@@ -64,6 +68,7 @@ Generating Partial Charges
     septop_tutorial
     septop_analysis_tutorial
     md_tutorial
+    mixed_protocol_network_tutorial
     plotting_with_cinnabar
     task_based_execution_cli
     task_based_execution_python_api
