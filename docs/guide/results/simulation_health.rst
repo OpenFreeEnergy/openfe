@@ -261,7 +261,7 @@ because they use the same data.
    separated, and the reverse estimate changes sharply between 80% and
    100% of the data. The estimates only agree when the full dataset is included.
 
-The analysis also identifies an initial equilibration period
+`PyMBAR<https://pymbar.readthedocs.io/en/stable/timeseries.html>`_.
 (``equilibration_iterations``) and estimates the number of
 effectively uncorrelated production samples
 (``production_iterations``), using the automated equilibration
