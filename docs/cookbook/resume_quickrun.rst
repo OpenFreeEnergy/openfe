@@ -29,7 +29,20 @@ To print it, use ``jq`` (see :doc:`jq_inspection`):
 
 Once you have fixed the cause (see :doc:`/guide/troubleshooting`), run the Transformation again with a new
 work directory and results file.
-quickrun does not start if the results file already exists, and ``--resume`` cannot be used after a failure.
+
+quickrun refuses to start if the results file already exists.
+For example, attempting to reuse ``results.json`` produces:
+
+.. code-block:: text
+
+   Error: Invalid value for '-o': Path 'results.json' is a file.
+
+This error occurs because the ``-o`` option does not accept an existing file.
+Choose a different output filename for the new run.
+
+The ``--resume`` flag cannot be used after a task failure because quickrun removes the cache when execution finishes.
+
+Use a new output filename to preserve the results and diagnostic information from the failed calculation.
 
 .. _userguide_quickrun_resume:
 
