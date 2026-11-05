@@ -51,11 +51,12 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    :caption: Running calculations
 
    dumping_transformation
-
-.. TODO: add: run a transformation with quickrun,
-   run repeats in parallel, run on a SLURM cluster, resume interrupted calculations and
-   share a GPU using NVIDIA MPS (from guide/execution/quickrun_execution), and task-based
-   execution.
+   run_quickrun
+   resume_quickrun
+   run_on_slurm
+   run_repeats_in_parallel
+   run_with_mps
+   run_task_based
 
 .. toctree::
    :maxdepth: 1

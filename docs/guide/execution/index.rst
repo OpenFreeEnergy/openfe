@@ -10,13 +10,16 @@ More advanced options are available through first considering the
 then :ref:`reading on the available Python functions<reference_execution>`.
 
 .. toctree::
+   execution_theory
    quickrun_execution
    task_based_execution
-   execution_theory
 
 .. admonition:: How-to guides
 
    * :doc:`/cookbook/dumping_transformation`
-
-.. TODO: add the Running calculations how-tos (quickrun, repeats in parallel, SLURM,
-   resuming, NVIDIA MPS, task-based execution) to this box.
+   * :doc:`/cookbook/run_quickrun`
+   * :doc:`/cookbook/resume_quickrun`
+   * :doc:`/cookbook/run_on_slurm`
+   * :doc:`/cookbook/run_repeats_in_parallel`
+   * :doc:`/cookbook/run_with_mps`
+   * :doc:`/cookbook/run_task_based`
