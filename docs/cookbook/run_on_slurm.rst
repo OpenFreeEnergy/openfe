@@ -37,7 +37,7 @@ Once all jobs have finished, collect the results from ``results/`` with :ref:`op
 
 The ``--resume`` flag lets you resubmit a job that hit its wall-time limit: it continues where it stopped.
 On the first submission, when there is nothing to resume, quickrun prints a warning and starts a new run.
-See :doc:`recover_quickrun` for details.
+See :doc:`resume_quickrun` for details.
 
 To run the repeats of each Transformation as separate jobs, see :doc:`run_repeats_in_parallel`.
 
@@ -45,4 +45,4 @@ See also
 --------
 
 * :doc:`run_quickrun` – running a Transformation with quickrun.
-* :doc:`share_gpu_with_mps` – running several Transformations on one GPU.
+* :doc:`run_with_mps` – running several Transformations on one GPU.

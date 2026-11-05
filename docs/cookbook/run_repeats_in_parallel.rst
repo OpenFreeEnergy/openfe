@@ -73,4 +73,4 @@ See also
 --------
 
 * :doc:`run_on_slurm` – submitting quickrun jobs to a cluster.
-* :doc:`share_gpu_with_mps` – running several jobs on one GPU.
+* :doc:`run_with_mps` – running several jobs on one GPU.
