@@ -6,7 +6,7 @@ Run a network with task-based execution
 .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe.
 
 With task-based execution, you run a whole :class:`.AlchemicalNetwork` instead of one Transformation at a time.
-For how it works, see :ref:`userguide_task_based_execution`.
+For how it works, see the :ref:`userguide_task_based_execution` user guide.
 
 1. Plan the network as a single AlchemicalNetwork JSON file, using ``--networks-only``:
 
@@ -51,5 +51,5 @@ For how it works, see :ref:`userguide_task_based_execution`.
 
       openfe to-legacy-json warehouse_my_campaign/ -o result_jsons
 
-For a full walkthrough, including a SLURM worker script, see the
-:ref:`CLI <task_based_execution_cli>` and :ref:`Python API <tutorials/task_based_execution_python_api.nblink>` tutorials.
+For a full walkthrough see the :ref:`CLI <task_based_execution_cli>` and
+:ref:`Python API <tutorials/task_based_execution_python_api.nblink>` tutorials.

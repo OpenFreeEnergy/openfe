@@ -18,7 +18,7 @@ The script below runs the Transformation JSON file given as its argument on one 
    conda activate openfe_env
 
    name=$(basename "$1" .json)
-   openfe quickrun "$1" -d "workdir/${name}" -o "results/${name}.json"
+   openfe quickrun "$1" -d "workdir/${name}" -o "results/${name}.json" --resume
 
 Adjust the ``#SBATCH`` options to your cluster, for example to add a partition or account.
 

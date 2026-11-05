@@ -53,7 +53,7 @@ Make sure the number of protocol repeats was set to 1 when planning the Transfor
 
    Each job must use a unique output filename.
 
-   Although quickrun refuses to start if the results file already
+   Although quickrun does not start if the results file already
    exists, two jobs started concurrently with the same output path
    may both pass this check and overwrite each other's results.
 

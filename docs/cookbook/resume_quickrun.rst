@@ -42,8 +42,6 @@ Choose a different output filename for the new run.
 
 The ``--resume`` flag cannot be used after a task failure because quickrun removes the cache when execution finishes.
 
-Use a new output filename to preserve the results and diagnostic information from the failed calculation.
-
 .. _userguide_quickrun_resume:
 
 If the job was interrupted
@@ -74,7 +72,6 @@ How often checkpoints are written is set by ``checkpoint_interval`` in the proto
 
    The same ``-d`` / ``--work-dir`` and ``-o`` arguments used in the original run must be specified
    so that quickrun can locate the cache file.
-   quickrun prints the full resume command at the start of every run.
 
 If you pass ``--resume`` but no cache file is found (e.g. the job never started), the following warning is printed
 and a new run begins:
