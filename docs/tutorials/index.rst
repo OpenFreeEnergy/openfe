@@ -35,7 +35,7 @@ Molecular Dynamics (MD)
 Mixed Protocol Networks
 -----------------------
 
-- :any:`Mixed Protocol Networks <mixed_protocol_network_tutorial>`: A step-by-step tutorial on combining multiple relative (RBFE & SepTop) free energy methods to estimate absolute free energies of BACE1 ligands across three diverse ligand series with the Python API.
+- :any:`Mixed Protocol Networks <mixed_protocol_network_tutorial>`: A walk-through of combining multiple relative (RBFE & SepTop) free energy methods to estimate absolute free energies across three diverse ligand series bound to BACE1, using the Python API.
 
 Execution
 ---------
