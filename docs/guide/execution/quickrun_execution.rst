@@ -1,6 +1,6 @@
 .. _userguide_quickrun:
 
-Execution with Quickrun
+Execution with ``quickrun``
 =======================
 
 The planning and preparation of a campaign of alchemical simulations using ``openfe`` is intended to be achievable on a local workstation in a matter of minutes.
