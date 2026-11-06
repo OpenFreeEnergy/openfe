@@ -39,7 +39,7 @@ The **OpenFE** ecosystem is a free and open-source framework for planning, runni
    installation
    guide/index
    tutorials/index
-   cookbook/index
+   how_to_guides/index
    reference/index
    CHANGELOG
 
