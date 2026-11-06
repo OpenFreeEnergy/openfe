@@ -14,7 +14,7 @@ then :ref:`reading on the available Python functions<reference_execution>`.
    quickrun_execution
    task_based_execution
 
-.. admonition:: How-to guides
+.. admonition:: Related How-To Guides
 
    * :doc:`/cookbook/dumping_transformation`
    * :doc:`/cookbook/run_quickrun`

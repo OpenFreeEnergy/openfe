@@ -14,7 +14,7 @@ Each quickrun call then runs a single repeat. Set this when you plan the Transfo
 * with the CLI, pass ``--n-protocol-repeats 1`` to :ref:`cli_plan-rbfe-network` or :ref:`cli_plan-rhfe-network`, or
 * in Python, set ``settings.protocol_repeats = 1`` before creating the Protocol (see :doc:`choose_protocol`).
 
-Otherwise every job runs all repeats, and you end up with three times as many repeats as intended.
+Otherwise every job by default runs 3 repeats, and you end up with three times as many repeats as intended.
 
 Submit one job per repeat
 -------------------------
@@ -54,6 +54,8 @@ Make sure the number of protocol repeats was set to 1 when planning the Transfor
    Although quickrun does not start if the results file already
    exists, two jobs started concurrently with the same output path
    may both pass this check and overwrite each other's results.
+   
+   Avoid this error by making sure all output paths are unique!
 
 This gives one directory per repeat, each with a results file and a work directory for every Transformation:
 

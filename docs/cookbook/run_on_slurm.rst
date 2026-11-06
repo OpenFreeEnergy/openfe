@@ -23,8 +23,12 @@ For example, the script below runs the Transformation JSON file given as its arg
 
 Adjust the ``#SBATCH`` options to your cluster, for example to add a partition or account.
 
-Save the script as ``run_quickrun.sh`` and submit one job for each Transformation,
-for example for those written by :ref:`cli_plan-rbfe-network`:
+Save the script as ``run_quickrun.sh`` and submit one job for each Transformation JSON, either manually with
+
+` > sbatch run_quickrun.sh </path/to/transformation.json>`
+
+or by looping over all the Transformation JSONs in a directory.
+For example, to submit jobs for all Transformations  written by :ref:`cli_plan-rbfe-network` to the directory `network_setup/transformations/`:
 
 .. code-block:: bash
 

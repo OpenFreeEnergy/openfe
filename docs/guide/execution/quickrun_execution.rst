@@ -29,7 +29,7 @@ writes the free energy estimate and its uncertainty to the results file, and rem
 If quickrun is interrupted before then, the cache file remains and the run can be resumed:
 tasks that had finished are skipped, and an interrupted simulation continues from its last checkpoint.
 
-Organising a campaign
+Organizing a campaign
 ---------------------
 
 You decide where and when each Transformation runs, for example by submitting one job per Transformation to a cluster.
