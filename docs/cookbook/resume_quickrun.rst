@@ -3,7 +3,7 @@
 Recover from a failed or interrupted run
 ========================================
 
-A quickrun job can stop early in two ways, and each needs a different fix:
+A quickrun job can stop early in two ways:
 
 * **A task failed.** quickrun finished, but printed an error naming the failed task.
   The results file exists, with ``estimate`` and ``uncertainty`` set to ``null``.
