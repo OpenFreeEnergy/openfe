@@ -11,7 +11,7 @@ A quickrun job can stop early in two ways:
   a node failure or a cancelled job. There is no results file, and a cache file
   ``<work-dir>/quickrun_cache/dag-cache-<key>.json`` is left behind.
 
-If a task failed
+Rerunning a failed task
 ----------------
 
 If a task fails, quickrun retries it up to two more times, each in its own directory
