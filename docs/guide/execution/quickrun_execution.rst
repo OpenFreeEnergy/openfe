@@ -32,7 +32,6 @@ tasks that had finished are skipped, and an interrupted simulation continues fro
 Organising a campaign
 ---------------------
 
-quickrun does not schedule anything: each call runs a single Transformation on a single machine.
 You decide where and when each Transformation runs, for example by submitting one job per Transformation to a cluster.
 Calculations run in parallel by running several quickrun calls at the same time,
 for example one per Transformation, one per repeat, or several on the same GPU.
