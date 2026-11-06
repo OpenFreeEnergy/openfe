@@ -1,4 +1,4 @@
-.. _cookbooks:
+.. _how_to_guides:
 
 How-To Guides
 =============
