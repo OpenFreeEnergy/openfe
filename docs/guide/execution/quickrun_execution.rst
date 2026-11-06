@@ -33,7 +33,7 @@ Organising a campaign
 ---------------------
 
 You decide where and when each Transformation runs, for example by submitting one job per Transformation to a cluster.
-Calculations run in parallel by running several quickrun calls at the same time,
+You can run multiple simulations in parallel by running several quickrun calls at the same time,
 for example one per Transformation, one per repeat, or several on the same GPU.
 The results files are then collected with ``openfe gather``.
 
