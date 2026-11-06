@@ -38,7 +38,7 @@ For example, attempting to reuse ``results.json`` produces:
    Error: Invalid value for '-o': Path 'results.json' is a file.
 
 This error occurs because the ``-o`` option does not accept an existing file.
-Choose a different output filename for the new run.
+Choose a different output filename for the new run, or remove the existing results file.
 
 The ``--resume`` flag cannot be used after a task failure because quickrun removes the cache when execution finishes.
 
