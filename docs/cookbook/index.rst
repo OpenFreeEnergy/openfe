@@ -3,11 +3,8 @@
 How-To Guides
 =============
 
-These guides show how to carry out specific tasks with **openfe**, mostly using the Python API.
+These guides show how to carry out specific tasks with **openfe**.
 For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
-To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
-
-.. TODO: remove the quickrun sentence above once moved to "Running calculations"
 
 .. module:: openfe
     :noindex:
@@ -51,11 +48,12 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    :caption: Running calculations
 
    dumping_transformation
-
-.. TODO: add: run a transformation with quickrun,
-   run repeats in parallel, run on a SLURM cluster, resume interrupted calculations and
-   share a GPU using NVIDIA MPS (from guide/execution/quickrun_execution), and task-based
-   execution.
+   run_quickrun
+   resume_quickrun
+   run_on_slurm
+   run_repeats_in_parallel
+   run_with_mps
+   run_task_based
 
 .. toctree::
    :maxdepth: 1
@@ -74,4 +72,3 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    :caption: Repairing and extending networks
 
    repairing_broken_networks
-
