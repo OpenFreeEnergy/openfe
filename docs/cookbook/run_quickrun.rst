@@ -13,6 +13,8 @@ With the Relative Hybrid Topology Protocol, each file is one leg of an edge, suc
 so you need to run both legs of every edge.
 With the Separated Topologies, Absolute Binding, and Absolute Solvation Protocols, running one Transformation executes the entire thermodynamic cycle
 
+.. TODO: update the Relative Hybrid Topology Protocol description once the new hybrid topology protocol is released.
+
 To run a Transformation:
 
 .. code-block:: bash

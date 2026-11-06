@@ -26,15 +26,23 @@ We recommend using directories named ``results_0``, ``results_1``,
 and ``results_2``, since :ref:`openfe gather <cli_gather>` supports
 this directory structure.
 
-On a SLURM cluster, you can extend the job script from :doc:`run_on_slurm` to accept the repeat number as a second argument.
-
-Keep the SLURM resource requests and environment setup, and replace the final two lines with:
+On a SLURM cluster, save the following job script as ``run_repeat.sh``.
+It takes the Transformation JSON file and the repeat number as arguments:
 
 .. code-block:: bash
 
+   #!/bin/bash
+   #SBATCH --job-name=openfe
+   #SBATCH --gres=gpu:1
+   #SBATCH --mem-per-cpu=2G
+   #SBATCH --time=24:00:00
+
+   # activate an appropriate conda environment, or run any "module load" commands required
+   conda activate openfe_env
+
    name=$(basename "$1" .json)
    repeat=$2
-   openfe quickrun "$1" -d "results_${repeat}/${name}" -o "results_${repeat}/${name}.json"
+   openfe quickrun "$1" -d "results_${repeat}/${name}" -o "results_${repeat}/${name}.json" --resume
 
 Then submit three jobs for each Transformation:
 
@@ -42,9 +50,11 @@ Then submit three jobs for each Transformation:
 
    for file in network_setup/transformations/*.json; do
      for repeat in 0 1 2; do
-       sbatch run_quickrun.sh "$file" "$repeat"
+       sbatch run_repeat.sh "$file" "$repeat"
      done
    done
+
+For more on adapting the job script to your cluster, see :doc:`run_on_slurm`.
 
 Each job runs one repeat and writes its output to a separate directory.
 Make sure the number of protocol repeats was set to 1 when planning the Transformations, as described above.

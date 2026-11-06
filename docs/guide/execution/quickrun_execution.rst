@@ -10,32 +10,37 @@ These serialized JSON files are the currency of executing a campaign of simulati
 
 To read the ``Transformation`` information and execute the simulation, the command line interface provides the ``openfe quickrun`` command, the full details of which are given in :ref:`the CLI reference section<cli_quickrun>`.
 
-What quickrun does
-------------------
+Overview
+--------
 
 ``openfe quickrun`` executes one :class:`.Transformation`.
-What a Transformation contains depends on the Protocol:
-for the Relative Hybrid Topology Protocol it is one leg of an edge, for example the complex leg,
-while for the Separated Topologies and absolute Protocols it is the whole thermodynamic cycle.
+A Transformation contains everything needed to run a free energy calculation:
+the two :class:`.ChemicalSystem`\s, the :class:`.Protocol` and, if the Protocol needs one,
+an :class:`.AtomMapping` (see :ref:`alchemical_network_model`).
 
 When quickrun starts, it creates the ``ProtocolDAG`` of the Transformation:
 the setup, simulation and analysis tasks (``ProtocolUnit``\s) of every repeat (see :ref:`userguide_execution_theory`).
-It saves this plan to a cache file in the work directory, then executes the tasks one at a time.
-Each task writes its files to its own subdirectory of the work directory.
+quickrun then executes these tasks one at a time, and each task writes its files to its own subdirectory of the work directory.
 If a task fails, quickrun retries it up to two more times; if it still fails, quickrun stops.
 
-When all tasks have finished, or one has failed, quickrun combines the task results into a :class:`.ProtocolResult`,
-writes the free energy estimate and its uncertainty to the results file, and removes the cache file.
-If quickrun is interrupted before then, the cache file remains and the run can be resumed:
-tasks that had finished are skipped, and an interrupted simulation continues from its last checkpoint.
+When all tasks have finished, or one has failed, quickrun combines the task results into a :class:`.ProtocolResult`
+and writes the free energy estimate and its uncertainty to the results file.
+
+quickrun keeps track of which tasks have finished, so an interrupted run can be resumed with ``--resume``.
+Finished tasks are skipped, and an interrupted simulation continues from its last checkpoint
+(see :doc:`/cookbook/resume_quickrun`).
 
 Organizing a campaign
 ---------------------
 
-You decide where and when each Transformation runs, for example by submitting one job per Transformation to a cluster.
+You decide where and when each Transformation runs, for example by
+:doc:`submitting one job per Transformation to a cluster </cookbook/run_on_slurm>`.
 You can run multiple simulations in parallel by running several quickrun calls at the same time,
-for example one per Transformation, one per repeat, or several on the same GPU.
-The results files are then collected with ``openfe gather``.
+for example one per Transformation, :doc:`one per repeat </cookbook/run_repeats_in_parallel>`,
+or :doc:`several on the same GPU </cookbook/run_with_mps>`.
+The results files are then collected with :ref:`openfe gather <cli_gather>`.
+
+.. TODO: link the "Gather free energy results" how-to instead of the CLI reference once it exists.
 
 If you would rather have **openfe** schedule the tasks of a whole network for you,
 see :ref:`userguide_task_based_execution`.

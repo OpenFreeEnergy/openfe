@@ -3,11 +3,20 @@
 Execution
 =========
 
-With a :class:`.Transformation` defined, the next step is to execute this.
-The easiest way to run it is to use the :ref:`quickrun CLI tool <userguide_quickrun>`.
-More advanced options are available through first considering the
-:ref:`theory of the execution model<userguide_execution_theory>`
-then :ref:`reading on the available Python functions<reference_execution>`.
+Once you have planned your calculations, each :class:`.Transformation` needs to be executed.
+Its simulations are run and the results analysed to give a free energy estimate.
+**openfe** supports two approaches, which differ in who organises the work.
+Both can be used from the command line or from Python.
+
+:ref:`Running Transformations individually <userguide_quickrun>`
+   You run one Transformation at a time and decide where and when each one runs,
+   for example by submitting one cluster job per Transformation.
+   On the command line this is ``openfe quickrun``; in Python, :func:`.execute_DAG`.
+
+:ref:`Task-based execution <userguide_task_based_execution>` (experimental)
+   **openfe** splits a whole :class:`.AlchemicalNetwork` into tasks and keeps track of which are ready to run.
+   You start one or more workers, and each one picks up the next available task:
+   ``openfe run-task`` on the command line, or :class:`.Worker` in Python.
 
 .. toctree::
    execution_theory

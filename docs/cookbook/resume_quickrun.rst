@@ -40,7 +40,8 @@ For example, attempting to reuse ``results.json`` produces:
 This error occurs because the ``-o`` option does not accept an existing file.
 Choose a different output filename for the new run, or remove the existing results file.
 
-The ``--resume`` flag cannot be used after a task failure because quickrun removes the cache when execution finishes.
+``--resume`` only works for interrupted runs, because quickrun removes the cache once a task has failed.
+By then the task has already been retried twice, so resuming would most likely fail in the same way.
 
 .. _howto_quickrun_resume:
 
@@ -66,7 +67,8 @@ you can resume it by passing the ``--resume`` flag:
 quickrun then uses the cache to skip the tasks that had already finished.
 The hybrid topology, separated topologies and absolute protocols continue an interrupted simulation from its last
 checkpoint, so only the time since that checkpoint is run again.
-How often checkpoints are written is set by ``checkpoint_interval`` in the protocol's output settings.
+How often checkpoints are written is set by :attr:`~.MultiStateOutputSettings.checkpoint_interval`
+in the protocol's output settings (see :doc:`choose_protocol` for how to change settings).
 
 .. note::
 
