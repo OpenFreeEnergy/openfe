@@ -44,7 +44,7 @@ The ``--resume`` flag cannot be used after a task failure because quickrun remov
 
 .. _howto_quickrun_resume:
 
-If the job was interrupted
+Resuming an interruped job
 --------------------------
 
 When ``openfe quickrun`` starts, it saves a plan of the simulation to a cache file before execution begins:
