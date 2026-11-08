@@ -440,7 +440,7 @@ def gather_septop(
     df = report_func(legs, allow_partial)
 
     # write output
-    is_output_file = isinstance(output, click.utils.LazyFile)
+    is_output_file = isinstance(output, click.File)
     if is_output_file:
         click.echo(f"writing {report} output to '{output.name}'")
     if is_output_file or tsv:
