@@ -61,6 +61,8 @@ A soft-core potential is applied to the Lennard-Jones potential to avoid instabl
 The soft-core potential function from Beutler et al. [3]_ is used by default.
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec``, ``lambda_vdw``, and ``lambda_restraints``.
 
+For more information on configuring these and other protocol settings, see :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`.
+
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
@@ -154,7 +156,8 @@ See Also
 
 **How-to guides**
 
-:ref:`How-to guides <how_to_guides>`
+* :ref:`How-to guides <how_to_guides>`
+* :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`
 
 **API Documentation**
 

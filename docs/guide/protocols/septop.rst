@@ -65,6 +65,8 @@ A soft-core potential from Beutler et al. [4]_ is applied to the Lennard-Jones p
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec_A``, ``lambda_elec_B``,  ``lambda_vdw_A``, ``lambda_vdw_B``,
 ``lambda_restraints_A``, and ``lambda_restraints_B``.
 
+For more information on configuring these and other protocol settings, see :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`.
+
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
@@ -165,7 +167,8 @@ See Also
 
 **How-to guides**
 
-:ref:`How-to guides <how_to_guides>`
+* :ref:`How-to guides <how_to_guides>`
+* :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`
 
 **API Documentation**
 

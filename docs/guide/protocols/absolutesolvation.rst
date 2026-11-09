@@ -56,6 +56,8 @@ which are annihilated, need to be turned off gradually. Since decoupling the Len
 
 The number of lambda windows in each leg must match the number of replicas set in ``solvent_simulation_settings.n_replicas`` and ``vacuum_simulation_settings.n_replicas``.
 
+For more information on configuring these and other protocol settings, see :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`.
+
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
@@ -135,7 +137,8 @@ See Also
 
 **How-to guides**
 
-:ref:`How-to guides <how_to_guides>`
+* :ref:`How-to guides <how_to_guides>`
+* :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`
 
 **API Documentation**
 
