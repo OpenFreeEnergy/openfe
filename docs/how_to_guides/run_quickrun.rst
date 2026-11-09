@@ -36,7 +36,7 @@ All repeats of the Transformation (set by ``protocol_repeats``) run one after an
 To run them as separate jobs instead, see :doc:`run_repeats_in_parallel`.
 
 When the run finishes, quickrun prints the free energy estimate and its uncertainty and writes them to the results file.
-To load the results in Python, see :doc:`load_results`; to collect the results of many Transformations, see :doc:`gather_results`.
+To collect the results of many Transformations and estimate DDGs and DGs, see :doc:`gather_results`.
 
 If the run fails or is interrupted, :doc:`resume_quickrun` explains what to do next.
 
