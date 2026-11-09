@@ -40,6 +40,7 @@ To run a transformation with ``openfe quickrun``, see :ref:`userguide_quickrun`.
    :caption: Planning: Protocols and alchemical networks
 
    choose_protocol
+   exploring_protocol_settings
    rfe_alchemical_planners
    create_alchemical_network
 
