@@ -141,10 +141,9 @@ Because both ligands are held in place by orientational restraints in the
 complex leg, also check that the restraint geometry stays well defined; see
 the `Boresch restraint analysis tutorial
 <https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_.
-The multistate trajectory (``simulation.nc``) and its topology
-(``alchemical_system.pdb``) can be analysed further using `openfe_analysis`_.
-
-.. TODO: Link to the trajectory visualisation how_to_guide when published.
+The multistate trajectory (``simulation.nc``) and its topology (``alchemical_system.pdb``)
+can be loaded with `openfe_analysis`_ to visualize the simulation, extract the trajectories of the end states,
+or analyse them further; see :doc:`/how_to_guides/simulation_visualization`.
 
 See Also
 --------

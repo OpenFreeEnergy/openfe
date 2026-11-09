@@ -111,11 +111,10 @@ The frame stride can be set through ``analysis_settings.skip`` in
 :class:`.AbsoluteSolvationSettings` (by default, about 500 frames are
 analysed per state). The ligand atoms must be included in the trajectory
 output, through ``output_indices`` in ``solvent_output_settings``; otherwise
-the structural analysis is skipped. The multistate trajectories
-(``solvent.nc`` and ``vacuum.nc``) can be analysed further using
-`openfe_analysis`_.
-
-.. TODO: Link to the trajectory visualisation how_to_guide when published.
+the structural analysis is skipped.
+The multistate trajectories (``solvent.nc`` and ``vacuum.nc``) can be loaded with `openfe_analysis`_ to visualize
+the simulation, extract the trajectories of the end states,
+or analyse them further; see :doc:`/how_to_guides/simulation_visualization`.
 
 
 See Also
