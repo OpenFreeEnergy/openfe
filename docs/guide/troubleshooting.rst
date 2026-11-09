@@ -193,7 +193,7 @@ Resuming Interrupted Simulations
 
 In the case where your ``openfe quickrun`` execution has timed out, was cancelled, or was otherwise interrupted, you can attempt to resume the simulation using the ``--resume`` flag, which is available as of openfe v1.11.0.
 
-See :ref:`Resuming Interrupted Simulations <userguide_quickrun_resume>` for more details.
+See :ref:`Resuming Interrupted Simulations <howto_quickrun_resume>` for more details.
 
 .. _troubleshooting-log-debug-information:
 

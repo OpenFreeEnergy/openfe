@@ -243,7 +243,7 @@ These limitations apply to all binding free energy protocols.
 See also
 --------
 
-* :doc:`Choose and configure a protocol </cookbook/choose_protocol>`
+* :doc:`Choose and configure a protocol </how_to_guides/choose_protocol>`
 * :ref:`Assessing simulation health <userguide_simulation_health>`
 * :doc:`Troubleshooting simulations </guide/troubleshooting>`
 

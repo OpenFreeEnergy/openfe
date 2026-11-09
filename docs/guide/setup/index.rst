@@ -47,22 +47,22 @@ See :ref:`dumping transformations <dumping_transformations>` for more details.
 
    **Setup**
 
-   * :doc:`/cookbook/loading_molecules`
-   * :doc:`/cookbook/user_charges`
-   * :doc:`/cookbook/bespoke_parameters`
+   * :doc:`/how_to_guides/loading_molecules`
+   * :doc:`/how_to_guides/user_charges`
+   * :doc:`/how_to_guides/bespoke_parameters`
 
    **Planning: Ligand networks**
 
-   * :doc:`/cookbook/generate_ligand_network`
-   * :doc:`/cookbook/hand_write_ligand_network`
-   * :doc:`/cookbook/network_from_orion_fepp`
-   * :doc:`/cookbook/ligandnetwork_vis`
-   * :doc:`/cookbook/repairing_broken_networks`
+   * :doc:`/how_to_guides/generate_ligand_network`
+   * :doc:`/how_to_guides/hand_write_ligand_network`
+   * :doc:`/how_to_guides/network_from_orion_fepp`
+   * :doc:`/how_to_guides/ligandnetwork_vis`
+   * :doc:`/how_to_guides/repairing_broken_networks`
 
    **Planning: Protocols and alchemical networks**
 
-   * :doc:`/cookbook/choose_protocol`
-   * :doc:`/cookbook/rfe_alchemical_planners`
-   * :doc:`/cookbook/create_alchemical_network`
+   * :doc:`/how_to_guides/choose_protocol`
+   * :doc:`/how_to_guides/rfe_alchemical_planners`
+   * :doc:`/how_to_guides/create_alchemical_network`
 
 .. TODO: add the new Setup and Planning how-tos to this box as they are added.
