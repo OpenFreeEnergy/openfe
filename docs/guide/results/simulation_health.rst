@@ -456,7 +456,7 @@ Some problems only show up across a network. Relative free energies around a
 cycle should sum to zero within their uncertainties, and each edge should
 agree with the value implied by the rest of the network. Large deviations
 point to unreliable edges worth checking with the diagnostics above. These checks need a network with redundant edges
-(see :doc:`Generate ligand networks </cookbook/generate_ligand_network>`).
+(see :doc:`Generate ligand networks </how_to_guides/generate_ligand_network>`).
 To calculate cycle closure errors, see the `cinnabar cycle closure tutorial
 <https://cinnabar.openfree.energy/en/latest/tutorials/cycle-closure.html>`_.
 

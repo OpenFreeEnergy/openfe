@@ -144,7 +144,7 @@ the `Boresch restraint analysis tutorial
 The multistate trajectory (``simulation.nc``) and its topology
 (``alchemical_system.pdb``) can be analysed further using `openfe_analysis`_.
 
-.. TODO: Link to the trajectory visualisation cookbook when published.
+.. TODO: Link to the trajectory visualisation how_to_guide when published.
 
 See Also
 --------
@@ -165,7 +165,7 @@ See Also
 
 **How-to guides**
 
-:ref:`How-to guides <cookbooks>`
+:ref:`How-to guides <how_to_guides>`
 
 **API Documentation**
 
