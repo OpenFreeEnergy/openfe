@@ -25,10 +25,10 @@ Both can be used from the command line or from Python.
 
 .. admonition:: Related How-To Guides
 
-   * :doc:`/cookbook/dumping_transformation`
-   * :doc:`/cookbook/run_quickrun`
-   * :doc:`/cookbook/resume_quickrun`
-   * :doc:`/cookbook/run_on_slurm`
-   * :doc:`/cookbook/run_repeats_in_parallel`
-   * :doc:`/cookbook/run_with_mps`
-   * :doc:`/cookbook/run_task_based`
+   * :doc:`/how_to_guides/dumping_transformation`
+   * :doc:`/how_to_guides/run_quickrun`
+   * :doc:`/how_to_guides/resume_quickrun`
+   * :doc:`/how_to_guides/run_on_slurm`
+   * :doc:`/how_to_guides/run_repeats_in_parallel`
+   * :doc:`/how_to_guides/run_with_mps`
+   * :doc:`/how_to_guides/run_task_based`

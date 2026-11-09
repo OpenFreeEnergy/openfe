@@ -44,7 +44,7 @@ Generating Ligand Networks
    # plan the ligand network
    ligand_network = network_planner(ligands=mols, mappers=[mapper], scorer=scorer)
 
-Practical information on generating ligand networks can be found in our :ref:`cookbook for ligand network generation <cookbook/generate_ligand_network.nblink>`.
+Practical information on generating ligand networks can be found in our :ref:`How-to guide for ligand network generation <how_to_guides/generate_ligand_network.nblink>`.
 
 .. note::
    Like the Component objects, a ``LigandNetwork`` object is immutable once created!

@@ -28,16 +28,16 @@ and writes the free energy estimate and its uncertainty to the results file.
 
 quickrun keeps track of which tasks have finished, so an interrupted run can be resumed with ``--resume``.
 Finished tasks are skipped, and an interrupted simulation continues from its last checkpoint
-(see :doc:`/cookbook/resume_quickrun`).
+(see :doc:`/how_to_guides/resume_quickrun`).
 
 Organizing a campaign
 ---------------------
 
 You decide where and when each Transformation runs, for example by
-:doc:`submitting one job per Transformation to a cluster </cookbook/run_on_slurm>`.
+:doc:`submitting one job per Transformation to a cluster </how_to_guides/run_on_slurm>`.
 You can run multiple simulations in parallel by running several quickrun calls at the same time,
-for example one per Transformation, :doc:`one per repeat </cookbook/run_repeats_in_parallel>`,
-or :doc:`several on the same GPU </cookbook/run_with_mps>`.
+for example one per Transformation, :doc:`one per repeat </how_to_guides/run_repeats_in_parallel>`,
+or :doc:`several on the same GPU </how_to_guides/run_with_mps>`.
 The results files are then collected with :ref:`openfe gather <cli_gather>`.
 
 .. TODO: link the "Gather free energy results" how-to instead of the CLI reference once it exists.
@@ -47,11 +47,11 @@ see :ref:`userguide_task_based_execution`.
 
 .. admonition:: How-to guides
 
-   * :doc:`/cookbook/run_quickrun`
-   * :doc:`/cookbook/resume_quickrun`
-   * :doc:`/cookbook/run_on_slurm`
-   * :doc:`/cookbook/run_repeats_in_parallel`
-   * :doc:`/cookbook/run_with_mps`
+   * :doc:`/how_to_guides/run_quickrun`
+   * :doc:`/how_to_guides/resume_quickrun`
+   * :doc:`/how_to_guides/run_on_slurm`
+   * :doc:`/how_to_guides/run_repeats_in_parallel`
+   * :doc:`/how_to_guides/run_with_mps`
 
 See Also
 --------
