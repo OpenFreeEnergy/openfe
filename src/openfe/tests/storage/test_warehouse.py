@@ -5,11 +5,13 @@ from pathlib import Path
 from typing import Literal
 from unittest import mock
 
+import pooch
 import pytest
 from gufe.storage.externalresource import MemoryStorage
 from gufe.tokenization import GufeTokenizable
 from openff.units import unit
 
+from openfe.data._registry import POOCH_CACHE, zenodo_warehouse_partial
 from openfe.storage.utils import warehouse_to_legacy_json
 from openfe.storage.warehouse import (
     FileSystemWarehouse,
@@ -292,14 +294,19 @@ class TestFileSystemWarehouse:
         )
 
 
+pooch_warehouse_partial = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_warehouse_partial["base_url"],
+    registry={zenodo_warehouse_partial["fname"]: zenodo_warehouse_partial["known_hash"]},
+)
+
+
 @pytest.fixture
-def warehouse_partial_failure():
-    with resources.path("openfe.tests", "data") as data_dir:
-        warehouse_dir = data_dir / "warehouse_data"
-        if not (warehouse_dir).exists():
-            shutil.unpack_archive(warehouse_dir.with_suffix(".tar.gz"), data_dir, format="gztar")
-        warehouse = FileSystemWarehouse.from_dir(root_dir=warehouse_dir / "warehouse_mcl1")
-        return warehouse
+def warehouse_partial_failure() -> Path:
+    pooch_warehouse_partial.fetch("warehouse_mcl1_small.gz", processor=pooch.Untar())
+    result_dir = Path(POOCH_CACHE) / "warehouse_mcl1_small.gz.untar/warehouse_mcl1_small/"
+
+    return result_dir
 
 
 class TestWarehouseResultsGathering:

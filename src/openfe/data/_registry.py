@@ -37,7 +37,11 @@ zenodo_abfe_structural = dict(
     fname="abfe_simulation_outputs.zip",
     known_hash="md5:e6afa6447960c473497f60036b0f8c5e",
 )
-
+zenodo_warehouse_partial = dict(
+    base_url="doi:10.5281/zenodo.23072369",
+    fname="warehouse_mcl1_small.gz",
+    known_hash="md5:fe905824703cf9dab3cebe6b2b65f5bb",
+)
 zenodo_data_registry: list[dict[str, str]] = [
     zenodo_rfe_simulation_nc,
     zenodo_t4_lysozyme_traj,
@@ -46,4 +50,5 @@ zenodo_data_registry: list[dict[str, str]] = [
     zenodo_md_resume_data,
     zenodo_septop_structural,
     zenodo_abfe_structural,
+    zenodo_warehouse_partial,
 ]
