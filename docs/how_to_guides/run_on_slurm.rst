@@ -38,7 +38,7 @@ For example, to submit jobs for all Transformations  written by :ref:`cli_plan-r
 
 Once all jobs have finished, collect the results from ``results/`` with :ref:`openfe gather <cli_gather>`.
 
-.. TODO: link the "Gather free energy results" how-to instead of the CLI reference once it exists.
+.. TODO: link the "Gather free energy results" how-to instead of the CLI reference once it exists
 
 The ``--resume`` flag lets you resubmit a job that hit its wall-time limit: it continues where it stopped.
 On the first submission, when there is nothing to resume, quickrun prints a warning and starts a new run.
