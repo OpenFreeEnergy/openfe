@@ -62,10 +62,9 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
    gather_results
    plotting_with_cinnabar
    load_results
+   simulation_visualization
    jq_inspection
 
-.. TODO: Add Analyze an RBFE network with cinnabar" (from
-   guide/results/working_with_networks) and "Visualize trajectories with openfe_analysis".
 .. TODO: merge dumping_transformation and jq_inspection into a single
    "Save and inspect OpenFE JSON files" how-to.
 

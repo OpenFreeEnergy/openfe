@@ -198,10 +198,31 @@ the interacting part of the ligand remains in its binding pose.
 Inspect the trajectory before interpreting a high RMSD as
 evidence of ligand displacement.
 
-The multistate trajectory (``simulation.nc``) and the hybrid topology
-(``hybrid_system.pdb``) can be analysed further using `openfe_analysis`_.
+.. _rbfe_trajectory_output:
 
-.. TODO: Link to the trajectory visualisation how_to_guide when published.
+Trajectory output
+"""""""""""""""""
+
+The multistate trajectory (``simulation.nc``) stores the positions of every replica, together with the λ state each
+replica was in at each iteration. A trajectory can therefore be read in two ways: at a fixed λ **state**, combining
+frames from whichever replica occupied that state, or along a single **replica** as it moves between λ states.
+This applies to the default replica exchange sampler (``sampler_method = "repex"``).
+With ``"independent"`` sampling, replicas never change state, so both give the same trajectory;
+with ``"sams"``, a λ state is not necessarily occupied at every iteration, so reading by state may not be possible.
+Only the atoms selected by ``output_settings.output_indices`` are saved, which by default excludes water.
+
+The accompanying topology (``hybrid_system.pdb``) contains the hybrid ligand, in which the core atoms are shared
+between both end states. Its temperature factors record which end state each atom belongs to:
+
+* ``0.0``: environment atoms (protein, ions and any saved solvent)
+* ``0.25``: atoms unique to ligand A
+* ``0.5``: core atoms, present in both end states
+* ``0.75``: atoms unique to ligand B
+
+The atoms of end state A are therefore those with a temperature factor of ``0.5`` or lower,
+and the atoms of end state B are those with ``0.0``, ``0.5`` or ``0.75``.
+Both files can be loaded with `openfe_analysis`_ to visualize the simulation, extract the trajectories of the end states,
+or analyse them further; see :doc:`/how_to_guides/simulation_visualization`.
 
 
 See Also

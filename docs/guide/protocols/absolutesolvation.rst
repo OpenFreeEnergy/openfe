@@ -111,11 +111,24 @@ The frame stride can be set through ``analysis_settings.skip`` in
 :class:`.AbsoluteSolvationSettings` (by default, about 500 frames are
 analysed per state). The ligand atoms must be included in the trajectory
 output, through ``output_indices`` in ``solvent_output_settings``; otherwise
-the structural analysis is skipped. The multistate trajectories
-(``solvent.nc`` and ``vacuum.nc``) can be analysed further using
-`openfe_analysis`_.
+the structural analysis is skipped.
 
-.. TODO: Link to the trajectory visualisation how_to_guide when published.
+.. _ahfe_trajectory_output:
+
+Trajectory output
+"""""""""""""""""
+
+Each leg writes a multistate trajectory (``solvent.nc`` and ``vacuum.nc``) with its topology
+(``hybrid_system.pdb``). The trajectory stores the positions of every replica, together with the λ state each
+replica was in at each iteration. A trajectory can therefore be read in two ways: at a fixed λ **state**, combining
+frames from whichever replica occupied that state, or along a single **replica** as it moves between λ states.
+This applies to the default replica exchange sampler (``sampler_method = "repex"``).
+With ``"independent"`` sampling, replicas never change state, so both give the same trajectory;
+with ``"sams"``, a λ state is not necessarily occupied at every iteration, so reading by state may not be possible.
+Only the atoms selected by ``output_indices`` are saved, which by default excludes water.
+Both files can be loaded with `openfe_analysis`_ to visualize
+the simulation, extract the trajectories of the end states,
+or analyse them further; see :doc:`/how_to_guides/simulation_visualization`.
 
 
 See Also

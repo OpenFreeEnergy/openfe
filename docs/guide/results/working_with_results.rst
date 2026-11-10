@@ -57,6 +57,7 @@ and the uncertainty is their standard deviation.
 .. admonition:: How-to guides
 
    * :doc:`/how_to_guides/load_results`
+   * :doc:`/how_to_guides/simulation_visualization`
    * :doc:`/how_to_guides/jq_inspection`
 
 See Also

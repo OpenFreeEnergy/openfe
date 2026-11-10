@@ -18,6 +18,5 @@ and entire networks of results analysed.
    * :doc:`/how_to_guides/gather_results`
    * :doc:`/how_to_guides/plotting_with_cinnabar`
    * :doc:`/how_to_guides/load_results`
+   * :doc:`/how_to_guides/simulation_visualization`
    * :doc:`/how_to_guides/jq_inspection`
-
-.. TODO: add openfe_analysis how-to.
