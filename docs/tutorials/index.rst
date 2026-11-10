@@ -46,7 +46,7 @@ Post-Simulation Analysis
 Generating Partial Charges
 --------------------------
 
-.. todo: this should be in cookbook
+.. todo: this should be in how_to_guides
 
 -  :ref:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>`: how to use the CLI to assign and store partial charges for mall molecules which can be used throughout the OpenFE ecosystem.
 

@@ -82,7 +82,7 @@ The inputs are loaded as follows:
       * **Pre-solvated systems:** ``SolvatedPDBComponent.from_pdb_file`` or
         ``ProteinMembraneComponent.from_pdb_file``.
 
-      See :doc:`Loading Molecules and Chemical Systems </cookbook/loading_molecules>` for examples.
+      See :doc:`Loading Molecules and Chemical Systems </how_to_guides/loading_molecules>` for examples.
 
 .. _prep_protein:
 
@@ -180,7 +180,7 @@ results.
 
 Partial charges are assigned during protocol setup but can also
 be assigned in advance for reproducibility and to avoid repeated calculations.
-See :doc:`Assigning partial charges </cookbook/user_charges>` (Python API) or
+See :doc:`Assigning partial charges </how_to_guides/user_charges>` (Python API) or
 :doc:`Generating Partial Charges with the OpenFE CLI </tutorials/charge_molecules_cli_tutorial>`.
 
 .. rubric:: Binding poses
@@ -225,7 +225,7 @@ Checklist for preparing input ``Components``
 See also
 --------
 
-* :doc:`Loading Molecules and Chemical Systems </cookbook/loading_molecules>`
+* :doc:`Loading Molecules and Chemical Systems </how_to_guides/loading_molecules>`
 * :doc:`Components, Chemical Systems and Thermodynamic Cycles <chemical_systems_and_thermodynamic_cycles>`
 * :doc:`Membrane RBFE tutorial </tutorials/rbfe_membrane_protein>`
 * :ref:`Protocols and domain of applicability <userguide_protocols>`
