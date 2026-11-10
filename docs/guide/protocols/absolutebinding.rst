@@ -129,8 +129,21 @@ Because the ligand is held in place by orientational restraints in the
 complex leg, also check that the restraint geometry stays well defined; see
 the `Boresch restraint analysis tutorial
 <https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_.
-The multistate trajectory (``simulation.nc``) and its topology (``alchemical_system.pdb``)
-can be loaded with `openfe_analysis`_ to visualize the simulation, extract the trajectories of the end states,
+
+.. _abfe_trajectory_output:
+
+Trajectory output
+"""""""""""""""""
+
+Each leg writes a multistate trajectory (``complex.nc`` and ``solvent.nc``) with its topology
+(``alchemical_system.pdb``). The trajectory stores the positions of every replica, together with the λ state each
+replica was in at each iteration. A trajectory can therefore be read in two ways: at a fixed λ **state**, combining
+frames from whichever replica occupied that state, or along a single **replica** as it moves between λ states.
+This applies to the default replica exchange sampler (``sampler_method = "repex"``).
+With ``"independent"`` sampling, replicas never change state, so both give the same trajectory;
+with ``"sams"``, a λ state is not necessarily occupied at every iteration, so reading by state may not be possible.
+Only the atoms selected by ``output_indices`` are saved, which by default excludes water.
+Both files can be loaded with `openfe_analysis`_ to visualize the simulation, extract the trajectories of the end states,
 or analyse them further; see :doc:`/how_to_guides/simulation_visualization`.
 
 See Also
