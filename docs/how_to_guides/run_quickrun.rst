@@ -3,7 +3,7 @@
 Run a Transformation with quickrun
 ==================================
 
-The CLI command ``openfe quickrun`` takes a :class:`.Transformation` saved as JSON and :doc: `executes it <userguide_quickrun>`.
+The CLI command ``openfe quickrun`` takes a :class:`.Transformation` saved as JSON and :ref:`executes it <userguide_quickrun>`.
 If you planned your network with either of the CLI commands :ref:`cli_plan-rbfe-network` or :ref:`cli_plan-rhfe-network`,
 you already have one JSON file per Transformation.
 With the Python API, you can write them yourself with :meth:`.Transformation.to_json` (see :doc:`dumping_transformation`).

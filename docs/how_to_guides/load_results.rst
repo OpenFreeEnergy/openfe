@@ -32,7 +32,7 @@ The dictionary contains four keys:
 
 ``unit_results``
    The outputs, or the error and traceback, of every task (``ProtocolUnit``).
-   See :doc:`recover_quickrun` for how to read the error of a failed task.
+   See :ref:`howto_recover_quickrun` for how to read the error of a failed task.
 
 Recreate the ProtocolResult
 ---------------------------

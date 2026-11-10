@@ -3,7 +3,7 @@
 Run quickrun on a SLURM cluster
 ===============================
 
-On a [SLURM](https://slurm.schedmd.com/) cluster, we recommend running each Transformation as its own SLURM job by using ``openfe quickrun`` in a job script.
+On a `SLURM <https://slurm.schedmd.com/>`_ cluster, we recommend running each Transformation as its own SLURM job by using ``openfe quickrun`` in a job script.
 
 For example, the script below runs the Transformation JSON file given as its argument on one GPU, and follows the convention of using the input file's basename as the output JSON's basename:
 
