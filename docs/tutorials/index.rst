@@ -43,13 +43,6 @@ Post-Simulation Analysis
 
 - :any:`Cinnabar tutorial <plotting_with_cinnabar>`: A tutorial for using the `cinnabar <https://github.com/OpenFreeEnergy/cinnabar>`_ Python package to analyze (e.g. generating MLE estimates of absolute free energies) and plot networks of relative free energy results.
 
-Generating Partial Charges
---------------------------
-
-.. todo: this should be in how_to_guides
-
--  :ref:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>`: how to use the CLI to assign and store partial charges for mall molecules which can be used throughout the OpenFE ecosystem.
-
 .. toctree::
     :maxdepth: 1
     :hidden:
@@ -67,4 +60,3 @@ Generating Partial Charges
     plotting_with_cinnabar
     task_based_execution_cli
     task_based_execution_python_api
-    charge_molecules_cli_tutorial
