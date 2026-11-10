@@ -468,7 +468,7 @@ See also
 
 * :ref:`userguide_individual_results`
 * :ref:`userguide_result_networks`
-* :doc:`Troubleshooting simulations </guide/troubleshooting>`
+* :doc:`Troubleshooting simulations </how_to_guides/troubleshooting>`
 * :ref:`userguide_preparing_inputs`
 * :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`
 
