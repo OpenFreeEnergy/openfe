@@ -38,11 +38,6 @@ Execution
 - :ref:`Task-based Execution with the CLI <task_based_execution_cli>`
 - :any:`Task-based Execution with the Python API <task_based_execution_python_api>`
 
-Post-Simulation Analysis
-------------------------
-
-- :any:`Cinnabar tutorial <plotting_with_cinnabar>`: A tutorial for using the `cinnabar <https://github.com/OpenFreeEnergy/cinnabar>`_ Python package to analyze (e.g. generating MLE estimates of absolute free energies) and plot networks of relative free energy results.
-
 Generating Partial Charges
 --------------------------
 
@@ -64,7 +59,6 @@ Generating Partial Charges
     septop_tutorial
     septop_analysis_tutorial
     md_tutorial
-    plotting_with_cinnabar
     task_based_execution_cli
     task_based_execution_python_api
     charge_molecules_cli_tutorial

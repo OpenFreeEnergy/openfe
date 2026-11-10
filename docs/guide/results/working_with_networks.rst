@@ -31,20 +31,18 @@ i.e. there should be a way to trace a path along pairwise measurements between a
 
       \sum_i^N \Delta G^i_{exp} = \sum_i^N \Delta G^i_{pred}
 
-Gathering using the command line
---------------------------------
+Gathering and analysing network results
+----------------------------------------
 
-After running calculations using the :ref:`quickrun command <userguide_quickrun>`,
-the :ref:`openfe gather <cli_gather>` command offers a way to collate information across many different individual
-simulations and prepare a table of results.
-The tool offers a summary of the relative binding affinities (``--report ddg``),
-or their :ref:`corresponding MLE values <userguide_MLE>` (``--report dg``).
+The :ref:`openfe gather <cli_gather>` command collects the results of many individual calculations into a table,
+either of relative free energies or of their :ref:`corresponding MLE values <userguide_MLE>`.
+The `cinnabar`_ package can be used from within Python to manipulate networks of free energy estimates,
+for example to plot them against experimental data.
 
-Using cinnabar directly
------------------------
+.. admonition:: How-to guides
 
-The `cinnabar`_ package can be used from within Python to manipulate networks of free energy estimates.
-A tutorial on using this is provided here :ref:`here <tutorials/plotting_with_cinnabar.nblink>`
+   * :doc:`/how_to_guides/gather_results`
+   * :doc:`/how_to_guides/plotting_with_cinnabar`
 
 See also
 --------

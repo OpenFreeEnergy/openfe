@@ -59,10 +59,12 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
    :maxdepth: 1
    :caption: Working with results
 
+   gather_results
+   plotting_with_cinnabar
+   load_results
    jq_inspection
 
-.. TODO: add "Gather free energy results" and "Load results in Python" (from
-   guide/results/working_with_results), "Analyze an RBFE network with cinnabar" (from
+.. TODO: Add Analyze an RBFE network with cinnabar" (from
    guide/results/working_with_networks) and "Visualize trajectories with openfe_analysis".
 .. TODO: merge dumping_transformation and jq_inspection into a single
    "Save and inspect OpenFE JSON files" how-to.

@@ -86,9 +86,7 @@ This gives one directory per repeat, each with a results file and a work directo
 Gather the results
 ------------------
 Pass the repeat directories to :ref:`openfe gather <cli_gather>`, for example as ``openfe gather results_*``.
-It searches them recursively and combines the repeats of each Transformation.
-
-.. TODO: link the "Gather free energy results" how-to instead of the CLI reference once it exists.
+It searches them recursively and combines the repeats of each Transformation; see :doc:`gather_results`.
 
 See also
 --------
