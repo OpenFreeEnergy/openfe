@@ -49,7 +49,7 @@ For example, to customise the production run length of the RFE Protocol::
 
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
-For more details on configuring this and other protocol setttings, see :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`.
+For more details on configuring this and other protocol settings, see :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`.
 
 Adaptive Settings
 ~~~~~~~~~~~~~~~~~
