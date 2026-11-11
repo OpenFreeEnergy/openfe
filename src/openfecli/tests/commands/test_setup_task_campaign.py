@@ -5,7 +5,6 @@ import pooch
 import pytest
 from click.testing import CliRunner
 
-from openfe.data._registry import POOCH_CACHE, zenodo_warehouse_partial
 from openfecli.commands.setup_task_campaign import setup_task_campaign
 
 from ..utils import assert_click_success
@@ -13,11 +12,8 @@ from ..utils import assert_click_success
 
 # redefined b/c cannot share fixtures between openfe and openfecli
 @pytest.fixture
-def warehouse_partial_failure() -> Path:
-    zenodo_warehouse_partial.fetch("warehouse_mcl1_small.gz", processor=pooch.Untar())
-    result_dir = Path(POOCH_CACHE) / "warehouse_mcl1_small.gz.untar/warehouse_mcl1_small/"
-
-    return result_dir
+def alchemical_network_mcl1_path(warehouse_partial_dir) -> Path:
+    return warehouse_partial_dir / "alchemical_network.json"
 
 
 def test_setup_task_campaign(alchemical_network_mcl1_path):

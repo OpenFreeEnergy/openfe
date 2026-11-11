@@ -302,7 +302,7 @@ pooch_warehouse_partial = pooch.create(
 
 
 @pytest.fixture
-def warehouse_partial_failure() -> Path:
+def warehouse_partial_dir() -> Path:
     pooch_warehouse_partial.fetch("warehouse_mcl1_small.gz", processor=pooch.Untar())
     result_dir = Path(POOCH_CACHE) / "warehouse_mcl1_small.gz.untar/warehouse_mcl1_small/"
 
@@ -310,8 +310,9 @@ def warehouse_partial_failure() -> Path:
 
 
 class TestWarehouseResultsGathering:
-    def test_gather_results(self, warehouse_partial_failure):
-        wh = warehouse_partial_failure
+    def test_gather_results(self, warehouse_partial_dir):
+        wh = FileSystemWarehouse.from_dir(root_dir=warehouse_partial_dir)
+
         result_edges = wh.gather_all_results()
 
         results_ok = [dag.ok() for _, dag in result_edges]
@@ -325,8 +326,8 @@ class TestWarehouseResultsGathering:
         assert expected_estimates == estimates
         assert len(result_edges) == 4
 
-    def test_convert_to_quickrun_output(self, warehouse_partial_failure, tmp_path):
-        wh = warehouse_partial_failure
+    def test_convert_to_quickrun_output(self, warehouse_partial_dir, tmp_path):
+        wh = FileSystemWarehouse.from_dir(root_dir=warehouse_partial_dir)
         result_edges = wh.gather_all_results()
         out_dir = tmp_path / "quickrun_style_output"
         warehouse_to_legacy_json(result_edges, out_dir=out_dir)
