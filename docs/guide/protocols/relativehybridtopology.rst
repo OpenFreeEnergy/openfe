@@ -119,6 +119,8 @@ The choice of lambda function can be configured via the protocol settings, for e
    settings = RelativeHybridTopologyProtocol.default_settings()
    settings.lambda_settings.lambda_functions = "namd"
 
+For more details on configuring protocol settings, see :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`.
+
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
@@ -219,7 +221,8 @@ See Also
 
 **How-to guides**
 
-:ref:`How-to guides <how_to_guides>`
+* :ref:`How-to guides <how_to_guides>`
+* :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`
 
 **API Documentation**
 

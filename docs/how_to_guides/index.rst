@@ -37,6 +37,7 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
    :caption: Planning: Protocols and alchemical networks
 
    choose_protocol
+   exploring_protocol_settings
    rfe_alchemical_planners
    create_alchemical_network
 
