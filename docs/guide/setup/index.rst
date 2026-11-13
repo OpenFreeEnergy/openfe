@@ -49,6 +49,7 @@ See :ref:`dumping transformations <dumping_transformations>` for more details.
 
    * :doc:`/how_to_guides/loading_molecules`
    * :doc:`/how_to_guides/user_charges`
+   * :doc:`/how_to_guides/charge_molecules_cli`
    * :doc:`/how_to_guides/bespoke_parameters`
 
    **Planning: Ligand networks**
