@@ -1331,6 +1331,8 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
                 if time_ps is None:
                     time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
+                del universe
+
         return per_state_data, time_ps
 
 
@@ -1353,7 +1355,7 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
         protein_selection: str | None,
     ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
         """
-        Run trjectory analysis for the complex phase.
+        Run trajectory analysis for the complex phase.
 
         Parameters
         ----------
@@ -1396,7 +1398,14 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
         # Passing u_top._topology to create_universe_single_state avoids
         # reading the PDB file from disk for every lambda.
         u_top = mda.Universe(pdb_file)
-        prot_indices = u_top.select_atoms(protein_selection).indices
+        # Ensure required host connectivity exists.
+        host = u_top.select_atoms(protein_selection)
+        host_atoms = host.residues.atoms
+        if host_atoms:
+            host_atoms.guess_bonds()
+
+        prot_indices = host.indices
+
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
             prot = universe.atoms[prot_indices]
@@ -1404,20 +1413,28 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
             lig_B = universe.atoms[ligand_B_indices]
             apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig_A, lig_B])
 
+            # Assign time based on the state's universe before transferring to memory
+            if time_ps is None:
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
+            # unwrap/shift/align run once per frame, here
+            universe.transfer_to_memory(step=skip)
+
+            # Protein selection is empty - e.g. not looking at a protein host
             if prot:
-                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
+                prot_rmsd2d = Protein2DRMSD(prot).run()
                 per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
 
             for label, lig, rdmol in [
                 ("ligand_A", lig_A, rdmol_A),
                 ("ligand_B", lig_B, rdmol_B),
             ]:
-                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+                lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run()
                 per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
 
-                lig_drift = LigandCOMDrift(lig).run(step=skip)
+                lig_drift = LigandCOMDrift(lig).run()
                 per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
 
-            if time_ps is None:
-                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+            del universe
+
         return per_state_data, time_ps
