@@ -15,7 +15,7 @@ For exact details on what is produced consult the :ref:`pages for each Protocol<
 .. todo crossref to HREX and MD Protocol docs from issue 743
 
 ``quickrun`` output files
----------------------------
+-------------------------
 
 Running a Transformation with :ref:`quickrun <userguide_quickrun>` produces a results JSON file and a work directory.
 

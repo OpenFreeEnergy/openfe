@@ -7,7 +7,7 @@ The results file written by ``openfe quickrun`` can be loaded in Python
 to access the free energy estimate as well as the per-repeat estimates and analysis data.
 
 Load a ``quickrun`` results file with Python
----------------------
+--------------------------------------------
 
 Load the file with gufe's JSON decoder, which restores the units of the stored values::
 
@@ -35,7 +35,7 @@ The dictionary contains four keys:
    See :ref:`howto_recover_quickrun` for how to read the error of a failed task.
 
 Load the ProtocolResult
----------------------------
+-----------------------
 
 To access more than the overall estimate, load the :class:`.ProtocolResult`:
 
