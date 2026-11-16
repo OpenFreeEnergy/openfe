@@ -180,8 +180,8 @@ results.
 
 Partial charges are assigned during protocol setup but can also
 be assigned in advance for reproducibility and to avoid repeated calculations.
-See :doc:`Assigning partial charges </how_to_guides/user_charges>` (Python API) or
-:doc:`Generating Partial Charges with the OpenFE CLI </tutorials/charge_molecules_cli_tutorial>`.
+See Assigning partial charges :doc:`with the Python API </how_to_guides/user_charges>` or
+:doc:`with the CLI </how_to_guides/charge_molecules_cli>`.
 
 .. rubric:: Binding poses
 

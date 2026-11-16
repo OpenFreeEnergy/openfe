@@ -15,6 +15,7 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
 
    loading_molecules
    user_charges
+   charge_molecules_cli
    bespoke_parameters
    packmol_memgen_setup
 
