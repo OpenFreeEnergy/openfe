@@ -203,10 +203,10 @@ evidence of ligand displacement.
 Trajectory output
 """""""""""""""""
 
-The trajectory of each leg is stored in two files:
+For each leg, the protocol writes:
 
-* a multistate trajectory (``simulation.nc``), and
-* its topology (``hybrid_system.pdb``).
+* the multistate trajectory (``simulation.nc``), and
+* its topology (``hybrid_system.pdb``) needed to read it.
 
 Only the atoms selected by ``output_indices`` in ``output_settings`` are saved, which by default excludes water.
 

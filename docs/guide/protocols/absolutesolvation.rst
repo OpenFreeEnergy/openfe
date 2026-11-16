@@ -118,10 +118,10 @@ the structural analysis is skipped.
 Trajectory output
 """""""""""""""""
 
-The trajectory of each leg is stored in two files:
+For each leg, the protocol writes:
 
 * a multistate trajectory (``vacuum.nc`` and ``solvent.nc``), and
-* its topology (``hybrid_system.pdb``).
+* its topology (``hybrid_system.pdb``) needed to read it.
 
 Only the atoms selected by ``output_indices`` in ``vacuum_output_settings`` and ``solvent_output_settings``
 are saved, which by default excludes water.

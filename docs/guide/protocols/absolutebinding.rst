@@ -135,10 +135,10 @@ the `Boresch restraint analysis tutorial
 Trajectory output
 """""""""""""""""
 
-The trajectory of each leg is stored in two files:
+For each leg, the protocol writes:
 
-* a multistate trajectory (``complex.nc`` and ``solvent.nc``), and
-* its topology (``alchemical_system.pdb``).
+* the multistate trajectory (``complex.nc`` and ``solvent.nc``), and
+* its topology (``alchemical_system.pdb``) needed to read it.
 
 Only the atoms selected by ``output_indices`` in ``complex_output_settings`` and ``solvent_output_settings``
 are saved, which by default excludes water.
