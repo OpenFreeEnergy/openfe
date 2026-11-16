@@ -6,10 +6,11 @@ import gufe
 import networkx as nx
 import pytest
 from gufe.protocols.protocolunit import ProtocolUnit
+from gufe.storage.externalresource import MemoryStorage
 
 from openfe.orchestration import Worker
 from openfe.orchestration.exorcist_utils import setup_task_campaign
-from openfe.storage.warehouse import FileSystemWarehouse
+from openfe.storage.warehouse import FileSystemWarehouse, WarehouseBaseClass, WarehouseStores
 
 
 def _get_result_store_files(warehouse: FileSystemWarehouse) -> set[str]:
@@ -248,3 +249,34 @@ def test_execute_unit_uses_isolated_shared_workspace_per_task(tmp_path):
     assert first_path.name == "simulation.nc"
     assert second_path.name == "simulation.nc"
     assert first_path.parent != second_path.parent
+
+
+def test_invalid_warehouse_type(tmp_path):
+    stores = WarehouseStores(
+        setup=MemoryStorage(),
+        results=MemoryStorage(),
+        shared=MemoryStorage(),
+        tasks=MemoryStorage(),
+        protocol_dags=MemoryStorage(),
+    )
+    db_path = tmp_path / "tasks.db"
+    first_unit = _FileWritingUnit(name="first")
+    second_unit = _FileWritingUnit(name="second")
+    warehouse = WarehouseBaseClass(stores, name="test_warehouse")
+
+    warehouse.store_task(first_unit)
+    warehouse.store_task(second_unit)
+
+    first_taskid = first_unit.key
+    second_taskid = second_unit.key
+
+    task_graph = nx.DiGraph()
+    task_graph.add_node(first_taskid)
+    task_graph.add_node(second_taskid)
+
+    db = exorcist.TaskStatusDB.from_filename(db_path)
+    db.add_task_network(task_graph, max_tries=1)
+
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+    with pytest.raises(TypeError, match="Expected a FileStorage backend"):
+        worker.execute_unit(scratch=tmp_path)
