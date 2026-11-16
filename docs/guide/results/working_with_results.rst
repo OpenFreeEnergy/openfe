@@ -39,8 +39,8 @@ have these tasks for each leg and repeat, for example ``SepTopComplexSetupUnit``
 The analysis directories contain plots for checking each repeat, such as the MBAR overlap matrix;
 see :ref:`multistate_analysis` for how to read them.
 
-Python API Results Classes
---------------------------
+Python API result classes
+-------------------------
 
 Results are built up in three levels, following the :ref:`execution model <userguide_execution_theory>`:
 

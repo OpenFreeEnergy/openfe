@@ -62,6 +62,5 @@ Post-Simulation Analysis
     septop_analysis_tutorial
     md_tutorial
     mixed_protocol_network_tutorial
-    plotting_with_cinnabar
     task_based_execution_cli
     task_based_execution_python_api
