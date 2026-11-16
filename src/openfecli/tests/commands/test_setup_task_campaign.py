@@ -12,8 +12,8 @@ from ..utils import assert_click_success
 
 # redefined b/c cannot share fixtures between openfe and openfecli
 @pytest.fixture
-def alchemical_network_mcl1_path(warehouse_partial_dir) -> Path:
-    return warehouse_partial_dir / "alchemical_network.json"
+def alchemical_network_mcl1_path(warehouse_data_cache_dir) -> Path:
+    return warehouse_data_cache_dir / "alchemicalNetwork_mc1_small.json"
 
 
 def test_setup_task_campaign(alchemical_network_mcl1_path):

@@ -14,9 +14,16 @@ pooch_warehouse_partial = pooch.create(
 
 
 @pytest.fixture
-def warehouse_partial_dir() -> Path:
-    pooch_warehouse_partial.fetch("warehouse_mcl1_small.gz", processor=pooch.Untar())
-    result_dir = Path(POOCH_CACHE) / "warehouse_mcl1_small.gz.untar/warehouse_mcl1_small/"
+def warehouse_data_cache_dir() -> Path:
+    pooch_warehouse_partial.fetch("warehouse_data.tar.gz", processor=pooch.Untar())
+    cached_dir = Path(POOCH_CACHE) / "warehouse_data.tar.gz.untar/warehouse_data/"
+
+    return cached_dir
+
+
+@pytest.fixture
+def warehouse_partial_dir(warehouse_data_cache_dir) -> Path:
+    result_dir = warehouse_data_cache_dir / "warehouse_mcl1/"
 
     return result_dir
 
