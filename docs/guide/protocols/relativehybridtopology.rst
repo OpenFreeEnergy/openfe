@@ -203,15 +203,15 @@ evidence of ligand displacement.
 Trajectory output
 """""""""""""""""
 
-Each leg writes two files:
+The trajectory of each leg is stored in two files:
 
 * a multistate trajectory (``simulation.nc``), and
 * its topology (``hybrid_system.pdb``).
 
-Only the atoms selected by ``output_indices`` are saved, which by default excludes water.
+Only the atoms selected by ``output_indices`` in ``output_settings`` are saved, which by default excludes water.
 
-The trajectory stores the positions of every replica at each iteration, together with the λ state each replica
-was in. It can therefore be read in two ways:
+The multistate trajectory stores the positions of every replica at each iteration, together with the λ state each
+replica was in. It can therefore be read in two ways:
 
 By λ state
    The frames sampled at a fixed λ state, taken from whichever replica occupied that state at each iteration.
@@ -220,10 +220,11 @@ By replica
    The frames of a single replica as it moves between λ states.
 
 How these differ depends on the
-:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`:
-with the default replica exchange sampler (``"repex"``), every λ state is occupied by exactly one replica at each
+:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`.
+With the default replica exchange sampler (``"repex"``), every λ state is occupied by exactly one replica at each
 iteration. With ``"independent"`` sampling, replicas never change state, so both give the same trajectory.
-With ``"sams"``, a λ state is not necessarily occupied at every iteration, so reading by state may not be possible.
+With ``"sams"``, several replicas can occupy the same λ state at an iteration while other states are empty,
+so the trajectory can only be read by replica.
 
 The accompanying topology (``hybrid_system.pdb``) contains the hybrid ligand, in which the core atoms are shared
 between both end states. Its temperature factors record which end state each atom belongs to:
@@ -235,9 +236,10 @@ between both end states. Its temperature factors record which end state each ato
 
 The atoms of end state A are therefore those with a temperature factor of ``0.5`` or lower,
 and the atoms of end state B are those with ``0.0``, ``0.5`` or ``0.75``.
-Both files can be loaded with `openfe_analysis`_ to visualize the simulation, extract the trajectories of the end states,
-or analyse them further; see :doc:`/how_to_guides/simulation_visualization`.
 
+Both files can be loaded with `openfe_analysis`_, for example to visualize the simulation or extract the
+trajectories of the end states. The :doc:`trajectory visualization how-to guide </how_to_guides/simulation_visualization>`
+shows how, including how to choose a λ state or replica with the ``index`` and ``index_method`` arguments.
 
 See Also
 --------
