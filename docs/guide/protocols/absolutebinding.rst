@@ -135,14 +135,28 @@ the `Boresch restraint analysis tutorial
 Trajectory output
 """""""""""""""""
 
-Each leg writes a multistate trajectory (``complex.nc`` and ``solvent.nc``) with its topology
-(``alchemical_system.pdb``). The trajectory stores the positions of every replica, together with the λ state each
-replica was in at each iteration. A trajectory can therefore be read in two ways: at a fixed λ **state**, combining
-frames from whichever replica occupied that state, or along a single **replica** as it moves between λ states.
-This applies to the default replica exchange sampler (``sampler_method = "repex"``).
-With ``"independent"`` sampling, replicas never change state, so both give the same trajectory;
-with ``"sams"``, a λ state is not necessarily occupied at every iteration, so reading by state may not be possible.
+Each leg writes two files:
+
+* a multistate trajectory (``complex.nc`` and ``solvent.nc``), and
+* its topology (``alchemical_system.pdb``).
+
 Only the atoms selected by ``output_indices`` are saved, which by default excludes water.
+
+The trajectory stores the positions of every replica at each iteration, together with the λ state each replica
+was in. It can therefore be read in two ways:
+
+By λ state
+   The frames sampled at a fixed λ state, taken from whichever replica occupied that state at each iteration.
+
+By replica
+   The frames of a single replica as it moves between λ states.
+
+How these differ depends on the
+:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`:
+with the default replica exchange sampler (``"repex"``), every λ state is occupied by exactly one replica at each
+iteration. With ``"independent"`` sampling, replicas never change state, so both give the same trajectory.
+With ``"sams"``, a λ state is not necessarily occupied at every iteration, so reading by state may not be possible.
+
 Both files can be loaded with `openfe_analysis`_ to visualize the simulation, extract the trajectories of the end states,
 or analyse them further; see :doc:`/how_to_guides/simulation_visualization`.
 
