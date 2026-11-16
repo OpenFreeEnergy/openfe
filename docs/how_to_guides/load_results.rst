@@ -3,12 +3,15 @@
 Load results in Python
 ======================
 
-The results file written by ``openfe quickrun`` can be loaded in Python
-to access the free energy estimate as well as the per-repeat estimates and analysis data.
+The result of a calculation is a :class:`.ProtocolResult`, which gives access to the free energy estimate
+as well as the per-repeat estimates and analysis data.
+This guide shows how to get it from a results file written by ``openfe quickrun``, or from a calculation run in Python.
+To collect the results of many calculations into a table from the command line, see :doc:`gather_results`.
 
 Load a ``quickrun`` results file with Python
 --------------------------------------------
 
+``openfe quickrun`` writes the results of a Transformation to a JSON file.
 Load the file with gufe's JSON decoder, which restores the units of the stored values::
 
   >>> import gufe
