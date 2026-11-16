@@ -14,7 +14,7 @@ For exact details on what is produced consult the :ref:`pages for each Protocol<
 
 .. todo crossref to HREX and MD Protocol docs from issue 743
 
-What a calculation produces
+``quickrun`` output files
 ---------------------------
 
 Running a Transformation with :ref:`quickrun <userguide_quickrun>` produces a results JSON file and a work directory.
@@ -39,7 +39,7 @@ have these tasks for each leg and repeat, for example ``SepTopComplexSetupUnit``
 The analysis directories contain plots for checking each repeat, such as the MBAR overlap matrix;
 see :ref:`multistate_analysis` for how to read them.
 
-How results are structured
+Python API Results Classes
 --------------------------
 
 Results are built up in three levels, following the :ref:`execution model <userguide_execution_theory>`:

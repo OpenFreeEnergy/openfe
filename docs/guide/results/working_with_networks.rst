@@ -31,7 +31,7 @@ i.e. there should be a way to trace a path along pairwise measurements between a
 
       \sum_i^N \Delta G^i_{exp} = \sum_i^N \Delta G^i_{pred}
 
-Gathering and analysing network results
+Gathering and analyzing network results
 ----------------------------------------
 
 The :ref:`openfe gather <cli_gather>` command collects the results of many individual calculations into a table,

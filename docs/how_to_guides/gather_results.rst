@@ -1,6 +1,6 @@
 .. _howto_gather_results:
 
-Gather free energy results
+Gather free energy results from ``quickrun`` outputs
 ==========================
 
 Once your quickrun calculations have finished, ``openfe gather`` combines their results files into one table.
