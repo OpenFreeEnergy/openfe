@@ -12,7 +12,7 @@ from openfe.orchestration.exorcist_utils import setup_task_campaign
 from openfe.storage.warehouse import FileSystemWarehouse
 
 
-def _result_store_files(warehouse: FileSystemWarehouse) -> set[str]:
+def _get_result_store_files(warehouse: FileSystemWarehouse) -> set[str]:
     result_root = Path(warehouse.result_store.root_dir)
     return {str(path.relative_to(result_root)) for path in result_root.rglob("*") if path.is_file()}
 
@@ -116,13 +116,13 @@ def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_r
 
 def test_execute_unit_stores_real_result(worker_with_executable_task_db, tmp_path):
     worker, warehouse, db, _ = worker_with_executable_task_db
-    before = _result_store_files(warehouse)
+    before = _get_result_store_files(warehouse)
 
     execution = worker.execute_unit(scratch=tmp_path / "scratch")
     assert execution is not None
     taskid, _ = execution
 
-    after = _result_store_files(warehouse)
+    after = _get_result_store_files(warehouse)
     assert len(after) > len(before)
     rows = list(db.get_all_tasks())
     status_by_taskid = {row.taskid: row.status for row in rows}
@@ -133,7 +133,7 @@ def test_execute_unit_propagates_execute_error_without_store(
     worker_with_executable_task_db, tmp_path
 ):
     worker, warehouse, db, unit = worker_with_executable_task_db
-    before = _result_store_files(warehouse)
+    before = _get_result_store_files(warehouse)
     taskid = list(db.get_all_tasks())[0].taskid
 
     with mock.patch.object(
@@ -145,7 +145,7 @@ def test_execute_unit_propagates_execute_error_without_store(
         with pytest.raises(RuntimeError, match="unit execution failed"):
             worker.execute_unit(scratch=tmp_path / "scratch")
 
-    after = _result_store_files(warehouse)
+    after = _get_result_store_files(warehouse)
     assert after == before
     rows = list(db.get_all_tasks())
     status_by_taskid = {row.taskid: row.status for row in rows}
