@@ -137,8 +137,8 @@ Trajectory output
 
 For each leg, the protocol writes:
 
-* the multistate trajectory (``complex.nc`` and ``solvent.nc``), and
-* its topology (``alchemical_system.pdb``) needed to read it.
+* the multistate trajectory (``complex.nc`` and ``solvent.nc``)
+* its topology (``alchemical_system.pdb``) needed to read the trajectory.
 
 Only the atoms selected by ``output_indices`` in ``complex_output_settings`` and ``solvent_output_settings``
 are saved, which by default excludes water.
