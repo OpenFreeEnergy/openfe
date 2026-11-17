@@ -53,13 +53,13 @@ def _get_dependency_free_unit(dummy_abfe_transformation):
 
 
 @pytest.fixture
-def worker_with_real_db(tmp_path, dummy_abfe_transformation):
+def worker_with_real_db(tmp_path, dummy_abfe_transformation) -> Worker:
     warehouse_root = tmp_path / "warehouse"
     db_path = tmp_path / "tasks.db"
     network = gufe.AlchemicalNetwork([dummy_abfe_transformation])
     db, warehouse = setup_task_campaign(network, warehouse_root, db_path=db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
-    return worker, warehouse, db
+    return worker
 
 
 @pytest.fixture
@@ -101,13 +101,13 @@ def test_get_task_uses_default_db_path_without_patching(
 
 
 def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
-    worker, warehouse, db = worker_with_real_db
-
+    worker = worker_with_real_db
+    db = exorcist.taskdb.TaskStatusDB.from_filename(worker.task_db_path)
     task_ids = [row.taskid for row in db.get_all_tasks()]
     expected_protocol_unit_keys = {task_id for task_id in task_ids}
 
     taskid, loaded = worker._get_task()
-    reloaded = warehouse.load_task(loaded.key)
+    reloaded = worker.warehouse.load_task(loaded.key)
 
     assert str(loaded.key) in expected_protocol_unit_keys
     assert loaded == reloaded
