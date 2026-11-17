@@ -211,26 +211,29 @@ class Worker:
 
         """
 
-        # TODO: split per-execution work into a helper function and add an "n" option here?
+        # 1. Define shared and scratch locations
         scratch = Path(scratch)
-        # 1. Get task/unit
-        task = self._checkout_task()
-        if task is None:
-            return None
-        db, taskid, unit = task
-        # 2. Construct the context
-        # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
-        # However, to satisfy the current work, we will use this implementation where we
-        # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
         shared_store = self.warehouse.stores["shared"]
         if not isinstance(shared_store, FileStorage):
             raise TypeError("Expected a FileStorage backend for the shared store")
         shared_root_dir = shared_store.root_dir
+
+        # 2. Get task/unit
+        task = self._checkout_task()
+        if task is None:
+            return None
+        db, taskid, unit = task
+
+        # 3. Construct the context
+        # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
+        # However, to satisfy the current work, we will use this implementation where we
+        # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
         task_scratch, task_shared = self._task_workspace_paths(taskid, scratch, shared_root_dir)
         task_scratch.mkdir(parents=True, exist_ok=True)
         task_shared.mkdir(parents=True, exist_ok=True)
         ctx = Context(task_scratch, shared=task_shared)
-        # 3. Execute unit
+
+        # 4. Execute unit
         try:
             # TODO: this var naming is confusing
             results: dict[GufeKey, ProtocolUnitResult] = self._build_input_result_mapping(unit)
@@ -241,7 +244,8 @@ class Worker:
             raise
 
         db.mark_task_completed(taskid, success=result.ok())
-        # 4. output result to warehouse
+
+        # 5. output result to warehouse
         # TODO: we may need to end up handling namespacing on the warehouse side for tokenizables
         self.warehouse.store_results_tokenizable(result)
         self._store_result_index(result)
