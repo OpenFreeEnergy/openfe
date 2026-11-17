@@ -19,8 +19,7 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
    bespoke_parameters
    packmol_memgen_setup
 
-.. TODO: merge cofactors_rbfe into loading_molecules,
-   "Create a ChemicalSystem", "Specify custom force fields", OpenFold3 notebooks.
+.. TODO: "Create a ChemicalSystem", "Specify custom force fields", OpenFold3 notebooks.
 
 .. toctree::
    :maxdepth: 1
