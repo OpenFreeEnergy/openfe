@@ -22,7 +22,7 @@ Running a Transformation with :ref:`quickrun <userguide_quickrun>` produces a re
 The **results file** contains the free energy estimate of the Transformation and its uncertainty,
 the full :class:`.ProtocolResult` and the output of every task.
 
-The **work directory** contains one subdirectory per task (``ProtocolUnit``) and attempt.
+The **work directory** contains one subdirectory per task (:class:``.ProtocolUnit``) and attempt.
 For the Relative Hybrid Topology Protocol, each repeat has a setup, a simulation and an analysis task:
 
 .. code-block:: text
