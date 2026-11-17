@@ -757,18 +757,23 @@ def gather(
     All directories will be walked recursively and any valid JSON results files will be gathered.
     Files must end in .json to be collected, and invalid files will be ignored.
 
-    The results reported depends on ``--report`` flag:
+    The results reported depend on ``--report`` flag:
 
     \b
     * ``--report=dg`` (default) reports the ligand, its absolute free energy, and
       the associated uncertainty as the maximum likelihood estimate obtained
-      from DDG replica averages and standard deviations.  These MLE estimates
+      from DDG replica averages and standard deviations. These MLE estimates
       are centred around 0.0, and when plotted can be shifted to match
-      experimental values.
-    * ``--report=ddg`` reports pairs of ligand_i and ligand_j, the calculated
+      experimental values. The results network must be connected and contain
+      at least three edges, and every leg must have at least two repeats.
+    * ``--report=ddg`` reports, for each pair of ligand_i and ligand_j, the
       relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
-    * ``--report=raw`` reports the raw results, which each repeat simulation given
-      separately (i.e. no combining of redundant simulations is performed)
+      For binding free energies this is the difference between the complex and
+      solvent legs, and for hydration free energies between the solvent and
+      vacuum legs, each averaged over its repeats.  The uncertainty combines the
+      standard deviations of the repeats of both legs.
+    * ``--report=raw`` reports the free energy difference DG(i->j) of every leg and repeat
+      separately, without combining repeats or legs, with its MBAR uncertainty.
 
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to specify an output filepath.
