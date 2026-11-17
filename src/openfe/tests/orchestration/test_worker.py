@@ -85,7 +85,7 @@ def worker_with_executable_unit(tmp_path, dummy_abfe_transformation):
     task_graph.add_node(taskid)
 
     db = exorcist.TaskStatusDB.from_filename(db_path)
-    db.add_task_network(task_graph, 1)
+    db.add_task_network(task_graph, max_tries=1)
 
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
     return worker, warehouse, db, unit
@@ -94,6 +94,7 @@ def worker_with_executable_unit(tmp_path, dummy_abfe_transformation):
 def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
     worker = worker_with_real_db
     db = exorcist.taskdb.TaskStatusDB.from_filename(worker.task_db_path)
+
     task_ids = [row.taskid for row in db.get_all_tasks()]
     expected_protocol_unit_keys = {task_id for task_id in task_ids}
 
