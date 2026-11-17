@@ -10,6 +10,7 @@ Setting up a calculation generally involves:
 * :ref:`Preparing the input structures <userguide_preparing_inputs>`.
 * Loading the structures and creating :class:`.ChemicalSystem` objects.
 * Defining the :class:`.Protocol` with specific `ProtocolSettings`.
+* Choosing a :ref:`molecular model <userguide_model_building>`, including force fields and partial charges.
 * Creating :class:`.LigandAtomMapping` objects for relative free energy calculation `Protocols`.
 
 .. image:: img/setup_1x.png
@@ -36,6 +37,7 @@ More detailed guidance is available in the following sections:
    chemical_systems_and_thermodynamic_cycles
    creating_atom_mappings_and_scores
    defining_protocols
+   model_building
    creating_ligand_networks
    alchemical_network_model
 

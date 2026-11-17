@@ -113,9 +113,8 @@ These categories indicate the current level of experience with
 **openfe**, rather than a guarantee of accuracy for a given system.
 
 Support also depends on the selected force fields and on system
-preparation.
-
-.. TODO: Link to a dedicated page on force fields and system parameterization.
+preparation. See :ref:`userguide_model_building` for force fields and system
+parameterization.
 
 :octicon:`check-circle-fill;1em;sd-text-success` Well tested
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
