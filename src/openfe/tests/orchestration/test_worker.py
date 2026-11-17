@@ -53,6 +53,16 @@ def _get_dependency_free_unit(dummy_abfe_transformation):
 
 
 @pytest.fixture
+def worker_with_empty_db(tmp_path) -> Worker:
+    warehouse_root = tmp_path / "warehouse"
+    db_path = tmp_path / "tasks.db"
+    warehouse = FileSystemWarehouse(warehouse_root)
+    _ = exorcist.TaskStatusDB.from_filename(db_path)
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+    return worker
+
+
+@pytest.fixture
 def worker_with_real_db(tmp_path, dummy_abfe_transformation) -> Worker:
     warehouse_root = tmp_path / "warehouse"
     db_path = tmp_path / "tasks.db"
@@ -152,26 +162,12 @@ def test_execute_unit_propagates_execute_error_without_store(
     assert status_by_taskid[taskid] == exorcist.TaskStatus.TOO_MANY_RETRIES.value
 
 
-def test_checkout_task_returns_none_when_no_available_tasks(tmp_path):
-    warehouse_root = tmp_path / "warehouse"
-    db_path = tmp_path / "tasks.db"
-    warehouse_root.mkdir(parents=True, exist_ok=True)
-    warehouse = FileSystemWarehouse.from_dir(str(warehouse_root))
-    exorcist.TaskStatusDB.from_filename(db_path)
-    worker = Worker(warehouse=warehouse, task_db_path=db_path)
-
-    assert worker._checkout_task() is None
+def test_checkout_task_returns_none_when_no_available_tasks(worker_with_empty_db, tmp_path):
+    assert worker_with_empty_db._checkout_task() is None
 
 
-def test_execute_unit_returns_none_when_no_available_tasks(tmp_path):
-    warehouse_root = tmp_path / "warehouse"
-    db_path = tmp_path / "tasks.db"
-    warehouse_root.mkdir(parents=True, exist_ok=True)
-    warehouse = FileSystemWarehouse.from_dir(str(warehouse_root))
-    exorcist.TaskStatusDB.from_filename(db_path)
-    worker = Worker(warehouse=warehouse, task_db_path=db_path)
-
-    assert worker.execute_unit(scratch=tmp_path / "scratch") is None
+def test_execute_unit_returns_none_when_no_available_tasks(worker_with_empty_db, tmp_path):
+    assert worker_with_empty_db.execute_unit(scratch=tmp_path / "scratch") is None
 
 
 def test_execute_unit_resolves_dependency_results(tmp_path):
