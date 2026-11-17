@@ -14,7 +14,7 @@ for creating and changing settings, see :ref:`defining-protocols`.
 
 The simulation model is assembled from several choices:
 
-* **Protein and other non-small-molecule components:** OpenMM force-field XML
+* **Protein and other non-small-molecule components:** OpenMM force field XML
   files supply parameters for the protein and, depending on the files, water,
   ions, lipids and other residues.
 * **Ligands and small-molecule cofactors:** a separate small-molecule force
@@ -60,6 +60,7 @@ the following replaces ff14SB with ff19SB::
 
 Force fields are provided via `OpenMMForceFields <https://openmm.github.io/openmmforcefields/dev/userguide.html#user-guide>`_, see
 the documentation for the available options.
+
 It is important to choose a compatible set of protein, water and ion parameters for your
 application; replacing the protein XML alone does not establish that the
 resulting combination has been validated. You should also check that the selected force
@@ -71,42 +72,37 @@ Small-molecule force fields
 The ``forcefield_settings.small_molecule_forcefield`` setting selects the
 force field for ligands and other :class:`.SmallMoleculeComponent`\s. The
 default is ``openff-2.2.1``. OpenMMForceFields supports OpenFF (SMIRNOFF),
-GAFF (General Amber Force Field) and Espaloma force-field families.
+GAFF (General Amber Force Field) and Espaloma force field families.
 For example, to select OpenFF-2.3.0 before creating the protocol::
 
    settings.forcefield_settings.small_molecule_forcefield = "openff-2.3.0"
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
 It is important to select a force field with sufficient accuracy for your molecules, you can also use custom parameters, see the
-:doc:`bespoke force field how-to </cookbook/bespoke_parameters>`.
+:doc:`bespoke force field how-to guide </how_to_guides/bespoke_parameters>`.
 
-For all available force-field settings, see :class:`.OpenMMSystemGeneratorFFSettings`.
+For all available force field settings, see :class:`.OpenMMSystemGeneratorFFSettings`.
 
 Cofactors and other retained molecules
 --------------------------------------
 
 Noncovalent cofactors prepared as :class:`.SmallMoleculeComponent`\s use the
-same small-molecule force field and partial-charge workflow as ligands, even
-when they remain unchanged in a protein complex. Use consistent cofactor
+same small-molecule force field and partial-charge workflow as ligands. Therefore you should use consistent cofactor
 parameters and charges across the calculations being compared.
 
 Structural ions and crystallographic waters retained in a protein input are
 instead parameterized through the appropriate OpenMM XML files. See
-:ref:`prep_cofactors` for preparation requirements and limitations:
-metal-containing cofactors such as heme are not supported by the standard
-preparation workflow.
+:ref:`prep_cofactors` for preparation requirements and limitations.
 
 .. _userguide_partial_charges:
 
 Partial charges
 ---------------
 
-For ligands and cofactors represented as a SmallMoleculeComponent, the partial charges are assigned using the following order of preference:
+For ligands and cofactors represented as a :class:`.SmallMoleculeComponent`, the partial charges used in the simulated model are assigned with the following order of preference:
 
-1. If the component contains partial charges and at least one charge is nonzero, those charges are retained.
-2. If charges are absent or all zero, the protocol assigns charges during setup using ``partial_charge_settings``.
-
-The small-molecule force-field selection and the charge-assignment settings are there separate choices allowing for finer control of the model construction.
+1. If the component contains partial charges and at least one charge is nonzero, those charges are used.
+2. If charges are absent or all zero, the protocol assigns charges during setup using the method configured by ``partial_charge_settings``.
 
 .. note::
     By default **AM1-BCC** charges are assigned via the AmberTools backend
@@ -114,7 +110,7 @@ The small-molecule force-field selection and the charge-assignment settings are 
     OpenFF force field independently, since the charge method or backend may differ.
 
 Assigning charges in advance to the input components ensures consistency between calculation repeats and different legs of a transformation,
-see :doc:`Assigning partial charges </cookbook/user_charges>` (Python) and :doc:`Generating partial charges with the OpenFE CLI </tutorials/charge_molecules_cli_tutorial>`.
+see :doc:`Assigning partial charges </how_to_guides/user_charges>` (Python) and :doc:`Generating partial charges with the OpenFE CLI </how_to_guides/charge_molecules_cli>`.
 
 Available charge methods
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,8 +137,6 @@ method used when charges need to be assigned during protocol setup. The availabl
    * - ``espaloma``
      - Charges predicted by Espaloma Charge. Requires ``espaloma_charge``.
 
-The default ``number_of_conformers`` is unset, so the input conformer is used.
-Generating more than one conformer is only supported with ``am1bccelf10``.
 The backend and charge method must be compatible; for example, RDKit alone
 cannot generate conventional AM1-BCC charges. See
 :class:`.OpenFFPartialChargeSettings` for the available settings and backend
@@ -154,7 +148,7 @@ supported by the SMIRNOFF format, such as small-molecule library charges.
 See :ref:`userguide_cli_yaml_interface` for the CLI options.
 
 Choosing a charge model
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Small-molecule force fields are typically optimised for a specific charge model,
 you should check the documentation and literature for the force field you are using to ensure compatibility.
@@ -163,13 +157,12 @@ Some useful references for charge assignment and force field compatibility are:
 * `OpenFF force fields <https://github.com/openforcefield/openff-forcefields>`_
   documents the charge models used by OpenFF releases.
 * The `OpenFF FAQ <https://docs.openforcefield.org/en/latest/faq.html#under-the-hood>`_
-  explains charge assignment when applying a SMIRNOFF force field.
+  explains charge assignment when applying a SMIRNOFF force field (see the "How are partial charges assigned in a SMIRNOFF force field?" section).
 * The `AmberTools documentation <https://ambermd.org/AmberTools.php>`_ provides
   guidance for GAFF.
 
-For guides on charge assignment, see :doc:`Assigning partial charges
-</cookbook/user_charges>` (Python) and :doc:`Generating partial charges with
-the OpenFE CLI </tutorials/charge_molecules_cli_tutorial>`.
+For guides on charge assignment, see :doc:`Assigning partial charges </how_to_guides/user_charges>` (Python)
+and :doc:`Generating partial charges with the OpenFE CLI </how_to_guides/charge_molecules_cli>`.
 
 Water and model compatibility
 -----------------------------
@@ -177,12 +170,11 @@ Water and model compatibility
 For systems solvated during protocol setup, the ``solvent_model`` selects the water model
 used when adding solvent. The water and ion XML files in
 ``forcefield_settings.forcefields`` must be compatible with those choices e.g. a 4-point water model cannot be used with a 3-point force field.
-The same force-field files must also cover any retained crystallographic
-waters and ions.
+The same force field files must also cover any retained crystallographic ions.
 
 For a pre-solvated input, the protocol does not add solvent to that leg: the
 provided waters and ions must still be compatible with the selected
-force-field parameters. See :ref:`userguide_solvation_models` for more details on implicit and explicit solvation in
+force field parameters. See :ref:`userguide_solvation_models` for more details on implicit and explicit solvation in
 the protocols.
 
 See also
@@ -191,7 +183,7 @@ See also
 * :ref:`Preparing input structures <userguide_preparing_inputs>`
 * :ref:`Defining settings and protocols <defining-protocols>`
 * :ref:`Protocols and domain of applicability <userguide_protocols>`
-* :doc:`Assigning partial charges </cookbook/user_charges>`
-* :doc:`Generating partial charges with the OpenFE CLI </tutorials/charge_molecules_cli_tutorial>`
-* :doc:`Bespoke parameters </cookbook/bespoke_parameters>`
+* :doc:`Assigning partial charges </how_to_guides/user_charges>`
+* :doc:`Generating partial charges with the OpenFE CLI </how_to_guides/charge_molecules_cli>`
+* :doc:`Bespoke parameters </how_to_guides/bespoke_parameters>`
 * :ref:`OpenMM protocol settings API <openmm protocol settings api>`
