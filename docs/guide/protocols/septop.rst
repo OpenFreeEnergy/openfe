@@ -149,8 +149,8 @@ Trajectory output
 
 For each leg, the protocol writes:
 
-* the multistate trajectory (``complex.nc`` and ``solvent.nc``), and
-* its topology (``alchemical_system.pdb``) needed to read it.
+* the multistate trajectory (``complex.nc`` and ``solvent.nc``)
+* its topology (``alchemical_system.pdb``) needed to read the trajectory.
 
 Only the atoms selected by ``output_indices`` in ``complex_output_settings`` and ``solvent_output_settings``
 are saved, which by default excludes water.
@@ -165,16 +165,20 @@ By replica
    The frames of a single replica as it moves between λ states.
 
 How these differ depends on the
-:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`.
-With the default replica exchange sampler (``"repex"``), every λ state is occupied by exactly one replica at each
-iteration. With ``"independent"`` sampling, replicas never change state, so both give the same trajectory.
-With ``"sams"``, several replicas can occupy the same λ state at an iteration while other states are empty,
-so the trajectory can only be read by replica.
+:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`:
 
-Unlike the hybrid topology, both ligands are present with their own atoms in every λ state; what changes along
-the λ schedule is how strongly each ligand interacts with its environment. In the first λ state, ligand A is fully
-interacting and ligand B is decoupled; in the last λ state, the reverse is true. The atoms of each end state are
-therefore the environment atoms together with the atoms of the respective ligand.
+* ``"repex"`` (replica exchange, the default): every λ state is occupied by exactly one replica at each iteration,
+  so the trajectory can be read both by state and by replica.
+* ``"independent"``: replicas never change state, so reading by state and by replica give the same trajectory.
+* ``"sams"``: several replicas can occupy the same λ state at an iteration while other states are empty,
+  so the trajectory can only be read by replica.
+
+When the ligands are included in ``output_indices``, as they are by default, both are present in every λ state,
+each as a separate residue (``LIG``, with its own residue number). Unlike in the hybrid topology, where the core
+atoms are shared and only the unique atoms are switched on or off, each ligand has its own complete set of atoms,
+and the whole ligand is coupled to or decoupled from its environment along the λ schedule.
+In the first λ state, ligand A is fully interacting and ligand B is decoupled; in the last λ state, the reverse is
+true.
 
 Both files can be loaded with `openfe_analysis`_, for example to visualize the simulation or extract the
 trajectories of the end states. The :doc:`trajectory visualization how-to guide </how_to_guides/simulation_visualization>`

@@ -205,8 +205,8 @@ Trajectory output
 
 For each leg, the protocol writes:
 
-* the multistate trajectory (``simulation.nc``), and
-* its topology (``hybrid_system.pdb``) needed to read it.
+* the multistate trajectory (``simulation.nc``)
+* its topology (``hybrid_system.pdb``) needed to read the trajectory.
 
 Only the atoms selected by ``output_indices`` in ``output_settings`` are saved, which by default excludes water.
 
@@ -220,14 +220,17 @@ By replica
    The frames of a single replica as it moves between λ states.
 
 How these differ depends on the
-:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`.
-With the default replica exchange sampler (``"repex"``), every λ state is occupied by exactly one replica at each
-iteration. With ``"independent"`` sampling, replicas never change state, so both give the same trajectory.
-With ``"sams"``, several replicas can occupy the same λ state at an iteration while other states are empty,
-so the trajectory can only be read by replica.
+:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`:
 
-The accompanying topology (``hybrid_system.pdb``) contains the hybrid ligand, in which the core atoms are shared
-between both end states. Its temperature factors record which end state each atom belongs to:
+* ``"repex"`` (replica exchange, the default): every λ state is occupied by exactly one replica at each iteration,
+  so the trajectory can be read both by state and by replica.
+* ``"independent"``: replicas never change state, so reading by state and by replica give the same trajectory.
+* ``"sams"``: several replicas can occupy the same λ state at an iteration while other states are empty,
+  so the trajectory can only be read by replica.
+
+When the ligand is included in ``output_indices``, as it is by default, the accompanying topology
+(``hybrid_system.pdb``) contains the hybrid ligand, in which the core atoms are shared between both end states.
+The temperature record field details which end state each atom belongs to:
 
 * ``0.0``: environment atoms (protein, ions and any saved solvent)
 * ``0.25``: atoms unique to ligand A
