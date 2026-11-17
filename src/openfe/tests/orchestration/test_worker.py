@@ -73,10 +73,10 @@ def worker_with_real_db(tmp_path, dummy_abfe_transformation) -> Worker:
 
 
 @pytest.fixture
-def worker_with_executable_task_db(tmp_path, dummy_abfe_transformation):
+def worker_with_executable_unit(tmp_path, dummy_abfe_transformation):
     warehouse_root = tmp_path / "warehouse"
     db_path = tmp_path / "tasks.db"
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    warehouse = FileSystemWarehouse(warehouse_root)
     unit = _get_dependency_free_unit(dummy_abfe_transformation)
     warehouse.store_task(unit)
 
@@ -124,8 +124,8 @@ def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_r
     assert taskid == loaded.key
 
 
-def test_execute_unit_stores_real_result(worker_with_executable_task_db, tmp_path):
-    worker, warehouse, db, _ = worker_with_executable_task_db
+def test_execute_unit_stores_real_result(worker_with_executable_unit, tmp_path):
+    worker, warehouse, db, _ = worker_with_executable_unit
     before = _get_result_store_files(warehouse)
 
     execution = worker.execute_unit(scratch=tmp_path / "scratch")
@@ -139,10 +139,8 @@ def test_execute_unit_stores_real_result(worker_with_executable_task_db, tmp_pat
     assert status_by_taskid[taskid] == exorcist.TaskStatus.COMPLETED.value
 
 
-def test_execute_unit_propagates_execute_error_without_store(
-    worker_with_executable_task_db, tmp_path
-):
-    worker, warehouse, db, unit = worker_with_executable_task_db
+def test_execute_unit_propagates_execute_error_without_store(worker_with_executable_unit, tmp_path):
+    worker, warehouse, db, unit = worker_with_executable_unit
     before = _get_result_store_files(warehouse)
     taskid = list(db.get_all_tasks())[0].taskid
 
@@ -173,7 +171,7 @@ def test_execute_unit_returns_none_when_no_available_tasks(worker_with_empty_db,
 def test_execute_unit_resolves_dependency_results(tmp_path):
     warehouse_root = tmp_path / "warehouse"
     db_path = tmp_path / "tasks.db"
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    warehouse = FileSystemWarehouse(warehouse_root)
 
     first_unit = _ToyProtocolUnit(name="first", increment=1)
     second_unit = _ToyProtocolUnit(name="second", upstream=first_unit, increment=2)
