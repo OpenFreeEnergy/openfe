@@ -248,7 +248,7 @@ class TestFileSystemWarehouse:
             "load_setup_tokenizable",
         )
 
-    def test_filesystemwarehouse_has_shared_and_tasks_stores(self, dummy_abfe_transformation):
+    def test_filesystem_warehouse_has_shared_and_tasks_stores(self, dummy_abfe_transformation):
         unit = TestWarehouseBaseClass._get_protocol_unit(dummy_abfe_transformation)
 
         with tempfile.TemporaryDirectory() as tmpdir:
