@@ -121,7 +121,7 @@ Trajectory output
 For each leg, the protocol writes:
 
 * a multistate trajectory (``vacuum.nc`` and ``solvent.nc``)
-* its topology (``hybrid_system.pdb``) needed to read the trajectory.
+* its topology (``hybrid_system.pdb``) needed to read the trajectory
 
 Only the atoms selected by ``output_indices`` in ``vacuum_output_settings`` and ``solvent_output_settings``
 are saved, which by default excludes water.

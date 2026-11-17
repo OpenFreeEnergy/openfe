@@ -400,7 +400,7 @@ def gather_septop(
     All directories will be walked recursively and any valid JSON results files will be gathered.
     Files must end in .json to be collected, and invalid files will be ignored.
 
-    Each JSON contains the results of a separate leg from a Separated Topologies calculation.
+    Each JSON contains the results of both legs (complex and solvent) of a Separated Topologies Transformation.
     See https://docs.openfree.energy/en/latest/tutorials/septop_tutorial.html for details on running SepTop calculations.
 
     The results reported depend on ``--report`` flag:
@@ -408,9 +408,8 @@ def gather_septop(
     \b
     * ``--report=dg`` (default) reports the ligand, its absolute free energy, and
       the associated uncertainty as the maximum likelihood estimate obtained
-      from DDG replica averages and standard deviations.  These MLE estimates
-      are centred around 0.0, and when plotted can be shifted to match
-      experimental values.
+      from the DDG values.  These MLE estimates are centred around 0.0, and
+      when plotted can be shifted to match experimental values.
     * ``--report=ddg`` reports, for each pair of ligand_i and ligand_j, the
       relative binding free energy DDG(i->j) = DG(j) - DG(i), averaged over
       the repeats, and its uncertainty.  The uncertainty is the standard deviation
