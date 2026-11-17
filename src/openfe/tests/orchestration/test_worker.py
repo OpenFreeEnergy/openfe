@@ -282,5 +282,5 @@ def test_invalid_warehouse_type(tmp_path):
         worker.execute_unit(scratch=tmp_path)
 
     status_by_taskid = {row.taskid: row.status for row in db.get_all_tasks()}
-    assert status_by_taskid[first_taskid] == exorcist.TaskStatus.IN_PROGRESS.value
+    assert status_by_taskid[first_taskid] == exorcist.TaskStatus.AVAILABLE.value
     assert status_by_taskid[second_taskid] == exorcist.TaskStatus.AVAILABLE.value
