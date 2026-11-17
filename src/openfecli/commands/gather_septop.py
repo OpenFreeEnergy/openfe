@@ -348,9 +348,10 @@ def _generate_raw(
     default="dg",
     show_default=True,
     help=(
-        "What data to report. 'dg' gives the maximum-likelihood estimate derived "
-        "absolute deltaG value,  'ddg' gives delta-delta-G, and 'raw' gives "
-        "the raw result of the deltaG for a leg."
+        "Which report to generate: 'dg' for the binding free energy of each ligand, "
+        "estimated from the network by MLE and centred around zero; "
+        "'ddg' for the relative binding free energy of each ligand pair; "
+        "or 'raw' for the free energy difference of each leg and repeat."
     ),
 )
 @click.option(

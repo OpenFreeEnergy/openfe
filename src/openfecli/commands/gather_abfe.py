@@ -263,8 +263,8 @@ def _generate_dg_raw(results_dict: dict[str, dict[str, list]], allow_partial: bo
     default="dg",
     show_default=True,
     help=(
-        "What data to report. 'dg' computes the overall binding free energy of each ligand in the dataset (dG), and"
-        "'raw' outputs the raw dG values for each individual leg in the ABFE transformation cycles."
+        "Which report to generate: 'dg' for the binding free energy of each ligand, "
+        "or 'raw' for the free energy difference of each leg and repeat."
     ),
 )
 @click.option(
