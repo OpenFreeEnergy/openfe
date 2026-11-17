@@ -38,9 +38,9 @@ zenodo_abfe_structural = dict(
     known_hash="md5:e6afa6447960c473497f60036b0f8c5e",
 )
 zenodo_warehouse_partial = dict(
-    base_url="doi:10.5281/zenodo.24144569",
+    base_url="doi:10.5281/zenodo.24318287",
     fname="warehouse_data.tar.gz",
-    known_hash="md5:f61841821dcbc088296feb925fc0436d",
+    known_hash="md5:48ed4030bff5aacf82bd00eef47a0474",
 )
 zenodo_data_registry: list[dict[str, str]] = [
     zenodo_rfe_simulation_nc,
