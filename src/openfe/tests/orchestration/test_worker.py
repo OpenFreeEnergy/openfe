@@ -116,6 +116,7 @@ def test_execute_unit_stores_real_result(worker_with_executable_unit, tmp_path):
 
     after = _get_result_store_files(warehouse)
     assert len(after) > len(before)
+
     rows = list(db.get_all_tasks())
     status_by_taskid = {row.taskid: row.status for row in rows}
     assert status_by_taskid[taskid] == exorcist.TaskStatus.COMPLETED.value
