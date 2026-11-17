@@ -45,13 +45,6 @@ class _FileWritingUnit(ProtocolUnit):
         return {"shared_file": str(shared_file)}
 
 
-def _get_dependency_free_unit(dummy_abfe_transformation):
-    for unit in dummy_abfe_transformation.create().protocol_units:
-        if not _contains_protocol_unit(unit.inputs):
-            return unit
-    raise ValueError("No dependency-free protocol unit found for execution test setup.")
-
-
 @pytest.fixture
 def worker_with_empty_db(tmp_path) -> Worker:
     warehouse_root = tmp_path / "warehouse"
@@ -77,6 +70,13 @@ def worker_with_executable_unit(tmp_path, dummy_abfe_transformation):
     warehouse_root = tmp_path / "warehouse"
     db_path = tmp_path / "tasks.db"
     warehouse = FileSystemWarehouse(warehouse_root)
+
+    def _get_dependency_free_unit(dummy_abfe_transformation):
+        for unit in dummy_abfe_transformation.create().protocol_units:
+            if not _contains_protocol_unit(unit.inputs):
+                return unit
+        raise ValueError("No dependency-free protocol unit found for execution test setup.")
+
     unit = _get_dependency_free_unit(dummy_abfe_transformation)
     warehouse.store_task(unit)
 
