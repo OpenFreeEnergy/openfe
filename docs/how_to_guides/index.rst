@@ -63,6 +63,7 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
    gather_results
    plotting_with_cinnabar
    load_results
+   simulation_visualization
    jq_inspection
 
 .. TODO: merge dumping_transformation and jq_inspection into a single
