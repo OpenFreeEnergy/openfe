@@ -26,19 +26,18 @@ The ``raw`` report keeps each repeat separate.
 Choose a report
 ---------------
 
-``--report ddg``
-   The relative binding or hydration free energy of each ligand pair,
-   ``DDG(i->j) = DG(j) - DG(i)``, and its uncertainty.
+Choose the report by what you want to look at:
 
-``--report dg`` (default)
-   The free energy of each ligand in a network, estimated using a maximum likelihood estimator.
-   These values are centred around zero.
-   The network must be connected, contain at least three edges, and have
-   at least two repeats per leg. See :ref:`userguide_MLE`.
+* To see how each ligand differs from its neighbours in the network, use ``--report ddg``.
+  It gives the relative free energy of each edge.
+* To rank all ligands on a single scale, use ``--report dg`` (the default).
+  It estimates a free energy for each ligand from the whole network using a maximum likelihood estimator.
+  The values are centred around zero, so only the differences between ligands are meaningful.
+  This needs a connected network with at least three edges and at least two repeats per leg.
+* To check whether the repeats of a leg agree, use ``--report raw``.
+  It lists the free energy of every leg and repeat separately, with its MBAR uncertainty.
 
-``--report raw``
-   The free energy of every leg and repeat separately, with its MBAR uncertainty (bootstrapped).
-   Use this to check whether the repeats of a leg agree.
+See :ref:`cli_gather` for what each report contains.
 
 Without ``-o``, the table is printed to the terminal.
 Add ``--tsv`` to print it as tab-separated values.

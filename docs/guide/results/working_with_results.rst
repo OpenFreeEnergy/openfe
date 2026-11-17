@@ -17,13 +17,14 @@ For exact details on what is produced consult the :ref:`pages for each Protocol<
 ``quickrun`` output files
 -------------------------
 
-Running a Transformation with :ref:`quickrun <userguide_quickrun>` produces a results JSON file and a work directory.
+Running a :class:`.Transformation` with :ref:`quickrun <userguide_quickrun>` produces a results JSON file and a work directory.
 
-The **results file** contains the free energy estimate of the Transformation and its uncertainty,
+The **results file** contains the free energy estimate of the :class:`.Transformation` and its uncertainty,
 the full :class:`.ProtocolResult` and the output of every task.
 
 The **work directory** contains one subdirectory per task (``ProtocolUnit``) and attempt.
-For the Relative Hybrid Topology Protocol, each repeat has a setup, a simulation and an analysis task:
+For the :ref:`Relative Hybrid Topology Protocol <userguide_relative_hybrid_topology_protocol>`,
+each repeat has a setup, a simulation and an analysis task:
 
 .. code-block:: text
 
@@ -34,7 +35,8 @@ For the Relative Hybrid Topology Protocol, each repeat has a setup, a simulation
    ├── shared_HybridTopologyMultiStateAnalysisUnit-<key>_attempt_0/     (analysis plots)
    └── ...                                                              (the same for each repeat)
 
-Protocols with several legs in one Transformation, such as the Separated Topologies Protocol,
+Protocols with several legs in one :class:`.Transformation`, such as the :ref:`Separated Topologies <userguide_septop_protocol>`
+and :ref:`Absolute Binding <userguide_abfe_protocol>` Protocols,
 have these tasks for each leg and repeat, for example ``SepTopComplexSetupUnit`` and ``SepTopSolventSetupUnit``.
 The analysis directories contain plots for checking each repeat, such as the MBAR overlap matrix;
 see :ref:`multistate_analysis` for how to read them.
@@ -45,7 +47,7 @@ Python API result classes
 Results are built up in three levels, following the :ref:`execution model <userguide_execution_theory>`:
 
 * A :class:`.ProtocolUnitResult` holds the output of a single task, or its error if the task failed.
-* A :class:`.ProtocolDAGResult` holds the results of all tasks from one execution of a Transformation,
+* A :class:`.ProtocolDAGResult` holds the results of all tasks from one execution of a :class:`.Transformation`,
   including all of its repeats.
 * A :class:`.ProtocolResult` combines one or more ``ProtocolDAGResult``\s and computes the free energy estimate
   and its uncertainty, available through its ``get_estimate()`` and ``get_uncertainty()`` methods.
