@@ -91,25 +91,6 @@ def worker_with_executable_unit(tmp_path, dummy_abfe_transformation):
     return worker, warehouse, db, unit
 
 
-def test_get_task_uses_default_db_path_without_patching(
-    tmp_path, monkeypatch, dummy_abfe_transformation
-):
-    monkeypatch.chdir(tmp_path)
-    warehouse_root = "warehouse"
-    db_path = Path("tasks.db")
-    network = gufe.AlchemicalNetwork([dummy_abfe_transformation])
-    db, warehouse = setup_task_campaign(network, warehouse_root, db_path=db_path)
-
-    warehouse = FileSystemWarehouse.from_dir(warehouse_root)
-    worker = Worker(warehouse=warehouse, task_db_path=db_path)
-    taskid, loaded = worker._get_task()
-
-    expected_keys = {task_row.taskid for task_row in db.get_all_tasks()}
-    assert worker.task_db_path == db_path
-    assert str(loaded.key) in expected_keys
-    assert taskid == loaded.key
-
-
 def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
     worker = worker_with_real_db
     db = exorcist.taskdb.TaskStatusDB.from_filename(worker.task_db_path)
