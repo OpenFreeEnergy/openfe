@@ -295,9 +295,7 @@ def _generate_dg_mle(
     df = femap.get_absolute_dataframe()
     df = df.iloc[:, :3]
     unc_col_name = _infer_unc_col_name(DDGs)
-    df.rename(
-        {"label": "ligand", "uncertainty (kcal/mol)": unc_col_name}, axis="columns", inplace=True
-    )
+    df = df.rename(columns={"label": "ligand", "uncertainty (kcal/mol)": unc_col_name})
     df_out = format_df_with_precision(df, "DG (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 

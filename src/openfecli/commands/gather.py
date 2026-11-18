@@ -577,9 +577,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
     # drop the computational and source columns
     df = df.drop(columns=["source", "computational"])
     # reformat to match the expected result
-    df.rename(
-        {"label": "ligand", "DG (kcal/mol)": "DG(MLE) (kcal/mol)"}, axis="columns", inplace=True
-    )
+    df = df.rename(columns={"label": "ligand", "DG (kcal/mol)": "DG(MLE) (kcal/mol)"})
 
     # check if we have any missing entries add generic error info for these ligands
     missing_ligands = expected_ligs - set(df["ligand"].unique())
