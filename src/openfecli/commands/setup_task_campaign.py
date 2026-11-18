@@ -12,14 +12,14 @@ def setup_task_campaign_main(alchemical_network: AlchemicalNetwork, name: str):
     from openfe.orchestration.exorcist_utils import setup_task_campaign
 
     db_path = Path(f"tasks_{name}.db")
-    # TODO: add progress bar
     _, wh = setup_task_campaign(
         alchemical_network=alchemical_network,
         warehouse_dir=Path(f"warehouse_{name}"),
         db_path=db_path,
+        progress=True,
     )
-    write(f"Warehouse written to: {wh.root_dir}")
-    write(f"TaskDB written to: {db_path}")
+    write(f"Warehouse written to: '{wh.root_dir}/'")
+    write(f"TaskDB written to: '{db_path}'")
 
 
 @click.command(
@@ -48,10 +48,9 @@ def setup_task_campaign(alchemical_network: str | Path, name: str | None = None)
     msg = "WARNING! Task-based execution is an experimental feature and subject to change in a future release of openfe."
     click.secho(msg, err=False, fg="yellow")
 
-    write("Loading AlchemicalNetwork ...")
+    write(f"Loading AlchemicalNetwork from '{alchemical_network}'")
     loaded_alch_net = ALCHEMICAL_NETWORK.get(alchemical_network)
 
-    write("Creating Warehouse and TaskDB ...")
     if not name:
         name = Path(alchemical_network).stem
     setup_task_campaign_main(alchemical_network=loaded_alch_net, name=name)
