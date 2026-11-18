@@ -26,7 +26,7 @@ class Worker:
     ----------
     warehouse : FileSystemWarehouse
         FileSystemWarehouse used to load queued tasks and store execution results.
-    task_db_path : pathlib.Path, default=Path("./warehouse/tasks.db")
+    task_db_path : pathlib.Path
         Path to the Exorcist SQLite task database.
 
     """
