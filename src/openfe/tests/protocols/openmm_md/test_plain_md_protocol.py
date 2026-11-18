@@ -17,7 +17,6 @@ from openff.units.openmm import from_openmm, to_openmm
 from openmm import MonteCarloBarostat, NonbondedForce
 from openmm import unit as omm_unit
 from openmmtools.states import ThermodynamicState
-from pydantic import ValidationError
 
 import openfe
 from openfe.protocols import openmm_md

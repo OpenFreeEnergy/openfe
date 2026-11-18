@@ -5,7 +5,6 @@ import pathlib
 from importlib import resources
 from typing import Optional
 
-import MDAnalysis as mda
 import openmm
 import pooch
 import pytest

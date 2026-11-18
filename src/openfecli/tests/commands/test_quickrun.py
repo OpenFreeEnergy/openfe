@@ -1,5 +1,4 @@
 import json
-import os
 import pathlib
 from importlib import resources
 from unittest import mock

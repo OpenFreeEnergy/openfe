@@ -28,7 +28,7 @@ os.environ["SPHINX"] = "True"
 
 # -- Project information -----------------------------------------------------
 
-project = "OpenFE"
+project = "openfe"
 copyright = "2022, The OpenFE Development Team"
 author = "The OpenFE Development Team"
 # don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
@@ -137,7 +137,7 @@ myst_heading_anchors = 3
 #
 html_theme = "ofe_sphinx_theme"
 html_theme_options = {
-    "logo": {"text": "OpenFE docs"},
+    "logo": {"text": "OpenFE Docs"},
     "icon_links": [
         {
             "name": "GitHub",

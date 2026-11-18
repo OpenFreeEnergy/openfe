@@ -43,14 +43,14 @@ is often done through a :class:`.LigandNetwork`.
 
 You can manually create a :class:`.AlchemicalNetwork` by creating a list
 of :class:`.Transformation` objects. For examples using the Python API,
-see :ref:`cookbook on creating alchemical networks <cookbook/create_alchemical_network.nblink>`.
+see :ref:`How-to guide on creating alchemical networks <how_to_guides/create_alchemical_network.nblink>`.
 
 2. Python ``NetworkPlanner`` Convenience Classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 OpenFE also provides the convenience classes :class:`.RBFEAlchemicalNetworkPlanner` and :class:`.RHFEAlchemicalNetworkPlanner`,
 which use the :class:`.RelativeHybridTopologyProtocol` for creating :class:`.AlchemicalNetwork`\s.
-For example usage of these convenience classes, see :ref:`Relative Alchemical Network Planners cookbook <cookbook/rfe_alchemical_planners.nblink>`.
+For example usage of these convenience classes, see :ref:`Relative Alchemical Network Planners How-to guide <how_to_guides/rfe_alchemical_planners.nblink>`.
 
 .. note::
    The Network Planners are provided for user convenience. While they cover
@@ -82,4 +82,4 @@ For more CLI details, see :ref:`RBFE CLI tutorial <rbfe_cli_tutorial>` and the :
 See Also
 --------
 * :ref:`Alchemical Network API reference <Alchemical Network Planning>`
-* :ref:`Chemical Systems UserGuide entry <userguide_chemicalsystems_and_components>`
+* :ref:`Chemical Systems User Guide entry <userguide_chemicalsystems_and_components>`

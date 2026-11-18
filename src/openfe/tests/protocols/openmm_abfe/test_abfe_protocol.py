@@ -22,7 +22,6 @@ from openmm import (
     NonbondedForce,
     PeriodicTorsionForce,
 )
-from openmm import unit as omm_unit
 from openmm import unit as ommunit
 from openmmtools.alchemy import (
     AlchemicalRegion,

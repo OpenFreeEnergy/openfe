@@ -32,6 +32,10 @@ Molecular Dynamics (MD)
 
 - :any:`MD protocol <md_tutorial>`: A walk-through of running a conventional (non-alchemical) MD simulation of benzene bound to T4-lysozyme L99A.
 
+Mixed Protocol Networks
+-----------------------
+
+- :any:`Mixed Protocol Networks <mixed_protocol_network_tutorial>`: A walk-through of combining multiple relative (hybrid topology & SepTop) free energy methods to estimate binding free energies across three diverse ligand series bound to BACE1, using the Python API.
 
 Execution
 ---------
@@ -42,13 +46,6 @@ Post-Simulation Analysis
 ------------------------
 
 - :any:`Cinnabar tutorial <plotting_with_cinnabar>`: A tutorial for using the `cinnabar <https://github.com/OpenFreeEnergy/cinnabar>`_ Python package to analyze (e.g. generating MLE estimates of absolute free energies) and plot networks of relative free energy results.
-
-Generating Partial Charges
---------------------------
-
-.. todo: this should be in cookbook
-
--  :ref:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>`: how to use the CLI to assign and store partial charges for mall molecules which can be used throughout the OpenFE ecosystem.
 
 .. toctree::
     :maxdepth: 1
@@ -64,7 +61,7 @@ Generating Partial Charges
     septop_tutorial
     septop_analysis_tutorial
     md_tutorial
+    mixed_protocol_network_tutorial
     plotting_with_cinnabar
     task_based_execution_cli
     task_based_execution_python_api
-    charge_molecules_cli_tutorial

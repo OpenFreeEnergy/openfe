@@ -1,7 +1,8 @@
 .. _jq_inspection:
 
-Using ``jq`` to inspect OpenFE JSONs
-==============================================
+Use ``jq`` to inspect OpenFE JSONs
+==================================
+
 Sometimes you may want to get a sense of the contents of JSON files, but the files are too unwieldy to inspect one-by-one in a code editor.
 
 `jq <https://github.com/jqlang/jq>`_ is a helpful command-line tool that we recommend for for quickly inspecting JSON files.
