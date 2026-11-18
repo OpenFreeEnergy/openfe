@@ -50,3 +50,4 @@ openfe = { path = ".", editable = true }
 [environments.docs.tasks]
 docs-build = { cmd = "sphinx-build -T -b html . _build/html", cwd = "docs" , description = "Build docs as html with sphinx."}
 docs-autobuild = { cmd = "sphinx-autobuild -T -b html . _build/html", cwd = "docs", description = "Serve auto-updating docs with sphinx-autodoc."}
+docs-linkcheck = { cmd = "sphinx-build -T -b linkcheck", cwd = "docs" , description = "Use sphinx linkcheck to check for broken links."}
