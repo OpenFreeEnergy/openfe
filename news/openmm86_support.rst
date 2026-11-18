@@ -1,6 +1,6 @@
 **Added:**
 
-* Added support for openmm 8.5.0 (benchmarking results at `Issue #1928 <https://github.com/OpenFreeEnergy/openfe/issues/1928>`_.)
+* Added support for openmm 8.6.0 (benchmarking results at `Issue #2193 <https://github.com/OpenFreeEnergy/openfe/issues/2193>`_.)
 
 **Changed:**
 
