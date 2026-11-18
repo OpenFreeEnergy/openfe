@@ -36,7 +36,9 @@ def _alchemical_network_to_task_graph(
     alchemical_network : AlchemicalNetwork
         :class:`openfe.AlchemicalNetwork` containing alchemical Transformations to be executed.
     warehouse : WarehouseBaseClass
-       :class:`openfe.storage.Warehouse` used to store teh data used by execution and simulation engines.
+       :class:`openfe.storage.Warehouse` used to store the data used by execution and simulation engines.
+    progress: bool, default=False
+        If True, show a tqdm progress bar.
 
     Returns
     -------
@@ -107,7 +109,8 @@ def setup_task_campaign(
     max_tries : int, default=1
         Maximum number of times a task will attempt to be submitted before it
         is labelled ``TOO_MANY_RETRIES``.
-
+    progress: bool, default=False
+        If True, show a progress bar when creating the task graph from the alchemical network.
     Returns
     -------
     exorcist.TaskStatusDB
