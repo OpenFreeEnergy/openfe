@@ -86,50 +86,61 @@ def _get_legs_from_result_jsons(
 
     ddgs = defaultdict(lambda: defaultdict(list))
 
-    for result_fn in result_fns:
-        names, result = _load_valid_result_json(result_fn)
-        if names is None:  # this means it couldn't find names and/or simtype
-            continue
-
-        ddgs[names]["overall"].append([result["estimate"], result["uncertainty"]])
-        proto_key = [
-            k
-            for k in result["unit_results"].keys()
-            if k.startswith("ProtocolUnitResult")
-        ]  # fmt: skip
-
-        # In openfe v1.11+, we only want to pick up results from
-        # the Analysis Unit. To ensure backwards compatibility,
-        # we check if there are any analysis units. If so,
-        # we set a flag and later exclude Setup and Run.
-        has_analysis_units = any(
-            ["Analysis" in result["unit_results"][p]["source_key"] for p in proto_key]
-        )
-
-        for p in proto_key:
-            # Skip non-analysis units if we have any
-            if has_analysis_units and (
-                "Setup" in result["unit_results"][p]["source_key"]
-                or "Run" in result["unit_results"][p]["source_key"]
-            ):
+    with click.progressbar(
+        result_fns,
+        label="Loading results:",
+        fill_char="▇",
+        empty_char=" ",
+        bar_template="%(label)s  %(bar)s  %(info)s files",
+        length=len(result_fns),
+        show_percent=False,
+        show_pos=True,
+        show_eta=False,
+    ) as bar:
+        for result_fn in bar:
+            names, result = _load_valid_result_json(result_fn)
+            if names is None:  # this means it couldn't find names and/or simtype
                 continue
 
-            if "unit_estimate" in result["unit_results"][p]["outputs"]:
-                simtype = result["unit_results"][p]["outputs"]["simtype"]
-                dg = result["unit_results"][p]["outputs"]["unit_estimate"]
-                dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
+            ddgs[names]["overall"].append([result["estimate"], result["uncertainty"]])
+            proto_key = [
+                k
+                for k in result["unit_results"].keys()
+                if k.startswith("ProtocolUnitResult")
+            ]  # fmt: skip
 
-                ddgs[names][simtype].append([dg, dg_error])
+            # In openfe v1.11+, we only want to pick up results from
+            # the Analysis Unit. To ensure backwards compatibility,
+            # we check if there are any analysis units. If so,
+            # we set a flag and later exclude Setup and Run.
+            has_analysis_units = any(
+                ["Analysis" in result["unit_results"][p]["source_key"] for p in proto_key]
+            )
 
-            if "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
-                corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
-                corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
-                ddgs[names]["standard_state_correction_A"].append(
-                    [corr_A, 0 * unit.kilocalorie_per_mole]
-                )
-                ddgs[names]["standard_state_correction_B"].append(
-                    [corr_B, 0 * unit.kilocalorie_per_mole]
-                )
+            for p in proto_key:
+                # Skip non-analysis units if we have any
+                if has_analysis_units and (
+                    "Setup" in result["unit_results"][p]["source_key"]
+                    or "Run" in result["unit_results"][p]["source_key"]
+                ):
+                    continue
+
+                if "unit_estimate" in result["unit_results"][p]["outputs"]:
+                    simtype = result["unit_results"][p]["outputs"]["simtype"]
+                    dg = result["unit_results"][p]["outputs"]["unit_estimate"]
+                    dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
+
+                    ddgs[names][simtype].append([dg, dg_error])
+
+                if "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
+                    corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
+                    corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
+                    ddgs[names]["standard_state_correction_A"].append(
+                        [corr_A, 0 * unit.kilocalorie_per_mole]
+                    )
+                    ddgs[names]["standard_state_correction_B"].append(
+                        [corr_B, 0 * unit.kilocalorie_per_mole]
+                    )
 
     return ddgs
 
