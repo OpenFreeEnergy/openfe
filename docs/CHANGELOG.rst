@@ -4,6 +4,74 @@ Changelog
 
 .. current developments
 
+v1.13.0
+====================
+
+**Added:**
+
+* Added support for user-defined Boresch restraints in the SepTop and ABFE Protocols (`PR #2019 <https://github.com/OpenFreeEnergy/openfe/pull/2019>`_ and `PR #2128 <https://github.com/OpenFreeEnergy/openfe/pull/2128>`_).
+* Added support for Python 3.14 (`PR #2058 <https://github.com/OpenFreeEnergy/openfe/pull/2058>`_).
+* Added support for Pydantic 2.13 (`PR #2058 <https://github.com/OpenFreeEnergy/openfe/pull/2058>`_).
+* The ``AbsoluteBindingProtocol`` and ``AbsoluteSolvationProtocol`` now carry out structural analyses at the end of the simulation.
+  For all legs, except vacuum, a symmetry-corrected ligand RMSD is calculated.
+  For complex transformations, a ligand COM drift and protein 2D RMSD is also calculated.
+  All results are written to a numpy NPZ file named ``structural_analysis.npz``, alongside PNGs for the plots for each analysis type (`PR #2220 <https://github.com/OpenFreeEnergy/openfe/pull/2220>`_).
+* A new ``analysis_settings`` field has been added to ``AbsoluteBindingSettings`` and ``AbsoluteSolvationSettings`` to control post-simulation analysis (`PR #2220 <https://github.com/OpenFreeEnergy/openfe/pull/2220>`_).
+* ``raise_errors`` argument added to ``bulk_assign_partial_charges`` method to allow to skip raising an ``ExceptionGroup`` with the details of any molecules which fail to have partial charges assigned, by default this is set to ``True`` to maintain the previous behavior (`PR #2180 <https://github.com/OpenFreeEnergy/openfe/pull/2180>`_).
+* The ``assign_offmol_partial_charges`` and ``bulk_assign_partial_charges`` functions can assign charges from a list of OpenFF SMIRNOFF style force fields.
+  Set ``method=forcefield`` and provide a list of force field files via the new keyword argument ``forcefields``.
+  This is also supported in the  ``charge-molecules`` CLI command and is set by using a yaml settings file (`PR #2152 <https://github.com/OpenFreeEnergy/openfe/pull/2152>`_).
+
+* (**Experimental Feature**) Added CLI commands for task-based execution, including:
+
+  * CLI commands ``setup-task-campaign`` and ``run-task`` for running task-based execution (`PR #2174 <https://github.com/OpenFreeEnergy/openfe/pull/2174>`_).
+  * ``--networks-only`` option to ``plan-rbfe-network`` and ``plan-rhfe-network`` CLI commands to only output the AlchemicalNetwork JSON file and LigandNetwork graphml file, but construct none of the Transformation JSON files.
+    This option is useful for preparing inputs for task-based execution (`PR #2174 <https://github.com/OpenFreeEnergy/openfe/pull/2174>`_).
+  * ``to-legacy-json`` CLI command that writes out task-based execution results as legacy quickrun-style results that can be passed to ``gather`` (`PR #2174 <https://github.com/OpenFreeEnergy/openfe/pull/2174>`_).
+  * ``openfe status`` command (`PR #2156 <https://github.com/OpenFreeEnergy/openfe/pull/2156>`_) that shows the status of all tasks in a worker task database.
+  * ``--summary`` flag to the ``openfe status`` command that shows the each task status type and the number of tasks with that status (`PR #2201 <https://github.com/OpenFreeEnergy/openfe/pull/2201>`_).
+
+* (**Experimental Feature**) Added Python API functionality for task-based execution, including:
+
+  * ``openfe.setup_task_campaign()``, which creates a task-based campaign from an AlchemicalNetwork (`PR #2174 <https://github.com/OpenFreeEnergy/openfe/pull/2174>`_)
+  * ``openfe.Worker``, which is used to execute the task-based campaign (`PR #2172 <https://github.com/OpenFreeEnergy/openfe/pull/2172>`_).
+  * ``openfe.storage.FileSystemWarehouse`` and its parent class ``openfe.storage.WarehouseBaseClass`` (`PR #1864 <https://github.com/OpenFreeEnergy/openfe/pull/1864>`_).
+  * ``openfe.TaskStatusDB`` and the helper functions ``openfe.get_task_df``, ``openfe.get_dependency_df`` (`PR #2155 <https://github.com/OpenFreeEnergy/openfe/pull/2155>`_).
+  * ``openfe.update_max_tries()`` for updating a ``TaskStatusDB`` (`PR #2227 <https://github.com/OpenFreeEnergy/openfe/pull/2227/>`_).
+
+**Changed:**
+
+* The default lambda schedule for VdW decoupling in the vacuum leg of ``AbsoluteSolvationProtocol`` has been amended to remove redundant windows where the LJ interactions were being scaled even though there are no nonbonded interactions in vacuum (`PR #2241 <https://github.com/OpenFreeEnergy/openfe/pull/2241>`_).
+* ``AbsoluteSolvationProtocol`` now has separate lambda settings for the solvent and vacuum legs (`PR #2241 <https://github.com/OpenFreeEnergy/openfe/pull/2241>`_).
+* The ``AbsoluteSolvationSettings`` class will now raise a ``ValueError`` if initialized with nonidentical solvent and vacuum force field settings after excluding the ``nonbonded_method`` field (`PR #2185 <https://github.com/OpenFreeEnergy/openfe/pull/2185>`_).
+* The ``AbsoluteSolvationProtocol`` will now raise a ``ValueError`` during validation if the solvent and vacuum force field settings do not match exactly after excluding the ``nonbonded_method`` field (`PR #2185 <https://github.com/OpenFreeEnergy/openfe/pull/2185>`_).
+* ``RelativeHybridTopologyProtocol`` will now raise a ``ValueError`` during validation if the atom mapping would result in breaking a chemical bond, which is not supported by the protocol, preventing execution of the simulation ((`PR #2121 <https://github.com/OpenFreeEnergy/openfe/pull/2121>`_).
+* The ``bulk_assign_partial_charges`` method now raises an ``ExceptionGroup`` with the details of any molecules which fail
+  to have partial charges assigned (`PR #2171 <https://github.com/OpenFreeEnergy/openfe/pull/2171>`_).
+* Changed CLI help sections from "Network Planning", "Quickrun Executor" and "Miscellaneous" to "Planning & Setup", "Execution", "Results Gathering", and "Miscellaneous" (`PR #2171 <https://github.com/OpenFreeEnergy/openfe/pull/2171>`_).
+* The forward and reverse convergence analysis now retains and plots the free energy estimates at the fractions MBAR could evaluate, instead of discarding the whole analysis, when MBAR fails to converge at low fractions of uncorrelated samples.
+  Individual MBAR failures are recorded as NaN (`PR #1984 <https://github.com/OpenFreeEnergy/openfe/pull/1984>`_).
+* The ``RelativeHybridTopologyProtocol`` will now raise a ``ValueError`` during validation if the atom mapping is empty preventing execution of the simulation (`PR #2120 <https://github.com/OpenFreeEnergy/openfe/pull/2120>`_).
+* Small molecules in ``RelativeHybridTopologyProtocol``, ``SepTopProtocol``, and ``AbsoluteBindingProtocol`` topologies (including the output PDB) are now named LIG (alchemical ligand) and COF (cofactors) instead of UNK.
+  If a residue name was already assigned, the assigned one is kept (`PR #2042 <https://github.com/OpenFreeEnergy/openfe/pull/2042>`_ and `PR #2118 <https://github.com/OpenFreeEnergy/openfe/pull/2118>`_).
+* The ``PlainMDProtocol`` now assigns the residue name ``"LIG"`` (or ``"LG?"`` where ``?`` is a number between 1 and 9 to yield a unique residue name) and a unique residue number to all SmallMoleculeComponents.
+  Previously, these would have been assigned the residue name ``"UNK"`` (`PR #2178 <https://github.com/OpenFreeEnergy/openfe/pull/2178>`_).
+* The ``RelativeHybridTopologyProtocol`` will now raise a ValueError during validation if the number of heavy atoms in the atom mapping is less than 4 and the components have more than 6 heavy atoms preventing execution of the simulation (`PR #2122 <https://github.com/OpenFreeEnergy/openfe/pull/2122>`_).
+
+**Removed:**
+
+* Dropped support for Python 3.11 (`PR #2058 <https://github.com/OpenFreeEnergy/openfe/pull/2058>`_).
+* Removed the unused methods ``metadatastore``, ``resultclient``, and ``resultserver`` from ``openfe.storage`` (`PR #1864 <https://github.com/OpenFreeEnergy/openfe/pull/1864>`_).
+
+**Fixed:**
+
+* Ligands are now returned in the input order by ``bulk_assign_partial_charges`` and the CLI when using more than one processor to assign charges (`PR #2151 <https://github.com/OpenFreeEnergy/openfe/pull/2151>`_).
+* Fixed inflated ligand RMSD in the RelativeHybridTopology protocol's structural analysis for systems containing cofactors; the ligand RMSD is now computed for the alchemical ligand alone rather than conflating it with cofactors that shared the UNK residue name (`PR #2042 <https://github.com/OpenFreeEnergy/openfe/pull/2042>`_).
+* The forward and reverse analysis has been fixed to now correctly subsamples the timeseries.
+  Before, the analysis would incorrectly subsample across replicas (`PR #2059 <https://github.com/OpenFreeEnergy/openfe/pull/2059>`_ and `PR #2128 <https://github.com/OpenFreeEnergy/openfe/pull/2128>`_).
+
+
+
 v1.12.0
 ====================
 

@@ -31,11 +31,30 @@ The Lennard-Jones interactions are instead decoupled, meaning the intermolecular
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
-Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions. 
+Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions.
+
 A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 Both the soft-core potential functions from Beutler et al. [1]_ and from Gapsys et al. [2]_ are available and can be specified in the ``alchemical_settings.softcore_LJ`` settings
 (default: ``gapsys``).
-The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec`` and ``lambda_vdw``. Note that the ``lambda_restraints`` setting is ignored for the :class:`.AbsoluteSolvationProtocol`.
+
+Lambda schedules for the solvent and vacuum legs are defined by the ``lambda_elec`` and ``lambda_vdw`` entries of
+``solvent_lambda_settings`` and ``vacuum_lambda_settings`` respectively.
+A value of 0.0 means the interactions are fully on, and 1.0 means they are fully decoupled (or annihilated).
+
+.. note::
+    The lambda settings have a ``lambda_restraints`` entry that is ignored for the :class:`.AbsoluteSolvationProtocol`.
+
+By default, the solvent leg uses 14 lambda windows, while the vacuum leg uses only 5 lambda windows.
+This is because there are no intermolecular interactions to scale in vacuum. This means that only the electrostatic interactions,
+which are annihilated, need to be turned off gradually. Since decoupling the Lennard-Jones interactions has no effect in vacuum,
+``lambda_vdw`` is simply switched to 1.0 in the final window of the vacuum schedule.
+
+.. note::
+   If ``alchemical_settings.annihilate_sterics`` is set to ``True``, the intramolecular Lennard-Jones interactions are also turned off.
+   In this case the default vacuum lambda schedule is not appropriate, and intermediate ``lambda_vdw`` windows should be added to
+   ``vacuum_lambda_settings``.
+
+The number of lambda windows in each leg must match the number of replicas set in ``solvent_simulation_settings.n_replicas`` and ``vacuum_simulation_settings.n_replicas``.
 
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
@@ -75,15 +94,37 @@ which is different compared to the results in the :class:`.RelativeHybridTopolog
 
 In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
 
-.. todo: issue 792 change this reference to point to the new results section
+Analysis
+~~~~~~~~
+
+After each simulation repeat, the protocol automatically analyses the
+energetics of the sampled λ states (MBAR overlap, replica exchange and
+forward/reverse convergence) and the structural changes in each state. For
+how to interpret these analyses, see :ref:`userguide_simulation_health`.
+
+The structural analysis differs between the two legs:
+
+* **Solvent leg:** symmetry-corrected ligand RMSD.
+* **Vacuum leg:** no structural analysis is currently performed.
+
+The frame stride can be set through ``analysis_settings.skip`` in
+:class:`.AbsoluteSolvationSettings` (by default, about 500 frames are
+analysed per state). The ligand atoms must be included in the trajectory
+output, through ``output_indices`` in ``solvent_output_settings``; otherwise
+the structural analysis is skipped. The multistate trajectories
+(``solvent.nc`` and ``vacuum.nc``) can be analysed further using
+`openfe_analysis`_.
+
+.. TODO: Link to the trajectory visualisation how_to_guide when published.
 
 
 See Also
 --------
 
-**Setting up AFE calculations**
+**User Guide**
 
 * :ref:`Defining the Protocol <defining-protocols>`
+* :ref:`Assessing simulation health <userguide_simulation_health>`
 
 ..
   To be added: Setting up AHFE calculations
@@ -92,9 +133,9 @@ See Also
 
 * :any:`Absolute Hydration Free Energies tutorial <../../tutorials/ahfe_tutorial>`
 
-**Cookbooks**
+**How-to guides**
 
-:ref:`Cookbooks <cookbooks>`
+:ref:`How-to guides <how_to_guides>`
 
 **API Documentation**
 
@@ -112,3 +153,5 @@ References
 .. [1] Avoiding singularities and numerical instabilities in free energy calculations based on molecular simulations, T.C. Beutler, A.E. Mark, R.C. van Schaik, P.R. Greber, and W.F. van Gunsteren, Chem. Phys. Lett., 222 529–539 (1994)
 .. [2] New Soft-Core Potential Function for Molecular Dynamics Based Alchemical Free Energy Calculations, V. Gapsys, D. Seeliger, and B.L. de Groot, J. Chem. Theor. Comput., 8 2373-2382 (2012)
 .. [3] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
+
+.. _openfe_analysis: https://github.com/OpenFreeEnergy/openfe_analysis

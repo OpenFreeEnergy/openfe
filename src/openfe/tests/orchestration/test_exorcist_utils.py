@@ -1,0 +1,354 @@
+from typing import cast
+from unittest import mock
+
+import exorcist
+import networkx as nx
+import pandas as pd
+import pytest
+import sqlalchemy as sqla
+from gufe import AlchemicalNetwork
+from gufe.tokenization import GufeKey
+
+from openfe.orchestration import (
+    get_dependency_df,
+    get_task_df,
+    setup_task_campaign,
+)
+from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph, update_max_tries
+from openfe.storage.warehouse import WarehouseBaseClass
+
+
+class _RecordingWarehouse:
+    def __init__(self):
+        self.stored_tasks = []
+
+    def store_task(self, task):
+        self.stored_tasks.append(task)
+
+    def store_setup_tokenizable(self, obj):
+        # TODO: add tests for tokenizable storage?
+        pass
+
+    def store_protocol_dag(self, dag):
+        pass
+
+
+def _network_units(radial_alchemical_network):
+    units = []
+    for transformation in radial_alchemical_network.edges:
+        units.extend(transformation.create().protocol_units)
+    return units
+
+
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
+def test_alchemical_network_to_task_graph_stores_all_units(request, fixture):
+    warehouse = _RecordingWarehouse()
+    network = request.getfixturevalue(fixture)
+    expected_units = _network_units(network)
+    _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+
+    stored_unit_names = [str(unit.name) for unit in warehouse.stored_tasks]
+    expected_unit_names = [str(unit.name) for unit in expected_units]
+
+    assert len(stored_unit_names) == len(expected_unit_names)
+    assert sorted(stored_unit_names) == sorted(expected_unit_names)
+
+
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
+def test_alchemical_network_to_task_graph_uses_canonical_task_ids(request, fixture):
+    warehouse = _RecordingWarehouse()
+    network = request.getfixturevalue(fixture)
+
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+
+    expected_protocol_unit_keys = sorted(str(unit.key) for unit in warehouse.stored_tasks)
+    observed_protocol_unit_keys = []
+
+    for node in graph.nodes:
+        protocol_unit_key = node
+        observed_protocol_unit_keys.append(protocol_unit_key)
+
+    assert sorted(observed_protocol_unit_keys) == expected_protocol_unit_keys
+
+
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
+def test_alchemical_network_to_task_graph_edges_reference_existing_nodes(request, fixture):
+    warehouse = _RecordingWarehouse()
+    network = request.getfixturevalue(fixture)
+
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+
+    assert len(graph.edges) > 0
+    for u, v in graph.edges:
+        assert u in graph.nodes
+        assert v in graph.nodes
+
+
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
+def test_alchemical_network_to_task_graph_edge_direction_matches_dependencies(request, fixture):
+    warehouse = _RecordingWarehouse()
+    network = request.getfixturevalue(fixture)
+
+    graph = _alchemical_network_to_task_graph(network, cast(WarehouseBaseClass, warehouse))
+    units_by_key = {str(unit.key): unit for unit in warehouse.stored_tasks}
+
+    for upstream_id, downstream_id in graph.edges:
+        # as of now this is true, but 'node' may contain more info
+        upstream_key = upstream_id
+        downstream_key = downstream_id
+        upstream_unit = units_by_key[upstream_key]
+        downstream_unit = units_by_key[downstream_key]
+        assert upstream_unit in downstream_unit.dependencies
+
+
+def test_alchemical_network_to_task_graph_raises_for_cycle():
+    class _Unit:
+        def __init__(self, name: str, key: str):
+            self.name = name
+            self.key = key
+
+    class _Transformation:
+        name = "cyclic"
+        key = "Transformation-cycle"
+
+        def create(self):
+            unit_a = _Unit("unit-a", "ProtocolUnit-a")
+            unit_b = _Unit("unit-b", "ProtocolUnit-b")
+            dag = mock.Mock()
+            dag.protocol_units = [unit_a, unit_b]
+            dag.graph = nx.DiGraph()
+            dag.graph.add_nodes_from([unit_a, unit_b])
+            dag.graph.add_edges_from([(unit_a, unit_b), (unit_b, unit_a)])
+            return dag
+
+    network = mock.Mock(AlchemicalNetwork)
+    network.edges = [_Transformation()]
+    warehouse = mock.Mock()
+
+    with pytest.raises(ValueError, match="not a DAG"):
+        _alchemical_network_to_task_graph(network, warehouse)
+
+
+# TODO: slow test
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
+def test_build_task_db_checkout_order_is_dependency_safe(tmp_path, request, fixture):
+    network = request.getfixturevalue(fixture)
+    # Build the real sqlite task DB from a real alchemical network fixture.
+    wh_dir = tmp_path / "campaign"
+    db, warehouse = setup_task_campaign(
+        network,
+        warehouse_dir=wh_dir,
+        db_path=tmp_path / "campaign.db",
+    )
+
+    # Read task IDs and dependency edges from the persisted DB state.
+    initial_task_rows = list(db.get_all_tasks())
+    graph_taskids = {row.taskid for row in initial_task_rows}
+    with db.engine.connect() as conn:
+        dep_rows = conn.execute(sqla.select(db.dependencies_table)).all()
+    graph_edges = {(row._mapping["from"], row._mapping["to"]) for row in dep_rows}
+
+    checkout_order = []
+    # Hard upper bound prevents infinite checkout loops.
+    max_checkouts = len(graph_taskids)
+
+    for _ in range(max_checkouts):
+        taskid = db.check_out_task()
+        if taskid is None:
+            break
+
+        checkout_order.append(taskid)
+        protocol_unit_key = taskid
+        loaded_unit = warehouse.load_task(GufeKey(protocol_unit_key))
+        assert str(loaded_unit.key) == protocol_unit_key
+        db.mark_task_completed(taskid, success=True)
+
+    # Coverage/completion: every task is checked out exactly once.
+    observed_taskids = set(checkout_order)
+    assert observed_taskids == graph_taskids
+    assert len(checkout_order) == len(graph_taskids)
+
+    # Dependency safety: upstream tasks must appear before downstream tasks.
+    checkout_index = {taskid: idx for idx, taskid in enumerate(checkout_order)}
+    for upstream, downstream in graph_edges:
+        assert checkout_index[upstream] < checkout_index[downstream]
+
+    # Final DB state: all tasks are completed.
+    task_rows = list(db.get_all_tasks())
+    assert len(task_rows) == len(graph_taskids)
+    assert {row.taskid for row in task_rows} == graph_taskids
+    assert {row.status for row in task_rows} == {exorcist.TaskStatus.COMPLETED.value}
+
+
+# TODO: revisit this after deciding how we want to handle defaults
+# @pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
+# def test_build_task_db_default_path(request, fixture):
+#     network = request.getfixturevalue(fixture)
+#     warehouse = mock.Mock()
+#     fake_graph = nx.DiGraph()
+#     fake_db = mock.Mock()
+
+#     with (
+#         mock.patch(
+#             "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
+#             return_value=fake_graph,
+#         ) as task_graph_mock,
+#         mock.patch(
+#             "openfe.orchestration.exorcist_utils.exorcist.TaskStatusDB.from_filename",
+#             return_value=fake_db,
+#         ) as db_ctor,
+#     ):
+#         result = setup_task_campaign(network, warehouse)
+
+#     task_graph_mock.assert_called_once_with(network, warehouse)
+#     db_ctor.assert_called_once_with(Path(f"{warehouse.name}.db"))
+#     fake_db.add_task_network.assert_called_once_with(fake_graph, 1)
+#     assert result is fake_db
+
+
+@pytest.mark.parametrize("fixture", ["radial_alchemical_network"])
+def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
+    network = request.getfixturevalue(fixture)
+    fake_graph = nx.DiGraph()
+    fake_db = mock.Mock()
+    db_path = tmp_path / "tmp_campaign.db"
+    wh_path = tmp_path / "tmp_campaign"
+    with (
+        mock.patch(
+            "openfe.orchestration.exorcist_utils._alchemical_network_to_task_graph",
+            return_value=fake_graph,
+        ) as task_graph_mock,
+        mock.patch(
+            "openfe.orchestration.exorcist_utils.exorcist.TaskStatusDB.from_filename",
+            return_value=fake_db,
+        ) as db_ctor,
+    ):
+        db, warehouse = setup_task_campaign(
+            network,
+            wh_path,
+            db_path=db_path,
+            max_tries=7,
+        )
+    task_graph_mock.assert_called_once_with(network, warehouse)
+    db_ctor.assert_called_once_with(db_path)
+    fake_db.add_task_network.assert_called_once_with(fake_graph, 7)
+    assert db is fake_db
+
+
+@pytest.fixture()
+def benzene_star_map_task_db(radial_alchemical_network, tmp_path):
+    warehouse = _RecordingWarehouse()
+    network = radial_alchemical_network
+    global_task_dag = _alchemical_network_to_task_graph(
+        network, cast(WarehouseBaseClass, warehouse)
+    )
+    db = exorcist.TaskStatusDB.from_filename(":memory:")
+    db.add_task_network(global_task_dag, 5)
+    return db
+
+
+def test_get_task_df(benzene_star_map_task_db):
+    df = get_task_df(benzene_star_map_task_db)
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == [
+        "taskid",
+        "status",
+        "last_modified",
+        "tries",
+        "max_tries",
+        # "task_type",
+    ]
+    assert len(df) == 276
+    assert len(df[df.status == "AVAILABLE"]) == 12
+    assert len(df[df.status == "BLOCKED"]) == 264
+
+
+def test_get_dependency_df(benzene_star_map_task_db):
+    df = get_dependency_df(benzene_star_map_task_db)
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["from", "to", "blocking"]
+    assert len(df) == 504
+
+
+# NOTE: pulled this fixture from exorcist, since I expect to upstream the tests below
+from datetime import datetime
+
+from exorcist import TaskStatus, TaskStatusDB
+
+_DEFAULT_DATETIME = datetime(1970, 1, 1)
+
+
+def patch_exorcist_datetime(with_datetime=_DEFAULT_DATETIME):
+    # turns out we can't patch just the now() method (datetime is immutable,
+    # probably C code?) so we have to patch the entire datetime module
+    loc = "exorcist.taskdb.datetime"
+    datetime_now = mock.Mock(now=mock.Mock(return_value=with_datetime))
+    return mock.patch(loc, datetime_now)
+
+
+def patch_openfe_datetime(with_datetime=_DEFAULT_DATETIME):
+    loc = "openfe.orchestration.exorcist_utils.datetime"
+    datetime_now = mock.Mock(now=mock.Mock(return_value=with_datetime))
+    return mock.patch(loc, datetime_now)
+
+
+def get_tasks_and_deps(db):
+    with db.engine.connect() as conn:
+        tasks = set(conn.execute(sqla.select(db.tasks_table)))
+        deps = set(conn.execute(sqla.select(db.dependencies_table)))
+    return tasks, deps
+
+
+def task_row(taskid, status, last_modified, tries, max_tries, task_type=""):
+    return (taskid, status.value, last_modified, tries, max_tries, task_type)
+
+
+@pytest.fixture
+def fresh_db():
+    # create an empty database
+    echo = False  # switch this for debugging
+    engine = sqla.create_engine("sqlite://", echo=echo)
+
+    yield TaskStatusDB(engine)
+
+
+def test_update_max_tries(fresh_db):
+    task_db = fresh_db
+    task_db.add_task("task_a", requirements=[], max_tries=1)
+    task_db.add_task("task_b", requirements=["task_a"], max_tries=1)
+    task_db.add_task("task_c", requirements=[], max_tries=1)
+
+    with patch_exorcist_datetime():
+        taskid = task_db.check_out_task()
+        assert taskid == "task_a"
+        task_db.mark_task_completed(taskid, success=True)
+
+        taskid = task_db.check_out_task()
+        assert taskid == "task_b"
+        task_db.mark_task_completed(taskid, success=False)
+
+    tasks, deps = get_tasks_and_deps(task_db)
+
+    assert tasks == {
+        task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_b", TaskStatus.TOO_MANY_RETRIES, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, None, 0, 1, ""),
+    }
+    assert deps == {("task_a", "task_b", False)}
+
+    datetime2 = datetime(1999, 1, 1)
+    with patch_openfe_datetime(datetime2):
+        update_max_tries(task_db=task_db, max_tries=18)
+    tasks, deps = get_tasks_and_deps(task_db)
+
+    assert tasks == {
+        task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 1, ""),
+        task_row("task_b", TaskStatus.AVAILABLE, datetime2, 1, 18, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, datetime2, 0, 18, ""),
+    }
+
+
+@pytest.mark.parametrize("bad_value", ["1", -2, 3.0, 0, True])
+def test_update_max_tries_invalid_val(fresh_db, bad_value):
+    with pytest.raises(ValueError, match="must be a positive integer"):
+        update_max_tries(task_db=fresh_db, max_tries=bad_value)

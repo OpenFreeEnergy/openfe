@@ -6,8 +6,8 @@ _EXAMPLE_NB_BASE = "https://raw.githubusercontent.com/OpenFreeEnergy/ExampleNote
 
 RBFE_TUTORIAL = URLFetcher(
     resources=[
-        (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "tyk2_ligands.sdf"),
-        (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "tyk2_protein.pdb"),
+        (_EXAMPLE_NB_BASE + "assets/", "tyk2_ligands.sdf"),
+        (_EXAMPLE_NB_BASE + "assets/", "tyk2_protein.pdb"),
         (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "cli_tutorial.md"),
         (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "rbfe_python_tutorial.ipynb"),
     ],

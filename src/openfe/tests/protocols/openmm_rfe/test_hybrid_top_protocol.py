@@ -16,6 +16,7 @@ import mdtraj as mdt
 import numpy as np
 import openmm
 import pytest
+from gufe.protocols import ProtocolValidationError
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
@@ -54,6 +55,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
 from openfe.protocols.openmm_utils.offmolecule_utils import (
     _set_offmol_metadata,
 )
+from openfe.tests.conftest import single_to_triple_bond_mapping
 
 
 def _get_units(protocol_units, unit_type):
@@ -2660,4 +2662,54 @@ def test_high_heavy_atom_mapping_ratio_warning(atom_mapping_basic_test_files, va
     assert (
         "The ratio of alchemical to mapped heavy atoms: 2.8 is large, please review the mapping if the simulation is unstable."
         in caplog.text
+    )
+
+
+@pytest.mark.parametrize(
+    "mapping_name, error_msg",
+    [
+        pytest.param(
+            "single_to_triple_bond_mapping",
+            "Single to triple bond mapping found between componentA 1->2:type:SINGLE and componentB 1->2:type:TRIPLE, which leads to instabilities.",
+            id="single_to_triple_bond_mapping",
+        ),
+        pytest.param(
+            "triple_to_single_bond_mapping",
+            "Single to triple bond mapping found between componentA 1->2:type:TRIPLE and componentB 1->2:type:SINGLE, which leads to instabilities.",
+            id="triple_to_single_bond_mapping",
+        ),
+    ],
+)
+def test_single_to_triple_bond_mapping_validation(vac_settings, mapping_name, error_msg, request):
+    # make sure an error is raised if a single bond is mapped to a triple bond or vice versa
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=vac_settings)
+
+    mapping = request.getfixturevalue(mapping_name)
+
+    with pytest.raises(
+        ProtocolValidationError,
+        match=error_msg,
+    ):
+        _ = protocol.validate(
+            stateA=gufe.ChemicalSystem({"ligand": mapping.componentA}),
+            stateB=gufe.ChemicalSystem({"ligand": mapping.componentB}),
+            mapping=mapping,
+        )
+
+    # try removing the bond from the mapping and make sure validation passes
+    atom_map = mapping.componentA_to_componentB.copy()
+    # remove the ether linker and methyl group from the mapping to avoid the hybridization change
+    for atom_idx in [1, 0, 31, 32, 33]:
+        del atom_map[atom_idx]
+
+    mapping_no_bond = gufe.LigandAtomMapping(
+        componentA=mapping.componentA,
+        componentB=mapping.componentB,
+        componentA_to_componentB=atom_map,
+    )
+
+    _ = protocol.validate(
+        stateA=gufe.ChemicalSystem({"ligand": mapping_no_bond.componentA}),
+        stateB=gufe.ChemicalSystem({"ligand": mapping_no_bond.componentB}),
+        mapping=mapping_no_bond,
     )

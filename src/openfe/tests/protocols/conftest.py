@@ -5,7 +5,6 @@ import pathlib
 from importlib import resources
 from typing import Optional
 
-import MDAnalysis as mda
 import openmm
 import pooch
 import pytest
@@ -19,6 +18,7 @@ from rdkit.Geometry import Point3D
 import openfe
 from openfe.data._registry import (
     POOCH_CACHE,
+    zenodo_abfe_structural,
     zenodo_industry_benchmark_systems,
     zenodo_md_resume_data,
     zenodo_resume_data,
@@ -80,19 +80,6 @@ def toluene_system(benzene_modifications):
                 positive_ion="Na", negative_ion="Cl", ion_concentration=0.15 * unit.molar
             ),
         },
-    )
-
-
-@pytest.fixture
-def toluene_complex_system(benzene_modifications, T4_protein_component):
-    return openfe.ChemicalSystem(
-        {
-            "ligand": benzene_modifications["toluene"],
-            "solvent": openfe.SolventComponent(
-                positive_ion="Na", negative_ion="Cl", ion_concentration=0.15 * unit.molar
-            ),
-            "protein": T4_protein_component,
-        }
     )
 
 
@@ -434,6 +421,19 @@ def septop_structural_results_dir():
     return pathlib.Path(
         POOCH_CACHE / "septop_structural_results.zip.unzip/septop_structural_results"
     )
+
+
+pooch_abfe_structural = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_abfe_structural["base_url"],
+    registry={zenodo_abfe_structural["fname"]: zenodo_abfe_structural["known_hash"]},
+)
+
+
+@pytest.fixture(scope="session")
+def abfe_structural_results_dir():
+    pooch_abfe_structural.fetch("abfe_simulation_outputs.zip", processor=pooch.Unzip())
+    return pathlib.Path(POOCH_CACHE / "abfe_simulation_outputs.zip.unzip/abfe_simulation_outputs")
 
 
 @pytest.fixture(scope="session")

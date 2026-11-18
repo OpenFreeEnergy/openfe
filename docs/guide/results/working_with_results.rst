@@ -39,6 +39,11 @@ The full ``json`` results file can be reloaded into a Python session as::
   >>> results['uncertainty']
   0.574685524681712 <Unit('kilocalorie_per_mole')>
 
+To use the analysis methods described in :ref:`userguide_simulation_health`,
+reload the full protocol result from the JSON file::
+
+  >>> protocol_result = openfe.ProtocolResult.from_dict(results['protocol_result'])
+  >>> protocol_result.get_overlap_matrices()
 
 From Python execution
 ---------------------

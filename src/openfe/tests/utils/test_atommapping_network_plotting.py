@@ -1,4 +1,3 @@
-import importlib.resources
 import inspect
 from unittest import mock
 

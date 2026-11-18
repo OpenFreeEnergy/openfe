@@ -1,0 +1,52 @@
+# pixi config for **docs only**
+[workspace]
+channels = ["conda-forge"]
+name = "openfe"
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+
+[tasks]
+
+[dependencies]
+
+[environments.docs]
+no-default-feature = true
+channels = ["https://conda.anaconda.org/conda-forge"]
+
+[environments.docs.dependencies]
+autodoc-pydantic = ">=2.1"
+exorcist = "*"
+gitpython = "*"
+libsass = "*"
+myst-parser = "*"
+nbsphinx = "*"
+nbsphinx-link = "*"
+openfe-analysis = ">=0.5.0"
+openff-toolkit-base = ">=0.17.0"
+openff-units = "==0.3.1"
+openmm = "~=8.4"
+packaging = "*"
+pip = ">=26.2.2"  # security incident https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
+plugcli = ">=0.2.1"
+python = "==3.13"
+pydantic = "~=2.13.0"
+sphinx = "==7.2.6"  # TODO: debug "duplicate object" warning with later versions
+sphinx-autobuild = "*"  # TODO: make optional
+sphinx-click = "*"
+sphinx-design = "*"
+sphinx-toolbox = "*"
+threadpoolctl = "*"
+tqdm = "*"
+mock = "*"
+pillow = "*"
+
+[environments.docs.pypi-dependencies]
+gufe = { git = "https://github.com/OpenFreeEnergy/gufe", rev = "main" }
+ofe-sphinx-theme = { git = "https://github.com/OpenFreeEnergy/ofe-sphinx-theme", rev = "v0.3.1" }
+kartograf = { git = "https://github.com/OpenFreeEnergy/kartograf", rev = "main" }
+konnektor = { git = "https://github.com/OpenFreeEnergy/konnektor", rev = "main" }
+lomap2 = { git = "https://github.com/OpenFreeEnergy/lomap", rev = "main" }
+openfe = { path = ".", editable = true }
+
+[environments.docs.tasks]
+docs-build = { cmd = "sphinx-build -T -b html . _build/html", cwd = "docs" , description = "Build docs as html with sphinx."}
+docs-autobuild = { cmd = "sphinx-autobuild -T -b html . _build/html", cwd = "docs", description = "Serve auto-updating docs with sphinx-autodoc."}

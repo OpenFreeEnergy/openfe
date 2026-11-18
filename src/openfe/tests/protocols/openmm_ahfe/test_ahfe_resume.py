@@ -8,6 +8,7 @@ import pathlib
 import shutil
 
 import gufe
+import numpy as np
 import openmm
 import pytest
 from gufe.protocols.errors import ProtocolUnitExecutionError
@@ -233,9 +234,15 @@ class TestCheckpointResuming:
         )
 
         # Finally we analyze the results
+        alchemical_indices = np.where(
+            np.isin(setup_results["selection_indices"], setup_results["alchem_indices"])
+        )[0].tolist()
         _ = analysis_unit.run(
+            topology=setup_results["pdb_structure"],
             trajectory=sim_results["trajectory"],
             checkpoint=sim_results["checkpoint"],
+            alchemical_smcs=analysis_unit._inputs["alchemical_components"]["stateA"],
+            alchemical_indices=alchemical_indices,
             scratch_basepath=tmp_path,
             shared_basepath=tmp_path,
         )
