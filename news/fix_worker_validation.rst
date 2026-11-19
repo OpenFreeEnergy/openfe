@@ -16,7 +16,7 @@
 
 **Fixed:**
 
-* Fixed bug in ``worker.execute_unit()`` where a task would be left as ``IN_PROGRESS`` if the shared storage validation raised an error (`PR #2355 <https://github.com/OpenFreeEnergy/openfe/pull/2355>`_`)
+* Fixed ``worker.execute_unit()`` so that input validation is performed _before_ a task is marked as `IN_PROGRESS` (`PR #2355 <https://github.com/OpenFreeEnergy/openfe/pull/2355>`_`).
 
 **Security:**
 
