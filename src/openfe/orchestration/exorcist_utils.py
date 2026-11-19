@@ -10,6 +10,7 @@ from pathlib import Path
 import exorcist
 import networkx as nx
 import pandas as pd
+import tqdm
 from annotated_types import Annotated, Gt
 from gufe import AlchemicalNetwork, ProtocolDAG
 
@@ -19,6 +20,7 @@ from ..storage.warehouse import FileSystemWarehouse, WarehouseBaseClass
 def _alchemical_network_to_task_graph(
     alchemical_network: AlchemicalNetwork,
     warehouse: WarehouseBaseClass,
+    progress: bool = False,
 ) -> nx.DiGraph:
     """Build a global task DAG from `alchemical_network` and store
     its relevant data in `warehouse` in the following warehouse stores:
@@ -34,7 +36,9 @@ def _alchemical_network_to_task_graph(
     alchemical_network : AlchemicalNetwork
         :class:`openfe.AlchemicalNetwork` containing alchemical Transformations to be executed.
     warehouse : WarehouseBaseClass
-       :class:`openfe.storage.Warehouse` used to store teh data used by execution and simulation engines.
+       :class:`openfe.storage.Warehouse` used to store the data used by execution and simulation engines.
+    progress: bool, default=False
+        If True, show a tqdm progress bar.
 
     Returns
     -------
@@ -58,7 +62,13 @@ def _alchemical_network_to_task_graph(
     warehouse.store_setup_tokenizable(alchemical_network)
 
     global_task_dag = nx.DiGraph()
-    for transformation in alchemical_network.edges:
+    for transformation in tqdm.tqdm(
+        alchemical_network.edges,
+        unit="Transformations",
+        leave=False,
+        desc="Creating tasks from AlchemicalNetwork, populating the TaskDB and Warehouse",
+        disable=not progress,
+    ):
         dag: ProtocolDAG = transformation.create()
         for unit in dag.protocol_units:
             global_task_dag.add_node(str(unit.key))
@@ -82,6 +92,7 @@ def setup_task_campaign(
     warehouse_dir: Path,  # TODO: make optional?
     db_path: Path,  # TODO: make optional?
     max_tries: int = 1,
+    progress: bool = False,
 ) -> tuple[exorcist.TaskStatusDB, FileSystemWarehouse]:
     """Create a task database and FileSystemWarehouse from an alchemical network.
 
@@ -98,7 +109,8 @@ def setup_task_campaign(
     max_tries : int, default=1
         Maximum number of times a task will attempt to be submitted before it
         is labelled ``TOO_MANY_RETRIES``.
-
+    progress: bool, default=False
+        If True, show a progress bar when creating the task graph from the alchemical network.
     Returns
     -------
     exorcist.TaskStatusDB
@@ -111,7 +123,9 @@ def setup_task_campaign(
     if Path(db_path).exists():
         raise FileExistsError(f"Error: {db_path} cannot already exist.")
     warehouse = FileSystemWarehouse(warehouse_dir, exist_ok=False)
-    global_task_dag: nx.DiGraph = _alchemical_network_to_task_graph(alchemical_network, warehouse)
+    global_task_dag: nx.DiGraph = _alchemical_network_to_task_graph(
+        alchemical_network, warehouse, progress
+    )
     db = exorcist.TaskStatusDB.from_filename(db_path)
     db.add_task_network(global_task_dag, max_tries)
     return db, warehouse

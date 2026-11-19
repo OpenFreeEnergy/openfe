@@ -229,7 +229,7 @@ def test_build_task_db_forwards_graph_and_max_tries(request, tmp_path, fixture):
             db_path=db_path,
             max_tries=7,
         )
-    task_graph_mock.assert_called_once_with(network, warehouse)
+    task_graph_mock.assert_called_once_with(network, warehouse, False)
     db_ctor.assert_called_once_with(db_path)
     fake_db.add_task_network.assert_called_once_with(fake_graph, 7)
     assert db is fake_db
