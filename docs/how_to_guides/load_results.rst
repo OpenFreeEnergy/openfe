@@ -54,10 +54,10 @@ To access more than the overall estimate, load the :class:`.ProtocolResult`:
 
 This returns the result class of the Protocol that was run, for example a :class:`.RelativeHybridTopologyProtocolResult`.
 
-If you ran the calculation in Python
+Creating a ProtocolResult with the Python API
 ------------------------------------
 
-If you executed the Transformation in Python with :func:`openfe.execute_DAG`,
+If you executed the Transformation using the Python API's  :func:`openfe.execute_DAG` function,
 turn the returned :class:`.ProtocolDAGResult` into a :class:`.ProtocolResult` with the Transformation's
 ``gather`` method:
 

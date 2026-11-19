@@ -206,7 +206,7 @@ Trajectory output
 For each leg, the protocol writes:
 
 * the multistate trajectory (``simulation.nc``)
-* its topology (``hybrid_system.pdb``) needed to read the trajectory
+* the topology (``hybrid_system.pdb``) needed to read the trajectory
 
 Only the atoms selected by ``output_indices`` in ``output_settings`` are saved, which by default excludes water.
 

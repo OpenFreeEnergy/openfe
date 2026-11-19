@@ -713,7 +713,7 @@ def _get_legs_from_result_jsons(
     show_default=True,
     help=(
         "Which report to generate: 'dg' for the binding or hydration free energy of each ligand, "
-        "estimated from the network by MLE and centred around zero; "
+        "estimated from the network by MLE and centered around zero; "
         "'ddg' for the relative binding or hydration free energy of each ligand pair; "
         "or 'raw' for the free energy difference of each leg and repeat."
     ),
