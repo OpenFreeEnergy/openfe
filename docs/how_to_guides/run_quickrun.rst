@@ -3,7 +3,7 @@
 Run a Transformation with quickrun
 ==================================
 
-The CLI command ``openfe quickrun`` takes a :class:`.Transformation` saved as JSON and :doc: `executes it <userguide_quickrun>`.
+The CLI command ``openfe quickrun`` takes a :class:`.Transformation` saved as JSON and :ref:`executes it <userguide_quickrun>`.
 If you planned your network with either of the CLI commands :ref:`cli_plan-rbfe-network` or :ref:`cli_plan-rhfe-network`,
 you already have one JSON file per Transformation.
 With the Python API, you can write them yourself with :meth:`.Transformation.to_json` (see :doc:`dumping_transformation`).
@@ -36,11 +36,9 @@ All repeats of the Transformation (set by ``protocol_repeats``) run one after an
 To run them as separate jobs instead, see :doc:`run_repeats_in_parallel`.
 
 When the run finishes, quickrun prints the free energy estimate and its uncertainty and writes them to the results file.
-To collect the results of many Transformations and estimate DDGs and DGs, see :ref:`openfe gather <cli_gather>`.
+To collect the results of many Transformations and estimate DDGs and DGs, see :doc:`gather_results`.
 
 If the run fails or is interrupted, :doc:`resume_quickrun` explains what to do next.
-
-.. TODO: link the "Gather free energy results" how-to instead of the CLI reference once it exists
 
 See also
 --------

@@ -5,7 +5,7 @@ Overview
 --------
 
 The :class:`AbsoluteSolvationProtocol <.AbsoluteSolvationProtocol>` calculates the free energy change 
-associate with transferring a molecule from vacuum into a solvent.
+associated with transferring a molecule from vacuum into a solvent.
 
 .. note::
    Currently, water is the only supported solvent, however, more solvents might be possible in the future.
@@ -111,11 +111,43 @@ The frame stride can be set through ``analysis_settings.skip`` in
 :class:`.AbsoluteSolvationSettings` (by default, about 500 frames are
 analysed per state). The ligand atoms must be included in the trajectory
 output, through ``output_indices`` in ``solvent_output_settings``; otherwise
-the structural analysis is skipped. The multistate trajectories
-(``solvent.nc`` and ``vacuum.nc``) can be analysed further using
-`openfe_analysis`_.
+the structural analysis is skipped.
 
-.. TODO: Link to the trajectory visualisation how_to_guide when published.
+.. _ahfe_trajectory_output:
+
+Trajectory output
+"""""""""""""""""
+
+For each leg, the protocol writes:
+
+* a multistate trajectory (``vacuum.nc`` and ``solvent.nc``)
+* the topology (``hybrid_system.pdb``) needed to read the trajectory
+
+Only the atoms selected by ``output_indices`` in ``vacuum_output_settings`` and ``solvent_output_settings``
+are saved, which by default excludes water.
+
+The multistate trajectory stores the positions of every replica at each iteration, together with the λ state each
+replica was in. It can therefore be read in two ways:
+
+By λ state
+   The frames sampled at a fixed λ state, taken from whichever replica occupied that state at each iteration.
+
+By replica
+   The frames of a single replica as it moves between λ states.
+
+How these differ depends on the
+:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`:
+
+* ``"repex"`` (replica exchange, the default): every λ state is occupied by exactly one replica at each iteration,
+  so the trajectory can be read both by state and by replica.
+* ``"independent"``: replicas never change state, so reading by state and by replica give the same trajectory.
+* ``"sams"``: several replicas can occupy the same λ state at an iteration while other states are empty,
+  so the trajectory can only be read by replica.
+
+The solvent trajectory can be loaded with `openfe_analysis`_, for example to visualize the simulation.
+Reading the vacuum trajectory is not currently supported.
+
+.. TODO: update once openfe_analysis can read vacuum trajectories.
 
 
 See Also

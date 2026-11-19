@@ -14,46 +14,53 @@ For exact details on what is produced consult the :ref:`pages for each Protocol<
 
 .. todo crossref to HREX and MD Protocol docs from issue 743
 
-How you can inspect these results depends on whether you have executed your simulations
-from the command line or a Python script.
+``quickrun`` output files
+-------------------------
 
-From command line execution
----------------------------
+Running a :class:`.Transformation` with :ref:`quickrun <userguide_quickrun>` produces a results JSON file and a work directory.
 
-If you had executed your calculation using the :ref:`quickrun <cli_quickrun>` command,
-then a ``.json`` results log file as well as a directory of files will have been produced.
-This directory will have various plots and results of analysis, the exact details of which are described
-in the :ref:`pages for each Protocol<userguide_protocols>`.
+The **results file** contains the free energy estimate of the :class:`.Transformation` and its uncertainty,
+the full :class:`.ProtocolResult` and the output of every task.
 
-Most importantly, the ``.json`` results file has ``estimate`` and ``uncertainty`` keys,
-which serve the same purpose as the ``get_estimate()`` and ``get_uncertainty()`` methods described below.
-The full ``json`` results file can be reloaded into a Python session as::
+The **work directory** contains one subdirectory per task (:class:`.ProtocolUnit`) and attempt.
+For the :ref:`Relative Hybrid Topology Protocol <userguide_relative_hybrid_topology_protocol>`,
+each repeat has a setup, a simulation and an analysis task:
 
-  >>> import gufe
-  >>> import json
-  >>>
-  >>> with open('././Transformation-97d7223f918bbdb0570edc2a49bbc43e_results.json', 'r') as f:
-  ...     results = json.load(f, cls=gufe.tokenization.JSON_HANDLER.decoder)
-  >>> results['estimate']
-  -19.889719513104342 <Unit('kilocalorie_per_mole')>
-  >>> results['uncertainty']
-  0.574685524681712 <Unit('kilocalorie_per_mole')>
+.. code-block:: text
 
-To use the analysis methods described in :ref:`userguide_simulation_health`,
-reload the full protocol result from the JSON file::
+   workdir/
+   ├── results.json
+   ├── shared_HybridTopologySetupUnit-<key>_attempt_0/                  (hybrid system)
+   ├── shared_HybridTopologyMultiStateSimulationUnit-<key>_attempt_0/   (trajectory and checkpoint)
+   ├── shared_HybridTopologyMultiStateAnalysisUnit-<key>_attempt_0/     (analysis plots)
+   └── ...                                                              (the same for each repeat)
 
-  >>> protocol_result = openfe.ProtocolResult.from_dict(results['protocol_result'])
-  >>> protocol_result.get_overlap_matrices()
+Protocols with several legs in one :class:`.Transformation`, such as the :ref:`Separated Topologies <userguide_septop_protocol>`
+and :ref:`Absolute Binding <userguide_abfe_protocol>` Protocols,
+have these tasks for each leg and repeat, for example ``SepTopComplexSetupUnit`` and ``SepTopSolventSetupUnit``.
+The analysis directories contain plots for checking each repeat, such as the MBAR overlap matrix;
+see :ref:`multistate_analysis` for how to read them.
 
-From Python execution
----------------------
+Python API result classes
+-------------------------
 
-Executing a :class:`.ProtocolDAG` using :func:`openfe.execute_DAG` will produce a :class:`.ProtocolDAGResult`,
-representing a single iteration of estimating the free energy difference.
-One or more of these can be put into the ``.gather()`` method of the ``Protocol`` to form a :class:`.ProtocolResult`,
-this class takes care of the averaging and concatenation of different iterations of the estimation process.
-This ``ProtocolResult`` class has ``.get_estimate()`` and ``.get_uncertainty()`` methods which return the estimates
-of free energy difference along with its uncertainty.
+Results are built up in three levels, following the :ref:`execution model <userguide_execution_theory>`:
+
+* A :class:`.ProtocolUnitResult` holds the output of a single task, or its error if the task failed.
+* A :class:`.ProtocolDAGResult` holds the results of all tasks from one execution of a :class:`.Transformation`,
+  including all of its repeats.
+* A :class:`.ProtocolResult` combines one or more ``ProtocolDAGResult``\s and computes the free energy estimate
+  and its uncertainty, available through its ``get_estimate()`` and ``get_uncertainty()`` methods.
+
+How the estimate and uncertainty are computed depends on the Protocol.
+For the Relative Hybrid Topology Protocol, the estimate is the mean of the repeat estimates,
+and the uncertainty is their standard deviation.
+
+.. admonition:: How-to guides
+
+   * :doc:`/how_to_guides/load_results`
+   * :doc:`/how_to_guides/simulation_visualization`
+   * :doc:`/how_to_guides/jq_inspection`
 
 See Also
 --------
