@@ -34,15 +34,15 @@ The simulation model is assembled from several choices:
 Protein force fields
 --------------------
 
-The ``forcefield_settings.forcefields`` list specifies OpenMM XML files used
-to parameterize the protein and other non-small-molecule components. The
-default force field list contains files for the protein, water, ions, phosphorylated residues and
+The ``forcefield_settings.forcefields`` setting specifies a list of OpenMM XML files used
+to parameterize the protein and other non-small-molecule components. By
+default the list contains files for the protein, water, ions, phosphorylated residues and
 lipids.
 
 .. note::
 
     The XML force field files should provide predefined partial charges for the non-small-molecule components.
-    The protocol does **not** assign charges using the ``partial_charge_settings`` for these components.
+    The protocol does **not** assign charges during setup using the ``partial_charge_settings`` for these components.
 
 You can inspect the default settings for the protocol you are using via::
 
@@ -79,7 +79,7 @@ For example, to select OpenFF-2.3.0 before creating the protocol::
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
 It is important to select a force field with sufficient accuracy for your molecules, you can also use custom parameters, see the
-:doc:`bespoke force field how-to guide </how_to_guides/bespoke_parameters>`.
+:doc:`bespoke force field how-to guide </how_to_guides/bespoke_parameters>` for more information.
 
 For all available force field settings, see :class:`.OpenMMSystemGeneratorFFSettings`.
 
@@ -106,16 +106,17 @@ For ligands and cofactors represented as a :class:`.SmallMoleculeComponent`, the
 
 .. note::
     By default **AM1-BCC** charges are assigned via the AmberTools backend
-    at the input conformer. This is different from the charges obtained by applying an
-    OpenFF force field independently, since the charge method or backend may differ.
+    at the input conformer. This is **different** from the charges obtained by applying an
+    OpenFF force field independently, as the charge method or backend may differ.
 
-Assigning charges in advance to the input components ensures consistency between calculation repeats and different legs of a transformation,
-see :doc:`Assigning partial charges </how_to_guides/user_charges>` (Python) and :doc:`Generating partial charges with the OpenFE CLI </how_to_guides/charge_molecules_cli>`.
+Assigning charges in advance to the input components ensures consistency between calculation repeats and different legs of a transformation and is recommended.
+For guides on charge assignment, see :doc:`Assigning partial charges </how_to_guides/user_charges>` (Python)
+and :doc:`Generating partial charges with the OpenFE CLI </how_to_guides/charge_molecules_cli>`.
 
 Available charge methods
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-**openfe** supports a range of **AM1-BCC** style charge methods used by most general small molecule force fields.
+**openfe** provides a range of **AM1-BCC** based charge methods compatible with most general small molecule force fields.
 The ``partial_charge_settings.partial_charge_method`` setting selects the
 method used when charges need to be assigned during protocol setup. The available methods are:
 
@@ -161,20 +162,20 @@ Some useful references for charge assignment and force field compatibility are:
 * The `AmberTools documentation <https://ambermd.org/AmberTools.php>`_ provides
   guidance for GAFF.
 
-For guides on charge assignment, see :doc:`Assigning partial charges </how_to_guides/user_charges>` (Python)
+For guides on charge assignment using **openfe**, see :doc:`Assigning partial charges </how_to_guides/user_charges>` (Python)
 and :doc:`Generating partial charges with the OpenFE CLI </how_to_guides/charge_molecules_cli>`.
 
 Water and model compatibility
 -----------------------------
 
-For systems solvated during protocol setup, the ``solvent_model`` selects the water model
+For systems solvated during protocol setup, the ``solvation_settings.solvent_model`` selects the water model
 used when adding solvent. The water and ion XML files in
-``forcefield_settings.forcefields`` must be compatible with those choices e.g. a 4-point water model cannot be used with a 3-point force field.
+``forcefield_settings.forcefields`` must then be compatible with those choices e.g. a 4-point water model cannot be used with a 3-point force field.
 The same force field files must also cover any retained crystallographic ions.
 
 For a pre-solvated input, the protocol does not add solvent to that leg: the
 provided waters and ions must still be compatible with the selected
-force field parameters. See :ref:`userguide_solvation_models` for more details on implicit and explicit solvation in
+force field parameters. See :ref:`userguide_solvation_models` for more details on solvation in
 the protocols.
 
 See also
