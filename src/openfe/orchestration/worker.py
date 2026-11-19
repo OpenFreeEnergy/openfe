@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from dataclasses import dataclass
 from pathlib import Path
 
 from exorcist.taskdb import TaskStatusDB
@@ -16,9 +15,8 @@ from gufe.tokenization import GufeKey
 from ..storage.warehouse import FileSystemWarehouse
 
 
-@dataclass
 class Worker:
-    """Execute protocol units from a task database.
+    """Execution class for running protocol units from a TaskDB and Warehouse
 
     .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe
 
@@ -31,11 +29,20 @@ class Worker:
 
     """
 
-    warehouse: FileSystemWarehouse
-    task_db_path: Path
-
     _RESULT_INDEX_PREFIX = "protocol_unit_results"
     _TASK_WORKDIR_PREFIX = "task_workdirs"
+
+    def __init__(self, warehouse: FileSystemWarehouse, task_db_path: Path):
+        self._warehouse = warehouse
+        self._task_db_path = Path(task_db_path)
+
+    @property
+    def warehouse(self) -> FileSystemWarehouse:
+        return self._warehouse
+
+    @property
+    def task_db_path(self) -> Path:
+        return self._task_db_path
 
     @staticmethod
     def _collect_protocol_unit_keys(value: object) -> set[GufeKey]:
