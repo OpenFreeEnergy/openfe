@@ -5,7 +5,7 @@ Overview
 --------
 
 The :class:`AbsoluteSolvationProtocol <.AbsoluteSolvationProtocol>` calculates the free energy change 
-associate with transferring a molecule from vacuum into a solvent.
+associated with transferring a molecule from vacuum into a solvent.
 
 .. note::
    Currently, water is the only supported solvent, however, more solvents might be possible in the future.
