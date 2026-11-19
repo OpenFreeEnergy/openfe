@@ -58,9 +58,6 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# test data
-src/openfe/tests/data/warehouse_data/
-*._*warehouse*
 # Translations
 *.mo
 *.pot
