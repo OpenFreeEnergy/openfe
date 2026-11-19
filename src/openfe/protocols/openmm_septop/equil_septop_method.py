@@ -35,7 +35,7 @@ import logging
 import uuid
 import warnings
 from collections import defaultdict
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable
 
 import gufe
 from gufe import (

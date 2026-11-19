@@ -47,6 +47,7 @@ logging_control._append_logger(
 
 from importlib.metadata import version
 
+from exorcist import TaskStatusDB
 from gufe import (
     AlchemicalNetwork,
     ChemicalSystem,
@@ -71,7 +72,9 @@ from gufe.protocols import (
     execute_DAG,
 )
 
-from . import analysis, orchestration, setup, utils
+from . import analysis, orchestration, setup, storage, utils
+from .orchestration import get_dependency_df, get_task_df, setup_task_campaign, update_max_tries
+from .orchestration.worker import Worker
 from .setup import (
     KartografAtomMapper,
     LigandAtomMapper,
@@ -80,5 +83,6 @@ from .setup import (
     ligand_network_planning,
     lomap_scorers,
 )
+from .storage import FileSystemWarehouse
 
 __version__ = version("openfe")

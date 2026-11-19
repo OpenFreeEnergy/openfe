@@ -13,8 +13,8 @@ from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
     load_json,
-    rich_print_to_stdout,
 )
+from openfecli.utils import rich_print_to_stdout
 
 
 def _get_name(result: dict) -> str:
@@ -263,8 +263,8 @@ def _generate_dg_raw(results_dict: dict[str, dict[str, list]], allow_partial: bo
     default="dg",
     show_default=True,
     help=(
-        "What data to report. 'dg' computes the overall binding free energy of each ligand in the dataset (dG), and"
-        "'raw' outputs the raw dG values for each individual leg in the ABFE transformation cycles."
+        "Which report to generate: 'dg' for the binding free energy of each ligand, "
+        "or 'raw' for the free energy difference of each leg and repeat."
     ),
 )
 @click.option(
@@ -313,17 +313,18 @@ def gather_abfe(
     All directories will be walked recursively and any valid JSON results files will be gathered.
     Files must end in .json to be collected, and invalid files will be ignored.
 
-    Each JSON contains the results of a separate leg from an Absolute Binding Free Energy calculation.
+    Each JSON contains the results of both legs (complex and solvent) of an Absolute Binding Free Energy Transformation.
     See https://docs.openfree.energy/en/latest/tutorials/abfe_tutorial.html for details on running ABFE calculations.
 
-    The results reported depends on the ``--report`` flag:
+    The results reported depend on the ``--report`` flag:
 
     \b
-    * ``--report=dg`` (default) reports the ligand, its absolute free energy, and
-      the associated uncertainty obtained from DG replica averages and
-      standard deviations.
-    * ``--report=raw`` reports the raw results, which each repeat simulation given
-      separately (i.e. no combining of redundant simulations is performed)
+    * ``--report=dg`` (default) reports the absolute binding free energy of each
+      ligand, averaged over the repeats, and its uncertainty.  The uncertainty is
+      the standard deviation of the repeats, or, if any ligand has only one repeat,
+      the MBAR uncertainties of both legs combined.
+    * ``--report=raw`` reports the free energy difference of every leg and repeat
+      separately, without combining repeats or legs, with its MBAR uncertainty.
 
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to specify an output filepath.
@@ -360,8 +361,4 @@ def gather_abfe(
         rich_print_to_stdout(df)
 
 
-PLUGIN = OFECommandPlugin(
-    command=gather_abfe,
-    section="Quickrun Executor",
-    requires_ofe=(0, 6),
-)
+PLUGIN = OFECommandPlugin(command=gather_abfe, section="Results Gathering", requires_ofe=(0, 6))

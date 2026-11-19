@@ -4,6 +4,8 @@
 Test the restraint settings.
 """
 
+import warnings
+
 import pytest
 from openff.units import unit
 
@@ -74,6 +76,16 @@ def test_boresch_restraint_settings_default():
         K_phiC=10 * unit.kilojoule_per_mole / unit.radians**2,
     )
     assert isinstance(settings, BoreschRestraintSettings)
+
+
+def test_boresch_restraint_settings_no_warnings():
+    """
+    Check that no UserWarnings are raised when creating the settings,
+    e.g. from a model validator not returning ``self``.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        _ = BoreschRestraintSettings()
 
 
 @pytest.mark.parametrize("parameter", ["host_restraint_ids", "guest_restraint_ids"])

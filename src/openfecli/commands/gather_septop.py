@@ -13,8 +13,8 @@ from openfecli.commands.gather import (
     _collect_result_jsons,
     format_df_with_precision,
     load_json,
-    rich_print_to_stdout,
 )
+from openfecli.utils import rich_print_to_stdout
 
 
 def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
@@ -348,9 +348,10 @@ def _generate_raw(
     default="dg",
     show_default=True,
     help=(
-        "What data to report. 'dg' gives the maximum-likelihood estimate derived "
-        "absolute deltaG value,  'ddg' gives delta-delta-G, and 'raw' gives "
-        "the raw result of the deltaG for a leg."
+        "Which report to generate: 'dg' for the binding free energy of each ligand, "
+        "estimated from the network by MLE and centred around zero; "
+        "'ddg' for the relative binding free energy of each ligand pair; "
+        "or 'raw' for the free energy difference of each leg and repeat."
     ),
 )
 @click.option(
@@ -399,21 +400,23 @@ def gather_septop(
     All directories will be walked recursively and any valid JSON results files will be gathered.
     Files must end in .json to be collected, and invalid files will be ignored.
 
-    Each JSON contains the results of a separate leg from a Separated Topologies calculation.
+    Each JSON contains the results of both legs (complex and solvent) of a Separated Topologies Transformation.
     See https://docs.openfree.energy/en/latest/tutorials/septop_tutorial.html for details on running SepTop calculations.
 
-    The results reported depends on ``--report`` flag:
+    The results reported depend on ``--report`` flag:
 
     \b
     * ``--report=dg`` (default) reports the ligand, its absolute free energy, and
       the associated uncertainty as the maximum likelihood estimate obtained
-      from DDG replica averages and standard deviations.  These MLE estimates
-      are centred around 0.0, and when plotted can be shifted to match
-      experimental values.
-    * ``--report=ddg`` reports pairs of ligand_i and ligand_j, the calculated
-      relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
-    * ``--report=raw`` reports the raw results, which each repeat simulation given
-      separately (i.e. no combining of redundant simulations is performed)
+      from the DDG values.  These MLE estimates are centred around 0.0, and
+      when plotted can be shifted to match experimental values.
+    * ``--report=ddg`` reports, for each pair of ligand_i and ligand_j, the
+      relative binding free energy DDG(i->j) = DG(j) - DG(i), averaged over
+      the repeats, and its uncertainty.  The uncertainty is the standard deviation
+      of the repeats, or, if any Transformation has only one repeat, the MBAR
+      uncertainties of both legs combined.
+    * ``--report=raw`` reports the free energy difference of every leg and repeat
+      separately, without combining repeats or legs, with its MBAR uncertainty.
 
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to specify an output filepath.
@@ -451,8 +454,4 @@ def gather_septop(
         rich_print_to_stdout(df)
 
 
-PLUGIN = OFECommandPlugin(
-    command=gather_septop,
-    section="Quickrun Executor",
-    requires_ofe=(0, 6),
-)
+PLUGIN = OFECommandPlugin(command=gather_septop, section="Results Gathering", requires_ofe=(0, 6))

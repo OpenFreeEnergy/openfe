@@ -1,7 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
-import warnings
 from typing import Callable, Iterable, Optional, Type
 
 from gufe import (

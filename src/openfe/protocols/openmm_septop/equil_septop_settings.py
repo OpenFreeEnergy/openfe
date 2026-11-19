@@ -11,7 +11,9 @@ See Also
 openfe.protocols.openmm_septop.SepTopProtocol
 """
 
-from typing import Optional
+import copy
+import warnings
+from typing import Any, Optional
 
 import numpy as np
 from gufe.settings import (
@@ -21,7 +23,7 @@ from gufe.settings import (
 )
 from gufe.settings.typing import PicosecondQuantity
 from openff.units import unit as offunit
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AlchemicalSettings,
@@ -371,6 +373,35 @@ class SepTopSettings(SettingsBaseModel):
     """
     Settings for the Boresch restraint applied to ligand B in the complex.
     """
+
+    @model_validator(mode="before")
+    @classmethod
+    def allow_legacy_complex_restraint_settings(cls, data: Any) -> Any:
+        """
+        Allow settings with ``complex_restraint_settings`` (pre openfe v1.13)
+        to be loaded by converting it to ``complex_restraint_settings_A``
+        and ``complex_restraint_settings_B``.
+        """
+        if (
+            isinstance(data, dict)
+            and "complex_restraint_settings" in data
+            and "complex_restraint_settings_A" not in data
+            and "complex_restraint_settings_B" not in data
+        ):
+            wmsg = (
+                "Loading SepTop settings from `openfe<=1.12` "
+                "which uses ``complex_restraint_settings``. "
+                "The values of ``complex_restraint_settings`` have been copied over to "
+                "``complex_restraint_settings_A`` and ``complex_restraint_settings_B``. "
+                "This will no longer be supported in openfe v1.14."
+            )
+            warnings.warn(wmsg, FutureWarning, stacklevel=2)
+            data = dict(data)
+            legacy = data.pop("complex_restraint_settings")
+            data["complex_restraint_settings_A"] = copy.deepcopy(legacy)
+            data["complex_restraint_settings_B"] = copy.deepcopy(legacy)
+        return data
+
     analysis_settings: MultiStateAnalysisSettings = Field(
         default_factory=MultiStateAnalysisSettings
     )

@@ -11,6 +11,7 @@ import numpy as np
 import openmm
 import pytest
 from openff.units import unit as offunit
+from pint.testing import assert_allclose as assert_quantity_almost_equal
 
 import openfe
 from openfe.protocols import openmm_afe
@@ -28,6 +29,7 @@ def patcher():
                 "system": Path("system.xml.bz2"),
                 "positions": Path("positions.npy"),
                 "pdb_structure": Path("hybrid_system.pdb"),
+                "alchem_indices": [0, 1, 2],
                 "selection_indices": np.zeros(100),
                 "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
                 "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
@@ -43,6 +45,7 @@ def patcher():
                 "system": Path("system.xml.bz2"),
                 "positions": Path("positions.npy"),
                 "pdb_structure": Path("hybrid_system.pdb"),
+                "alchem_indices": [0, 1, 2],
                 "selection_indices": np.zeros(100),
                 "box_vectors": [np.zeros(3), np.zeros(3), np.zeros(3)] * offunit.nm,
                 "standard_state_correction": 0 * offunit.kilocalorie_per_mole,
@@ -289,12 +292,12 @@ class TestProtocolResult:
         assert isinstance(geom[0], BoreschRestraintGeometry)
         assert geom[0].guest_atoms == [1779, 1778, 1777]
         assert geom[0].host_atoms == [852, 853, 854]
-        assert pytest.approx(geom[0].r_aA0, rel=1e-2) == 1.041035 * offunit.nanometer
-        assert pytest.approx(geom[0].theta_A0, rel=1e-2) == 1.063788 * offunit.radian
-        assert pytest.approx(geom[0].theta_B0, rel=1e-2) == 1.230858 * offunit.radian
-        assert pytest.approx(geom[0].phi_A0, rel=1e-2) == 1.155133 * offunit.radian
-        assert pytest.approx(geom[0].phi_B0, rel=1e-2) == 1.141134 * offunit.radian
-        assert pytest.approx(geom[0].phi_C0, rel=1e-2) == -0.621615 * offunit.radian
+        assert_quantity_almost_equal(geom[0].r_aA0, 1.041035 * offunit.nanometer, rtol=1e-2)
+        assert_quantity_almost_equal(geom[0].theta_A0, 1.063788 * offunit.radian, rtol=1e-2)
+        assert_quantity_almost_equal(geom[0].theta_B0, 1.230858 * offunit.radian, rtol=1e-2)
+        assert_quantity_almost_equal(geom[0].phi_A0, 1.155133 * offunit.radian, rtol=1e-2)
+        assert_quantity_almost_equal(geom[0].phi_B0, 1.141134 * offunit.radian, rtol=1e-2)
+        assert_quantity_almost_equal(geom[0].phi_C0, -0.621615 * offunit.radian, rtol=1e-2)
 
     @pytest.mark.parametrize(
         "key, expected_size",

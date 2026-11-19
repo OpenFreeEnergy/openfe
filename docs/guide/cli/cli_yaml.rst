@@ -12,16 +12,19 @@ For example, the settings file which re-specifies the default behaviour would lo
   network:
     method: generate_minimal_spanning_network
   mapper:
-    method: LomapAtomMapper
+    method: KartografAtomMapper
     settings:
-      time: 1
-      threed: True
-      max3d: 0.95
-      element_change: True
+        atom_max_distance: 0.95
+        atom_map_hydrogens: true
+        map_hydrogens_on_hydrogens_only: true
+        map_exact_ring_matches_only: true
+        allow_partial_fused_rings: true
+        allow_bond_breaks: false
   partial_charge:
     method: am1bcc
     settings:
       off_toolkit_backend: ambertools
+      number_of_conformers: None
 
 The name of the algorithm is given behind the ``method:`` key and the arguments to the
 algorithm are then optionally given behind the ``settings:`` key.
@@ -35,20 +38,19 @@ Customising the atom mapper
 ---------------------------
 
 There is a choice to be made as to which atom mapper is used,
-currently included are the :class:`.LomapAtomMapper` and the :class:`.KartografAtomMapper` (full details in the `Kartograf documentation`_.)
+currently included are the :class:`.KartografAtomMapper` (full details in the `Kartograf documentation`_.) and the :class:`.LomapAtomMapper` (full details in the `Lomap documentation`_.).
 
 .. _Kartograf documentation: https://kartograf.readthedocs.io/en/latest/api/kartograf.mappers.html#kartograf.atom_mapper.KartografAtomMapper
+.. _`Lomap documentation`: https://lomap.openfree.energy/en/latest/getting_started.html#generating-mappings
 
-For example, to switch to using the ``Kartograf`` atom mapper, this settings YAML could be used ::
+For example, to switch to using the ``LomapAtomMapper`` atom mapper, this settings YAML could be used ::
 
   mapper:
-    method: KartografAtomMapper
+    method: LomapAtomMapper
     settings:
-      atom_max_distance: 0.95
-      atom_map_hydrogens: True
-      map_hydrogens_on_hydrogens_only: False
-      map_exact_ring_matches_only: True
-
+        time: 1
+        threed: True
+        max3d: 0.95
 
 Customising the network planner
 -------------------------------
@@ -93,12 +95,14 @@ There are a range of partial charge generation schemes available, including
 * ``am1bccelf10`` (only possible if ``off_toolkit_backend`` in settings is set to ``openeye``)
 * ``nagl`` (must have ``openff-nagl`` installed)
 * ``espaloma`` (must have ``espaloma_charge`` installed)
+* ``forcefield`` (use a SMIRNOFF force field to assign charges; requires ``forcefields`` to be set below)
 
 The following settings can also be set
 
 * ``off_toolkit_backend`` The backend to use for partial charge generation. Choose from  ``ambertools`` (default), ``openeye`` or ``rdkit``.
 * ``number_of_conformers`` The number of conformers to use for partial charge generation. If unset (default), the input conformer will be used.
 * ``nagl_model``: The NAGL model to use. If unset (default), the latest available production charge model will be used.
+* ``forcefields``: List the SMIRNOFF force field(s) used by ``method: forcefield``
 
 For example, to generate the partial charges using the ``am1bccelf10`` method from ``openeye`` the following should be added to the YAML settings file ::
 

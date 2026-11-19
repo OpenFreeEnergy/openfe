@@ -36,11 +36,33 @@ Once tests pass, the PR is approved, and you're ready to merge:
   1. merge in the **gufe** PR
   2. switch `openfe/env.yaml` and `openfe/docs/env.yaml` back to `gufe@main`, then re-run CI.
 
+### Option: Building docs using pixi
+
+As an alternative to mamba, you can use [pixi](https://pixi.prefix.dev/latest/) to build the docs environment:
+
+``` bash
+pixi run docs-build
+```
+
+or to use [sphinx-autobuild](https://github.com/sphinx-doc/sphinx-autobuild/tree/main#sphinx-autobuild):
+
+``` bash
+pixi run docs-autobuild
+```
+
+
 ## Contribution Guidelines
+
+### Rules for new / infrequent contributors
+
+New contributions to the `openfe` code are welcome. However, to ensure a good experience for all contributors, we ask that you do the following:
+  1. Tell us about your intentions to contribute as early as possible, definitely **before** you open any pull request. This means either opening a new issue (see "Issue-driven development" below), or by commenting on an existing issue. Please wait for a response from one of the core developers before you start any work, that way we can ensure that you are not duplicating existing efforts.
+  2. Do not have more than **2 pull requests** open at any time, unless previously agreed with one of the core developers. This ensures that we don't get overloaded with review requests and that we can concentrate on completing existing pull requests.
+  3. Avoid overwriting the pull request & issue templates. Failure to complete certain disclosures, e.g. the AI disclosure, will result in your pull request being automatically closed.
 
 ### Issue-driven development
 
-OpenFE adheres to issue-driven development, especially for external contributions. 
+OpenFE adheres to issue-driven development, especially for external contributions.
 This saves time for both the contributor and OpenFE maintainers, as project scope and planned work are decided _before_ implementation begins.
 
 In other words, **before starting a pull request, [open an issue](https://github.com/OpenFreeEnergy/openfe/issues)**.
@@ -89,8 +111,9 @@ All PRs come templated with a checklist of the highest priority criteria, along 
 
 
 ### Review process
-- In general, push PRs early so that work is visible, but leave a PR in draft-mode until you want it to be reviewed by the team.
-  Once it's marked as "ready for review," the OpenFE team will assign a reviewer.
+- In general, push PRs early so that work is visible, but leave a PR in draft-mode until you want it to be reviewed by the team. Once it's marked as "ready for review," the OpenFE team will assign a reviewer.
+- **Prioritize your reviewer**: OpenFE maintainers review all PRs, meaning that a human reviews every line that is committed. PRs should be constrained to a size and scope that is reasonable for a human to review thoroughly.
+
 
 ### Larger contributions (multi-PR contributions)
 - [Open an issue](https://github.com/OpenFreeEnergy/openfe/issues) describing the feature you want to contribute and get feedback from the OpenFE team.
@@ -109,14 +132,4 @@ However, with generative AI, a large volume of code can be generated quickly, pu
 
 Furthermore, test driven development (with tests defined and written _by the code author_), thoughtful conversation on Issues and PRs, and thorough code review are how we prioritize scientific validity and code quality.
 
-Code authors must also retain full authorship for any contributed code,contributions must be covered by the [MIT license](https://github.com/OpenFreeEnergy/openfe/blob/main/LICENSE), and [Developer Certificate of Origin](https://developercertificate.org/).
-
-<!-- this is subject to change, as the team is continually reevaluating  -->
-
-OpenFE's guidelines around generative AI are based on the principles described above, and can be summarized as:
-
-1. **Own your code**: No PRs authored by agentic bots will be accepted. A human author must take responsibility for all issues and PRs.
-2. **Prioritize your reviewer**: OpenFE maintainers review all PRs, meaning that a human reviews every line that is committed.
-   PRs should be constrained to a size and scope that is reasonable for a human to review thoroughly.
-
-The OpenFE core developers reserve the right to reject contributions if we judge that they do not follow the spirit of these principles.
+See the ``AI_Policy.md`` in each repository in our ecosystem for a copy of the OpenFE Ecosystem policy as well as repository-specific policies.

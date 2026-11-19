@@ -2,7 +2,7 @@
 Thank you for pull request.
 Below are a few things we ask you kindly to self-check before getting a review. Remove checks that are not relevant.
 -->
-
+## Description
 <!--
 Please note any issues this fixes using [closing keywords]( https://help.github.com/articles/closing-issues-using-keywords/ ):
 -->
@@ -13,14 +13,17 @@ see https://regro.github.io/rever-docs/news.html for details on how to add news 
 
 ## LLM / AI generated code disclosure
 <!-- Please update this disclosure to reflect if you did or did not use LLMs / AI to generate code -->
-LLMs or other AI-powered tools (beyond simple IDE use cases) were used in this contribution: yes / no
-If yes, please provide details here:
+LLMs or other AI-powered tools (beyond simple IDE use cases) were used in this contribution:
+- [ ] No
+- [ ] Yes: [If yes, please provide details here]
 
-Checklist
+## Checklist
+* [ ] Read the [AI Policy](https://github.com/OpenFreeEnergy/openfe/blob/main/AI_POLICY.md)  and filled in the AI-generated code disclosure.
+* [ ] Adhered to the [contribution guidelines](https://github.com/OpenFreeEnergy/openfe?tab=contributing-ov-file#contribution-guidelines)
 * [ ] All new code is appropriately documented (user-facing code _must_ have complete docstrings).
-* [ ] Added a ``news`` entry, or the changes are not user-facing.
 * [ ] Ran pre-commit: you can run [pre-commit](https://pre-commit.com) locally or comment on this PR with `pre-commit.ci autofix`.
-* [ ] Filled in the AI generated code disclosure.
+* [ ] Added a ``news`` entry, or the changes are not user-facing.
+
 
 Manual Tests: these are slow so don't need to be run every commit, only before merging and when relevant changes are made (generally at reviewer-discretion). 
 * [ ] [GPU integration tests](https://github.com/OpenFreeEnergy/openfe/actions/workflows/aws-gpu-integration-tests.yaml)

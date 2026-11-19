@@ -4,7 +4,6 @@
 import hashlib
 import json
 import pathlib
-import warnings
 
 import click
 
@@ -203,7 +202,7 @@ def quickrun(transformation, work_dir, output, resume):
         )
 
 
-PLUGIN = OFECommandPlugin(command=quickrun, section="Quickrun Executor", requires_ofe=(0, 3))
+PLUGIN = OFECommandPlugin(command=quickrun, section="Execution", requires_ofe=(0, 3))
 
 if __name__ == "__main__":
     quickrun()

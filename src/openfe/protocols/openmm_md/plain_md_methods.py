@@ -50,11 +50,19 @@ from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings,
 )
 from openfe.protocols.openmm_utils import (
+    charge_generation,
     omm_compute,
     serialization,
     settings_validation,
     system_creation,
     system_validation,
+)
+from openfe.protocols.openmm_utils.offmolecule_utils import (
+    _get_offmol_metadata,
+    _get_unique_name,
+    _get_used_offmol_property,
+    _next_available_number,
+    _set_offmol_metadata,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
@@ -336,6 +344,32 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
     Protocol setup unit for plain MD simulations which handles charging, system building and solvation.
     """
 
+    @staticmethod
+    def _assign_partial_charges(
+        charge_settings: OpenFFPartialChargeSettings,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> None:
+        """
+        Assign partial charges to SMCs.
+
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
+        """
+        for mol in smc_components.values():
+            charge_generation.assign_offmol_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=charge_settings.partial_charge_method,
+                toolkit_backend=charge_settings.off_toolkit_backend,
+                generate_n_conformers=charge_settings.number_of_conformers,
+                nagl_model=charge_settings.nagl_model,
+            )
+
     def run(
         self,
         *,
@@ -418,6 +452,9 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
+
+        # Set the solvent component to be the protein component if the latter
+        # is already solvated.
         if isinstance(protein_comp, SolvatedPDBComponent):
             solvent_comp = protein_comp
 
@@ -427,7 +464,32 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             i: i.to_openff() for i in small_mols
         }
 
-        # b. get a system generator
+        # a. assign residue names / numbers to the small molecules.
+        # First gather all the unique names & resnums
+        used_names = _get_used_offmol_property(list(smc_components.values()), "residue_name")
+        used_resnums = {
+            int(i)
+            for i in _get_used_offmol_property(list(smc_components.values()), "residue_number")
+        }
+
+        # We assign everything LIG unless LIG is already a name
+        resname = _get_unique_name("LIG", "LG", used_names)
+
+        # Now we assign all the residue names & numbers
+        for offmol in smc_components.values():
+            name = _get_offmol_metadata(offmol, "residue_name")
+            num = _get_offmol_metadata(offmol, "residue_number")
+            if name is None:
+                _set_offmol_metadata(offmol, "residue_name", resname)
+            if num is None:
+                resnum = _next_available_number(used_resnums)
+                _set_offmol_metadata(offmol, "residue_number", str(resnum))
+                used_resnums.add(resnum)
+
+        # b. assign partial charges to smcs
+        self._assign_partial_charges(charge_settings, smc_components)
+
+        # c. get a system generator
         if output_settings.forcefield_cache is not None:
             ffcache = self.shared_basepath / output_settings.forcefield_cache
         else:
@@ -449,7 +511,7 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             for mol in smc_components.values():
                 system_generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
 
-            # c. get OpenMM Modeller + a resids dictionary for each component
+            # d. get OpenMM Modeller + a resids dictionary for each component
             stateA_modeller, comp_resids = system_creation.get_omm_modeller(
                 protein_comp=protein_comp,
                 solvent_comp=solvent_comp,
@@ -458,22 +520,22 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 solvent_settings=solvation_settings,
             )
 
-            # d. get topology & positions
+            # e. get topology & positions
             # Note: roundtrip positions to remove vec3 issues
             stateA_topology = stateA_modeller.getTopology()
             stateA_positions = to_openmm(from_openmm(stateA_modeller.getPositions()))
 
-            # e. create the stateA System
+            # f. create the stateA System
             stateA_system = system_generator.create_system(
                 stateA_topology,
                 molecules=[s.to_openff() for s in small_mols],
             )
 
-        # f. Save pdb of entire system topology to file, this is always needed for restarts
+        # g. Save pdb of entire system topology to file, this is always needed for restarts
         with open(self.shared_basepath / output_settings.preminimized_structure, "w") as f:
             openmm.app.PDBFile.writeFile(stateA_topology, stateA_positions, file=f, keepIds=True)
 
-        # g. Save the system and positions to file
+        # h. Save the system and positions to file
         system_outfile = self.shared_basepath / "system.xml.bz2"
         serialization.serialize(stateA_system, system_outfile)
         positions_outfile = self.shared_basepath / "input_positions.npy"
