@@ -123,6 +123,20 @@ def test_execute_unit_stores_real_result(worker_with_executable_unit, tmp_path):
     assert status_by_taskid[taskid] == exorcist.TaskStatus.COMPLETED.value
 
 
+def test_execute_unit_marks_missing_scratch_as_failed(worker_with_executable_unit, tmp_path):
+    worker, warehouse, db, _ = worker_with_executable_unit
+    before = _get_result_store_files(warehouse)
+
+    with pytest.raises(FileNotFoundError, match="not/a/path"):
+        execution = worker.execute_unit(scratch="not/a/path/")
+        assert execution is not None
+        taskid, _ = execution
+
+        rows = list(db.get_all_tasks())
+        status_by_taskid = {row.taskid: row.status for row in rows}
+        assert status_by_taskid[taskid] == exorcist.TaskStatus.AVAILABLE.value
+
+
 def test_execute_unit_propagates_execute_error_without_store(worker_with_executable_unit, tmp_path):
     worker, warehouse, db, unit = worker_with_executable_unit
     before = _get_result_store_files(warehouse)
