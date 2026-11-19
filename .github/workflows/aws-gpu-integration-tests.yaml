@@ -20,12 +20,14 @@ jobs:
         id: aws-start
         uses: omsf/start-aws-gha-runner@ab8ad839c760c94ae44e6782a1b20e3f591827fd  # v1.0.0
         with:
-          aws_image_id: ami-076a54ed41e67782d
+          aws_image_name: "Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 24.04)"
+          aws_image_id: latest
           aws_instance_type: g4dn.xlarge
           aws_home_dir: /home/ubuntu
           aws_root_device_size: 125
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+
 
   self-hosted-test:
     runs-on: self-hosted
@@ -42,6 +44,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Print disk usage
         run: "df -h"
+
+      - name: list CUDA versions
+        run: |
+          ls -ld /usr/local/cuda*
 
       - name: Print Docker details
         run: "docker version || true"
@@ -62,7 +68,7 @@ jobs:
           create-args: >-
             openeye-toolkits
             python=3.12
-            cuda-version=12.8
+            cuda-version=12.9
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
