@@ -65,6 +65,8 @@ A soft-core potential from Beutler et al. [4]_ is applied to the Lennard-Jones p
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec_A``, ``lambda_elec_B``,  ``lambda_vdw_A``, ``lambda_vdw_B``,
 ``lambda_restraints_A``, and ``lambda_restraints_B``.
 
+For more information on configuring these and other protocol settings, see :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`.
+
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
@@ -141,10 +143,48 @@ Because both ligands are held in place by orientational restraints in the
 complex leg, also check that the restraint geometry stays well defined; see
 the `Boresch restraint analysis tutorial
 <https://openfe-analysis.openfree.energy/en/latest/tutorials/boresch_analysis.html>`_.
-The multistate trajectory (``simulation.nc``) and its topology
-(``alchemical_system.pdb``) can be analysed further using `openfe_analysis`_.
 
-.. TODO: Link to the trajectory visualisation how_to_guide when published.
+.. _septop_trajectory_output:
+
+Trajectory output
+"""""""""""""""""
+
+For each leg, the protocol writes:
+
+* the multistate trajectory (``complex.nc`` and ``solvent.nc``)
+* the topology (``alchemical_system.pdb``) needed to read the trajectory
+
+Only the atoms selected by ``output_indices`` in ``complex_output_settings`` and ``solvent_output_settings``
+are saved, which by default excludes water.
+
+The multistate trajectory stores the positions of every replica at each iteration, together with the λ state each
+replica was in. It can therefore be read in two ways:
+
+By λ state
+   The frames sampled at a fixed λ state, taken from whichever replica occupied that state at each iteration.
+
+By replica
+   The frames of a single replica as it moves between λ states.
+
+How these differ depends on the
+:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`:
+
+* ``"repex"`` (replica exchange, the default): every λ state is occupied by exactly one replica at each iteration,
+  so the trajectory can be read both by state and by replica.
+* ``"independent"``: replicas never change state, so reading by state and by replica give the same trajectory.
+* ``"sams"``: several replicas can occupy the same λ state at an iteration while other states are empty,
+  so the trajectory can only be read by replica.
+
+When the ligands are included in ``output_indices``, as they are by default, both are present in every λ state,
+each as a separate residue (``LIG``, with its own residue number). Unlike in the hybrid topology, where the core
+atoms are shared and only the unique atoms are switched on or off, each ligand has its own complete set of atoms,
+and the whole ligand is coupled to or decoupled from its environment along the λ schedule.
+In the first λ state, ligand A is fully interacting and ligand B is decoupled; in the last λ state, the reverse is
+true.
+
+Both files can be loaded with `openfe_analysis`_, for example to visualize the simulation or extract the
+trajectories of the end states. The :doc:`trajectory visualization how-to guide </how_to_guides/simulation_visualization>`
+shows how, including how to choose a λ state or replica with the ``index`` and ``index_method`` arguments.
 
 See Also
 --------
@@ -165,7 +205,8 @@ See Also
 
 **How-to guides**
 
-:ref:`How-to guides <how_to_guides>`
+* :ref:`How-to guides <how_to_guides>`
+* :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`
 
 **API Documentation**
 

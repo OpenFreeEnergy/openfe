@@ -20,10 +20,11 @@ from openfe.storage.warehouse import (
 
 class TestWarehouseBaseClass:
     def test_store_protocol_dag_result(self):
+        # TODO: if we decide to store ProtocolDAGResults
         pytest.skip("Not implemented yet")
 
     @staticmethod
-    def _build_stores() -> WarehouseStores:
+    def _build_memory_stores() -> WarehouseStores:
         return WarehouseStores(
             setup=MemoryStorage(),
             results=MemoryStorage(),
@@ -44,7 +45,7 @@ class TestWarehouseBaseClass:
         load_func_name,
         store_name: Literal["setup", "results", "tasks"],
     ):
-        stores = TestWarehouseBaseClass._build_stores()
+        stores = TestWarehouseBaseClass._build_memory_stores()
         client = WarehouseBaseClass(stores=stores, name="test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
@@ -66,7 +67,7 @@ class TestWarehouseBaseClass:
         load_func_name,
         store_name: Literal["setup", "results", "tasks"],
     ):
-        stores = TestWarehouseBaseClass._build_stores()
+        stores = TestWarehouseBaseClass._build_memory_stores()
         client = WarehouseBaseClass(stores=stores, name="test_warehouse")
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
@@ -96,7 +97,7 @@ class TestWarehouseBaseClass:
 
     def test_store_task_writes_to_tasks_store(self, dummy_abfe_transformation):
         unit = self._get_protocol_unit(dummy_abfe_transformation)
-        stores = self._build_stores()
+        stores = self._build_memory_stores()
         client = WarehouseBaseClass(stores, name="test_warehouse")
         client.store_task(unit)
 
@@ -107,7 +108,7 @@ class TestWarehouseBaseClass:
 
     def test_exists_finds_task_key(self, dummy_abfe_transformation):
         unit = self._get_protocol_unit(dummy_abfe_transformation)
-        stores = self._build_stores()
+        stores = self._build_memory_stores()
         client = WarehouseBaseClass(stores, "test_warehouse")
 
         client.store_task(unit)
@@ -116,7 +117,7 @@ class TestWarehouseBaseClass:
 
     def test_load_task_returns_object(self, dummy_abfe_transformation):
         unit = self._get_protocol_unit(dummy_abfe_transformation)
-        stores = self._build_stores()
+        stores = self._build_memory_stores()
         client = WarehouseBaseClass(stores, name="test_warehouse")
 
         client.store_task(unit)
@@ -127,7 +128,7 @@ class TestWarehouseBaseClass:
 
     def test_load_task_wrong_type(self, dummy_abfe_transformation):
         transformation = dummy_abfe_transformation
-        stores = self._build_stores()
+        stores = self._build_memory_stores()
         client = WarehouseBaseClass(stores, name="test_warehouse")
 
         client.store_setup_tokenizable(transformation)
@@ -136,7 +137,7 @@ class TestWarehouseBaseClass:
 
     def test_store_load_protocol_dag_wrong_type(self, dummy_abfe_transformation):
         transformation = dummy_abfe_transformation
-        stores = self._build_stores()
+        stores = self._build_memory_stores()
         client = WarehouseBaseClass(stores, name="test_warehouse")
 
         with pytest.raises(TypeError, match="Unable to write"):
@@ -248,7 +249,7 @@ class TestFileSystemWarehouse:
             "load_setup_tokenizable",
         )
 
-    def test_filesystemwarehouse_has_shared_and_tasks_stores(self, dummy_abfe_transformation):
+    def test_filesystem_warehouse_has_shared_and_tasks_stores(self, dummy_abfe_transformation):
         unit = TestWarehouseBaseClass._get_protocol_unit(dummy_abfe_transformation)
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -305,7 +306,6 @@ class TestWarehouseResultsGathering:
     def test_gather_results(self, warehouse_partial_failure):
         wh = warehouse_partial_failure
         result_edges = wh.gather_all_results()
-        # TODO: how much to check here
 
         results_ok = [dag.ok() for _, dag in result_edges]
         assert sorted(results_ok) == [False, True, True, True]  # one failed edge

@@ -110,7 +110,7 @@ linearly between their state A and state B values, so the choice of ``lambda_fun
          benchmarks of the protocol, so its performance is best characterised. ``namd`` and ``quarters`` are provided for
          users who want to explore alternative alchemical pathways, but they have not been benchmarked to the same extent.
          If you do change the function, it is good practice to check the overlap between neighbouring windows
-         (see :ref:`Energetic and replica exchange analysis <guide/protocols/relativehybridtopology:Energetic and replica exchange analysis>`) and, if needed, increase ``lambda_windows``.
+         (see :ref:`Energetic and replica exchange analysis <multistate_analysis>`) and, if needed, increase ``lambda_windows``.
 
 The choice of lambda function can be configured via the protocol settings, for example:
 
@@ -118,6 +118,8 @@ The choice of lambda function can be configured via the protocol settings, for e
 
    settings = RelativeHybridTopologyProtocol.default_settings()
    settings.lambda_settings.lambda_functions = "namd"
+
+For more details on configuring protocol settings, see :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`.
 
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
@@ -192,17 +194,57 @@ Cα RMSD (``protein_RMSD``), which is not plotted.
 
 .. caution::
 
-Ligand RMSD is calculated for the hybrid ligand, including dummy
-atoms. Movement of these atoms can inflate RMSD values even when
-the interacting part of the ligand remains in its binding pose.
-Inspect the trajectory before interpreting a high RMSD as
-evidence of ligand displacement.
+   Ligand RMSD is calculated for the hybrid ligand, including dummy
+   atoms. Movement of these atoms can inflate RMSD values even when
+   the interacting part of the ligand remains in its binding pose.
+   Inspect the trajectory before interpreting a high RMSD as
+   evidence of ligand displacement.
 
-The multistate trajectory (``simulation.nc``) and the hybrid topology
-(``hybrid_system.pdb``) can be analysed further using `openfe_analysis`_.
+.. _rbfe_trajectory_output:
 
-.. TODO: Link to the trajectory visualisation how_to_guide when published.
+Trajectory output
+"""""""""""""""""
 
+For each leg, the protocol writes:
+
+* the multistate trajectory (``simulation.nc``)
+* the topology (``hybrid_system.pdb``) needed to read the trajectory
+
+Only the atoms selected by ``output_indices`` in ``output_settings`` are saved, which by default excludes water.
+
+The multistate trajectory stores the positions of every replica at each iteration, together with the λ state each
+replica was in. It can therefore be read in two ways:
+
+By λ state
+   The frames sampled at a fixed λ state, taken from whichever replica occupied that state at each iteration.
+
+By replica
+   The frames of a single replica as it moves between λ states.
+
+How these differ depends on the
+:py:obj:`~openfe.protocols.openmm_utils.omm_settings.MultiStateSimulationSettings.sampler_method`:
+
+* ``"repex"`` (replica exchange, the default): every λ state is occupied by exactly one replica at each iteration,
+  so the trajectory can be read both by state and by replica.
+* ``"independent"``: replicas never change state, so reading by state and by replica give the same trajectory.
+* ``"sams"``: several replicas can occupy the same λ state at an iteration while other states are empty,
+  so the trajectory can only be read by replica.
+
+When the ligand is included in ``output_indices``, as it is by default, the accompanying topology
+(``hybrid_system.pdb``) contains the hybrid ligand, in which the core atoms are shared between both end states.
+The temperature factor record field details which end state each atom belongs to:
+
+* ``0.0``: environment atoms (protein, ions and any saved solvent)
+* ``0.25``: atoms unique to ligand A
+* ``0.5``: core atoms, present in both end states
+* ``0.75``: atoms unique to ligand B
+
+The atoms of end state A are therefore those with a temperature factor of ``0.5`` or lower,
+and the atoms of end state B are those with ``0.0``, ``0.5`` or ``0.75``.
+
+Both files can be loaded with `openfe_analysis`_, for example to visualize the simulation or extract the
+trajectories of the end states. The :doc:`trajectory visualization how-to guide </how_to_guides/simulation_visualization>`
+shows how, including how to choose a λ state or replica with the ``index`` and ``index_method`` arguments.
 
 See Also
 --------
@@ -219,7 +261,8 @@ See Also
 
 **How-to guides**
 
-:ref:`How-to guides <how_to_guides>`
+* :ref:`How-to guides <how_to_guides>`
+* :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`
 
 **API Documentation**
 

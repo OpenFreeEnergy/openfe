@@ -243,6 +243,7 @@ See also
 --------
 
 * :doc:`Choose and configure a protocol </how_to_guides/choose_protocol>`
+* :doc:`Exploring protocol settings </how_to_guides/exploring_protocol_settings>`
 * :ref:`Assessing simulation health <userguide_simulation_health>`
 * :doc:`Troubleshooting simulations </guide/troubleshooting>`
 
