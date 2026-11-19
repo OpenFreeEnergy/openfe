@@ -33,6 +33,8 @@ class Worker:
     _TASK_WORKDIR_PREFIX = "task_workdirs"
 
     def __init__(self, warehouse: FileSystemWarehouse, task_db_path: Path):
+        if not isinstance(warehouse, FileSystemWarehouse):
+            raise TypeError("'warehouse' must be a FileSystemWarehouse.")
         self._warehouse = warehouse
         self._task_db_path = Path(task_db_path)
 
@@ -221,8 +223,6 @@ class Worker:
         # 1. Define shared and scratch locations
         scratch = Path(scratch)
         shared_store = self.warehouse.stores["shared"]
-        if not isinstance(shared_store, FileStorage):
-            raise TypeError("Expected a FileStorage backend for the shared store")
         shared_root_dir = shared_store.root_dir
 
         # 2. Get task/unit

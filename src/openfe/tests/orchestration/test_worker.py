@@ -251,7 +251,7 @@ def test_execute_unit_uses_isolated_shared_workspace_per_task(tmp_path):
     assert first_path.parent != second_path.parent
 
 
-def test_invalid_warehouse_type(tmp_path):
+def test_invalid_warehouse_type():
     memory_stores = WarehouseStores(
         setup=MemoryStorage(),
         results=MemoryStorage(),
@@ -259,23 +259,7 @@ def test_invalid_warehouse_type(tmp_path):
         tasks=MemoryStorage(),
         protocol_dags=MemoryStorage(),
     )
-    db_path = tmp_path / "tasks.db"
-    first_unit = _ToyProtocolUnit(name="first")
     warehouse = WarehouseBaseClass(memory_stores, name="test_warehouse")
 
-    warehouse.store_task(first_unit)
-    first_taskid = first_unit.key
-
-    task_graph = nx.DiGraph()
-    task_graph.add_node(first_taskid)
-
-    db = exorcist.TaskStatusDB.from_filename(db_path)
-    db.add_task_network(task_graph, max_tries=1)
-
-    worker = Worker(warehouse=warehouse, task_db_path=db_path)
-
-    with pytest.raises(TypeError, match="Expected a FileStorage backend"):
-        worker.execute_unit(scratch=tmp_path)
-
-    status_by_taskid = {row.taskid: row.status for row in db.get_all_tasks()}
-    assert status_by_taskid[first_taskid] == exorcist.TaskStatus.AVAILABLE.value
+    with pytest.raises(TypeError, match="must be a FileSystemWarehouse"):
+        worker = Worker(warehouse=warehouse, task_db_path="not_a_file.txt")
