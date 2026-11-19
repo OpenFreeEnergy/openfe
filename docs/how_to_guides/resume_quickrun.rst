@@ -12,7 +12,7 @@ A quickrun job can stop early in two ways:
   ``<work-dir>/quickrun_cache/dag-cache-<key>.json`` is left behind.
 
 Rerunning a failed task
-----------------
+-----------------------
 
 If a task fails, quickrun retries it up to two more times, each in its own directory
 (``..._attempt_1/`` and ``..._attempt_2/``).

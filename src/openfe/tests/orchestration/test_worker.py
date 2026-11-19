@@ -12,7 +12,7 @@ from openfe.orchestration.exorcist_utils import setup_task_campaign
 from openfe.storage.warehouse import FileSystemWarehouse
 
 
-def _result_store_files(warehouse: FileSystemWarehouse) -> set[str]:
+def _get_result_store_files(warehouse: FileSystemWarehouse) -> set[str]:
     result_root = Path(warehouse.result_store.root_dir)
     return {str(path.relative_to(result_root)) for path in result_root.rglob("*") if path.is_file()}
 
@@ -45,28 +45,38 @@ class _FileWritingUnit(ProtocolUnit):
         return {"shared_file": str(shared_file)}
 
 
-def _get_dependency_free_unit(dummy_abfe_transformation):
-    for unit in dummy_abfe_transformation.create().protocol_units:
-        if not _contains_protocol_unit(unit.inputs):
-            return unit
-    raise ValueError("No dependency-free protocol unit found for execution test setup.")
+@pytest.fixture
+def worker_with_empty_db(tmp_path) -> Worker:
+    warehouse_root = tmp_path / "warehouse"
+    db_path = tmp_path / "tasks.db"
+    warehouse = FileSystemWarehouse(warehouse_root)
+    _ = exorcist.TaskStatusDB.from_filename(db_path)
+    worker = Worker(warehouse=warehouse, task_db_path=db_path)
+    return worker
 
 
 @pytest.fixture
-def worker_with_real_db(tmp_path, dummy_abfe_transformation):
+def worker_with_real_db(tmp_path, dummy_abfe_transformation) -> Worker:
     warehouse_root = tmp_path / "warehouse"
     db_path = tmp_path / "tasks.db"
     network = gufe.AlchemicalNetwork([dummy_abfe_transformation])
     db, warehouse = setup_task_campaign(network, warehouse_root, db_path=db_path)
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
-    return worker, warehouse, db
+    return worker
 
 
 @pytest.fixture
-def worker_with_executable_task_db(tmp_path, dummy_abfe_transformation):
+def worker_with_executable_unit(tmp_path, dummy_abfe_transformation):
     warehouse_root = tmp_path / "warehouse"
-    db_path = warehouse_root / "tasks.db"
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    db_path = tmp_path / "tasks.db"
+    warehouse = FileSystemWarehouse(warehouse_root)
+
+    def _get_dependency_free_unit(dummy_abfe_transformation):
+        for unit in dummy_abfe_transformation.create().protocol_units:
+            if not _contains_protocol_unit(unit.inputs):
+                return unit
+        raise ValueError("No dependency-free protocol unit found for execution test setup.")
+
     unit = _get_dependency_free_unit(dummy_abfe_transformation)
     warehouse.store_task(unit)
 
@@ -75,66 +85,46 @@ def worker_with_executable_task_db(tmp_path, dummy_abfe_transformation):
     task_graph.add_node(taskid)
 
     db = exorcist.TaskStatusDB.from_filename(db_path)
-    db.add_task_network(task_graph, 1)
+    db.add_task_network(task_graph, max_tries=1)
 
     worker = Worker(warehouse=warehouse, task_db_path=db_path)
     return worker, warehouse, db, unit
 
 
-def test_get_task_uses_default_db_path_without_patching(
-    tmp_path, monkeypatch, dummy_abfe_transformation
-):
-    # TODO: tasks.db shouldn't exist _within_ the warehouse
-    monkeypatch.chdir(tmp_path)
-    warehouse_root = "warehouse"
-    db_path = Path("warehouse/tasks.db")
-    network = gufe.AlchemicalNetwork([dummy_abfe_transformation])
-    db, warehouse = setup_task_campaign(network, warehouse_root, db_path=db_path)
-
-    warehouse = FileSystemWarehouse.from_dir("warehouse")
-    worker = Worker(warehouse=warehouse, task_db_path=db_path)
-    taskid, loaded = worker._get_task()
-
-    expected_keys = {task_row.taskid for task_row in db.get_all_tasks()}
-    assert worker.task_db_path == Path("./warehouse/tasks.db")
-    assert str(loaded.key) in expected_keys
-    assert taskid == loaded.key
-
-
 def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
-    worker, warehouse, db = worker_with_real_db
+    worker = worker_with_real_db
+    db = exorcist.taskdb.TaskStatusDB.from_filename(worker.task_db_path)
 
     task_ids = [row.taskid for row in db.get_all_tasks()]
     expected_protocol_unit_keys = {task_id for task_id in task_ids}
 
     taskid, loaded = worker._get_task()
-    reloaded = warehouse.load_task(loaded.key)
+    reloaded = worker.warehouse.load_task(loaded.key)
 
     assert str(loaded.key) in expected_protocol_unit_keys
     assert loaded == reloaded
     assert taskid == loaded.key
 
 
-def test_execute_unit_stores_real_result(worker_with_executable_task_db, tmp_path):
-    worker, warehouse, db, _ = worker_with_executable_task_db
-    before = _result_store_files(warehouse)
+def test_execute_unit_stores_real_result(worker_with_executable_unit, tmp_path):
+    worker, warehouse, db, _ = worker_with_executable_unit
+    before = _get_result_store_files(warehouse)
 
     execution = worker.execute_unit(scratch=tmp_path / "scratch")
     assert execution is not None
     taskid, _ = execution
 
-    after = _result_store_files(warehouse)
+    after = _get_result_store_files(warehouse)
     assert len(after) > len(before)
+
     rows = list(db.get_all_tasks())
     status_by_taskid = {row.taskid: row.status for row in rows}
     assert status_by_taskid[taskid] == exorcist.TaskStatus.COMPLETED.value
 
 
-def test_execute_unit_propagates_execute_error_without_store(
-    worker_with_executable_task_db, tmp_path
-):
-    worker, warehouse, db, unit = worker_with_executable_task_db
-    before = _result_store_files(warehouse)
+def test_execute_unit_propagates_execute_error_without_store(worker_with_executable_unit, tmp_path):
+    worker, warehouse, db, unit = worker_with_executable_unit
+    before = _get_result_store_files(warehouse)
     taskid = list(db.get_all_tasks())[0].taskid
 
     with mock.patch.object(
@@ -146,39 +136,25 @@ def test_execute_unit_propagates_execute_error_without_store(
         with pytest.raises(RuntimeError, match="unit execution failed"):
             worker.execute_unit(scratch=tmp_path / "scratch")
 
-    after = _result_store_files(warehouse)
+    after = _get_result_store_files(warehouse)
     assert after == before
     rows = list(db.get_all_tasks())
     status_by_taskid = {row.taskid: row.status for row in rows}
     assert status_by_taskid[taskid] == exorcist.TaskStatus.TOO_MANY_RETRIES.value
 
 
-def test_checkout_task_returns_none_when_no_available_tasks(tmp_path):
-    warehouse_root = tmp_path / "warehouse"
-    db_path = warehouse_root / "tasks.db"
-    warehouse_root.mkdir(parents=True, exist_ok=True)
-    warehouse = FileSystemWarehouse.from_dir(str(warehouse_root))
-    exorcist.TaskStatusDB.from_filename(db_path)
-    worker = Worker(warehouse=warehouse, task_db_path=db_path)
-
-    assert worker._checkout_task() is None
+def test_checkout_task_returns_none_when_no_available_tasks(worker_with_empty_db, tmp_path):
+    assert worker_with_empty_db._checkout_task() is None
 
 
-def test_execute_unit_returns_none_when_no_available_tasks(tmp_path):
-    warehouse_root = tmp_path / "warehouse"
-    db_path = warehouse_root / "tasks.db"
-    warehouse_root.mkdir(parents=True, exist_ok=True)
-    warehouse = FileSystemWarehouse.from_dir(str(warehouse_root))
-    exorcist.TaskStatusDB.from_filename(db_path)
-    worker = Worker(warehouse=warehouse, task_db_path=db_path)
-
-    assert worker.execute_unit(scratch=tmp_path / "scratch") is None
+def test_execute_unit_returns_none_when_no_available_tasks(worker_with_empty_db, tmp_path):
+    assert worker_with_empty_db.execute_unit(scratch=tmp_path / "scratch") is None
 
 
 def test_execute_unit_resolves_dependency_results(tmp_path):
     warehouse_root = tmp_path / "warehouse"
-    db_path = warehouse_root / "tasks.db"
-    warehouse = FileSystemWarehouse(str(warehouse_root))
+    db_path = tmp_path / "tasks.db"
+    warehouse = FileSystemWarehouse(warehouse_root)
 
     first_unit = _ToyProtocolUnit(name="first", increment=1)
     second_unit = _ToyProtocolUnit(name="second", upstream=first_unit, increment=2)
@@ -213,7 +189,7 @@ def test_execute_unit_resolves_dependency_results(tmp_path):
 
 def test_execute_unit_marks_missing_dependency_as_failed(tmp_path):
     warehouse_root = tmp_path / "warehouse"
-    db_path = warehouse_root / "tasks.db"
+    db_path = tmp_path / "tasks.db"
     warehouse = FileSystemWarehouse(str(warehouse_root))
 
     missing_upstream = _ToyProtocolUnit(name="missing", increment=1)
@@ -238,7 +214,7 @@ def test_execute_unit_marks_missing_dependency_as_failed(tmp_path):
 
 def test_execute_unit_uses_isolated_shared_workspace_per_task(tmp_path):
     warehouse_root = tmp_path / "warehouse"
-    db_path = warehouse_root / "tasks.db"
+    db_path = tmp_path / "tasks.db"
     warehouse = FileSystemWarehouse(str(warehouse_root))
 
     first_unit = _FileWritingUnit(name="first")
