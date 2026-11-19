@@ -1,5 +1,5 @@
 Loading results:
-ligand	DG (kcal/mol)	MBAR uncertainty (kcal/mol)
+ligand	DG(MLE) (kcal/mol)	MBAR uncertainty (kcal/mol)
 1	-0.78	0.67
 25	-0.6	1.2
 7a	0.04	0.93
