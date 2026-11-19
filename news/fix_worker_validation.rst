@@ -4,7 +4,8 @@
 
 **Changed:**
 
-* <news item>
+* The parent of the scratch directory passed to ``worker.execute_unit(scratch="path/to/scratch/")`` must already exist.
+This change avoids unintentional nested directory creation (`PR #2365 <https://github.com/OpenFreeEnergy/openfe/pull/2365>`_).
 
 **Deprecated:**
 
