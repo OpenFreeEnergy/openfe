@@ -280,7 +280,9 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     Settings for controlling partial charge assignment using the OpenFF tooling
     """
 
-    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"] = "forcefield"
+    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"] = (
+        "forcefield"
+    )
     """
     Selection of method for partial charge generation.
 

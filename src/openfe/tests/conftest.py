@@ -1000,7 +1000,9 @@ def triple_to_single_bond_mapping(single_to_triple_bond_mapping) -> LigandAtomMa
 
 @pytest.fixture
 def solvent_kcl() -> SolventComponent:
-    yield SolventComponent(positive_ion="K", negative_ion="Cl", ion_concentration=0.0 * offunit.molar)
+    yield SolventComponent(
+        positive_ion="K", negative_ion="Cl", ion_concentration=0.0 * offunit.molar
+    )
 
 
 @pytest.fixture

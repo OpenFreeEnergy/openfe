@@ -206,7 +206,9 @@ class PlainMDProtocol(gufe.Protocol):
 
         # Validate small molecule charges
         small_ff = self.settings.forcefield_settings.small_molecule_forcefield
-        system_validation.validate_nondeterministic_charges(stateA, small_ff, self._settings.partial_charge_settings)
+        system_validation.validate_nondeterministic_charges(
+            stateA, small_ff, self._settings.partial_charge_settings
+        )
 
         # Validate solvent component if present
         nonbond = self.settings.forcefield_settings.nonbonded_method
@@ -365,7 +367,13 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         """
         # only pass through the force field if the method is forcefield, otherwise it will raise an error
         if charge_settings.partial_charge_method == "forcefield":
-            force_fields = [small_molecule_forcefield, ] if small_molecule_forcefield is not None else None
+            force_fields = (
+                [
+                    small_molecule_forcefield,
+                ]
+                if small_molecule_forcefield is not None
+                else None
+            )
         else:
             force_fields = None
 
@@ -497,7 +505,9 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 used_resnums.add(resnum)
 
         # b. assign partial charges to smcs
-        self._assign_partial_charges(charge_settings, smc_components, forcefield_settings.small_molecule_forcefield)
+        self._assign_partial_charges(
+            charge_settings, smc_components, forcefield_settings.small_molecule_forcefield
+        )
 
         # c. get a system generator
         if output_settings.forcefield_cache is not None:

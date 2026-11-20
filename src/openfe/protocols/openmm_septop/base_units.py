@@ -478,7 +478,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         """
         # only pass through the force field if the method is forcefield, otherwise it will raise an error
         if partial_charge_settings.partial_charge_method == "forcefield":
-            force_fields = [small_molecule_forcefield, ] if small_molecule_forcefield is not None else None
+            force_fields = (
+                [
+                    small_molecule_forcefield,
+                ]
+                if small_molecule_forcefield is not None
+                else None
+            )
         else:
             force_fields = None
 

@@ -17,12 +17,12 @@ import mdtraj as mdt
 import numpy as np
 import openmm
 import pytest
-from gufe.protocols import ProtocolValidationError
 from gufe import LigandAtomMapping
+from gufe.protocols import ProtocolValidationError
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
-from openff.toolkit import Molecule, ForceField
+from openff.toolkit import ForceField, Molecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import (
@@ -767,7 +767,7 @@ def test_setup_ligand_system_cutoff(
             "forcefield",
             "rdkit",
             "library_charges",
-        )
+        ),
     ],
 )
 def test_setup_charge_backends(
@@ -795,14 +795,26 @@ def test_setup_charge_backends(
         lib_handler.add_parameter(
             parameter=lib_handler._INFOTYPE(
                 smirks="[H:3][C:1]([H:4])([H:5])[N:2]([H:6])[H:7]",
-                charge=am1bcc_ref_charges[ref_key]
+                charge=am1bcc_ref_charges[ref_key],
             )
         )
         # CCN charges generated with NAGL and * -1
         lib_handler.add_parameter(
             parameter=lib_handler._INFOTYPE(
                 smirks=offmolB.to_smiles(mapped=True),
-                charge=[0.13743, -0.1492, 0.90714997, -0.03589999, -0.03589999, -0.03589999, -0.05014999, -0.05014999, -0.34369, -0.34369] * unit.elementary_charge
+                charge=[
+                    0.13743,
+                    -0.1492,
+                    0.90714997,
+                    -0.03589999,
+                    -0.03589999,
+                    -0.03589999,
+                    -0.05014999,
+                    -0.05014999,
+                    -0.34369,
+                    -0.34369,
+                ]
+                * unit.elementary_charge,
             )
         )
         # set the small molecule force field to use this one

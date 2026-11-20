@@ -1636,7 +1636,7 @@ class TestChargeValidation:
         system_validation.validate_nondeterministic_charges(
             benzene_charged_system,
             small_molecule_forcefield="gaff-2.11",
-            charge_settings=omm_settings.OpenFFPartialChargeSettings()
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
         )
 
     def test_gaff_no_charges(self, benzene_no_charge_system):
@@ -1650,7 +1650,7 @@ class TestChargeValidation:
                 benzene_no_charge_system,
                 small_molecule_forcefield="gaff-2.11",
                 # the default partial charge method is now `forcefield` which will assign charges using am1bcc
-                charge_settings=omm_settings.OpenFFPartialChargeSettings()
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
             )
 
     def test_gaff_no_charges_nagl_settings(self, benzene_no_charge_system):
@@ -1667,7 +1667,7 @@ class TestChargeValidation:
         system_validation.validate_nondeterministic_charges(
             benzene_charged_system,
             small_molecule_forcefield="espaloma-0.3.2",
-            charge_settings=omm_settings.OpenFFPartialChargeSettings()
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
         )
 
     def test_espaloma_no_charges(self, benzene_no_charge_system):
@@ -1681,7 +1681,7 @@ class TestChargeValidation:
                 benzene_no_charge_system,
                 small_molecule_forcefield="espaloma-0.3.2",
                 # the default method is now force field which will assign charges using am1bcc
-                charge_settings=omm_settings.OpenFFPartialChargeSettings()
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
             )
 
     def test_openff_with_molecule_charges(self, benzene_charged_system):
@@ -1689,10 +1689,12 @@ class TestChargeValidation:
         system_validation.validate_nondeterministic_charges(
             benzene_charged_system,
             small_molecule_forcefield="openff-2.2.0.offxml",
-            charge_settings=omm_settings.OpenFFPartialChargeSettings()
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
         )
 
-    @pytest.mark.parametrize("forcefield", ["openff-1.0.0.offxml", "openff-2.2.0.offxml", "openff-2.2.0"])
+    @pytest.mark.parametrize(
+        "forcefield", ["openff-1.0.0.offxml", "openff-2.2.0.offxml", "openff-2.2.0"]
+    )
     def test_openff_no_charges(self, benzene_no_charge_system, forcefield):
         # Test ffs with/out LibraryCharges handler, and with/out .offxml extension
         with pytest.raises(
@@ -1746,10 +1748,12 @@ class TestChargeValidation:
             benzene_no_charge_system,
             small_molecule_forcefield=ff.to_string(),
             # the default method is now force field which will assign library charges first
-            charge_settings=omm_settings.OpenFFPartialChargeSettings()
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
         )
 
-    def test_openff_lib_charges_partial_coverage(self, benzene_no_charge_system, benzene_modifications):
+    def test_openff_lib_charges_partial_coverage(
+        self, benzene_no_charge_system, benzene_modifications
+    ):
         # add library charges which only partially covers benzene
         benzene = benzene_modifications["benzene"].to_openff()
         # use a force field with an am1bcc handler
@@ -1772,9 +1776,8 @@ class TestChargeValidation:
             system_validation.validate_nondeterministic_charges(
                 benzene_no_charge_system,
                 small_molecule_forcefield=ff.to_string(),
-                charge_settings=omm_settings.OpenFFPartialChargeSettings()
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
             )
-
 
     def test_openff_mixed_charges(self, mixed_charge_system):
         # make sure an error is raised if not all smcs would have deterministic charges
@@ -1788,7 +1791,7 @@ class TestChargeValidation:
                 # pick a force field with an am1bcc handler
                 mixed_charge_system,
                 small_molecule_forcefield="openff-2.2.0.offxml",
-                charge_settings=omm_settings.OpenFFPartialChargeSettings()
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
             )
 
     def test_openff_many_missing_charges(self, many_no_charge_system):
@@ -1803,5 +1806,5 @@ class TestChargeValidation:
                 # pick a force field with an am1bcc handler
                 many_no_charge_system,
                 small_molecule_forcefield="openff-2.2.0.offxml",
-                charge_settings=omm_settings.OpenFFPartialChargeSettings()
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
             )

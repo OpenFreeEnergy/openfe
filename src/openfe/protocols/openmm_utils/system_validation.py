@@ -380,7 +380,7 @@ def validate_chemical_system(system: ChemicalSystem):
 def validate_nondeterministic_charges(
     system: ChemicalSystem,
     small_molecule_forcefield: str,
-    charge_settings: OpenFFPartialChargeSettings
+    charge_settings: OpenFFPartialChargeSettings,
 ):
     """
     Validate that the SmallMoleculeComponents of the system will have deterministic partial charges.
@@ -421,7 +421,9 @@ def validate_nondeterministic_charges(
         off_mol = smc.to_openff()
         # the np.allclose check is aligned with openmmforcfields which ultimately decides
         # if the molecules are pre-charged
-        if off_mol.partial_charges is None or np.allclose(off_mol.partial_charges.m_as(offunit.elementary_charge), 0):
+        if off_mol.partial_charges is None or np.allclose(
+            off_mol.partial_charges.m_as(offunit.elementary_charge), 0
+        ):
             smcs_missing_charges[smc] = off_mol
 
     # if there are no off mols with missing charges, we can return early
@@ -459,11 +461,7 @@ def validate_nondeterministic_charges(
             # we count library and nagl charges as deterministic, library charges take precedence so check them first
             library_matches = labels.get("LibraryCharges", {})
             # the atoms can be covered by n parameters in the force field, collect the ids of the atoms across matches
-            covered_atoms = {
-                atom_index
-                for match in library_matches
-                for atom_index in match
-            }
+            covered_atoms = {atom_index for match in library_matches for atom_index in match}
             # compare this with the expected set of atom indices
             has_library_charges = covered_atoms == set(range(off_mol.n_atoms))
 

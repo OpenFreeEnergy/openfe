@@ -3,8 +3,8 @@
 import json
 import logging
 import pathlib
-import sys
 import re
+import sys
 from unittest import mock
 
 import gufe
