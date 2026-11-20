@@ -106,11 +106,10 @@ linearly between their state A and state B values, so the choice of ``lambda_fun
    Interpolation of the nonbonded parameters of a core atom (charge, :math:`\sigma` and :math:`\epsilon`) from their
    state A value to their state B value. The points mark the ``lambda`` values of the default 11 window schedule.
 
-.. note:: We recommend the ``default`` option as it has been extensively tested and validated in
-         benchmarks of the protocol, so its performance is best characterised. ``namd`` and ``quarters`` are provided for
-         users who want to explore alternative alchemical pathways, but they have not been benchmarked to the same extent.
-         If you do change the function, it is good practice to check the overlap between neighbouring windows
-         (see :ref:`Energetic and replica exchange analysis <multistate_analysis>`) and, if needed, increase ``lambda_windows``.
+.. note:: We recommend the ``default`` option as it has been extensively tested and validated in protocol benchmarking.
+         ``namd`` and ``quarters`` are provided for users who want to explore alternative alchemical pathways, but they have not been benchmarked to the same extent.
+         If you do change the function, it is good practice to check the overlap between neighboring windows
+         (see :ref:`multistate_analysis`, :ref:`health_exchange`, and, if needed, increase ``lambda_windows``.
 
 The choice of lambda function can be configured via the protocol settings, for example:
 
