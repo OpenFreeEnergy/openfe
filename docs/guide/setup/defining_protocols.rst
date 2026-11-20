@@ -40,6 +40,8 @@ For example, to create an instance of the OpenMM RFE Protocol with default setti
 
 ``Protocol`` objects **cannot be modified once created**. This is crucial for data provenance.
 Therefore, the ``Settings`` objects must be customised *before* the ``Protocol`` object is created.
+For information on force field and partial charge choices used to build a simulation model,
+see :ref:`userguide_model_building`.
 For example, to customise the production run length of the RFE Protocol::
 
    from openfe.protocols import openmm_rfe
