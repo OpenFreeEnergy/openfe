@@ -54,6 +54,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from ...analysis import plotting
 from ...utils import log_system_probe, without_oechem_backend
 from ..openmm_utils import (
+    charge_generation,
     multistate_analysis,
     omm_compute,
     settings_validation,
@@ -203,6 +204,43 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             solvent_comp = protein_comp
 
         return solvent_comp, protein_comp, small_mols
+
+    @staticmethod
+    def _assign_partial_charges(
+        charge_settings: OpenFFPartialChargeSettings,
+        small_mols: dict[SmallMoleculeComponent, OFFMolecule],
+        small_molecule_forcefield: str | None = None,
+    ) -> None:
+        """
+        Assign partial charges to the OpenFF Molecules associated with all
+        the SmallMoleculeComponents in the transformation.
+
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          their associated SmallMoleculeComponent.
+        small_molecule_forcefield : str | None
+            The small molecule force field used to apply the partial charges if the method is ``forcefield``.
+        """
+        # only pass through the force field if the method is forcefield, otherwise it will raise an error
+        if charge_settings.partial_charge_method == "forcefield":
+            force_fields = [small_molecule_forcefield, ] if small_molecule_forcefield is not None else None
+        else:
+            force_fields = None
+
+        for smc, mol in small_mols.items():
+            charge_generation.assign_offmol_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=charge_settings.partial_charge_method,
+                toolkit_backend=charge_settings.off_toolkit_backend,
+                generate_n_conformers=charge_settings.number_of_conformers,
+                nagl_model=charge_settings.nagl_model,
+                forcefields=force_fields,
+            )
 
     @staticmethod
     def _get_system_generator(
@@ -732,6 +770,9 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         # We only store the stateA residue name since that's what is present
         # in the topology
         alchem_resnames = [assigned[alchem_comps["stateA"][0]]]
+
+        # Assign partial charges now to avoid any discrepancies later
+        self._assign_partial_charges(settings["charge_settings"], small_mols, settings["forcefield_settings"].small_molecule_forcefield)
 
         (
             stateA_system,

@@ -666,8 +666,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         # Validate small molecule charges
         small_ff = self.settings.forcefield_settings.small_molecule_forcefield
-        system_validation.validate_nondeterministic_charges(stateA, small_ff)
-        system_validation.validate_nondeterministic_charges(stateB, small_ff)
+        system_validation.validate_nondeterministic_charges(stateA, small_ff, self.settings.partial_charge_settings)
+        system_validation.validate_nondeterministic_charges(stateB, small_ff, self.settings.partial_charge_settings)
 
         # Validate the mapping
         alchem_comps = system_validation.get_alchemical_components(stateA, stateB)

@@ -367,7 +367,7 @@ def assign_offmol_partial_charges(
         raise ValueError(errmsg)
 
     # If you have non-zero charges and not overwriting, just return
-    if offmol.partial_charges is not None and np.any(offmol.partial_charges):
+    if offmol.partial_charges is not None and not np.allclose(offmol.partial_charges.m_as(unit.elementary_charge), 0):
         if not overwrite:
             return offmol
 

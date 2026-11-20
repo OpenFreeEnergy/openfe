@@ -24,7 +24,9 @@ from gufe import (
 from gufe.components.errors import ComponentValidationError
 from gufe.protocols.errors import ProtocolValidationError
 from openff.toolkit import ForceField
-from openff.toolkit import Molecule as OFFMol
+from openff.units import unit as offunit
+
+from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
 
 logger = logging.getLogger(__name__)
 
@@ -375,11 +377,24 @@ def validate_chemical_system(system: ChemicalSystem):
             raise ComponentValidationError(errmsg)
 
 
-def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_forcefield: str):
+def validate_nondeterministic_charges(
+    system: ChemicalSystem,
+    small_molecule_forcefield: str,
+    charge_settings: OpenFFPartialChargeSettings
+):
     """
     Validate that the SmallMoleculeComponents of the system will have deterministic partial charges.
 
-    This is determined by checking for charges on the molecules before checking what would be assigned by the force field.
+    This is determined in the following order:
+        1. If the SmallMoleculeComponent has pre-computed (not all zero charges), it is considered deterministic.
+        2. If the SmallMoleculeComponent has no pre-computed charges, only the ``nagl`` and ``espaloma`` methods are considered deterministic.
+        3. If the SmallMoleculeComponent has no pre-computed charges and the method is ``forcefield``,
+            then we check if the small molecule force field uses a deterministic charge method (not AM1-BCC).
+
+    Notes
+    -----
+    - Charge increment models are treated as non-deterministic, use the CLI to assign partial charges using this model.
+    - Only library and NAGL charges are considered deterministic if the ``partial_charge_method`` is set to ``forcefield``.
 
     Parameters
     ----------
@@ -387,48 +402,78 @@ def validate_nondeterministic_charges(system: ChemicalSystem, small_molecule_for
         The ChemicalSystem to validate with SmallMoleculeComponents.
     small_molecule_forcefield : str
         The force field to be used for the SmallMoleculeComponents.
+    charge_settings : OpenFFPartialChargeSettings
+        The settings for how charges are assigned to the SmallMoleculeComponents.
 
     Raises
     ------
     ProtocolValidationError
-        If any SmallMoleculeComponents in the system would have am1bcc charges generated at runtime.
+        - If any SmallMoleculeComponents in the system would have non-deterministic charges generated at runtime.
+        - If the small molecule force field cannot be loaded.
     """
-    smcs: list[SmallMoleculeComponent] = system.get_components_of_type(SmallMoleculeComponent)
-    if "espaloma" in small_molecule_forcefield or "gaff" in small_molecule_forcefield:
-        # this will always generate charges at runtime, so raise an error for missing charges
-        ff = None
+    if charge_settings.partial_charge_method in ["nagl", "espaloma"]:
+        # these methods are deterministic, so we don't need to check for missing charges
+        return
+
+    # get the smcs and track which have missing charges
+    smcs_missing_charges = {}
+    for smc in system.get_components_of_type(SmallMoleculeComponent):
+        off_mol = smc.to_openff()
+        # the np.allclose check is aligned with openmmforcfields which ultimately decides
+        # if the molecules are pre-charged
+        if off_mol.partial_charges is None or np.allclose(off_mol.partial_charges.m_as(offunit.elementary_charge), 0):
+            smcs_missing_charges[smc] = off_mol
+
+    # if there are no off mols with missing charges, we can return early
+    if not smcs_missing_charges:
+        return
+
+    # collect the smcs which will have non-deterministic charges generated at runtime
+    errors: list[SmallMoleculeComponent] = []
+
+    # check if the partial charge method/force field uses a deterministic charge method
+    if (
+        charge_settings.partial_charge_method != "forcefield"
+        or "espaloma" in small_molecule_forcefield
+        or "gaff" in small_molecule_forcefield
+    ):
+        errors = list(smcs_missing_charges)
+
     else:
+        # inspect the charges from the openff force field
         try:
             ff = ForceField(small_molecule_forcefield)
         except OSError:
-            # try again but adding offxml to the end of the force field name if the user passed one of the installed force fields without the extension
+            # try again but adding offxml to the end of the force field name if the user passed one of the
+            # installed force fields without the extension
             try:
                 ff = ForceField(small_molecule_forcefield + ".offxml")
             except OSError as e:
                 errmsg = f"Could not load force field {small_molecule_forcefield} or {small_molecule_forcefield}.offxml: {e}"
                 raise ProtocolValidationError(errmsg)
 
-    errors = []
-    for smc in smcs:
-        offmol = smc.to_openff()
-        if offmol.partial_charges is not None and np.any(offmol.partial_charges):
-            continue
+        # apply the force field to the smcs and check if a deterministic charge method is used
+        for smc, off_mol in smcs_missing_charges.items():
+            labels = ff.label_molecules(off_mol.to_topology())[0]
 
-        # check the labels assigned for an openff force field
-        if ff is not None:
-            labels = ff.label_molecules(offmol.to_topology())[0]
-        else:
-            # return a dummy label as the gaff and espaloma should always give am1bcc charges
-            labels = {"LibraryCharges": {}}
+            # we count library and nagl charges as deterministic, library charges take precedence so check them first
+            library_matches = labels.get("LibraryCharges", {})
+            # the atoms can be covered by n parameters in the force field, collect the ids of the atoms across matches
+            covered_atoms = {
+                atom_index
+                for match in library_matches
+                for atom_index in match
+            }
+            # compare this with the expected set of atom indices
+            has_library_charges = covered_atoms == set(range(off_mol.n_atoms))
 
-        # We count library and nagl charges as deterministic
-        # While users could use a deterministic charge method with increments we don't currently support this
-        if not labels.get("LibraryCharges", {}) and "NAGLCharges" not in labels:
-            errors.append(smc)
+            # while users could use a deterministic charge method with charge increments we don't currently support this
+            if not has_library_charges and "NAGLCharges" not in labels:
+                errors.append(smc)
 
     if errors:
         errmsg = (
-            f"System: '{system.name}' contains SmallMoleculeComponents which would have am1bcc charges generated at runtime which is non-deterministic. "
+            f"System: '{system.name}' contains SmallMoleculeComponents which may have non-deterministic charges generated at runtime. "
             f"Please provide a molecule with pre-computed charges or use library charges instead. "
             f"The following Components are affected: {', '.join([str(smc) for smc in errors])}"
         )

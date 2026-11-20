@@ -206,7 +206,7 @@ class PlainMDProtocol(gufe.Protocol):
 
         # Validate small molecule charges
         small_ff = self.settings.forcefield_settings.small_molecule_forcefield
-        system_validation.validate_nondeterministic_charges(stateA, small_ff)
+        system_validation.validate_nondeterministic_charges(stateA, small_ff, self._settings.partial_charge_settings)
 
         # Validate solvent component if present
         nonbond = self.settings.forcefield_settings.nonbonded_method
@@ -348,6 +348,7 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
     def _assign_partial_charges(
         charge_settings: OpenFFPartialChargeSettings,
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        small_molecule_forcefield: str | None = None,
     ) -> None:
         """
         Assign partial charges to SMCs.
@@ -359,7 +360,15 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
         smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           Dictionary of OpenFF Molecules to add, keyed by
           SmallMoleculeComponent.
+        small_molecule_forcefield : str | None
+            The small molecule force field used to apply the partial charges if the method is ``forcefield``.
         """
+        # only pass through the force field if the method is forcefield, otherwise it will raise an error
+        if charge_settings.partial_charge_method == "forcefield":
+            force_fields = [small_molecule_forcefield, ] if small_molecule_forcefield is not None else None
+        else:
+            force_fields = None
+
         for mol in smc_components.values():
             charge_generation.assign_offmol_partial_charges(
                 offmol=mol,
@@ -368,6 +377,7 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 toolkit_backend=charge_settings.off_toolkit_backend,
                 generate_n_conformers=charge_settings.number_of_conformers,
                 nagl_model=charge_settings.nagl_model,
+                forcefields=force_fields,
             )
 
     def run(
@@ -487,7 +497,7 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 used_resnums.add(resnum)
 
         # b. assign partial charges to smcs
-        self._assign_partial_charges(charge_settings, smc_components)
+        self._assign_partial_charges(charge_settings, smc_components, forcefield_settings.small_molecule_forcefield)
 
         # c. get a system generator
         if output_settings.forcefield_cache is not None:
