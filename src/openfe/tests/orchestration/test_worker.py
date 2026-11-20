@@ -155,6 +155,27 @@ def test_execute_unit_propagates_execute_error_without_store(worker_with_executa
     assert status_by_taskid[taskid] == exorcist.TaskStatus.TOO_MANY_RETRIES.value
 
 
+def test_execute_unit_cannot_store_results_mark_as_failed(worker_with_executable_unit, tmp_path):
+    worker, warehouse, db, unit = worker_with_executable_unit
+    before = _get_result_store_files(warehouse)
+    taskid = list(db.get_all_tasks())[0].taskid
+
+    with mock.patch.object(
+        WarehouseBaseClass,
+        "store_results_tokenizable",
+        autospec=True,
+        side_effect=RuntimeError("unable to write"),
+    ):
+        with pytest.raises(RuntimeError, match="unable to write"):
+            worker.execute_unit(scratch=tmp_path / "scratch")
+
+    after = _get_result_store_files(warehouse)
+    assert after == before
+    rows = list(db.get_all_tasks())
+    status_by_taskid = {row.taskid: row.status for row in rows}
+    assert status_by_taskid[taskid] == exorcist.TaskStatus.TOO_MANY_RETRIES.value
+
+
 def test_checkout_task_returns_none_when_no_available_tasks(worker_with_empty_db, tmp_path):
     assert worker_with_empty_db._checkout_task() is None
 
