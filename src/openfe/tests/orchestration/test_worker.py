@@ -129,12 +129,9 @@ def test_execute_unit_catch_invalid_scratch_up_front(worker_with_executable_unit
 
     with pytest.raises(FileNotFoundError, match="not/a/path"):
         execution = worker.execute_unit(scratch="not/a/path/")
-        assert execution is not None
-        taskid, _ = execution
 
-        rows = list(db.get_all_tasks())
-        status_by_taskid = {row.taskid: row.status for row in rows}
-        assert status_by_taskid[taskid] == exorcist.TaskStatus.AVAILABLE.value
+    rows = list(db.get_all_tasks())
+    assert {row.status for row in rows} == {exorcist.TaskStatus.AVAILABLE.value}
 
 
 def test_execute_unit_propagates_execute_error_without_store(worker_with_executable_unit, tmp_path):
