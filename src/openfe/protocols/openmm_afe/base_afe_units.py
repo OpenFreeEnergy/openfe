@@ -1984,9 +1984,7 @@ class ComplexTrajectoryAnalysisMixin:
         host = u_top.select_atoms(protein_selection)
 
         if not host:
-            raise ValueError(
-                f"Host selection {protein_selection!r} matched no atoms."
-            )
+            raise ValueError(f"Host selection {protein_selection!r} matched no atoms.")
 
         host_atoms = host.residues.atoms
         host_atoms.guess_bonds()
