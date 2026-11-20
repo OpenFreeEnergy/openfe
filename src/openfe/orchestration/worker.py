@@ -221,7 +221,6 @@ class Worker:
             Re-raises any exception thrown during protocol unit execution after
             marking the task as failed.
 
-
         """
 
         # 1. Define shared and scratch locations
@@ -240,17 +239,17 @@ class Worker:
             return None
         db, taskid, unit = task
 
-        # 3. Construct the context
-        # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
-        # However, to satisfy the current work, we will use this implementation where we
-        # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
-
-        task_scratch = self._create_task_subdir(scratch_workdir, taskid)
-        task_shared = self._create_task_subdir(shared_workdir, taskid)
-
-        ctx = Context(scratch=task_scratch, shared=task_shared)
-
         try:
+            # 3. Construct the context
+            # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
+            # However, to satisfy the current work, we will use this implementation where we
+            # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
+
+            task_scratch = self._create_task_subdir(scratch_workdir, taskid)
+            task_shared = self._create_task_subdir(shared_workdir, taskid)
+
+            ctx = Context(scratch=task_scratch, shared=task_shared)
+
             # 4. Execute unit
             # TODO: this var naming is confusing
             results: dict[GufeKey, ProtocolUnitResult] = self._build_input_result_mapping(unit)
