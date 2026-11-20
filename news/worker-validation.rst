@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* ``openfe.Worker`` now validates the input warehouse up front (`PR #2355 <https://github.com/OpenFreeEnergy/openfe/pull/2355>_`).
+* ``openfe.Worker`` now validates the input warehouse upon initialization (`PR #2355 <https://github.com/OpenFreeEnergy/openfe/pull/2355>_`).
 
 **Deprecated:**
 
