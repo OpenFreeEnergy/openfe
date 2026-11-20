@@ -4,6 +4,7 @@ import copy
 import gzip
 import logging
 import os
+import re
 import sys
 from importlib import resources
 from pathlib import Path
@@ -11,7 +12,9 @@ from unittest import mock
 
 import numpy as np
 import pytest
+from gufe import ChemicalSystem
 from gufe.components.errors import ComponentValidationError
+from gufe.protocols.errors import ProtocolValidationError
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
 from openff.toolkit import ForceField
@@ -1593,3 +1596,215 @@ class TestAssignOffmolResidueMetadata:
             assert _get_offmol_metadata(off, "residue_name") == resname
             assert _get_offmol_metadata(off, "residue_number") == residue_number
             assert assigned[smc] == resname
+
+
+class TestChargeValidation:
+    """Test validation of nondeterministic partial charge assignment."""
+
+    @pytest.fixture
+    def benzene_charged_system(self, benzene_modifications):
+        return ChemicalSystem({"ligand": benzene_modifications["benzene"]}, name="charged")
+
+    @pytest.fixture
+    def benzene_no_charge_system(self, benzene_modifications_uncharged):
+        return ChemicalSystem(
+            {"ligand": benzene_modifications_uncharged["benzene"]}, name="no charges"
+        )
+
+    @pytest.fixture
+    def mixed_charge_system(self, benzene_modifications, benzene_modifications_uncharged):
+        return ChemicalSystem(
+            {
+                "benzene": benzene_modifications["benzene"],
+                "toluene": benzene_modifications_uncharged["toluene"],
+            },
+            name="mixed charges",
+        )
+
+    @pytest.fixture
+    def many_no_charge_system(self, benzene_modifications_uncharged):
+        return ChemicalSystem(
+            {
+                "benzene": benzene_modifications_uncharged["benzene"],
+                "toluene": benzene_modifications_uncharged["toluene"],
+                "phenol": benzene_modifications_uncharged["phenol"],
+            },
+            name="many no charges",
+        )
+
+    def test_gaff_with_molecule_charges(self, benzene_charged_system):
+        system_validation.validate_nondeterministic_charges(
+            benzene_charged_system,
+            small_molecule_forcefield="gaff-2.11",
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+        )
+
+    def test_gaff_no_charges(self, benzene_no_charge_system):
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "The following Components are affected: SmallMoleculeComponent(name=benzene)"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield="gaff-2.11",
+                # the default partial charge method is now `forcefield` which will assign charges using am1bcc
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+            )
+
+    def test_gaff_no_charges_nagl_settings(self, benzene_no_charge_system):
+        # If the molecule has no charges and wants to use gaff but has a good charge model it should pass
+        system_validation.validate_nondeterministic_charges(
+            benzene_no_charge_system,
+            small_molecule_forcefield="gaff-2.11",
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(
+                partial_charge_method="nagl",
+            ),
+        )
+
+    def test_espaloma_with_molecule_charges(self, benzene_charged_system):
+        system_validation.validate_nondeterministic_charges(
+            benzene_charged_system,
+            small_molecule_forcefield="espaloma-0.3.2",
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+        )
+
+    def test_espaloma_no_charges(self, benzene_no_charge_system):
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "The following Components are affected: SmallMoleculeComponent(name=benzene)"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield="espaloma-0.3.2",
+                # the default method is now force field which will assign charges using am1bcc
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+            )
+
+    def test_openff_with_molecule_charges(self, benzene_charged_system):
+        # as the molecules have charges this should pass despite the force field having an AM1BBC handler
+        system_validation.validate_nondeterministic_charges(
+            benzene_charged_system,
+            small_molecule_forcefield="openff-2.2.0.offxml",
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+        )
+
+    @pytest.mark.parametrize(
+        "forcefield", ["openff-1.0.0.offxml", "openff-2.2.0.offxml", "openff-2.2.0"]
+    )
+    def test_openff_no_charges(self, benzene_no_charge_system, forcefield):
+        # Test ffs with/out LibraryCharges handler, and with/out .offxml extension
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "The following Components are affected: SmallMoleculeComponent(name=benzene)"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield=forcefield,
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+            )
+
+    def test_openff_nagl_no_charges(self, benzene_no_charge_system):
+        # openff-2.3.0 has a NAGL handler, so this should pass even though the molecule has no charges
+        system_validation.validate_nondeterministic_charges(
+            benzene_no_charge_system,
+            small_molecule_forcefield="openff-2.3.0.offxml",
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+        )
+
+    def test_openff_nagl_no_charges_am1_setting(self, benzene_no_charge_system):
+        # openff-2.3.0 has a NAGL handler but if the user changes this to am1bcc it should fail since the molecule has no charges
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "The following Components are affected: SmallMoleculeComponent(name=benzene)"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield="openff-2.3.0.offxml",
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(
+                    partial_charge_method="am1bcc",
+                ),
+            )
+
+    def test_openff_lib_charges_no_charges(self, benzene_no_charge_system, benzene_modifications):
+        # add some library charges to the force field and test using a string
+        benzene = benzene_modifications["benzene"].to_openff()
+        # use a force field with an am1bcc handler
+        ff = ForceField("openff-2.2.0.offxml")
+        lib_charge_handler = ff.get_parameter_handler("LibraryCharges")
+        # make a new parameter which covers every atom
+        lib_charge = lib_charge_handler._INFOTYPE.from_molecule(benzene)
+        # add it to the handler
+        lib_charge_handler.add_parameter(parameter=lib_charge)
+        # run the validation
+        system_validation.validate_nondeterministic_charges(
+            benzene_no_charge_system,
+            small_molecule_forcefield=ff.to_string(),
+            # the default method is now force field which will assign library charges first
+            charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+        )
+
+    def test_openff_lib_charges_partial_coverage(
+        self, benzene_no_charge_system, benzene_modifications
+    ):
+        # add library charges which only partially covers benzene
+        benzene = benzene_modifications["benzene"].to_openff()
+        # use a force field with an am1bcc handler
+        ff = ForceField("openff-2.2.0.offxml")
+        lib_charge_handler = ff.get_parameter_handler("LibraryCharges")
+        # make a new parameter which only hits aromatic carbons, but not hydrogen
+        lib_charge = lib_charge_handler._INFOTYPE(
+            smirks="[c:1][c:2][c:3][c:4][c:5][c:6]",
+            charge=[-0.115, -0.115, -0.115, -0.115, -0.115, -0.115] * unit.elementary_charge,
+        )
+        # add it to the handler
+        lib_charge_handler.add_parameter(parameter=lib_charge)
+        # run the validation, should raise an error since benzene is not **fully** covered
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "The following Components are affected: SmallMoleculeComponent(name=benzene)"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield=ff.to_string(),
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+            )
+
+    def test_openff_mixed_charges(self, mixed_charge_system):
+        # make sure an error is raised if not all smcs would have deterministic charges
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "The following Components are affected: SmallMoleculeComponent(name=toluene)"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                # pick a force field with an am1bcc handler
+                mixed_charge_system,
+                small_molecule_forcefield="openff-2.2.0.offxml",
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+            )
+
+    def test_openff_many_missing_charges(self, many_no_charge_system):
+        # make sure an error is raised if not all smcs would have deterministic charges and all smcs are listed in the error message
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "The following Components are affected: SmallMoleculeComponent(name=benzene), SmallMoleculeComponent(name=toluene), SmallMoleculeComponent(name=phenol)"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                # pick a force field with an am1bcc handler
+                many_no_charge_system,
+                small_molecule_forcefield="openff-2.2.0.offxml",
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+            )

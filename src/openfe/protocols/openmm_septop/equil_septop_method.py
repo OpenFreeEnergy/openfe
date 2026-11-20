@@ -485,6 +485,15 @@ class SepTopProtocol(gufe.Protocol):
         system_validation.validate_chemical_system(stateB)
         self._validate_endstates(stateA, stateB)
 
+        # Validate small molecule charges
+        small_ff = self.settings.forcefield_settings.small_molecule_forcefield
+        system_validation.validate_nondeterministic_charges(
+            stateA, small_ff, self.settings.partial_charge_settings
+        )
+        system_validation.validate_nondeterministic_charges(
+            stateB, small_ff, self.settings.partial_charge_settings
+        )
+
         # Validate the lambda schedule
         self._validate_lambda_schedule(
             self.settings.solvent_lambda_settings,

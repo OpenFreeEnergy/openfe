@@ -287,7 +287,7 @@ def test_lomap_regression(
     smallmols = []
     for i in range(matrix.shape[0]):
         nm = dbmols[i].getName()
-        smallmols.append(atom_mapping_basic_test_files[nm[:-5]])  # - ".mol2"
+        smallmols.append(atom_mapping_basic_test_files[nm[:-4]])  # - ".sdf"
 
     mapper = openfe.setup.atom_mapping.LomapAtomMapper(
         time=20,

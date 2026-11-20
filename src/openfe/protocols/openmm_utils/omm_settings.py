@@ -280,7 +280,9 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     Settings for controlling partial charge assignment using the OpenFF tooling
     """
 
-    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"] = "am1bcc"
+    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma", "forcefield"] = (
+        "forcefield"
+    )
     """
     Selection of method for partial charge generation.
 
@@ -312,6 +314,11 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
       <https://github.com/choderalab/espaloma_charge>`_
       Only ``ambertools`` and ``rdkit`` `off_toolkit_backend`` options
       are supported. A maximum of one conformer is allowed.
+
+    ``forcefield``:
+        Assign partial charges using a force field's defined charge model, this is useful to get the correct
+        NAGL(AshGC) model for a specific force field or to use LibraryCharges.
+
     """
 
 
