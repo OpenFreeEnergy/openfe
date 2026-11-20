@@ -312,7 +312,7 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
       <https://github.com/choderalab/espaloma_charge>`_
       Only ``ambertools`` and ``rdkit`` `off_toolkit_backend`` options
       are supported. A maximum of one conformer is allowed.
-      
+
     ``forcefield``:
         Assign partial charges using a force field's defined charge model, this is useful to get the correct
         NAGL(AshGC) model for a specific force field or to use LibraryCharges.
