@@ -110,41 +110,53 @@ def _get_legs_from_result_jsons(
     from openff.units import unit
 
     dgs = defaultdict(lambda: defaultdict(list))
-
-    for result_fn in result_fns:
-        name, result = _load_valid_result_json(result_fn)
-        if name is None:  # this means it couldn't find name and/or simtype
-            continue
-
-        dgs[name]["overall"].append([result["estimate"], result["uncertainty"]])
-        proto_key = [k for k in result["unit_results"].keys() if k.startswith("ProtocolUnitResult")]
-        for p in proto_key:
-            # In openfe v1.9+, we only want to pick up results from
-            # the Analysis Unit. To ensure backwards compatibility with
-            # prior releases of openfe v1.x, we exclude Setup and Simulation
-            if (
-                "Setup" in result["unit_results"][p]["source_key"]
-                or "Simulation" in result["unit_results"][p]["source_key"]
-            ):
+    with click.progressbar(
+        result_fns,
+        label="Loading results:",
+        fill_char="▇",
+        empty_char=" ",
+        bar_template="%(label)s  %(bar)s  %(info)s files",
+        length=len(result_fns),
+        show_percent=False,
+        show_pos=True,
+        show_eta=False,
+    ) as bar:
+        for result_fn in bar:
+            name, result = _load_valid_result_json(result_fn)
+            if name is None:  # this means it couldn't find name and/or simtype
                 continue
-            if "unit_estimate" in result["unit_results"][p]["outputs"]:
-                simtype = result["unit_results"][p]["outputs"]["simtype"]
-                dg = result["unit_results"][p]["outputs"]["unit_estimate"]
-                dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
 
-                dgs[name][simtype].append([dg, dg_error])
-            if "standard_state_correction" in result["unit_results"][p]["outputs"]:
-                corr = result["unit_results"][p]["outputs"]["standard_state_correction"]
-                # In openfe v1.9+, standard state corrections are set to 0 kcal/mol
-                # when no correction is being applied (e.g. no restraints).
-                # To make raw outputs similar to pre-v1.9, we exclude corrections
-                # if they are close to 0.
-                if not np.isclose(corr.m, 0):
-                    dgs[name]["standard_state_correction"].append(
-                        [corr, 0 * unit.kilocalorie_per_mole]
-                    )
-            else:
-                continue
+            dgs[name]["overall"].append([result["estimate"], result["uncertainty"]])
+            proto_key = [
+                k for k in result["unit_results"].keys() if k.startswith("ProtocolUnitResult")
+            ]
+            for p in proto_key:
+                # In openfe v1.9+, we only want to pick up results from
+                # the Analysis Unit. To ensure backwards compatibility with
+                # prior releases of openfe v1.x, we exclude Setup and Simulation
+                if (
+                    "Setup" in result["unit_results"][p]["source_key"]
+                    or "Simulation" in result["unit_results"][p]["source_key"]
+                ):
+                    continue
+                if "unit_estimate" in result["unit_results"][p]["outputs"]:
+                    simtype = result["unit_results"][p]["outputs"]["simtype"]
+                    dg = result["unit_results"][p]["outputs"]["unit_estimate"]
+                    dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
+
+                    dgs[name][simtype].append([dg, dg_error])
+                if "standard_state_correction" in result["unit_results"][p]["outputs"]:
+                    corr = result["unit_results"][p]["outputs"]["standard_state_correction"]
+                    # In openfe v1.9+, standard state corrections are set to 0 kcal/mol
+                    # when no correction is being applied (e.g. no restraints).
+                    # To make raw outputs similar to pre-v1.9, we exclude corrections
+                    # if they are close to 0.
+                    if not np.isclose(corr.m, 0):
+                        dgs[name]["standard_state_correction"].append(
+                            [corr, 0 * unit.kilocalorie_per_mole]
+                        )
+                else:
+                    continue
     return dgs
 
 
@@ -263,8 +275,8 @@ def _generate_dg_raw(results_dict: dict[str, dict[str, list]], allow_partial: bo
     default="dg",
     show_default=True,
     help=(
-        "What data to report. 'dg' computes the overall binding free energy of each ligand in the dataset (dG), and"
-        "'raw' outputs the raw dG values for each individual leg in the ABFE transformation cycles."
+        "Which report to generate: 'dg' for the binding free energy of each ligand, "
+        "or 'raw' for the free energy difference of each leg and repeat."
     ),
 )
 @click.option(
@@ -313,17 +325,18 @@ def gather_abfe(
     All directories will be walked recursively and any valid JSON results files will be gathered.
     Files must end in .json to be collected, and invalid files will be ignored.
 
-    Each JSON contains the results of a separate leg from an Absolute Binding Free Energy calculation.
+    Each JSON contains the results of both legs (complex and solvent) of an Absolute Binding Free Energy Transformation.
     See https://docs.openfree.energy/en/latest/tutorials/abfe_tutorial.html for details on running ABFE calculations.
 
-    The results reported depends on the ``--report`` flag:
+    The results reported depend on the ``--report`` flag:
 
     \b
-    * ``--report=dg`` (default) reports the ligand, its absolute free energy, and
-      the associated uncertainty obtained from DG replica averages and
-      standard deviations.
-    * ``--report=raw`` reports the raw results, which each repeat simulation given
-      separately (i.e. no combining of redundant simulations is performed)
+    * ``--report=dg`` (default) reports the absolute binding free energy of each
+      ligand, averaged over the repeats, and its uncertainty.  The uncertainty is
+      the standard deviation of the repeats, or, if any ligand has only one repeat,
+      the MBAR uncertainties of both legs combined.
+    * ``--report=raw`` reports the free energy difference of every leg and repeat
+      separately, without combining repeats or legs, with its MBAR uncertainty.
 
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to specify an output filepath.

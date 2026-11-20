@@ -19,8 +19,7 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
    bespoke_parameters
    packmol_memgen_setup
 
-.. TODO: merge cofactors_rbfe into loading_molecules,
-   "Create a ChemicalSystem", "Specify custom force fields", OpenFold3 notebooks.
+.. TODO: "Create a ChemicalSystem", "Specify custom force fields", OpenFold3 notebooks.
 
 .. toctree::
    :maxdepth: 1
@@ -38,6 +37,7 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
    :caption: Planning: Protocols and alchemical networks
 
    choose_protocol
+   exploring_protocol_settings
    rfe_alchemical_planners
    create_alchemical_network
 
@@ -60,11 +60,12 @@ For the concepts behind each step, see the :doc:`User Guide </guide/index>`.
    :maxdepth: 1
    :caption: Working with results
 
+   gather_results
+   plotting_with_cinnabar
+   load_results
+   simulation_visualization
    jq_inspection
 
-.. TODO: add "Gather free energy results" and "Load results in Python" (from
-   guide/results/working_with_results), "Analyze an RBFE network with cinnabar" (from
-   guide/results/working_with_networks) and "Visualize trajectories with openfe_analysis".
 .. TODO: merge dumping_transformation and jq_inspection into a single
    "Save and inspect OpenFE JSON files" how-to.
 

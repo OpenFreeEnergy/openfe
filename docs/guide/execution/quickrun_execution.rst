@@ -1,7 +1,7 @@
 .. _userguide_quickrun:
 
 Execution with ``quickrun``
-=======================
+===========================
 
 The planning and preparation of a campaign of alchemical simulations using ``openfe`` is intended to be achievable on a local workstation in a matter of minutes.
 The *execution* of these simulations however requires a large amount of computational power, and beyond running single calculations locally, is intended to be distributed across a HPC environment.
@@ -38,9 +38,7 @@ You decide where and when each Transformation runs, for example by
 You can run multiple simulations in parallel by running several quickrun calls at the same time,
 for example one per Transformation, :doc:`one per repeat </how_to_guides/run_repeats_in_parallel>`,
 or :doc:`several on the same GPU </how_to_guides/run_with_mps>`.
-The results files are then collected with :ref:`openfe gather <cli_gather>`.
-
-.. TODO: link the "Gather free energy results" how-to instead of the CLI reference once it exists.
+The results files are then collected with :doc:`/how_to_guides/gather_results`.
 
 If you would rather have **openfe** schedule the tasks of a whole network for you,
 see :ref:`userguide_task_based_execution`.

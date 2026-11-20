@@ -86,50 +86,61 @@ def _get_legs_from_result_jsons(
 
     ddgs = defaultdict(lambda: defaultdict(list))
 
-    for result_fn in result_fns:
-        names, result = _load_valid_result_json(result_fn)
-        if names is None:  # this means it couldn't find names and/or simtype
-            continue
-
-        ddgs[names]["overall"].append([result["estimate"], result["uncertainty"]])
-        proto_key = [
-            k
-            for k in result["unit_results"].keys()
-            if k.startswith("ProtocolUnitResult")
-        ]  # fmt: skip
-
-        # In openfe v1.11+, we only want to pick up results from
-        # the Analysis Unit. To ensure backwards compatibility,
-        # we check if there are any analysis units. If so,
-        # we set a flag and later exclude Setup and Run.
-        has_analysis_units = any(
-            ["Analysis" in result["unit_results"][p]["source_key"] for p in proto_key]
-        )
-
-        for p in proto_key:
-            # Skip non-analysis units if we have any
-            if has_analysis_units and (
-                "Setup" in result["unit_results"][p]["source_key"]
-                or "Run" in result["unit_results"][p]["source_key"]
-            ):
+    with click.progressbar(
+        result_fns,
+        label="Loading results:",
+        fill_char="▇",
+        empty_char=" ",
+        bar_template="%(label)s  %(bar)s  %(info)s files",
+        length=len(result_fns),
+        show_percent=False,
+        show_pos=True,
+        show_eta=False,
+    ) as bar:
+        for result_fn in bar:
+            names, result = _load_valid_result_json(result_fn)
+            if names is None:  # this means it couldn't find names and/or simtype
                 continue
 
-            if "unit_estimate" in result["unit_results"][p]["outputs"]:
-                simtype = result["unit_results"][p]["outputs"]["simtype"]
-                dg = result["unit_results"][p]["outputs"]["unit_estimate"]
-                dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
+            ddgs[names]["overall"].append([result["estimate"], result["uncertainty"]])
+            proto_key = [
+                k
+                for k in result["unit_results"].keys()
+                if k.startswith("ProtocolUnitResult")
+            ]  # fmt: skip
 
-                ddgs[names][simtype].append([dg, dg_error])
+            # In openfe v1.11+, we only want to pick up results from
+            # the Analysis Unit. To ensure backwards compatibility,
+            # we check if there are any analysis units. If so,
+            # we set a flag and later exclude Setup and Run.
+            has_analysis_units = any(
+                ["Analysis" in result["unit_results"][p]["source_key"] for p in proto_key]
+            )
 
-            if "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
-                corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
-                corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
-                ddgs[names]["standard_state_correction_A"].append(
-                    [corr_A, 0 * unit.kilocalorie_per_mole]
-                )
-                ddgs[names]["standard_state_correction_B"].append(
-                    [corr_B, 0 * unit.kilocalorie_per_mole]
-                )
+            for p in proto_key:
+                # Skip non-analysis units if we have any
+                if has_analysis_units and (
+                    "Setup" in result["unit_results"][p]["source_key"]
+                    or "Run" in result["unit_results"][p]["source_key"]
+                ):
+                    continue
+
+                if "unit_estimate" in result["unit_results"][p]["outputs"]:
+                    simtype = result["unit_results"][p]["outputs"]["simtype"]
+                    dg = result["unit_results"][p]["outputs"]["unit_estimate"]
+                    dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
+
+                    ddgs[names][simtype].append([dg, dg_error])
+
+                if "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
+                    corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
+                    corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
+                    ddgs[names]["standard_state_correction_A"].append(
+                        [corr_A, 0 * unit.kilocalorie_per_mole]
+                    )
+                    ddgs[names]["standard_state_correction_B"].append(
+                        [corr_B, 0 * unit.kilocalorie_per_mole]
+                    )
 
     return ddgs
 
@@ -284,9 +295,7 @@ def _generate_dg_mle(
     df = femap.get_absolute_dataframe()
     df = df.iloc[:, :3]
     unc_col_name = _infer_unc_col_name(DDGs)
-    df.rename(
-        {"label": "ligand", "uncertainty (kcal/mol)": unc_col_name}, axis="columns", inplace=True
-    )
+    df = df.rename(columns={"label": "ligand", "uncertainty (kcal/mol)": unc_col_name})
     df_out = format_df_with_precision(df, "DG (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 
@@ -348,9 +357,10 @@ def _generate_raw(
     default="dg",
     show_default=True,
     help=(
-        "What data to report. 'dg' gives the maximum-likelihood estimate derived "
-        "absolute deltaG value,  'ddg' gives delta-delta-G, and 'raw' gives "
-        "the raw result of the deltaG for a leg."
+        "Which report to generate: 'dg' for the binding free energy of each ligand, "
+        "estimated from the network by MLE and centred around zero; "
+        "'ddg' for the relative binding free energy of each ligand pair; "
+        "or 'raw' for the free energy difference of each leg and repeat."
     ),
 )
 @click.option(
@@ -399,21 +409,23 @@ def gather_septop(
     All directories will be walked recursively and any valid JSON results files will be gathered.
     Files must end in .json to be collected, and invalid files will be ignored.
 
-    Each JSON contains the results of a separate leg from a Separated Topologies calculation.
+    Each JSON contains the results of both legs (complex and solvent) of a Separated Topologies Transformation.
     See https://docs.openfree.energy/en/latest/tutorials/septop_tutorial.html for details on running SepTop calculations.
 
-    The results reported depends on ``--report`` flag:
+    The results reported depend on ``--report`` flag:
 
     \b
     * ``--report=dg`` (default) reports the ligand, its absolute free energy, and
       the associated uncertainty as the maximum likelihood estimate obtained
-      from DDG replica averages and standard deviations.  These MLE estimates
-      are centred around 0.0, and when plotted can be shifted to match
-      experimental values.
-    * ``--report=ddg`` reports pairs of ligand_i and ligand_j, the calculated
-      relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
-    * ``--report=raw`` reports the raw results, which each repeat simulation given
-      separately (i.e. no combining of redundant simulations is performed)
+      from the DDG values.  These MLE estimates are centred around 0.0, and
+      when plotted can be shifted to match experimental values.
+    * ``--report=ddg`` reports, for each pair of ligand_i and ligand_j, the
+      relative binding free energy DDG(i->j) = DG(j) - DG(i), averaged over
+      the repeats, and its uncertainty.  The uncertainty is the standard deviation
+      of the repeats, or, if any Transformation has only one repeat, the MBAR
+      uncertainties of both legs combined.
+    * ``--report=raw`` reports the free energy difference of every leg and repeat
+      separately, without combining repeats or legs, with its MBAR uncertainty.
 
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to specify an output filepath.

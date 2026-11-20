@@ -1,4 +1,31 @@
+from pathlib import Path
+
+import pooch
 import pytest
+
+from openfe.data._registry import POOCH_CACHE, zenodo_warehouse_partial
+
+# redefined b/c cannot share fixtures between openfe and openfecli
+pooch_warehouse_partial = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_warehouse_partial["base_url"],
+    registry={zenodo_warehouse_partial["fname"]: zenodo_warehouse_partial["known_hash"]},
+)
+
+
+@pytest.fixture
+def warehouse_data_cache_dir() -> Path:
+    pooch_warehouse_partial.fetch("warehouse_data.tar.gz", processor=pooch.Untar())
+    cached_dir = Path(POOCH_CACHE) / "warehouse_data.tar.gz.untar/warehouse_data/"
+
+    return cached_dir
+
+
+@pytest.fixture
+def warehouse_partial_dir(warehouse_data_cache_dir) -> Path:
+    result_dir = warehouse_data_cache_dir / "warehouse_mcl1/"
+
+    return result_dir
 
 
 @pytest.fixture
