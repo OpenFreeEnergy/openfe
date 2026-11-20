@@ -439,6 +439,11 @@ def am1bcc_ref_charges():
             0.017702, -0.966793, 0.063076, 0.063076,
             0.063076, 0.379931, 0.379931
         ] * offunit.elementary_charge,
+        "library_charges": [
+            # -1 * the ambertools charges should not be possible by anyother method
+            -0.146957, 0.918943, -0.025557, -0.025557,
+            -0.025557, -0.347657, -0.347657
+        ] * offunit.elementary_charge
     }  # fmt: skip
     return ref_chgs
 

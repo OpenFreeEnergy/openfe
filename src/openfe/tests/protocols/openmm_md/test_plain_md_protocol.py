@@ -3,6 +3,7 @@
 import json
 import logging
 import pathlib
+import sys
 import re
 from unittest import mock
 
@@ -14,7 +15,7 @@ from gufe import ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent
 from gufe.protocols.errors import ProtocolValidationError
 from numpy.testing import assert_allclose
 from openff.units import unit
-from openff.units.openmm import to_openmm
+from openff.units.openmm import from_openmm, to_openmm
 from openmm import MonteCarloBarostat, NonbondedForce
 from openmm import unit as omm_unit
 from openmmtools.states import ThermodynamicState
@@ -28,6 +29,11 @@ from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDSimulationUnit,
 )
 from openfe.protocols.openmm_utils import serialization
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_ESPALOMA_CHARGE,
+    HAS_NAGL,
+    HAS_OPENEYE,
+)
 from openfe.tests.conftest import HAS_ESPALOMA
 
 
@@ -270,14 +276,65 @@ def test_dry_run_espaloma_vacuum_user_charges(
     assert_allclose(charges, expected_charges, rtol=1e-6)
 
 
+@pytest.mark.parametrize(
+    "method, backend, ref_key",
+    [
+        pytest.param(
+            "nagl",
+            "rdkit",
+            "nagl",
+            marks=pytest.mark.skipif(
+                not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
+                reason="needs NAGL (without oechem) and/or on macos",
+            ),
+        ),
+        pytest.param(
+            "espaloma",
+            "rdkit",
+            "espaloma",
+            marks=pytest.mark.skipif(not HAS_ESPALOMA_CHARGE, reason="needs espaloma charge"),
+        ),
+    ],
+)
+def test_dry_run_charge_backends(
+    CN_molecule, tmp_path, method, backend, ref_key, vac_settings, am1bcc_ref_charges
+):
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+    vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
+
+    protocol = PlainMDProtocol(settings=vac_settings)
+
+    csystem = openfe.ChemicalSystem({"ligand": CN_molecule})
+
+    dag = protocol.create(stateA=csystem, stateB=csystem, mapping=None)
+    md_unit = list(dag.protocol_units)[0]
+
+    result = md_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system = result["debug"]["system"]
+
+    nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)][0]
+
+    charges = []
+    for i in range(system.getNumParticles()):
+        c, s, e = nonbond.getParticleParameters(i)
+        charges.append(from_openmm(c))
+
+    charges = unit.Quantity.from_list(charges)
+
+    assert_allclose(am1bcc_ref_charges[ref_key], charges, rtol=1e-4)
+
+
+@pytest.mark.parametrize("method, backend", [("am1bcc", "ambertools"), ("am1bcc", "openeye")])
 def test_dry_run_missing_charges(
+    method,
+    backend,
     CN_molecule,
     vac_settings,
 ):
     # an error should be raised if a nondeterministic charge method would be used at run time
-    vac_settings.partial_charge_settings.partial_charge_method = "am1bcc"
-    vac_settings.partial_charge_settings.off_toolkit_backend = "ambertools"
-    vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
 
     protocol = PlainMDProtocol(settings=vac_settings)
 
@@ -286,7 +343,7 @@ def test_dry_run_missing_charges(
     with pytest.raises(
         ProtocolValidationError,
         match=re.escape(
-            "SmallMoleculeComponent(name=) from system CN no charges would have am1bcc charges generated at runtime which is non-deterministic."
+            "System: 'CN no charges' contains SmallMoleculeComponents which may have non-deterministic charges generated at runtime."
         ),
     ):
         _ = protocol.create(stateA=csystem, stateB=csystem, mapping=None)

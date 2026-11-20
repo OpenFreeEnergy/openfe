@@ -22,7 +22,7 @@ from gufe import LigandAtomMapping
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
-from openff.toolkit import Molecule
+from openff.toolkit import Molecule, ForceField
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import (
@@ -745,13 +745,126 @@ def test_setup_ligand_system_cutoff(
         assert f_cutoff == cutoff
 
 
+@pytest.mark.parametrize(
+    "method, backend, ref_key",
+    [
+        pytest.param(
+            "nagl",
+            "rdkit",
+            "nagl",
+            marks=pytest.mark.skipif(
+                not HAS_NAGL or HAS_OPENEYE or sys.platform.startswith("darwin"),
+                reason="needs NAGL (without oechem) and/or on macos",
+            ),
+        ),
+        pytest.param(
+            "espaloma",
+            "rdkit",
+            "espaloma",
+            marks=pytest.mark.skipif(not HAS_ESPALOMA_CHARGE, reason="needs espaloma charge"),
+        ),
+        pytest.param(
+            "forcefield",
+            "rdkit",
+            "library_charges",
+        )
+    ],
+)
 def test_setup_charge_backends(
+    CN_molecule, tmp_path, method, backend, ref_key, vac_settings, am1bcc_ref_charges
+):
+    # check that partial charges are assigned correctly for deterministic methods (nagl, espaloma)
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+    vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
+
+    # make stateB molecule
+    offmolB = Molecule.from_smiles("CCN")
+    offmolB.generate_conformers()
+    molB = openfe.SmallMoleculeComponent.from_openff(offmolB)
+    a_molB = align_mol_shape(molB, ref_mol=CN_molecule)
+    mapper = KartografAtomMapper(atom_map_hydrogens=True)
+    mapping = next(mapper.suggest_mappings(CN_molecule, a_molB))
+
+    # if we have library charges we need to add them to the force field
+    if method == "forcefield":
+        # pick a force field with am1-bcc handler by default which should fail validation
+        ff = ForceField("openff-2.2.1.offxml")
+        lib_handler = ff.get_parameter_handler("LibraryCharges")
+        # CN from our ref charges
+        lib_handler.add_parameter(
+            parameter=lib_handler._INFOTYPE(
+                smirks="[H:3][C:1]([H:4])([H:5])[N:2]([H:6])[H:7]",
+                charge=am1bcc_ref_charges[ref_key]
+            )
+        )
+        # CCN charges generated with NAGL and * -1
+        lib_handler.add_parameter(
+            parameter=lib_handler._INFOTYPE(
+                smirks=offmolB.to_smiles(mapped=True),
+                charge=[0.13743, -0.1492, 0.90714997, -0.03589999, -0.03589999, -0.03589999, -0.05014999, -0.05014999, -0.34369, -0.34369] * unit.elementary_charge
+            )
+        )
+        # set the small molecule force field to use this one
+        vac_settings.forcefield_settings.small_molecule_forcefield = ff.to_string()
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    systemA = openfe.ChemicalSystem({"l": CN_molecule})
+    systemB = openfe.ChemicalSystem({"l": a_molB})
+
+    dag = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
+
+    dag_setup_unit = [pu for pu in dag.protocol_units if isinstance(pu, HybridTopologySetupUnit)][0]
+
+    results = dag_setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    htf = results["hybrid_factory"]
+    hybrid_system = results["hybrid_system"]
+
+    # get the standard nonbonded force
+    nonbond = [f for f in hybrid_system.getForces() if isinstance(f, NonbondedForce)]
+    assert len(nonbond) == 1
+
+    # get the particle parameter offsets
+    c_offsets = {}
+    for i in range(nonbond[0].getNumParticleParameterOffsets()):
+        offset = nonbond[0].getParticleParameterOffset(i)
+        c_offsets[offset[1]] = ensure_quantity(offset[2], "openff")
+
+    # See the user charges test below for an idea of what we're doing here
+    # In this particular case we are solely checking that the old atoms
+    # match the reference charges in am1bcc_ref_charges
+    for i in range(hybrid_system.getNumParticles()):
+        c, s, e = nonbond[0].getParticleParameters(i)
+        # get the particle charge (c)
+        c = ensure_quantity(c, "openff")
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offsets) is equal to -(molA particle charge)
+        if i in htf._atom_classes["unique_old_atoms"]:
+            idx = htf._hybrid_to_old_map[i]
+            ref = am1bcc_ref_charges[ref_key][idx]
+            np.testing.assert_allclose(c, ref, rtol=1e-4)
+            np.testing.assert_allclose(c_offsets[i], -ref, rtol=1e-4)
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offsets) is equal to difference between molB and molA
+        elif i in htf._atom_classes["core_atoms"]:
+            old_i = htf._hybrid_to_old_map[i]
+            ref = am1bcc_ref_charges[ref_key][i]
+            np.testing.assert_allclose(c, ref, rtol=1e-4)
+
+
+@pytest.mark.parametrize("method, backend", [("am1bcc", "ambertools"), ("am1bcc", "openeye")])
+def test_dry_run_missing_charges(
+    method,
+    backend,
     CN_molecule,
     vac_settings,
 ):
     # make sure an error is raised if a nondeterministic charge method would be used at run time
-    vac_settings.partial_charge_settings.partial_charge_method = "am1bcc"
-    vac_settings.partial_charge_settings.off_toolkit_backend = "ambertools"
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=vac_settings,
@@ -771,7 +884,7 @@ def test_setup_charge_backends(
         ProtocolValidationError,
         match=re.escape(
             # this is the CN failing as it has no name
-            "The following Components are affected: SmallMoleculeComponent(name=)"
+            "System: 'CN no charges' contains SmallMoleculeComponents which may have non-deterministic charges generated at runtime."
         ),
     ):
         _ = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
