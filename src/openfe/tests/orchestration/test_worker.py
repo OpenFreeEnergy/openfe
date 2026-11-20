@@ -6,10 +6,11 @@ import gufe
 import networkx as nx
 import pytest
 from gufe.protocols.protocolunit import ProtocolUnit
+from gufe.storage.externalresource import MemoryStorage
 
 from openfe.orchestration import Worker
 from openfe.orchestration.exorcist_utils import setup_task_campaign
-from openfe.storage.warehouse import FileSystemWarehouse
+from openfe.storage.warehouse import FileSystemWarehouse, WarehouseBaseClass, WarehouseStores
 
 
 def _get_result_store_files(warehouse: FileSystemWarehouse) -> set[str]:
@@ -248,3 +249,17 @@ def test_execute_unit_uses_isolated_shared_workspace_per_task(tmp_path):
     assert first_path.name == "simulation.nc"
     assert second_path.name == "simulation.nc"
     assert first_path.parent != second_path.parent
+
+
+def test_invalid_warehouse_type():
+    memory_stores = WarehouseStores(
+        setup=MemoryStorage(),
+        results=MemoryStorage(),
+        shared=MemoryStorage(),
+        tasks=MemoryStorage(),
+        protocol_dags=MemoryStorage(),
+    )
+    warehouse = WarehouseBaseClass(memory_stores, name="test_warehouse")
+
+    with pytest.raises(TypeError, match="must be a FileSystemWarehouse"):
+        worker = Worker(warehouse=warehouse, task_db_path="not_a_file.txt")
