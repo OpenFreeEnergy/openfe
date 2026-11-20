@@ -178,10 +178,10 @@ We strongly recommend giving each ligand a unique name (the SDF title line
 or the ``name`` argument), as names are used to label transformations and
 results.
 
-Partial charges are assigned during protocol setup but can also
-be assigned in advance for reproducibility and to avoid repeated calculations.
+Missing partial charges are assigned during protocol setup. They can also
+be assigned in advance for better reproducibility and to avoid repeated calculations.
 See :ref:`model building and partial charges <userguide_model_building>` for
-the defaults and options. For guides see Assigning partial charges :doc:`with the Python API </how_to_guides/user_charges>` or
+the defaults and options. For guides, see; Assigning partial charges :doc:`with the Python API </how_to_guides/user_charges>` or
 :doc:`with the CLI </how_to_guides/charge_molecules_cli>`.
 
 .. rubric:: Binding poses
@@ -206,7 +206,7 @@ Cofactors and other small molecules
   explicit hydrogens and coordinates.
 * Metal-containing cofactors, such as heme, are not supported by the standard preparation workflow.
 
-For how cofactors are parameterized, see :ref:`userguide_model_building`.
+For information on how cofactors are parameterized see :ref:`userguide_model_building`.
 
 Checklist for preparing input ``Components``
 --------------------------------------------

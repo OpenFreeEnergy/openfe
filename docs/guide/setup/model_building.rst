@@ -26,7 +26,7 @@ The simulation model is assembled from several choices:
 
 .. note::
 
-    These choices affect the simulation dynamics and observables and should be changed carefully. Its important to keep them consistent
+    These choices affect the simulation dynamics and observables and should be changed carefully. It is important to keep them consistent
     across a ligand network and between calculations you intend to compare.
     Parameterization also depends on the chemistry of the prepared input; see the
     :ref:`domain of applicability <userguide_protocols>` for current limitations.
@@ -58,7 +58,7 @@ the following replaces ff14SB with ff19SB::
    forcefields = settings.forcefield_settings.forcefields
    forcefields[forcefields.index("amber/ff14SB.xml")] = "amber19/protein.ff19SB.xml"
 
-Force fields are provided via `OpenMMForceFields <https://openmm.github.io/openmmforcefields/dev/userguide.html#user-guide>`_, see
+Force fields are provided via `OpenMMForceFields <https://openmm.github.io/openmmforcefields/dev/userguide.html#user-guide>`_; see
 the documentation for the available options.
 
 It is important to choose a compatible set of protein, water and ion parameters for your
@@ -78,8 +78,8 @@ For example, to select OpenFF-2.3.0 before creating the protocol::
    settings.forcefield_settings.small_molecule_forcefield = "openff-2.3.0"
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
-It is important to select a force field with sufficient accuracy for your molecules, you can also use custom parameters, see the
-:doc:`bespoke force field how-to guide </how_to_guides/bespoke_parameters>` for more information.
+It is important to select a force field with sufficient accuracy for your molecules which should be confirmed in advance.
+You can also use custom parameters, see the :doc:`bespoke force field how-to guide </how_to_guides/bespoke_parameters>` for more information.
 
 For all available force field settings, see :class:`.OpenMMSystemGeneratorFFSettings`.
 
@@ -127,7 +127,7 @@ method used when charges need to be assigned during protocol setup. The availabl
    * - Method
      - Description
    * - ``am1bcc``
-     - AM1-BCC (default), using AmberTools or OpenEye. Generated at the input conformer.
+     - AM1-BCC (default), using AmberTools or OpenEye. Charges are generated at the input conformer.
    * - ``am1bccelf10``
      - AM1-BCC with ELF10 conformer selection. Requires OpenEye; setting
        ``number_of_conformers`` to at least 500 is recommended.
@@ -151,11 +151,11 @@ See :ref:`userguide_cli_yaml_interface` for the CLI options.
 Choosing a charge model
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Small-molecule force fields are typically optimised for a specific charge model,
-you should check the documentation and literature for the force field you are using to ensure compatibility.
+Small-molecule force fields are typically optimised for a specific charge model.
+You should check the documentation and literature for the force field you are using to ensure compatibility.
 Some useful references for charge assignment and force field compatibility are:
 
-* `OpenFF force fields <https://github.com/openforcefield/openff-forcefields>`_
+* The `OpenFF force fields repository <https://github.com/openforcefield/openff-forcefields>`_
   documents the charge models used by OpenFF releases.
 * The `OpenFF FAQ <https://docs.openforcefield.org/en/latest/faq.html#under-the-hood>`_
   explains charge assignment when applying a SMIRNOFF force field (see the "How are partial charges assigned in a SMIRNOFF force field?" section).
