@@ -81,6 +81,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import (
+    charge_generation,
     multistate_analysis,
     omm_compute,
     settings_validation,
