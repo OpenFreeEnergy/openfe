@@ -1400,15 +1400,17 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
         u_top = mda.Universe(pdb_file)
         # Ensure required host connectivity exists.
         host = u_top.select_atoms(protein_selection)
+        if not host:
+            raise ValueError(
+                f"Host selection {protein_selection!r} matched no atoms."
+            )
         host_atoms = host.residues.atoms
-        if host_atoms:
-            host_atoms.guess_bonds()
-
-        prot_indices = host.indices
+        host_atoms.guess_bonds()
+        host_indices = host.indices
 
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
-            prot = universe.atoms[prot_indices]
+            prot = universe.atoms[host_indices]
             lig_A = universe.atoms[ligand_A_indices]
             lig_B = universe.atoms[ligand_B_indices]
             apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig_A, lig_B])
@@ -1420,10 +1422,8 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
             # unwrap/shift/align run once per frame, here
             universe.transfer_to_memory(step=skip)
 
-            # Protein selection is empty - e.g. not looking at a protein host
-            if prot:
-                prot_rmsd2d = Protein2DRMSD(prot).run()
-                per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+            prot_rmsd2d = Protein2DRMSD(prot).run()
+            per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
 
             for label, lig, rdmol in [
                 ("ligand_A", lig_A, rdmol_A),
