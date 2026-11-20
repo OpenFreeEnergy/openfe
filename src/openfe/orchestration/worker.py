@@ -250,20 +250,20 @@ class Worker:
 
         ctx = Context(scratch=task_scratch, shared=task_shared)
 
-        # 4. Execute unit
         try:
+            # 4. Execute unit
             # TODO: this var naming is confusing
             results: dict[GufeKey, ProtocolUnitResult] = self._build_input_result_mapping(unit)
             inputs: dict[GufeKey, ProtocolUnitResult] = _pu_to_pur(unit.inputs, results)
             result = unit.execute(context=ctx, **inputs)
+
+            # 5. output result to warehouse
+            # TODO: we may need to end up handling namespacing on the warehouse side for tokenizables
+            self.warehouse.store_results_tokenizable(result)
+            self._store_result_index(result)
+            db.mark_task_completed(taskid, success=result.ok())
         except Exception:
             db.mark_task_completed(taskid, success=False)
             raise
-
-        # 5. output result to warehouse
-        # TODO: we may need to end up handling namespacing on the warehouse side for tokenizables
-        self.warehouse.store_results_tokenizable(result)
-        self._store_result_index(result)
-        db.mark_task_completed(taskid, success=result.ok())
 
         return taskid, result
