@@ -1,3 +1,4 @@
+Loading results:
 leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	1	25	42.66	0.73
 solvent	1	25	42.4	1.2
