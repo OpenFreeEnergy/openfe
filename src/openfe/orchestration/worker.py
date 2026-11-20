@@ -260,10 +260,10 @@ class Worker:
             db.mark_task_completed(taskid, success=False)
             raise
 
-        db.mark_task_completed(taskid, success=result.ok())
-
         # 5. output result to warehouse
         # TODO: we may need to end up handling namespacing on the warehouse side for tokenizables
         self.warehouse.store_results_tokenizable(result)
         self._store_result_index(result)
+        db.mark_task_completed(taskid, success=result.ok())
+
         return taskid, result
