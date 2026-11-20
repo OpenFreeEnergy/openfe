@@ -19,7 +19,7 @@ The simulation model is assembled from several choices:
   ions, lipids and other residues.
 * **Ligands and small-molecule cofactors:** a separate small-molecule force
   field supplies parameters for :class:`.SmallMoleculeComponent`\s.
-* **Partial charges:** Protein and other non-small-molecule components typically use predefined *library* charges defined in the OpenMM XML files.
+* **Partial charges:** protein and other non-small-molecule components typically use predefined *library* charges defined in the OpenMM XML files.
   Small-molecule components can either use existing charges or have new charges assigned during setup.
 * **Water:** the solvation model and the water and ion parameters must be
   compatible.
@@ -78,7 +78,7 @@ For example, to select OpenFF-2.3.0 before creating the protocol::
    settings.forcefield_settings.small_molecule_forcefield = "openff-2.3.0"
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
-It is important to select a force field with sufficient accuracy for your molecules which should be confirmed in advance.
+Choose a force field that is sufficiently accurate for your molecules, and confirm its suitability in advance.
 You can also use custom parameters, see the :doc:`bespoke force field how-to guide </how_to_guides/bespoke_parameters>` for more information.
 
 For all available force field settings, see :class:`.OpenMMSystemGeneratorFFSettings`.
@@ -102,7 +102,7 @@ Partial charges
 For ligands and cofactors represented as a :class:`.SmallMoleculeComponent`, the partial charges used in the simulated model are assigned with the following order of preference:
 
 1. If the component contains partial charges and at least one charge is nonzero, those charges are used.
-2. If charges are absent or all zero, the protocol assigns charges during setup using the method configured by ``partial_charge_settings``.
+2. If charges are absent or all charges are zero, the protocol assigns charges during setup using the method configured by ``partial_charge_settings``.
 
 .. note::
     By default **AM1-BCC** charges are assigned via the AmberTools backend
@@ -170,7 +170,7 @@ Water and model compatibility
 
 For systems solvated during protocol setup, the ``solvation_settings.solvent_model`` selects the water model
 used when adding solvent. The water and ion XML files in
-``forcefield_settings.forcefields`` must then be compatible with those choices e.g. a 4-point water model cannot be used with a 3-point force field.
+``forcefield_settings.forcefields`` must then be compatible with those choices; for example, a four-point water model cannot be used with a three-point force field.
 The same force field files must also cover any retained crystallographic ions.
 
 For a pre-solvated input, the protocol does not add solvent to that leg: the
