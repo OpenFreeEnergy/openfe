@@ -14,7 +14,11 @@ from openfe.orchestration import (
     get_task_df,
     setup_task_campaign,
 )
-from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph, update_max_tries
+from openfe.orchestration.exorcist_utils import (
+    _alchemical_network_to_task_graph,
+    status_counts,
+    update_max_tries,
+)
 from openfe.storage.warehouse import WarehouseBaseClass
 
 
@@ -352,3 +356,12 @@ def test_update_max_tries(fresh_db):
 def test_update_max_tries_invalid_val(fresh_db, bad_value):
     with pytest.raises(ValueError, match="must be a positive integer"):
         update_max_tries(task_db=fresh_db, max_tries=bad_value)
+
+
+def test_status_counts(fresh_db):
+    task_db = fresh_db
+    task_db.add_task("task_a", requirements=[], max_tries=1)
+    task_db.add_task("task_b", requirements=["task_a"], max_tries=1)
+    task_db.add_task("task_c", requirements=[], max_tries=1)
+
+    counts = status_counts(fresh_db)

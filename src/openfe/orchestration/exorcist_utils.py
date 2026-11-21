@@ -157,6 +157,25 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     return task_table
 
 
+def status_counts(task_db: exorcist.TaskStatusDB):
+    import sqlalchemy as sqla
+    from exorcist import TaskStatus
+
+    status_name_encoding = {e.value: e.name for e in exorcist.TaskStatus}
+
+    stmt = sqla.select(
+        task_db.tasks_table.c.status,
+        sqla.func.count(task_db.tasks_table.c.status).label("num_tasks"),
+    ).group_by("status")
+
+    with task_db.engine.connect() as conn:
+        status_counts = conn.execute(stmt)
+        counts_table = pd.DataFrame(status_counts.fetchall(), columns=status_counts.keys())
+
+    counts_table.replace({"status": status_name_encoding}, inplace=True)
+    return counts_table
+
+
 def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """Create a pandas Dataframe from task_db.
 
