@@ -167,6 +167,7 @@ def status_counts(task_db: exorcist.TaskStatusDB):
         task_db.tasks_table.c.status,
         sqla.func.count(task_db.tasks_table.c.status).label("num_tasks"),
     ).group_by("status")
+    # TODO: add zero count statuses
 
     with task_db.engine.connect() as conn:
         status_counts = conn.execute(stmt)
