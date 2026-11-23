@@ -1570,7 +1570,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
 
     @staticmethod
     def _translate_to_subsampled_indices(
-            full_system_indices: list[int], selection_indices: np.ndarray
+        full_system_indices: list[int], selection_indices: np.ndarray
     ) -> list[int]:
         selection_indices_list = selection_indices.tolist()
         try:
@@ -1850,14 +1850,14 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 if geom_A is not None and geom_B is not None:
                     # host atoms then guest atoms, order matters for BoreschRestraintAnalysis
                     restraint_atom_indices_A = self._translate_to_subsampled_indices(
-                        [*geom_A["host_atoms"], *geom_A["guest_atoms"]],
-                        selection_indices)
+                        [*geom_A["host_atoms"], *geom_A["guest_atoms"]], selection_indices
+                    )
                     restraint_atom_indices_B = self._translate_to_subsampled_indices(
-                        [*geom_B["host_atoms"], *geom_B["guest_atoms"]],
-                        selection_indices)
+                        [*geom_B["host_atoms"], *geom_B["guest_atoms"]], selection_indices
+                    )
             except ValueError as e:
                 restraint_atom_indices_A = restraint_atom_indices_B = None
-                self.logger.warning( "Skipping Boresch restraint analysis: %s", e)
+                self.logger.warning("Skipping Boresch restraint analysis: %s", e)
 
         outputs = self.run(
             trajectory=trajectory,

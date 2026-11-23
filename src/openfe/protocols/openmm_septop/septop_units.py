@@ -29,6 +29,7 @@ from gufe import (
 )
 from gufe.settings import SettingsBaseModel
 from MDAnalysis.coordinates.memory import MemoryReader
+from openfe_analysis.restraints import BoreschRestraintAnalysis
 from openfe_analysis.rmsd import (
     LigandCOMDrift,
     Protein2DRMSD,
@@ -39,7 +40,6 @@ from openfe_analysis.utils.apply_transformations import (
     apply_ligand_alignment_transformations,
 )
 from openfe_analysis.utils.universe_utils import create_universe_single_state
-from openfe_analysis.restraints import BoreschRestraintAnalysis
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity
 from openff.units.openmm import from_openmm, to_openmm
@@ -1419,7 +1419,7 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
         }
         time_ps: np.ndarray | None = None
 
-        boresch_keys = ( "bond", "angle1", "angle2", "dihedral1", "dihedral2", "dihedral3")
+        boresch_keys = ("bond", "angle1", "angle2", "dihedral1", "dihedral2", "dihedral3")
         restraint_data: dict[str, dict[str, list[np.ndarray]]] = {}
 
         # Read the PDB topology once and reuse across all lambda states.
@@ -1462,15 +1462,12 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
                 per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
 
                 if restraint_indices is not None:
-                    boresch = BoreschRestraintAnalysis(
-                        universe.atoms[restraint_indices]).run()
+                    boresch = BoreschRestraintAnalysis(universe.atoms[restraint_indices]).run()
                     restraint_results = restraint_data.setdefault(
-                        f"{label}_restraints",
-                        {key: [] for key in boresch_keys}
+                        f"{label}_restraints", {key: [] for key in boresch_keys}
                     )
                     for key in boresch_keys:
-                        restraint_results[key].append(
-                            getattr(boresch.results, key))
+                        restraint_results[key].append(getattr(boresch.results, key))
 
             del universe, prot, lig, prot_rmsd2d, lig_rmsd, lig_drift
 
