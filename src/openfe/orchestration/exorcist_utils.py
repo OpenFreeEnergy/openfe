@@ -174,7 +174,7 @@ def _status_counts(task_db: exorcist.TaskStatusDB):
         counts_df = pd.DataFrame(status_counts.fetchall(), columns=status_counts.keys())
 
     # TODO: do this with a left-join in sqla. for now should be fine to brute-force in pandas since it's small
-    null_statuses = [n for n in status_name_encoding if n not in counts_df.status]
+    null_statuses = [n for n in status_name_encoding if n not in counts_df.status.to_list()]
     null_statuses_df = pd.DataFrame({"status": null_statuses, "num_tasks": [0] * len(null_statuses)})  # fmt: skip
     counts_df = pd.concat([counts_df, null_statuses_df], axis=0, ignore_index=True)
 
