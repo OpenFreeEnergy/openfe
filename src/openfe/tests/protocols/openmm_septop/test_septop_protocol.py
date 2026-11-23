@@ -913,7 +913,7 @@ def test_dry_run_protocol_charges_benzene_toluene(
         charge_generation.assign_offmol_partial_charges(
             offmol=offmol,
             overwrite=False,
-            method="nagl",
+            method=s.partial_charge_settings.partial_charge_method,
             toolkit_backend=s.partial_charge_settings.off_toolkit_backend,
             generate_n_conformers=s.partial_charge_settings.number_of_conformers,
             nagl_model=s.partial_charge_settings.nagl_model,
