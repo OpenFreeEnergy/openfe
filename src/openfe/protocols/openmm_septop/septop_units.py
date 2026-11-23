@@ -1277,7 +1277,7 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
         protein_selection: str | None,
     ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
         """
-        Run trjectory analysis for the solvent phase.
+        Run trajectory analysis for the solvent phase.
 
         Parameters
         ----------
