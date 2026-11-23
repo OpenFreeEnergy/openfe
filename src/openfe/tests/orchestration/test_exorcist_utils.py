@@ -364,4 +364,10 @@ def test_status_counts(fresh_db):
     task_db.add_task("task_b", requirements=["task_a"], max_tries=1)
     task_db.add_task("task_c", requirements=[], max_tries=1)
 
-    counts = status_counts(fresh_db)
+    counts_df = status_counts(task_db)
+
+    pd.testing.assert_frame_equal(
+        counts_df,
+        pd.DataFrame({"status": ["BLOCKED", "AVAILABLE"], "num_tasks": [1, 2]}),
+        check_dtype=False,
+    )
