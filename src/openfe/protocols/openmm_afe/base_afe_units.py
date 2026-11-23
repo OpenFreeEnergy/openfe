@@ -2018,7 +2018,7 @@ class ComplexTrajectoryAnalysisMixin:
 
 class LigandTrajectoryAnalysisMixin:
     """
-    Mixin providing trajectory analysis for multistate simuulations
+    Mixin providing trajectory analysis for multistate simulations
     of phases without a host (e.g. solvent phase).
     """
 
