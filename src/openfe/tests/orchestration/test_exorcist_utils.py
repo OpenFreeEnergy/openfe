@@ -365,9 +365,12 @@ def test_status_counts(fresh_db):
     task_db.add_task("task_c", requirements=[], max_tries=1)
 
     counts_df = status_counts(task_db)
-
+    expected = {
+        "status": ["BLOCKED", "AVAILABLE", "IN_PROGRESS", "COMPLETED", "TOO_MANY_RETRIES", "ERROR"],
+        "num_tasks": [1, 2, 0, 0, 0, 0],
+    }
     pd.testing.assert_frame_equal(
         counts_df,
-        pd.DataFrame({"status": ["BLOCKED", "AVAILABLE"], "num_tasks": [1, 2]}),
-        check_dtype=False,
+        pd.DataFrame(expected),
+        check_dtype=False,  # TODO: check dtypes
     )
