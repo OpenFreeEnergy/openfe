@@ -1520,7 +1520,9 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
         protein_selection: str | None,
-    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        restraint_atom_indices_A: list[int] | None,
+        restraint_atom_indices_B: list[int] | None,
+    ) -> tuple[dict[str, Any], np.ndarray | None]:
         """
         Analyze a trajectory.
 
@@ -1543,16 +1545,41 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         protein_selection : str | None
           Optional MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations.
+        restraint_atom_indices_A : list[int] | None
+          Indices of the six Boresch restraint atoms for ligand A in the
+          subsampled system, ordered as host atoms (H0, H1, H2) followed by
+          guest atoms (G0, G1, G2). If ``None``, no restraint analysis is
+          performed for ligand A.
+        restraint_atom_indices_B : list[int] | None
+          As ``restraint_atom_indices_A``, but for ligand B.
 
         Returns
         -------
-        per_state_data : dict[str, list[np.ndarray]]
-          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``,
-          ``ligand_A_COM_drift``, ``ligand_B_COM_drift``, and ``protein_2D_RMSD``.`.
+        data : dict[str, Any]
+          Analysis results. Always contains, per ligand label
+          (``ligand_A``, ``ligand_B``), a list of per-state arrays under
+          ``{label}_RMSD`` and ``{label}_COM_drift``. The complex phase also
+          contains ``protein_2D_RMSD`` and, if restraint indices were given,
+          ``{label}_restraints``: a dict with the keys ``bond``, ``angle1``,
+          ``angle2``, ``dihedral1``, ``dihedral2`` and ``dihedral3``, each a
+          list of per-state arrays.
         time_ps : np.ndarray or None
           Time array in picoseconds corresponding to the analyzed frames.
         """
         ...
+
+    @staticmethod
+    def _translate_to_subsampled_indices(
+            full_system_indices: list[int], selection_indices: np.ndarray
+    ) -> list[int]:
+        selection_indices_list = selection_indices.tolist()
+        try:
+            return [selection_indices_list.index(idx) for idx in full_system_indices]
+        except ValueError as e:
+            raise ValueError(
+                "Boresch restraint atoms are not in the trajectory output selection. "
+                "Check that output_indices includes the protein and both ligands."
+            ) from e
 
     def _structural_analysis(
         self,
@@ -1564,6 +1591,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
         protein_selection: str,
+        restraint_atom_indices_A: list[int] | None,
+        restraint_atom_indices_B: list[int] | None,
         skip: int | None,
         dry: bool,
     ) -> dict[str, str | pathlib.Path]:
@@ -1591,6 +1620,13 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations in the complex phase.
           Ignored for the solvent phase.
+        restraint_atom_indices_A : list[int] | None
+          Indices of the six Boresch restraint atoms for ligand A in the
+          subsampled system, ordered as host atoms (H0, H1, H2) followed by
+          guest atoms (G0, G1, G2). If ``None``, no restraint analysis is
+          performed for ligand A. Ignored for the solvent phase.
+        restraint_atom_indices_B : list[int] | None
+          As ``restraint_atom_indices_A``, but for ligand B. Ignored for the solvent phase.
         skip : int | None
           Frame stride for structural analysis. If ``None``, a stride is
           chosen such that approximately (max.) 500 frames are analyzed per state.
@@ -1632,9 +1668,17 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                     rdmol_A=rdmol_A,
                     rdmol_B=rdmol_B,
                     protein_selection=protein_selection,
+                    restraint_atom_indices_A=restraint_atom_indices_A,
+                    restraint_atom_indices_B=restraint_atom_indices_B,
                 )
 
-            npz_data = {k: np.asarray(v, dtype=np.float32) for k, v in data.items()}
+            npz_data: dict[str, np.ndarray] = {}
+            for name, value in data.items():
+                if isinstance(value, dict):
+                    for sub_key, sub_value in value.items():
+                        npz_data[f"{name}_{sub_key}"] = np.asarray(sub_value, dtype=np.float32)
+                else:
+                    npz_data[name] = np.asarray(value, dtype=np.float32)
             npz_data["time_ps"] = np.asarray(time_ps, dtype=np.float32)
 
         # TODO: eventually change this to more specific exception types
@@ -1675,6 +1719,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         ligand_B_indices: list[int],
         smc_A: SmallMoleculeComponent,
         smc_B: SmallMoleculeComponent,
+        restraint_atom_indices_A: list[int] | None = None,
+        restraint_atom_indices_B: list[int] | None = None,
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: pathlib.Path | None = None,
@@ -1698,6 +1744,11 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
           SmallMoleculeComponent for ligand A.
         smc_B : SmallMoleculeComponent
           SmallMoleculeComponent for ligand B.
+        restraint_atom_indices_A : list[int] | None
+          Indices of the Boresch restraint atoms for ligand A in the
+          subsampled system (host atoms then guest atoms). Complex phase only.
+        restraint_atom_indices_B : list[int] | None
+          As above, for ligand B.
         dry : bool
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
@@ -1750,6 +1801,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             rdmol_A=smc_A.to_rdkit(),
             rdmol_B=smc_B.to_rdkit(),
             protein_selection=analysis_settings.protein_selection,
+            restraint_atom_indices_A=restraint_atom_indices_A,
+            restraint_atom_indices_B=restraint_atom_indices_B,
             skip=analysis_settings.skip,
             dry=dry,
         )
@@ -1787,6 +1840,25 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         ligand_A_indices = np.where(np.isin(selection_indices, ligand_A_full_indices))[0].tolist()
         ligand_B_indices = np.where(np.isin(selection_indices, ligand_B_full_indices))[0].tolist()
 
+        restraint_atom_indices_A: list[int] | None = None
+        restraint_atom_indices_B: list[int] | None = None
+
+        if self.simtype == "complex":
+            try:
+                geom_A = setup.outputs["restraint_geometry_A"]
+                geom_B = setup.outputs["restraint_geometry_B"]
+                if geom_A is not None and geom_B is not None:
+                    # host atoms then guest atoms, order matters for BoreschRestraintAnalysis
+                    restraint_atom_indices_A = self._translate_to_subsampled_indices(
+                        [*geom_A["host_atoms"], *geom_A["guest_atoms"]],
+                        selection_indices)
+                    restraint_atom_indices_B = self._translate_to_subsampled_indices(
+                        [*geom_B["host_atoms"], *geom_B["guest_atoms"]],
+                        selection_indices)
+            except ValueError as e:
+                restraint_atom_indices_A = restraint_atom_indices_B = None
+                self.logger.warning( "Skipping Boresch restraint analysis: %s", e)
+
         outputs = self.run(
             trajectory=trajectory,
             checkpoint=checkpoint,
@@ -1795,6 +1867,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             ligand_B_indices=ligand_B_indices,
             smc_A=smc_A,
             smc_B=smc_B,
+            restraint_atom_indices_A=restraint_atom_indices_A,
+            restraint_atom_indices_B=restraint_atom_indices_B,
             scratch_basepath=ctx.scratch,
             shared_basepath=ctx.shared,
         )

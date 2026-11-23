@@ -39,6 +39,7 @@ from openfe_analysis.utils.apply_transformations import (
     apply_ligand_alignment_transformations,
 )
 from openfe_analysis.utils.universe_utils import create_universe_single_state
+from openfe_analysis.restraints import BoreschRestraintAnalysis
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import Quantity
 from openff.units.openmm import from_openmm, to_openmm
@@ -1275,7 +1276,9 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
         protein_selection: str | None,
-    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        restraint_atom_indices_A: list[int] | None,
+        restraint_atom_indices_B: list[int] | None,
+    ) -> tuple[dict[str, Any], np.ndarray | None]:
         """
         Run trajectory analysis for the solvent phase.
 
@@ -1298,10 +1301,17 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
         protein_selection : str | None
           MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations.
+        restraint_atom_indices_A : list[int] | None
+          Indices of the six Boresch restraint atoms for ligand A in the
+          subsampled system, ordered as host atoms (H0, H1, H2) followed by
+          guest atoms (G0, G1, G2). If ``None``, no restraint analysis is
+          performed for ligand A.
+        restraint_atom_indices_B : list[int] | None
+          As ``restraint_atom_indices_A``, but for ligand B.
 
         Returns
         -------
-        per_state_data : dict[str, list[np.ndarray]]
+        per_state_data : dict[str, Any]
           Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``.
         time_ps : np.ndarray or None
           Time array in picoseconds corresponding to the analyzed frames.
@@ -1353,7 +1363,9 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
         rdmol_A: Chem.Mol,
         rdmol_B: Chem.Mol,
         protein_selection: str | None,
-    ) -> tuple[dict[str, list[np.ndarray]], np.ndarray | None]:
+        restraint_atom_indices_A: list[int] | None,
+        restraint_atom_indices_B: list[int] | None,
+    ) -> tuple[dict[str, Any], np.ndarray | None]:
         """
         Run trajectory analysis for the complex phase.
 
@@ -1376,14 +1388,26 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
         protein_selection : str | None
           MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations.
+        restraint_atom_indices_A : list[int] | None
+          Indices of the six Boresch restraint atoms for ligand A in the
+          subsampled system, ordered as host atoms (H0, H1, H2) followed by
+          guest atoms (G0, G1, G2). If ``None``, no restraint analysis is
+          performed for ligand A.
+        restraint_atom_indices_B : list[int] | None
+          As ``restraint_atom_indices_A``, but for ligand B.
 
         Returns
         -------
-        per_state_data : dict[str, list[np.ndarray]]
-          Per-state analysis results for ``ligand_A_RMSD``, ``ligand_B_RMSD``,
-          ``ligand_A_COM_drift``, ``ligand_B_COM_drift``, and ``protein_2D_RMSD``.`.
-        time_ps : np.ndarray or None
-          Time array in picoseconds corresponding to the analyzed frames.
+        data : dict[str, Any]
+          Per-state analysis results, with one array per lambda state:
+          ``protein_2D_RMSD``, ``ligand_A_RMSD``, ``ligand_B_RMSD``,
+          ``ligand_A_COM_drift`` and ``ligand_B_COM_drift``.
+          If restraint indices were given, also ``ligand_A_restraints`` and
+          ``ligand_B_restraints``, each a dict mapping ``bond``, ``angle1``,
+          ``angle2``, ``dihedral1``, ``dihedral2`` and ``dihedral3`` to a
+          list of per-state arrays.
+        time_ps : np.ndarray
+          Time in picoseconds of the analysed frames.
         """
         n_lambda = ds.dimensions["state"].size
         per_state_data: dict[str, list[np.ndarray]] = {
@@ -1394,6 +1418,10 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
             "protein_2D_RMSD": [],
         }
         time_ps: np.ndarray | None = None
+
+        boresch_keys = ( "bond", "angle1", "angle2", "dihedral1", "dihedral2", "dihedral3")
+        restraint_data: dict[str, dict[str, list[np.ndarray]]] = {}
+
         # Read the PDB topology once and reuse across all lambda states.
         # Passing u_top._topology to create_universe_single_state avoids
         # reading the PDB file from disk for every lambda.
@@ -1423,9 +1451,9 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
             prot_rmsd2d = Protein2DRMSD(prot).run()
             per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
 
-            for label, lig, rdmol in [
-                ("ligand_A", lig_A, rdmol_A),
-                ("ligand_B", lig_B, rdmol_B),
+            for label, lig, rdmol, restraint_indices in [
+                ("ligand_A", lig_A, rdmol_A, restraint_atom_indices_A),
+                ("ligand_B", lig_B, rdmol_B, restraint_atom_indices_B),
             ]:
                 lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run()
                 per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
@@ -1433,6 +1461,18 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
                 lig_drift = LigandCOMDrift(lig).run()
                 per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
 
+                if restraint_indices is not None:
+                    boresch = BoreschRestraintAnalysis(
+                        universe.atoms[restraint_indices]).run()
+                    restraint_results = restraint_data.setdefault(
+                        f"{label}_restraints",
+                        {key: [] for key in boresch_keys}
+                    )
+                    for key in boresch_keys:
+                        restraint_results[key].append(
+                            getattr(boresch.results, key))
+
             del universe, prot, lig, prot_rmsd2d, lig_rmsd, lig_drift
 
-        return per_state_data, time_ps
+        all_data: dict[str, Any] = {**per_state_data, **restraint_data}
+        return all_data, time_ps
