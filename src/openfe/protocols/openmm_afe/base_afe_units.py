@@ -1986,8 +1986,7 @@ class ComplexTrajectoryAnalysisMixin:
         if not host:
             raise ValueError(f"Host selection {protein_selection!r} matched no atoms.")
 
-        host_atoms = host.residues.atoms
-        host_atoms.guess_bonds()
+        host.residues.atoms.guess_bonds()
         host_indices = host.indices
         time_ps: np.ndarray | None = None
         for state_idx in range(n_lambda):
