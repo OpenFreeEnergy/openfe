@@ -2075,7 +2075,7 @@ class LigandTrajectoryAnalysisMixin:
             lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
             analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
 
-            del universe
+            del universe, lig, lig_rmsd
 
         return analysis_data, time_ps
 

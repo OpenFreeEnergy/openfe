@@ -1331,7 +1331,7 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
                 if time_ps is None:
                     time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
-                del universe
+                del universe, lig, lig_rmsd
 
         return per_state_data, time_ps
 
@@ -1433,6 +1433,6 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
                 lig_drift = LigandCOMDrift(lig).run()
                 per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
 
-            del universe
+            del universe, prot, lig, prot_rmsd2d, lig_rmsd, lig_drift
 
         return per_state_data, time_ps
