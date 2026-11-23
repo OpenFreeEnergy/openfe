@@ -883,12 +883,9 @@ def test_dry_run_protocol_charges_benzene_toluene(
     both legs and both slots.
     """
     s = protocol_dry_settings
-    s.partial_charge_settings.partial_charge_method = "nagl"
-    s.complex_solvation_settings.solvent_padding = 0.8 * offunit.nanometer
-    s.solvent_solvation_settings.solvent_padding = 0.8 * offunit.nanometer
-    s.forcefield_settings.nonbonded_cutoff = 0.7 * offunit.nanometer
-    # openff-2.2.1 uses ToolkitAM1BCC
-    s.forcefield_settings.small_molecule_forcefield = "openff-2.2.1"
+    s.forcefield_settings.small_molecule_forcefield = "openff-2.3.0"
+    s.partial_charge_settings.partial_charge_method = "am1bcc"
+    s.partial_charge_settings.off_toolkit_backend = "ambertools"
 
     benzene = benzene_modifications_uncharged["benzene"]
     toluene = benzene_modifications_uncharged["toluene"]
