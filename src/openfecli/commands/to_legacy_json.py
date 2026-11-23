@@ -11,14 +11,15 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
     from openfe.storage.utils import warehouse_to_legacy_json
     from openfe.storage.warehouse import FileSystemWarehouse
 
-    write("Loading results from Warehouse ...")
+    write("Loading results from Warehouse.")
     warehouse = FileSystemWarehouse.from_dir(warehouse_path)
-    result_edges = warehouse.gather_all_results()
+    result_edges = warehouse.gather_all_results(progress=True)
 
-    write("Writing results to legacy JSON format ...")
-    if len(result_edges) == 0:
+    n_results = len(result_edges)
+    if n_results == 0:
         click.echo(f"No results found in {warehouse_path}.", err=True)
     else:
+        write(f"Writing {n_results} results to legacy JSON format.")
         warehouse_to_legacy_json(result_edges, out_dir=output_dir)
         write(
             f"Results saved to {output_dir}. You may now run ``openfe gather`` on this directory, if applicable."
@@ -39,6 +40,7 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
         path_type=Path,
     ),
 )
+# TODO: output dir cannot exist
 @OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to './results'", default="results/")  # fmt: skip
 @print_duration
 def to_legacy_json(warehouse_path: str, output_dir: str):

@@ -8,6 +8,7 @@ from gufe.protocols.protocoldag import ProtocolDAGResult
 from gufe.tokenization import JSON_HANDLER
 
 
+# TODO: rename this, it doesn't have any Warehouse deps
 def warehouse_to_legacy_json(
     result_edges: list[tuple[ProtocolResult, ProtocolDAGResult]],
     out_dir: pathlib.Path | str,
@@ -33,6 +34,8 @@ def warehouse_to_legacy_json(
         If a JSON output file already exists.
 
     """
+    if pathlib.Path(out_dir).exists():
+        raise FileExistsError(f"Output directory already exists: {out_dir}")
     # TODO: this is copied from quickrun, refactor to avoid duplication
     for prot_result, dagresult in result_edges:
         if dagresult.ok():
