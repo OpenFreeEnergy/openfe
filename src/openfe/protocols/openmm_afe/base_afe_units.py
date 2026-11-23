@@ -2082,7 +2082,7 @@ class LigandTrajectoryAnalysisMixin:
 
 class LigandVacuumTrajectoryAnalysisMixin:
     """
-    Mixin providing trajectory analysis for multistate simuulations
+    Mixin providing trajectory analysis for multistate simulations
     of phases without a host and without solvent (e.g. vacuum phase).
 
     See `Issue #2239 <https://github.com/OpenFreeEnergy/openfe/issues/2239>`_
