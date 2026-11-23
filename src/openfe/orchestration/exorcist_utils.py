@@ -157,7 +157,8 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     return task_table
 
 
-def status_counts(task_db: exorcist.TaskStatusDB):
+# TODO: make public - maybe as a class method of TaskStatusDB?
+def _status_counts(task_db: exorcist.TaskStatusDB):
     import sqlalchemy as sqla
     from exorcist import TaskStatus
 

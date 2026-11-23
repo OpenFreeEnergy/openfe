@@ -16,7 +16,7 @@ from openfe.orchestration import (
 )
 from openfe.orchestration.exorcist_utils import (
     _alchemical_network_to_task_graph,
-    status_counts,
+    _status_counts,
     update_max_tries,
 )
 from openfe.storage.warehouse import WarehouseBaseClass
@@ -364,7 +364,7 @@ def test_status_counts(fresh_db):
     task_db.add_task("task_b", requirements=["task_a"], max_tries=1)
     task_db.add_task("task_c", requirements=[], max_tries=1)
 
-    counts_df = status_counts(task_db)
+    counts_df = _status_counts(task_db)
     expected = {
         "status": ["BLOCKED", "AVAILABLE", "IN_PROGRESS", "COMPLETED", "TOO_MANY_RETRIES", "ERROR"],
         "num_tasks": [1, 2, 0, 0, 0, 0],
