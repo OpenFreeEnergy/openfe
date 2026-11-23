@@ -21,7 +21,6 @@ import netCDF4 as nc
 import numpy as np
 import openmm
 import openmm.unit
-import openmm.unit as omm_units
 from gufe import (
     SmallMoleculeComponent,
     SolvatedPDBComponent,

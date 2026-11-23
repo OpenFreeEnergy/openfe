@@ -21,14 +21,12 @@ from typing import Any, Literal, Optional
 
 import gufe
 import matplotlib.pyplot as plt
-import MDAnalysis as mda
 import netCDF4 as nc
 import numpy as np
 import numpy.typing as npt
 import openmm
 import openmmtools
 from gufe import (
-    ChemicalSystem,
     ProteinComponent,
     SmallMoleculeComponent,
     SolventComponent,
@@ -58,13 +56,11 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
-    OpenMMEngineSettings,
-    OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDSimulationUnit
 from openfe.protocols.openmm_utils import omm_compute
-from openfe.protocols.openmm_utils.omm_settings import MultiStateAnalysisSettings, SettingsBaseModel
+from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.utils import log_system_probe, without_oechem_backend
 
