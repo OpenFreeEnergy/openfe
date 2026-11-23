@@ -40,8 +40,8 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
 )
-from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.openmm_utils import charge_generation
+from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.geometry.utils import get_aromatic_rings
 from openfe.protocols.restraint_utils.settings import BoreschRestraintSettings
@@ -894,7 +894,11 @@ def test_dry_run_protocol_charges_benzene_toluene(
     toluene = benzene_modifications_uncharged["toluene"]
     stateA, stateB = (
         openfe.ChemicalSystem(
-            {"ligand": ligand, "protein": T4_protein_component, "solvent": openfe.SolventComponent()}
+            {
+                "ligand": ligand,
+                "protein": T4_protein_component,
+                "solvent": openfe.SolventComponent(),
+            }
         )
         for ligand in (benzene, toluene)
     )
