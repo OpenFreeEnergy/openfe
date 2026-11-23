@@ -2011,7 +2011,7 @@ class ComplexTrajectoryAnalysisMixin:
             lig_drift = LigandCOMDrift(lig).run()
             analysis_data["ligand_COM_drift"].append(lig_drift.results.com_drift)
 
-            del universe
+            del universe, prot, lig, prot_rmsd2d, lig_rmsd, lig_drift
 
         return analysis_data, time_ps
 
