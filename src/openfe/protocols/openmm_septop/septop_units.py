@@ -1301,12 +1301,9 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
           MDAnalysis selection string for the protein atoms used for
           alignment and RMSD calculations.
         restraint_atom_indices_A : list[int] | None
-          Indices of the six Boresch restraint atoms for ligand A in the
-          subsampled system, ordered as host atoms (H0, H1, H2) followed by
-          guest atoms (G0, G1, G2). If ``None``, no restraint analysis is
-          performed for ligand A.
+          Unused in the solvent phase.
         restraint_atom_indices_B : list[int] | None
-          As ``restraint_atom_indices_A``, but for ligand B.
+          Unused in the solvent phase.
 
         Returns
         -------
@@ -1401,25 +1398,32 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
           Per-state analysis results, with one array per lambda state:
           ``protein_2D_RMSD``, ``ligand_A_RMSD``, ``ligand_B_RMSD``,
           ``ligand_A_COM_drift`` and ``ligand_B_COM_drift``.
-          If restraint indices were given, also ``ligand_A_restraints`` and
-          ``ligand_B_restraints``, each a dict mapping ``bond``, ``angle1``,
-          ``angle2``, ``dihedral1``, ``dihedral2`` and ``dihedral3`` to a
-          list of per-state arrays.
+          If restraint indices were given for a ligand, also contains
+          ``{label}_restraints``: a dictionary mapping ``bond``,
+          ``angle1``, ``angle2``, ``dihedral1``, ``dihedral2`` and
+          ``dihedral3`` to a list of per-state arrays.
         time_ps : np.ndarray
           Time in picoseconds of the analysed frames.
         """
         n_lambda = ds.dimensions["state"].size
-        per_state_data: dict[str, list[np.ndarray]] = {
+        per_state_data: dict[str, Any] = {
             "ligand_A_RMSD": [],
             "ligand_B_RMSD": [],
             "ligand_A_COM_drift": [],
             "ligand_B_COM_drift": [],
             "protein_2D_RMSD": [],
         }
-        time_ps: np.ndarray | None = None
 
         boresch_keys = ("bond", "angle1", "angle2", "dihedral1", "dihedral2", "dihedral3")
-        restraint_data: dict[str, dict[str, list[np.ndarray]]] = {}
+        for label, indices in [
+            ("ligand_A", restraint_atom_indices_A),
+            ("ligand_B", restraint_atom_indices_B),
+        ]:
+            if indices is not None:
+                per_state_data[f"{label}_restraints"] = {
+                    key: [] for key in boresch_keys
+                }
+        time_ps: np.ndarray | None = None
 
         # Read the PDB topology once and reuse across all lambda states.
         # Passing u_top._topology to create_universe_single_state avoids
@@ -1462,13 +1466,13 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
 
                 if restraint_indices is not None:
                     boresch = BoreschRestraintAnalysis(universe.atoms[restraint_indices]).run()
-                    restraint_results = restraint_data.setdefault(
-                        f"{label}_restraints", {key: [] for key in boresch_keys}
-                    )
                     for key in boresch_keys:
-                        restraint_results[key].append(getattr(boresch.results, key))
+                        per_state_data[f"{label}_restraints"][key].append(
+                            boresch.results[key]
+                        )
+                    del boresch
 
-            del universe, prot, lig, prot_rmsd2d, lig_rmsd, lig_drift
+            del universe, prot, lig_A, lig_B, lig
+            del prot_rmsd2d, lig_rmsd, lig_drift
 
-        all_data: dict[str, Any] = {**per_state_data, **restraint_data}
-        return all_data, time_ps
+        return per_state_data, time_ps
