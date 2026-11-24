@@ -158,30 +158,24 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
 
 
 # TODO: make public - maybe as a class method of TaskStatusDB?
-def _status_counts(task_db: exorcist.TaskStatusDB):
+def _status_counts(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     import sqlalchemy as sqla
-    from exorcist import TaskStatus
 
-    status_name_encoding = {e.value: e.name for e in exorcist.TaskStatus}
-
+    status_col = task_db.tasks_table.c.status
     stmt_count_statuses = sqla.select(
-        task_db.tasks_table.c.status,
-        sqla.func.count(task_db.tasks_table.c.status).label("num_tasks"),
-    ).group_by("status")
+        status_col,
+        sqla.func.count().label("num_tasks"),
+    ).group_by(status_col)
 
     with task_db.engine.connect() as conn:
-        status_counts = conn.execute(stmt_count_statuses)
-        counts_df = pd.DataFrame(status_counts.fetchall(), columns=status_counts.keys())
+        raw_counts = dict(conn.execute(stmt_count_statuses).all())
 
-    # TODO: do this with a left-join in sqla. for now should be fine to brute-force in pandas since it's small
-    null_statuses = [n for n in status_name_encoding if n not in counts_df.status.to_list()]
-    null_statuses_df = pd.DataFrame({"status": null_statuses, "num_tasks": [0] * len(null_statuses)})  # fmt: skip
-    counts_df = pd.concat([counts_df, null_statuses_df], axis=0, ignore_index=True)
-
-    # convert from encoding to status names
-    counts_df.replace({"status": status_name_encoding}, inplace=True)
-
-    return counts_df
+    return pd.DataFrame(
+        {
+            "status": [s.name for s in exorcist.TaskStatus],
+            "num_tasks": [raw_counts.get(s.value, 0) for s in exorcist.TaskStatus],
+        }
+    )
 
 
 def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
