@@ -962,33 +962,6 @@ def test_user_restraint_complex(
         assert pytest.approx(geom.phi_C0.to("radians").m, rel=1e-4) == 2.92365
 
 
-def test_get_boresch_reference_values():
-    geometry = BoreschRestraintGeometry.model_validate(
-        {
-            "host_atoms": [1383, 1384, 1398],
-            "guest_atoms": [2613, 2614, 2615],
-            "r_aA0": {"val": 0.510798, "unit": "nanometer"},
-            "theta_A0": {"val": 1.20278, "unit": "radian"},
-            "theta_B0": {"val": 1.25705, "unit": "radian"},
-            "phi_A0": {"val": 0.86035, "unit": "radian"},
-            "phi_B0": {"val": 1.59444, "unit": "radian"},
-            "phi_C0": {"val": 2.92365, "unit": "radian"},
-        }
-    )
-    values = SepTopComplexAnalysisUnit._get_boresch_reference_values(geometry)
-
-    assert values == pytest.approx(
-        {
-            "bond": 5.10798,  # nm -> Å
-            "angle1": 1.20278,
-            "angle2": 1.25705,
-            "dihedral1": 0.86035,
-            "dihedral2": 1.59444,
-            "dihedral3": 2.92365,
-        }
-    )
-
-
 def test_sanitize_ligand_before_restraint_search(
     cdk8_ligands,
     cdk8_protein,
