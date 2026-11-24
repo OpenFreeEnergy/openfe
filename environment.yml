@@ -15,7 +15,7 @@ dependencies:
   - lomap2>=3.3.0
   - networkx
   - numpy
-  - openfe-analysis>=0.5.0
+  - openfe-analysis ~=0.5.0
   - openff-interchange-base >=0.5.4  # adds pydantic 2.13 support
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
