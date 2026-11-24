@@ -1,15 +1,15 @@
-import shutil
 import tempfile
-from importlib import resources
 from pathlib import Path
 from typing import Literal
 from unittest import mock
 
+import pooch
 import pytest
 from gufe.storage.externalresource import MemoryStorage
 from gufe.tokenization import GufeTokenizable
 from openff.units import unit
 
+from openfe.data._registry import POOCH_CACHE, zenodo_warehouse_partial
 from openfe.storage.utils import warehouse_to_legacy_json
 from openfe.storage.warehouse import (
     FileSystemWarehouse,
@@ -292,19 +292,25 @@ class TestFileSystemWarehouse:
         )
 
 
+pooch_warehouse_partial = pooch.create(
+    path=POOCH_CACHE,
+    base_url=zenodo_warehouse_partial["base_url"],
+    registry={zenodo_warehouse_partial["fname"]: zenodo_warehouse_partial["known_hash"]},
+)
+
+
 @pytest.fixture
-def warehouse_partial_failure():
-    with resources.path("openfe.tests", "data") as data_dir:
-        warehouse_dir = data_dir / "warehouse_data"
-        if not (warehouse_dir).exists():
-            shutil.unpack_archive(warehouse_dir.with_suffix(".tar.gz"), data_dir, format="gztar")
-        warehouse = FileSystemWarehouse.from_dir(root_dir=warehouse_dir / "warehouse_mcl1")
-        return warehouse
+def warehouse_partial_dir() -> Path:
+    pooch_warehouse_partial.fetch("warehouse_data.tar.gz", processor=pooch.Untar())
+    warehouse_dir = Path(POOCH_CACHE) / "warehouse_data.tar.gz.untar/warehouse_data/warehouse_mcl1"
+
+    return warehouse_dir
 
 
 class TestWarehouseResultsGathering:
-    def test_gather_results(self, warehouse_partial_failure):
-        wh = warehouse_partial_failure
+    def test_gather_results(self, warehouse_partial_dir):
+        wh = FileSystemWarehouse.from_dir(root_dir=warehouse_partial_dir)
+
         result_edges = wh.gather_all_results()
 
         results_ok = [dag.ok() for _, dag in result_edges]
@@ -318,8 +324,8 @@ class TestWarehouseResultsGathering:
         assert expected_estimates == estimates
         assert len(result_edges) == 4
 
-    def test_convert_to_quickrun_output(self, warehouse_partial_failure, tmp_path):
-        wh = warehouse_partial_failure
+    def test_convert_to_quickrun_output(self, warehouse_partial_dir, tmp_path):
+        wh = FileSystemWarehouse.from_dir(root_dir=warehouse_partial_dir)
         result_edges = wh.gather_all_results()
         out_dir = tmp_path / "quickrun_style_output"
         warehouse_to_legacy_json(result_edges, out_dir=out_dir)
