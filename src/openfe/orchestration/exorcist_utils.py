@@ -157,8 +157,32 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     return task_table
 
 
-# TODO: make public - maybe as a class method of TaskStatusDB?
-def _status_counts(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
+def get_status_summary_df(task_db: exorcist.TaskStatusDB):
+    """Return a pandas Dataframe with a summary of the task statuses.
+
+    Parameters
+    ----------
+    task_db : exorcist.TaskStatusDB
+         A task status database.
+
+    Returns
+    -------
+    pd.DataFrame
+        A dataframe with the possible task statuses, and number of tasks with each status.
+
+    Examples
+    --------
+    >>> summary_df = get_status_summary(task_db)
+    >>> summary_df
+                status  num_tasks
+    0           BLOCKED          1
+    1         AVAILABLE          2
+    2       IN_PROGRESS          0
+    3         COMPLETED          0
+    4  TOO_MANY_RETRIES          0
+    5             ERROR          0
+
+    """
     import sqlalchemy as sqla
 
     status_col = task_db.tasks_table.c.status
@@ -186,7 +210,7 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     Parameters
     ----------
     task_db : exorcist.TaskStatusDB
-        A task database.
+        A task status database.
 
     Returns
     -------

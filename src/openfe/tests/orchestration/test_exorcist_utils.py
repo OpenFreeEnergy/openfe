@@ -16,7 +16,7 @@ from openfe.orchestration import (
 )
 from openfe.orchestration.exorcist_utils import (
     _alchemical_network_to_task_graph,
-    _status_counts,
+    get_status_summary_df,
     update_max_tries,
 )
 from openfe.storage.warehouse import WarehouseBaseClass
@@ -358,13 +358,13 @@ def test_update_max_tries_invalid_val(fresh_db, bad_value):
         update_max_tries(task_db=fresh_db, max_tries=bad_value)
 
 
-def test_status_counts(fresh_db):
+def test_get_status_summary_df(fresh_db):
     task_db = fresh_db
     task_db.add_task("task_a", requirements=[], max_tries=1)
     task_db.add_task("task_b", requirements=["task_a"], max_tries=1)
     task_db.add_task("task_c", requirements=[], max_tries=1)
 
-    counts_df = _status_counts(task_db)
+    counts_df = get_status_summary_df(task_db)
     expected = {
         "status": ["BLOCKED", "AVAILABLE", "IN_PROGRESS", "COMPLETED", "TOO_MANY_RETRIES", "ERROR"],
         "num_tasks": [1, 2, 0, 0, 0, 0],
@@ -372,5 +372,4 @@ def test_status_counts(fresh_db):
     pd.testing.assert_frame_equal(
         counts_df,
         pd.DataFrame(expected),
-        check_dtype=False,  # TODO: check dtypes
     )

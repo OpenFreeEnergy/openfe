@@ -60,12 +60,12 @@ def status_main(
 
     from exorcist import TaskStatusDB
 
-    from openfe.orchestration.exorcist_utils import _status_counts, get_task_df
+    from openfe.orchestration.exorcist_utils import get_status_summary_df, get_task_df
 
     task_db = TaskStatusDB.from_filename(task_db_path)
 
     if summary:
-        val_counts = _status_counts(task_db)
+        val_counts = get_status_summary_df(task_db)
         rich_print_to_stdout(val_counts)
     else:
         task_df = get_task_df(task_db)
