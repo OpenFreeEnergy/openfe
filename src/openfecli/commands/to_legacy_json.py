@@ -13,6 +13,7 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
 
     write("Loading results from Warehouse.")
     warehouse = FileSystemWarehouse.from_dir(warehouse_path)
+    write("Results Loaded")
     result_edges = warehouse.gather_all_results(progress=True)
 
     n_results = len(result_edges)

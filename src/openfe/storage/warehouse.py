@@ -432,6 +432,7 @@ class WarehouseBaseClass:
             ProtocolResults and their corresponding ProtocolDAGResults
 
         """
+        print("Gathering Results")
         # construct a map of all the ProtocolDAGs and their corresponding ProtocolUnitResults
         dags_to_unit_results = self._construct_dags_to_unit_results(
             dags=self.get_protocol_dags(),
@@ -487,9 +488,12 @@ class WarehouseBaseClass:
         """
 
         # protocol unit source key mapped to unit results
-        pur_pu_keys = {str(pur.source_key): pur for pur in unit_results}
+        pur_pu_keys = {
+            str(pur.source_key): pur
+            for pur in tqdm.tqdm(unit_results, desc="Loading ProtocolUnitResults")
+        }
         dag_map: dict[gufe.key, list[ProtocolUnitResult]] = {}
-        for dag in tqdm.tqdm(dags, desc="constructing map"):
+        for dag in tqdm.tqdm(dags, desc="Mapping Results to ProtocolDAGs"):
             dag_unit_results = []
             for unit in dag.protocol_units:
                 if unit.key in pur_pu_keys:
