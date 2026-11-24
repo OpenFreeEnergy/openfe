@@ -169,7 +169,7 @@ def get_status_summary_df(task_db: exorcist.TaskStatusDB):
     Returns
     -------
     pd.DataFrame
-        A dataframe with the possible task statuses, and number of tasks with each status.
+        A pandas DataFrame of all possible statuses and the number of tasks with each status.
 
     Examples
     --------
