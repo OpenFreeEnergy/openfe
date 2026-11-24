@@ -131,6 +131,7 @@ def setup_task_campaign(
     return db, warehouse
 
 
+# TODO: rename to `get_status_df`?
 def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """Create a pandas Dataframe from task_db.
 
