@@ -1420,9 +1420,7 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
             ("ligand_B", restraint_atom_indices_B),
         ]:
             if indices is not None:
-                per_state_data[f"{label}_restraints"] = {
-                    key: [] for key in boresch_keys
-                }
+                per_state_data[f"{label}_restraints"] = {key: [] for key in boresch_keys}
         time_ps: np.ndarray | None = None
 
         # Read the PDB topology once and reuse across all lambda states.
@@ -1467,9 +1465,7 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
                 if restraint_indices is not None:
                     boresch = BoreschRestraintAnalysis(universe.atoms[restraint_indices]).run()
                     for key in boresch_keys:
-                        per_state_data[f"{label}_restraints"][key].append(
-                            boresch.results[key]
-                        )
+                        per_state_data[f"{label}_restraints"][key].append(boresch.results[key])
                     del boresch
 
             del universe, prot, lig_A, lig_B, lig

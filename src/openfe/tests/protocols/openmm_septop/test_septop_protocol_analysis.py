@@ -2,9 +2,8 @@ import json
 
 import numpy as np
 import pytest
-from rdkit.Chem import SDMolSupplier
-
 from openff.units import unit as offunit
+from rdkit.Chem import SDMolSupplier
 
 from openfe.protocols.openmm_septop.septop_units import (
     SepTopComplexAnalysisUnit,
@@ -20,6 +19,7 @@ BORESCH_KEYS = (
     "dihedral2",
     "dihedral3",
 )
+
 
 @pytest.fixture(scope="session")
 def septop_complex_data(septop_structural_results_dir):
@@ -39,7 +39,6 @@ def septop_complex_data(septop_structural_results_dir):
             json.loads((base / "restraint_geometry_B.json").read_text())
         ),
     }
-
 
 
 @pytest.fixture(scope="session")
@@ -62,11 +61,9 @@ def septop_complex_restraint_inputs(septop_complex_data):
     reference_values = {}
     for label in ("A", "B"):
         geometry = d[f"geometry_{label}"]
-        indices[label] = (
-            SepTopComplexAnalysisUnit._translate_to_subsampled_indices(
-                [*geometry.host_atoms, *geometry.guest_atoms],
-                d["selection_indices"],
-            )
+        indices[label] = SepTopComplexAnalysisUnit._translate_to_subsampled_indices(
+            [*geometry.host_atoms, *geometry.guest_atoms],
+            d["selection_indices"],
         )
 
         reference_values[f"ligand_{label}"] = (
@@ -77,7 +74,9 @@ def septop_complex_restraint_inputs(septop_complex_data):
 
 
 @pytest.fixture(scope="session")
-def septop_complex_structural_analysis_result(septop_complex_data, septop_complex_restraint_inputs, tmp_path_factory):
+def septop_complex_structural_analysis_result(
+    septop_complex_data, septop_complex_restraint_inputs, tmp_path_factory
+):
     d = septop_complex_data
     tmp = tmp_path_factory.mktemp("septop_complex_structural_analysis_result")
     unit = SepTopComplexAnalysisUnit()
@@ -135,16 +134,12 @@ class TestBoreschRestraintHelpers:
             ([], []),
         ],
     )
-    def test_translate_to_subsampled_indices(
-        self, full_system_indices, expected
-    ):
+    def test_translate_to_subsampled_indices(self, full_system_indices, expected):
         selection_indices = np.array([10, 20, 30, 40, 50])
 
-        result = (
-            SepTopComplexAnalysisUnit._translate_to_subsampled_indices(
-                full_system_indices,
-                selection_indices,
-            )
+        result = SepTopComplexAnalysisUnit._translate_to_subsampled_indices(
+            full_system_indices,
+            selection_indices,
         )
 
         assert result == expected
@@ -173,9 +168,7 @@ class TestBoreschRestraintHelpers:
             phi_C0=-45.0 * offunit.degree,
         )
 
-        reference_values = (
-            SepTopComplexAnalysisUnit._get_boresch_reference_values(geometry)
-        )
+        reference_values = SepTopComplexAnalysisUnit._get_boresch_reference_values(geometry)
 
         expected = {
             "bond": 5.0,
@@ -205,15 +198,17 @@ class TestComplexStructuralAnalysis:
         }
 
         restraint_keys = {
-            f"ligand_{ligand}_restraints_{key}"
-            for ligand in ("A", "B")
-            for key in BORESCH_KEYS
+            f"ligand_{ligand}_restraints_{key}" for ligand in ("A", "B") for key in BORESCH_KEYS
         }
 
-        expected_keys = rmsd_drift_keys | restraint_keys | {
-            "protein_2D_RMSD",
-            "time_ps",
-        }
+        expected_keys = (
+            rmsd_drift_keys
+            | restraint_keys
+            | {
+                "protein_2D_RMSD",
+                "time_ps",
+            }
+        )
         with np.load(result["structural_analysis"]) as npz:
             assert set(npz.files) == expected_keys
 
@@ -281,7 +276,12 @@ class TestComplexStructuralAnalysis:
 
     @pytest.mark.parametrize("skip, expected_n_frames", [(1, 6), (2, 3)])
     def test_skip_affects_output_length(
-            self, septop_complex_data, septop_complex_restraint_inputs, tmp_path, skip, expected_n_frames
+        self,
+        septop_complex_data,
+        septop_complex_restraint_inputs,
+        tmp_path,
+        skip,
+        expected_n_frames,
     ):
         d = septop_complex_data
         unit = SepTopComplexAnalysisUnit()
@@ -315,11 +315,11 @@ class TestComplexStructuralAnalysis:
 
     @pytest.mark.parametrize("ligand", ["A", "B"])
     def test_single_ligand_restraint_analysis(
-            self,
-            septop_complex_data,
-            septop_complex_restraint_inputs,
-            tmp_path,
-            ligand,
+        self,
+        septop_complex_data,
+        septop_complex_restraint_inputs,
+        tmp_path,
+        ligand,
     ):
         d = septop_complex_data
         restraint_indices, _ = septop_complex_restraint_inputs
@@ -333,7 +333,7 @@ class TestComplexStructuralAnalysis:
             rdmol_A=d["rdmol_A"],
             rdmol_B=d["rdmol_B"],
             protein_selection="protein and name CA",
-            restraint_atom_indices_A=(restraint_indices["A"] if ligand == "A" else None ),
+            restraint_atom_indices_A=(restraint_indices["A"] if ligand == "A" else None),
             restraint_atom_indices_B=(restraint_indices["B"] if ligand == "B" else None),
             restraint_reference_values=None,
             skip=2,
@@ -345,9 +345,7 @@ class TestComplexStructuralAnalysis:
         expected_restraint_keys = {f"ligand_{ligand}_restraints_{key}" for key in BORESCH_KEYS}
 
         with np.load(result["structural_analysis"]) as npz:
-            restraint_keys = {
-                key for key in npz.files if "_restraints_" in key
-            }
+            restraint_keys = {key for key in npz.files if "_restraints_" in key}
 
             assert restraint_keys == expected_restraint_keys
 

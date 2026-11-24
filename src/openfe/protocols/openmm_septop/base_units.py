@@ -1893,11 +1893,9 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                 geometry = BoreschRestraintGeometry.model_validate(geom)
 
                 try:
-                    restraint_atom_indices[ligand] = (
-                        self._translate_to_subsampled_indices(
-                            [*geometry.host_atoms, *geometry.guest_atoms],
-                            selection_indices,
-                        )
+                    restraint_atom_indices[ligand] = self._translate_to_subsampled_indices(
+                        [*geometry.host_atoms, *geometry.guest_atoms],
+                        selection_indices,
                     )
                 except ValueError as e:
                     self.logger.warning(
@@ -1907,8 +1905,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                     )
                     continue
 
-                restraint_reference_values[f"ligand_{ligand}"] = (
-                    self._get_boresch_reference_values(geometry)
+                restraint_reference_values[f"ligand_{ligand}"] = self._get_boresch_reference_values(
+                    geometry
                 )
 
         outputs = self.run(
