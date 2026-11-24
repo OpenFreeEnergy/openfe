@@ -28,9 +28,9 @@ zenodo_md_resume_data = dict(
     known_hash="md5:0f3957c263b5def8de727c5c419b31b5",
 )
 zenodo_septop_structural = dict(
-    base_url="doi:10.5281/zenodo.20507106",
+    base_url="doi:10.5281/zenodo.24502959",
     fname="septop_structural_results.zip",
-    known_hash="md5:cffc193dacb5ad8d26c5467ae05b1a00",
+    known_hash="md5:f346d449bc662ad00814a3da9f569377",
 )
 zenodo_abfe_structural = dict(
     base_url="doi:10.5281/zenodo.23160051",
