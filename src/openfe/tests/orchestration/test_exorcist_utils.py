@@ -352,6 +352,46 @@ def test_update_max_tries(fresh_db):
     }
 
 
+def test_update_max_tries_decrease(fresh_db):
+    task_db = fresh_db
+    task_db.add_task("task_a", requirements=[], max_tries=7)
+    task_db.add_task("task_b", requirements=["task_a"], max_tries=2)
+
+    with patch_exorcist_datetime():
+        taskid = task_db.check_out_task()
+        assert taskid == "task_a"
+        task_db.mark_task_completed(taskid, success=True)
+
+        for n in range(2):
+            taskid = task_db.check_out_task()
+            assert taskid == "task_b"
+            task_db.mark_task_completed(taskid, success=False)
+
+    task_db.add_task("task_c", requirements=[], max_tries=3)
+
+    tasks, deps = get_tasks_and_deps(task_db)
+
+    # make sure our setup is what we intend
+    assert tasks == {
+        task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 7, ""),
+        task_row("task_b", TaskStatus.TOO_MANY_RETRIES, _DEFAULT_DATETIME, 2, 2, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, None, 0, 3, ""),
+    }
+
+    datetime2 = datetime(1999, 1, 1)
+    with patch_openfe_datetime(datetime2):
+        update_max_tries(task_db=task_db, max_tries=1)
+
+    tasks, deps = get_tasks_and_deps(task_db)
+
+    # only task_c should be changed, task_a and task_b are ineligible
+    assert tasks == {
+        task_row("task_a", TaskStatus.COMPLETED, _DEFAULT_DATETIME, 1, 7, ""),
+        task_row("task_b", TaskStatus.TOO_MANY_RETRIES, _DEFAULT_DATETIME, 2, 2, ""),
+        task_row("task_c", TaskStatus.AVAILABLE, datetime2, 0, 1, ""),
+    }
+
+
 @pytest.mark.parametrize("bad_value", ["1", -2, 3.0, 0, True])
 def test_update_max_tries_invalid_val(fresh_db, bad_value):
     with pytest.raises(ValueError, match="must be a positive integer"):

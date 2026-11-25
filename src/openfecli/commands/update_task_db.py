@@ -63,13 +63,18 @@ def update_task_db_main(
     └─────────────────────────────┴──────────────────┴─────────────────────┴───────┴───────────┘
 
     """
-
+    write(f"Setting max_tries={max_tries} for all eligible tasks.")
     from exorcist import TaskStatusDB
 
-    from openfe.orchestration.exorcist_utils import update_max_tries
+    from openfe.orchestration import get_status_summary_df, update_max_tries
 
     task_db = TaskStatusDB.from_filename(task_db_path)
+
     update_max_tries(task_db, max_tries)
+    write(
+        "For a for a summary of the current task status db, use:\n\t"
+        + f"openfe status --task-db {task_db_path} --summary",
+    )
 
 
 @click.command("update-task-db", short_help="Update the 'max_tries' column.")
@@ -93,16 +98,18 @@ def update_task_db_main(
 )
 # NOTE: this is named intentionally broad so that we can add "update_task_type" in a future version
 def update_task_db(task_db: Path, max_tries: int):
-    """
-    Update the 'max_tries' column for applicable tasks. COMPLETED tasks and tasks with tries > the input 'max-tries' will not be updated.
+    """Update the 'max_tries' column for applicable tasks.
+
+    COMPLETED tasks and tasks with tries > the input 'max-tries' will not be updated.
+
+    If a task with status=TOO_MANY_RETRIES has `max_tries` increased, its status will be updated to 'AVAILABLE'.
 
     .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe.
 
     """
     msg = "WARNING! Task-based execution is an experimental feature and subject to change in a future release of openfe."
     click.secho(msg, err=False, fg="yellow")
-    # TODO: add loading bar
-    write("Loading task db ...")
+
     update_task_db_main(task_db_path=task_db, max_tries=max_tries)
 
 
