@@ -158,7 +158,7 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     return task_table
 
 
-def get_status_summary_df(task_db: exorcist.TaskStatusDB):
+def get_status_summary_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """Return a pandas Dataframe with a summary of the task statuses.
 
     Parameters
@@ -173,7 +173,7 @@ def get_status_summary_df(task_db: exorcist.TaskStatusDB):
 
     Examples
     --------
-    >>> summary_df = get_status_summary(task_db)
+    >>> summary_df = get_status_summary_df(task_db)
     >>> summary_df
                 status  num_tasks
     0           BLOCKED          1
