@@ -762,6 +762,7 @@ def test_dry_run_benzene_toluene_noncubic(
     )
 
 
+@pytest.mark.slow
 def test_dry_run_solv_user_charges_benzene_toluene(
     benzene_modifications_uncharged,
     T4_protein_component,
@@ -870,6 +871,7 @@ def test_dry_run_solv_user_charges_benzene_toluene(
         assert pytest.approx(c) == toluene_charge[inx]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("unit_type", [SepTopSolventSetupUnit, SepTopComplexSetupUnit])
 def test_dry_run_protocol_charges_benzene_toluene(
     unit_type,
@@ -910,6 +912,7 @@ def test_dry_run_protocol_charges_benzene_toluene(
         (toluene, results["ligand_B_indices"]),
     ):
         offmol = ligand.to_openff()
+        assert offmol.partial_charges is None
         charge_generation.assign_offmol_partial_charges(
             offmol=offmol,
             overwrite=False,
