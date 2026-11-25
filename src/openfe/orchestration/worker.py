@@ -180,27 +180,6 @@ class Worker:
         unit = self.warehouse.load_task(GufeKey(protocol_unit_key))
         return db, taskid, unit
 
-    def _get_task(self) -> tuple[str, ProtocolUnit]:
-        """Return the next available task ID and protocol unit.
-
-        Returns
-        -------
-        tuple[str, ProtocolUnit]
-            The checked-out task ID and corresponding protocol unit.
-
-        Raises
-        ------
-        RuntimeError
-            Raised when no task is available in the task database.
-
-        """
-
-        task = self._checkout_task()
-        if task is None:
-            raise RuntimeError("No AVAILABLE tasks found in the task database.")
-        db, taskid, unit = task
-        return taskid, unit
-
     def execute_unit(self, scratch: Path | str) -> tuple[str, ProtocolUnitResult] | None:
         """Execute one checked-out ProtocolUnit and persist its result.
 

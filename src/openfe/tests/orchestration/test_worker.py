@@ -92,19 +92,19 @@ def worker_with_executable_unit(tmp_path, dummy_abfe_transformation):
     return worker, warehouse, db, unit
 
 
-def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
+def test_checkout_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
     worker = worker_with_real_db
     db = exorcist.taskdb.TaskStatusDB.from_filename(worker.task_db_path)
 
     task_ids = [row.taskid for row in db.get_all_tasks()]
     expected_protocol_unit_keys = {task_id for task_id in task_ids}
 
-    taskid, loaded = worker._get_task()
-    reloaded = worker.warehouse.load_task(loaded.key)
+    _, taskid, loaded_unit = worker._checkout_task()
+    reloaded = worker.warehouse.load_task(loaded_unit.key)
 
-    assert str(loaded.key) in expected_protocol_unit_keys
-    assert loaded == reloaded
-    assert taskid == loaded.key
+    assert str(loaded_unit.key) in expected_protocol_unit_keys
+    assert loaded_unit == reloaded
+    assert taskid == loaded_unit.key
 
 
 def test_execute_unit_stores_real_result(worker_with_executable_unit, tmp_path):
