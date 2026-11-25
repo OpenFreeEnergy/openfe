@@ -12,7 +12,7 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
     from openfe.storage.utils import warehouse_to_legacy_json
     from openfe.storage.warehouse import FileSystemWarehouse
 
-    write("Loading results from Warehouse ...")
+    write(f"Loading Warehouse from: '{warehouse_path}/'")
     warehouse = FileSystemWarehouse.from_dir(warehouse_path)
     result_edges = warehouse.gather_all_results(progress=True)
 
@@ -42,7 +42,7 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
     ),
 )
 @OUTPUT_DIR.parameter(
-    help=OUTPUT_DIR.kwargs["help"] + " Defaults to './[warehouse_name]_results/'",
+    help=OUTPUT_DIR.kwargs["help"] + " Defaults to './results_[warehouse_name]/'",
     type=click.Path(
         exists=False,
         file_okay=False,
@@ -63,7 +63,7 @@ def to_legacy_json(warehouse_path: Path, output_dir: Path | None):
     """
 
     if output_dir is None:
-        output_dir = Path(f"{warehouse_path.name}_results")
+        output_dir = Path(f"results_{warehouse_path.name}")
 
     # warehouse_to_legacy_json also checks this, but we want to fail up-front, before the warehouse is even loaded.
     if output_dir.exists():

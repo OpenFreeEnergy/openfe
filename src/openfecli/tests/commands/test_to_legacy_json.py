@@ -47,9 +47,9 @@ def test_to_legacy_json_dir_exists_error(tmp_path):
 def test_to_legacy_json_dir_uses_default_out(tmp_path):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        warehouse_path = tmp_path / "warehouse"
+        warehouse_path = tmp_path / "my_warehouse"
         warehouse_path.mkdir()
-        expected_outdir = pathlib.Path("warehouse_results")
+        expected_outdir = pathlib.Path("results_my_warehouse")
         expected_outdir.mkdir()
         result = runner.invoke(to_legacy_json, [str(warehouse_path)])
         assert result.exit_code == 1
