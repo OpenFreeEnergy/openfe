@@ -182,6 +182,23 @@ class TestComplexStructuralAnalysis:
         assert n_frames_skip5 == 11
         assert n_frames_skip10 == 6
 
+    def test_empty_protein_selection_returns_error(self, abfe_complex_data, tmp_path):
+        d = abfe_complex_data
+        result = ABFEComplexAnalysisUnit()._structural_analysis(
+            topology=d["pdb"],
+            trajectory=d["nc"],
+            output_directory=tmp_path,
+            ligand_indices=d["ligand_indices"],
+            ligand_smcs=d["ligand_smcs"],
+            protein_selection="resname NONEXISTENT",
+            skip=None,
+            dry=True,
+        )
+
+        assert "structural_analysis_error" in result
+        assert "structural_analysis" not in result
+        assert "matched no atoms" in result["structural_analysis_error"]
+
 
 class TestSolventStructuralAnalysis:
     n_lambda = 14
