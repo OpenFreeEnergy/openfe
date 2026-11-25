@@ -224,10 +224,9 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
 
 
 def update_max_tries(task_db: exorcist.TaskStatusDB, max_tries: Annotated[int, Gt(0)]):
-    """Update the "max_tries" column to `max_tries`.
+    """Update the 'max_tries' column for applicable tasks.
 
-    tasks where status=COMPLETED will not be updated.
-    tasks where the current number of tries (`tries`) is _greater than_ the new `max_tries` value will not be updated.
+    COMPLETED tasks and tasks with tries > the input 'max-tries' will not be updated.
 
     If a task with status=TOO_MANY_RETRIES has `max_tries` increased, its status will be updated to 'AVAILABLE'.
 

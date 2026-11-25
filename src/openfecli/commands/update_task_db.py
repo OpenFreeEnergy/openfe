@@ -98,8 +98,11 @@ def update_task_db_main(
 )
 # NOTE: this is named intentionally broad so that we can add "update_task_type" in a future version
 def update_task_db(task_db: Path, max_tries: int):
-    """
-    Update the 'max_tries' column for applicable tasks. COMPLETED tasks and tasks with tries > the input 'max-tries' will not be updated.
+    """Update the 'max_tries' column for applicable tasks.
+
+    COMPLETED tasks and tasks with tries > the input 'max-tries' will not be updated.
+
+    If a task with status=TOO_MANY_RETRIES has `max_tries` increased, its status will be updated to 'AVAILABLE'.
 
     .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe.
 
