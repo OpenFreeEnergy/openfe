@@ -175,7 +175,7 @@ def get_status_summary_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     --------
     >>> summary_df = get_status_summary_df(task_db)
     >>> summary_df
-                status  num_tasks
+                status  n_tasks
     0           BLOCKED          1
     1         AVAILABLE          2
     2       IN_PROGRESS          0
@@ -189,7 +189,7 @@ def get_status_summary_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     status_col = task_db.tasks_table.c.status
     stmt_count_statuses = sqla.select(
         status_col,
-        sqla.func.count().label("num_tasks"),
+        sqla.func.count().label("n_tasks"),
     ).group_by(status_col)
 
     with task_db.engine.connect() as conn:
@@ -198,7 +198,7 @@ def get_status_summary_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     return pd.DataFrame(
         {
             "status": [s.name for s in exorcist.TaskStatus],
-            "num_tasks": [raw_counts.get(s.value, 0) for s in exorcist.TaskStatus],
+            "n_tasks": [raw_counts.get(s.value, 0) for s in exorcist.TaskStatus],
         }
     )
 

@@ -391,6 +391,6 @@ def test_get_status_summary_df(fresh_db, statuses, expected):
     summary_df = get_status_summary_df(input_task_db)
     expected = {
         "status": ["BLOCKED", "AVAILABLE", "IN_PROGRESS", "COMPLETED", "TOO_MANY_RETRIES", "ERROR"],
-        "num_tasks": expected,
+        "n_tasks": expected,
     }
     pd.testing.assert_frame_equal(summary_df, pd.DataFrame(expected))
