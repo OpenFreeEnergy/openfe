@@ -215,11 +215,11 @@ def _generate_dg(results_dict: dict[str, dict[str, list]], allow_partial: bool) 
         data,
         columns=[
             "ligand",
-            "DG(MLE) (kcal/mol)",
+            "DG (kcal/mol)",
             unc_col_name,
         ],
     )
-    df_out = format_df_with_precision(df, "DG(MLE) (kcal/mol)", unc_col_name, unc_prec=2)
+    df_out = format_df_with_precision(df, "DG (kcal/mol)", unc_col_name, unc_prec=2)
     return df_out
 
 
