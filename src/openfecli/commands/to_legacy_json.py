@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import click
@@ -11,9 +12,8 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
     from openfe.storage.utils import warehouse_to_legacy_json
     from openfe.storage.warehouse import FileSystemWarehouse
 
-    write("Loading results from Warehouse.")
+    write("Loading results from Warehouse ...")
     warehouse = FileSystemWarehouse.from_dir(warehouse_path)
-    write("Results Loaded")
     result_edges = warehouse.gather_all_results(progress=True)
 
     n_results = len(result_edges)
@@ -41,23 +41,38 @@ def to_legacy_json_main(warehouse_path: Path, output_dir: Path):
         path_type=Path,
     ),
 )
-# TODO: output dir cannot exist
-@OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to './results'", default="results/")  # fmt: skip
+@OUTPUT_DIR.parameter(
+    help=OUTPUT_DIR.kwargs["help"] + " Defaults to './[warehouse_name]_results/'",
+    type=click.Path(
+        exists=False,
+        file_okay=False,
+        dir_okay=True,
+        path_type=Path,
+    ),
+)
 @print_duration
-def to_legacy_json(warehouse_path: str, output_dir: str):
+def to_legacy_json(warehouse_path: Path, output_dir: Path | None):
     """
     Given a Warehouse containing task-based execution results, write results as JSON
     files in the same output format as ``openfe quickrun``.
 
     Results will be written to ``OUTPUT_DIR`` in files named by Transformation key.
 
-
     .. warning:: This is a helper function meant to aid analysis of results alongside quickrun output, and is not meant for production use!
 
     """
 
+    if output_dir is None:
+        output_dir = Path(f"{warehouse_path.name}_results")
+
+    # warehouse_to_legacy_json also checks this, but we want to fail up-front, before the warehouse is even loaded.
+    if output_dir.exists():
+        click.echo(f"Output directory '{output_dir}/' cannot already exist.", err=True)
+        sys.exit(1)
+
     msg = "WARNING! This is a helper function meant to aid analysis of results alongside quickrun output, and is not meant for production use!"
     click.secho(msg, err=False, fg="yellow")
+
     to_legacy_json_main(warehouse_path=warehouse_path, output_dir=output_dir)
 
 
