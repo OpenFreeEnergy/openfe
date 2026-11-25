@@ -6,10 +6,11 @@ import gufe
 import networkx as nx
 import pytest
 from gufe.protocols.protocolunit import ProtocolUnit
+from gufe.storage.externalresource import MemoryStorage
 
 from openfe.orchestration import Worker
 from openfe.orchestration.exorcist_utils import setup_task_campaign
-from openfe.storage.warehouse import FileSystemWarehouse
+from openfe.storage.warehouse import FileSystemWarehouse, WarehouseBaseClass, WarehouseStores
 
 
 def _get_result_store_files(warehouse: FileSystemWarehouse) -> set[str]:
@@ -120,6 +121,17 @@ def test_execute_unit_stores_real_result(worker_with_executable_unit, tmp_path):
     rows = list(db.get_all_tasks())
     status_by_taskid = {row.taskid: row.status for row in rows}
     assert status_by_taskid[taskid] == exorcist.TaskStatus.COMPLETED.value
+
+
+def test_execute_unit_catch_invalid_scratch_up_front(worker_with_executable_unit, tmp_path):
+    worker, warehouse, db, _ = worker_with_executable_unit
+    before = _get_result_store_files(warehouse)
+
+    with pytest.raises(FileNotFoundError, match="not/a/path"):
+        execution = worker.execute_unit(scratch="not/a/path/")
+
+    rows = list(db.get_all_tasks())
+    assert {row.status for row in rows} == {exorcist.TaskStatus.AVAILABLE.value}
 
 
 def test_execute_unit_propagates_execute_error_without_store(worker_with_executable_unit, tmp_path):
@@ -248,3 +260,17 @@ def test_execute_unit_uses_isolated_shared_workspace_per_task(tmp_path):
     assert first_path.name == "simulation.nc"
     assert second_path.name == "simulation.nc"
     assert first_path.parent != second_path.parent
+
+
+def test_invalid_warehouse_type():
+    memory_stores = WarehouseStores(
+        setup=MemoryStorage(),
+        results=MemoryStorage(),
+        shared=MemoryStorage(),
+        tasks=MemoryStorage(),
+        protocol_dags=MemoryStorage(),
+    )
+    warehouse = WarehouseBaseClass(memory_stores, name="test_warehouse")
+
+    with pytest.raises(TypeError, match="must be a FileSystemWarehouse"):
+        worker = Worker(warehouse=warehouse, task_db_path="not_a_file.txt")
