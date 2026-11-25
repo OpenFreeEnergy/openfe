@@ -71,16 +71,20 @@ class Worker:
         return f"{cls._RESULT_INDEX_PREFIX}/{source_key}"
 
     @classmethod
-    def _task_workdir_name(cls, taskid: str) -> str:
+    def _taskid_dir_name(cls, taskid: str) -> str:
         return taskid.replace(":", "__")
 
-    def _task_workspace_paths(
-        self, taskid: str, scratch_root: Path, shared_root: Path
-    ) -> tuple[Path, Path]:
-        workdir_name = self._task_workdir_name(taskid)
-        task_scratch = scratch_root / self._TASK_WORKDIR_PREFIX / workdir_name
-        task_shared = shared_root / self._TASK_WORKDIR_PREFIX / workdir_name
-        return task_scratch, task_shared
+    def _create_workdir_prefix(self, root: Path) -> Path:
+        """Create and return the top-level dir for task workdirs to be stored in."""
+        workdir = root / self._TASK_WORKDIR_PREFIX
+        workdir.mkdir(parents=False, exist_ok=True)
+        return workdir
+
+    def _create_task_subdir(self, workdir: Path, taskid: str) -> Path:
+        """Create and return the taskid subdir within workdir"""
+        taskid_dir = workdir / self._taskid_dir_name(taskid)
+        taskid_dir.mkdir(parents=False, exist_ok=True)
+        return taskid_dir
 
     def _store_result_index(self, result: ProtocolUnitResult) -> None:
         shared_store: ExternalStorage = self.warehouse.stores["shared"]
@@ -221,9 +225,14 @@ class Worker:
         """
 
         # 1. Define shared and scratch locations
-        scratch = Path(scratch)
-        shared_store = self.warehouse.stores["shared"]
-        shared_root_dir = shared_store.root_dir
+        scratch_root = Path(scratch)
+        # we can create scratch, shouldn't make arbitrary dir paths above it
+        scratch_root.mkdir(parents=False, exist_ok=True)
+        shared_root = self.warehouse.stores["shared"].root_dir
+
+        # before checking out tasks, create dirs for taskid-workdirs to be stored in
+        scratch_workdir = self._create_workdir_prefix(scratch_root)
+        shared_workdir = self._create_workdir_prefix(shared_root)
 
         # 2. Get task/unit
         task = self._checkout_task()
@@ -235,10 +244,11 @@ class Worker:
         # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
         # However, to satisfy the current work, we will use this implementation where we
         # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
-        task_scratch, task_shared = self._task_workspace_paths(taskid, scratch, shared_root_dir)
-        task_scratch.mkdir(parents=True, exist_ok=True)
-        task_shared.mkdir(parents=True, exist_ok=True)
-        ctx = Context(task_scratch, shared=task_shared)
+
+        task_scratch = self._create_task_subdir(scratch_workdir, taskid)
+        task_shared = self._create_task_subdir(shared_workdir, taskid)
+
+        ctx = Context(scratch=task_scratch, shared=task_shared)
 
         # 4. Execute unit
         try:
