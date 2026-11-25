@@ -45,7 +45,7 @@ outputs:
         - matplotlib-base
         - networkx
         - numpy
-        - openfe-analysis ~=0.5.0
+        - openfe-analysis ~=0.6.0
         - openff-toolkit-base >=0.16.2,<0.20  # upper pinning 0.20, just so we can test it before conda-forge pulls it in.
         - openff-units ~=0.4.0  # adds pydantic 2.13 support
         - openmm !=8.1.0,!=8.3,>=8.0.0,<8.5.0  # omit 8.3.0 and 8.3.1 due to https://github.com/openmm/openmm/pull/5069

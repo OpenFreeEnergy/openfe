@@ -1980,33 +1980,45 @@ class ComplexTrajectoryAnalysisMixin:
 
         # Read the topology once and reuse across all lambda states
         u_top = mda.Universe(topology)
-        prot_indices = u_top.select_atoms(protein_selection).indices
+        # Guess bonds for the host
+        host = u_top.select_atoms(protein_selection)
+
+        if not host:
+            raise ValueError(f"Host selection {protein_selection!r} matched no atoms.")
+
+        host.residues.atoms.guess_bonds()
+        host_indices = host.indices
+        time_ps: np.ndarray | None = None
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
-            prot = universe.atoms[prot_indices]
+            prot = universe.atoms[host_indices]
             lig = universe.atoms[ligand_indices]
             apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig])
 
-            # Protein selection is empty - e.g. not looking at a protein host
-            if prot:
-                prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
-                analysis_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+            # Assign time based on the state's universe before transferring to memory
+            if time_ps is None:
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
-            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
+            # unwrap/shift/align run once per frame, here
+            universe.transfer_to_memory(step=skip)
+
+            prot_rmsd2d = Protein2DRMSD(prot).run()
+            analysis_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+
+            lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run()
             analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
 
-            lig_drift = LigandCOMDrift(lig).run(step=skip)
+            lig_drift = LigandCOMDrift(lig).run()
             analysis_data["ligand_COM_drift"].append(lig_drift.results.com_drift)
 
-        # Assign time based on the final state's universe
-        time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+            del universe, prot, lig, prot_rmsd2d, lig_rmsd, lig_drift
 
         return analysis_data, time_ps
 
 
 class LigandTrajectoryAnalysisMixin:
     """
-    Mixin providing trajectory analysis for multistate simuulations
+    Mixin providing trajectory analysis for multistate simulations
     of phases without a host (e.g. solvent phase).
     """
 
@@ -2051,23 +2063,26 @@ class LigandTrajectoryAnalysisMixin:
 
         # Read the topology once and reuse across all lambda states
         u_top = mda.Universe(topology)
+        time_ps: np.ndarray | None = None
         for state_idx in range(n_lambda):
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
             lig = universe.atoms[ligand_indices]
             apply_ligand_alignment_transformations(universe, ligand=lig)
 
+            if time_ps is None:
+                time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+
             lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
             analysis_data["ligand_RMSD"].append(lig_rmsd.results.rmsd)
 
-        # Assign time based on the final state's universe
-        time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
+            del universe, lig, lig_rmsd
 
         return analysis_data, time_ps
 
 
 class LigandVacuumTrajectoryAnalysisMixin:
     """
-    Mixin providing trajectory analysis for multistate simuulations
+    Mixin providing trajectory analysis for multistate simulations
     of phases without a host and without solvent (e.g. vacuum phase).
 
     See `Issue #2239 <https://github.com/OpenFreeEnergy/openfe/issues/2239>`_

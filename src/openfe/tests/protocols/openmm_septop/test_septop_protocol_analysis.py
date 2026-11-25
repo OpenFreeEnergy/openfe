@@ -183,6 +183,22 @@ class TestComplexStructuralAnalysis:
         assert n_frames_skip1 == 6
         assert n_frames_skip2 == 3
 
+    def test_empty_protein_selection_returns_error(self, septop_complex_data, tmp_path):
+        d = septop_complex_data
+        result = SepTopComplexAnalysisUnit()._structural_analysis(
+            pdb_file=d["pdb"],
+            trj_file=d["nc"],
+            output_directory=tmp_path,
+            ligand_A_indices=d["ligand_A_indices"],
+            ligand_B_indices=d["ligand_B_indices"],
+            rdmol_A=d["rdmol_A"],
+            rdmol_B=d["rdmol_B"],
+            protein_selection="resname NOTAREALRESIDUE",
+            skip=None,
+            dry=True,
+        )
+        assert "matched no atoms" in result["structural_analysis_error"]
+
 
 class TestSolventStructuralAnalysis:
     def test_npz_written(self, septop_solvent_structural_analysis_result):
