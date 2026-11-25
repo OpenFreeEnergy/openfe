@@ -157,28 +157,23 @@ class Worker:
 
         return results
 
-    def _checkout_task(self) -> tuple[TaskStatusDB, str, ProtocolUnit] | None:
-        """Check out one available task and load its protocol unit.
+    def _checkout_task(self) -> tuple[TaskStatusDB, str] | None:
+        """Load this Warehouse's task_db and attempt to check out one available task.
+        If no tasks are available, return None.
 
         Returns
         -------
-        tuple[TaskStatusDB, str, ProtocolUnit] or None
-            The open database connection, checked-out task ID, and corresponding
-            protocol unit, or ``None`` if no task is currently available.
+        tuple[TaskStatusDB, str] | None
+            The open database connection, checked-out task ID.
+            Returns ``None`` if no task is currently available.
             The caller is responsible for calling ``mark_task_completed`` on the
             returned database using the returned task ID.
 
         """
-
         db: TaskStatusDB = TaskStatusDB.from_filename(self.task_db_path)
-        # The format for the taskid is "ProtocolUnit-<HASH>"
         taskid = db.check_out_task()
-        if taskid is None:
-            return None
 
-        protocol_unit_key = taskid
-        unit = self.warehouse.load_task(GufeKey(protocol_unit_key))
-        return db, taskid, unit
+        return db, taskid
 
     def execute_unit(self, scratch: Path | str) -> tuple[str, ProtocolUnitResult] | None:
         """Execute one checked-out ProtocolUnit and persist its result.
@@ -212,13 +207,17 @@ class Worker:
         scratch_workdir = self._create_workdir_prefix(scratch_root)
         shared_workdir = self._create_workdir_prefix(shared_root)
 
-        # 2. Get task/unit
-        task = self._checkout_task()
-        if task is None:
+        # 2. Check out a task (this marks the task as IN_PROGRESS)
+        db, taskid = self._checkout_task()
+        if taskid is None:
             return None
-        db, taskid, unit = task
 
         try:
+            # 2. Get ProtocolUnit
+            # being explicit that our taskid is the ProtocolUnit key
+            protocol_unit_key = GufeKey(taskid)
+            unit = self.warehouse.load_task(protocol_unit_key)
+
             # 3. Construct the context
             # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
             # However, to satisfy the current work, we will use this implementation where we
