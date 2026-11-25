@@ -92,21 +92,6 @@ def worker_with_executable_unit(tmp_path, dummy_abfe_transformation):
     return worker, warehouse, db, unit
 
 
-def test_get_task_returns_task_with_canonical_protocol_unit_suffix(worker_with_real_db):
-    worker = worker_with_real_db
-    db = exorcist.taskdb.TaskStatusDB.from_filename(worker.task_db_path)
-
-    task_ids = [row.taskid for row in db.get_all_tasks()]
-    expected_protocol_unit_keys = {task_id for task_id in task_ids}
-
-    taskid, loaded = worker._get_task()
-    reloaded = worker.warehouse.load_task(loaded.key)
-
-    assert str(loaded.key) in expected_protocol_unit_keys
-    assert loaded == reloaded
-    assert taskid == loaded.key
-
-
 def test_execute_unit_stores_real_result(worker_with_executable_unit, tmp_path):
     worker, warehouse, db, _ = worker_with_executable_unit
     before = _get_result_store_files(warehouse)
@@ -155,8 +140,31 @@ def test_execute_unit_propagates_execute_error_without_store(worker_with_executa
     assert status_by_taskid[taskid] == exorcist.TaskStatus.TOO_MANY_RETRIES.value
 
 
+def test_execute_unit_cannot_store_results_mark_as_failed(worker_with_executable_unit, tmp_path):
+    worker, warehouse, db, unit = worker_with_executable_unit
+    before = _get_result_store_files(warehouse)
+    taskid = list(db.get_all_tasks())[0].taskid
+
+    with mock.patch.object(
+        WarehouseBaseClass,
+        "store_results_tokenizable",
+        autospec=True,
+        side_effect=RuntimeError("unable to write"),
+    ):
+        with pytest.raises(RuntimeError, match="unable to write"):
+            worker.execute_unit(scratch=tmp_path / "scratch")
+
+    after = _get_result_store_files(warehouse)
+    assert after == before
+    rows = list(db.get_all_tasks())
+    status_by_taskid = {row.taskid: row.status for row in rows}
+    assert status_by_taskid[taskid] == exorcist.TaskStatus.TOO_MANY_RETRIES.value
+
+
 def test_checkout_task_returns_none_when_no_available_tasks(worker_with_empty_db, tmp_path):
-    assert worker_with_empty_db._checkout_task() is None
+    db, taskid = worker_with_empty_db._checkout_task()
+    assert isinstance(db, exorcist.TaskStatusDB)
+    assert taskid is None
 
 
 def test_execute_unit_returns_none_when_no_available_tasks(worker_with_empty_db, tmp_path):

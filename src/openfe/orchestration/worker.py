@@ -157,49 +157,23 @@ class Worker:
 
         return results
 
-    def _checkout_task(self) -> tuple[TaskStatusDB, str, ProtocolUnit] | None:
-        """Check out one available task and load its protocol unit.
+    def _checkout_task(self) -> tuple[TaskStatusDB, str] | None:
+        """Load this Warehouse's task_db and attempt to check out one available task.
+        If no tasks are available, return None.
 
         Returns
         -------
-        tuple[TaskStatusDB, str, ProtocolUnit] or None
-            The open database connection, checked-out task ID, and corresponding
-            protocol unit, or ``None`` if no task is currently available.
+        tuple[TaskStatusDB, str] | None
+            The open database connection, checked-out task ID.
+            Returns ``None`` if no task is currently available.
             The caller is responsible for calling ``mark_task_completed`` on the
             returned database using the returned task ID.
 
         """
-
         db: TaskStatusDB = TaskStatusDB.from_filename(self.task_db_path)
-        # The format for the taskid is "ProtocolUnit-<HASH>"
         taskid = db.check_out_task()
-        if taskid is None:
-            return None
 
-        protocol_unit_key = taskid
-        unit = self.warehouse.load_task(GufeKey(protocol_unit_key))
-        return db, taskid, unit
-
-    def _get_task(self) -> tuple[str, ProtocolUnit]:
-        """Return the next available task ID and protocol unit.
-
-        Returns
-        -------
-        tuple[str, ProtocolUnit]
-            The checked-out task ID and corresponding protocol unit.
-
-        Raises
-        ------
-        RuntimeError
-            Raised when no task is available in the task database.
-
-        """
-
-        task = self._checkout_task()
-        if task is None:
-            raise RuntimeError("No AVAILABLE tasks found in the task database.")
-        db, taskid, unit = task
-        return taskid, unit
+        return db, taskid
 
     def execute_unit(self, scratch: Path | str) -> tuple[str, ProtocolUnitResult] | None:
         """Execute one checked-out ProtocolUnit and persist its result.
@@ -221,7 +195,6 @@ class Worker:
             Re-raises any exception thrown during protocol unit execution after
             marking the task as failed.
 
-
         """
 
         # 1. Define shared and scratch locations
@@ -234,36 +207,40 @@ class Worker:
         scratch_workdir = self._create_workdir_prefix(scratch_root)
         shared_workdir = self._create_workdir_prefix(shared_root)
 
-        # 2. Get task/unit
-        task = self._checkout_task()
-        if task is None:
+        # 2. Check out a task (this marks the task as IN_PROGRESS)
+        db, taskid = self._checkout_task()
+        if taskid is None:
             return None
-        db, taskid, unit = task
 
-        # 3. Construct the context
-        # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
-        # However, to satisfy the current work, we will use this implementation where we
-        # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
-
-        task_scratch = self._create_task_subdir(scratch_workdir, taskid)
-        task_shared = self._create_task_subdir(shared_workdir, taskid)
-
-        ctx = Context(scratch=task_scratch, shared=task_shared)
-
-        # 4. Execute unit
         try:
+            # 2. Get ProtocolUnit
+            # being explicit that our taskid is the ProtocolUnit key
+            protocol_unit_key = GufeKey(taskid)
+            unit = self.warehouse.load_task(protocol_unit_key)
+
+            # 3. Construct the context
+            # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
+            # However, to satisfy the current work, we will use this implementation where we
+            # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
+
+            task_scratch = self._create_task_subdir(scratch_workdir, taskid)
+            task_shared = self._create_task_subdir(shared_workdir, taskid)
+
+            ctx = Context(scratch=task_scratch, shared=task_shared)
+
+            # 4. Execute unit
             # TODO: this var naming is confusing
             results: dict[GufeKey, ProtocolUnitResult] = self._build_input_result_mapping(unit)
             inputs: dict[GufeKey, ProtocolUnitResult] = _pu_to_pur(unit.inputs, results)
             result = unit.execute(context=ctx, **inputs)
+
+            # 5. output result to warehouse
+            # TODO: we may need to end up handling namespacing on the warehouse side for tokenizables
+            self.warehouse.store_results_tokenizable(result)
+            self._store_result_index(result)
+            db.mark_task_completed(taskid, success=result.ok())
         except Exception:
             db.mark_task_completed(taskid, success=False)
             raise
 
-        db.mark_task_completed(taskid, success=result.ok())
-
-        # 5. output result to warehouse
-        # TODO: we may need to end up handling namespacing on the warehouse side for tokenizables
-        self.warehouse.store_results_tokenizable(result)
-        self._store_result_index(result)
         return taskid, result
