@@ -38,6 +38,7 @@ threadpoolctl = "*"
 tqdm = "*"
 mock = "*"
 pillow = "*"
+sphinx-llm = ">=1.1.0,<2"
 
 [environments.docs.pypi-dependencies]
 gufe = { git = "https://github.com/OpenFreeEnergy/gufe", rev = "main" }

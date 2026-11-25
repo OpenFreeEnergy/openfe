@@ -54,6 +54,7 @@ extensions = [
     "nbsphinx",
     "nbsphinx_link",
     "sphinx.ext.mathjax",
+    "sphinx_llm.txt",
 ]
 suppress_warnings = ["config.cache"]  # https://github.com/sphinx-doc/sphinx/issues/12300
 
