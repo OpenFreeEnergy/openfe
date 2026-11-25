@@ -432,7 +432,6 @@ class WarehouseBaseClass:
             ProtocolResults and their corresponding ProtocolDAGResults
 
         """
-        print("Gathering Results")
         # construct a map of all the ProtocolDAGs and their corresponding ProtocolUnitResults
         dags_to_unit_results = self._construct_dags_to_unit_results(
             dags=self.get_protocol_dags(),
@@ -441,7 +440,7 @@ class WarehouseBaseClass:
         # load all dags that we have results for
         dags_with_results = [
             self.load_protocol_dag(d)
-            for d in tqdm.tqdm(dags_to_unit_results, desc="loading dags")
+            for d in tqdm.tqdm(dags_to_unit_results, desc="Loading ProtocolDAGs")
             if dags_to_unit_results[d] != []
         ]
 
@@ -467,7 +466,7 @@ class WarehouseBaseClass:
         for dag in tqdm.tqdm(
             dags_with_results,
             # leave=False,
-            desc="constructing results edges",
+            desc="Creating ProtocolDAGResults",
             disable=not progress,
         ):
             result_edge = construct_results_edge(
