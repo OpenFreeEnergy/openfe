@@ -324,7 +324,7 @@ class TestWarehouseResultsGathering:
         assert expected_estimates == estimates
         assert len(result_edges) == 4
 
-    def test_convert_to_quickrun_output(self, warehouse_partial_dir, tmp_path):
+    def test_to_legacy_json(self, warehouse_partial_dir, tmp_path):
         wh = FileSystemWarehouse.from_dir(root_dir=warehouse_partial_dir)
         result_edges = wh.gather_all_results()
         out_dir = tmp_path / "quickrun_style_output"
@@ -332,3 +332,11 @@ class TestWarehouseResultsGathering:
         assert out_dir.is_dir()
         out_files = [str(p.name) for p in out_dir.rglob("Trans*")]
         assert len(out_files) == 4
+
+    def test_to_legacy_json_outdir_exists(self, warehouse_partial_dir, tmp_path):
+        wh = FileSystemWarehouse.from_dir(root_dir=warehouse_partial_dir)
+        result_edges = wh.gather_all_results()
+        out_dir = tmp_path / "quickrun_style_output"
+        out_dir.mkdir()
+        with pytest.raises(FileExistsError):
+            warehouse_to_legacy_json(result_edges, out_dir=out_dir)

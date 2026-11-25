@@ -5,7 +5,7 @@ from plugcli.params import Option
 
 
 def get_dir(user_input, context):
-    dir_path = pathlib.Path(user_input)
+    dir_path = pathlib.Path(user_input)  # TODO: this does not seem to be doing anything
     return dir_path
 
 
