@@ -1,3 +1,4 @@
+import pathlib
 from unittest import mock
 
 from click.testing import CliRunner
@@ -27,6 +28,29 @@ def test_to_legacy_json_empty(tmp_path):
         out_dir = tmp_path / "my_results"
 
         result = runner.invoke(to_legacy_json, [str(warehouse_path), "-o", str(out_dir)])
-        assert "Loading results" in result.stdout
+        assert "Loading Warehouse" in result.stdout
         assert "No results found" in result.stderr
         assert not out_dir.is_dir()
+
+
+def test_to_legacy_json_dir_exists_error(tmp_path):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        warehouse_path = tmp_path / "warehouse"
+        warehouse_path.mkdir()
+        out_dir = tmp_path / "my_results"
+        out_dir.mkdir()
+        result = runner.invoke(to_legacy_json, [str(warehouse_path), "-o", str(out_dir)])
+        assert "cannot already exist" in str(result.stderr)
+
+
+def test_to_legacy_json_dir_uses_default_out(tmp_path):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        warehouse_path = tmp_path / "my_warehouse"
+        warehouse_path.mkdir()
+        expected_outdir = pathlib.Path("results_my_warehouse")
+        expected_outdir.mkdir()
+        result = runner.invoke(to_legacy_json, [str(warehouse_path)])
+        assert result.exit_code == 1
+        assert "cannot already exist" in str(result.stderr)

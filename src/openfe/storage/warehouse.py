@@ -8,6 +8,7 @@ import re
 from typing import Generator, Iterable, Literal, TypedDict
 
 import gufe
+import tqdm
 from gufe.protocols import ProtocolResult
 from gufe.protocols.protocoldag import ProtocolDAG, ProtocolDAGResult
 from gufe.protocols.protocolunit import ProtocolUnit, ProtocolUnitResult
@@ -418,7 +419,7 @@ class WarehouseBaseClass:
                     f"gufe tokenizable {obj} found in result store, but is not a ProtocolUnitResult."
                 )
 
-    def gather_all_results(self) -> list[tuple[ProtocolResult, ProtocolDAGResult]]:
+    def gather_all_results(self, progress=True) -> list[tuple[ProtocolResult, ProtocolDAGResult]]:
         """From this warehouse, gather all ProtocolDAGResults corresponding to the recorded
         ProtocolDAGs, and return all (ProtocolResult, ProtocolDAGResult) pairs.
 
@@ -431,6 +432,17 @@ class WarehouseBaseClass:
             ProtocolResults and their corresponding ProtocolDAGResults
 
         """
+        # construct a map of all the ProtocolDAGs and their corresponding ProtocolUnitResults
+        dags_to_unit_results = self._construct_dags_to_unit_results(
+            dags=self.get_protocol_dags(),
+            unit_results=self.get_unit_results(),
+        )
+        # load all dags that we have results for
+        dags_with_results = [
+            self.load_protocol_dag(d)
+            for d in tqdm.tqdm(dags_to_unit_results, desc="Loading ProtocolDAGs")
+            if dags_to_unit_results[d] != []
+        ]
 
         def construct_results_edge(
             protocol_dag: ProtocolDAG,
@@ -449,18 +461,13 @@ class WarehouseBaseClass:
             protocol_result = transformation.gather([dag_result])
             return protocol_result, dag_result
 
-        # construct a map of all the ProtocolDAGs and their corresponding ProtocolUnitResults
-        dags_to_unit_results = self._construct_dags_to_unit_results(
-            dags=self.get_protocol_dags(),
-            unit_results=self.get_unit_results(),
-        )
-        # load all dags that we have results for
-        dags_with_results = [
-            self.load_protocol_dag(d) for d in dags_to_unit_results if dags_to_unit_results[d] != []
-        ]
-
         result_edges: list[tuple[ProtocolResult, ProtocolDAGResult]] = []
-        for dag in dags_with_results:
+
+        for dag in tqdm.tqdm(
+            dags_with_results,
+            desc="Creating ProtocolDAGResults",
+            disable=not progress,
+        ):
             result_edge = construct_results_edge(
                 protocol_dag=dag, dags_to_unit_results=dags_to_unit_results
             )
@@ -479,9 +486,12 @@ class WarehouseBaseClass:
         """
 
         # protocol unit source key mapped to unit results
-        pur_pu_keys = {str(pur.source_key): pur for pur in unit_results}
+        pur_pu_keys = {
+            str(pur.source_key): pur
+            for pur in tqdm.tqdm(unit_results, desc="Loading ProtocolUnitResults")
+        }
         dag_map: dict[gufe.key, list[ProtocolUnitResult]] = {}
-        for dag in dags:
+        for dag in tqdm.tqdm(dags, desc="Mapping Results to ProtocolDAGs"):
             dag_unit_results = []
             for unit in dag.protocol_units:
                 if unit.key in pur_pu_keys:
