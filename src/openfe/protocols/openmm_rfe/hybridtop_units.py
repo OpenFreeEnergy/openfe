@@ -392,7 +392,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         system_mappings: dict[str, dict[int, int]],
         distance_cutoff: Quantity,
         forcefield: openmm.app.ForceField,
-    ) -> None:
+    ) -> set[int]:
         """
         Handle system net charge by adding an alchemical water.
 
@@ -406,10 +406,15 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         system_mappings : dict[str, dict[int, int]]
         distance_cutoff : Quantity
         forcefield: openmm.app.ForceField
+
+        Returns
+        -------
+        set[int]
+          Old-system atom indices of waters converted into ions (empty if none).
         """
         # Base case, return if no net charge
         if charge_difference == 0:
-            return
+            return set()
 
         # Get the residue ids for waters to turn alchemical
         alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_waters(
@@ -420,7 +425,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         )
 
         # In-place modify state B alchemical waters to ions
-        _rfe_utils.topologyhelpers.handle_alchemical_waters(
+        return _rfe_utils.topologyhelpers.handle_alchemical_waters(
             water_resids=alchem_water_resids,
             topology=stateB_topology,
             system=stateB_system,
@@ -545,9 +550,10 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
 
         # Net charge: add alchemical water if needed
         # Must be done here as we in-place modify the particles of state B.
+        alchemical_water_atoms: set[int] = set()
         if settings["alchemical_settings"].explicit_charge_correction:
             forcefield = states_inputs["A"]["generator"].forcefield
-            self._handle_net_charge(
+            alchemical_water_atoms = self._handle_net_charge(
                 stateA_topology=stateA_topology,
                 stateA_positions=stateA_positions,
                 stateB_topology=stateB_topology,
@@ -557,6 +563,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
                 distance_cutoff=settings["alchemical_settings"].explicit_charge_correction_cutoff,
                 forcefield=forcefield,
             )
+        system_mappings["alchemical_water_atoms"] = alchemical_water_atoms
 
         # Finally get the state B positions
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
@@ -639,6 +646,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
             softcore_LJ_v2=softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchemical_settings.softcore_alpha,
             interpolate_old_and_new_14s=alchemical_settings.turn_off_core_unique_exceptions,
+            alchemical_water_atoms=system_mappings.get("alchemical_water_atoms", set()),
         )
 
         return hybrid_factory, hybrid_factory.hybrid_system
