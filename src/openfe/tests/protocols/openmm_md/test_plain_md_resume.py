@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import logging
 import os
 import pathlib
 import shutil
@@ -8,7 +9,6 @@ import gufe
 import openmm
 import openmm.unit as openmm_unit
 import pytest
-from gufe import ChemicalSystem, SmallMoleculeComponent
 from gufe.protocols.errors import ProtocolUnitExecutionError
 from openff.units import unit
 
