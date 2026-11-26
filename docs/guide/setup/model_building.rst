@@ -87,7 +87,7 @@ Cofactors and other retained molecules
 --------------------------------------
 
 Noncovalent cofactors prepared as :class:`.SmallMoleculeComponent`\s use the
-same small-molecule force field and partial-charge workflow as ligands. Therefore you should use consistent cofactor
+same small-molecule force field and partial charge workflow as ligands. Therefore you should use consistent cofactor
 parameters and charges across the calculations being compared.
 
 Structural ions and crystallographic waters retained in a protein input are
