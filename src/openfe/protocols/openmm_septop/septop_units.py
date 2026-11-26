@@ -13,6 +13,7 @@ import copy
 import itertools
 import logging
 import pathlib
+import time
 from typing import Any
 
 import MDAnalysis as mda
@@ -1321,13 +1322,21 @@ class SepTopSolventAnalysisUnit(SepTopSolventMixin, BaseSepTopAnalysisUnit):
                 ("ligand_A", ligand_A_indices, rdmol_A),
                 ("ligand_B", ligand_B_indices, rdmol_B),
             ]:
+                t0 = time.perf_counter()
                 universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
+                t1 = time.perf_counter()
                 lig = universe.atoms[indices]
                 apply_ligand_alignment_transformations(universe, ligand=lig)
+                t2 = time.perf_counter()
 
                 lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
                 per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
-
+                t3 = time.perf_counter()
+                logger.info(
+                    f"[timing] solvent state {state_idx} {label}: "
+                    f"universe {t1 - t0:.2f} s, alignment {t2 - t1:.2f} s, "
+                    f"RMSD {t3 - t2:.2f} s"
+                )
                 if time_ps is None:
                     time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
 
@@ -1398,26 +1407,40 @@ class SepTopComplexAnalysisUnit(SepTopComplexMixin, BaseSepTopAnalysisUnit):
         u_top = mda.Universe(pdb_file)
         prot_indices = u_top.select_atoms(protein_selection).indices
         for state_idx in range(n_lambda):
+            t0 = time.perf_counter()
             universe = create_universe_single_state(u_top._topology, ds, state=state_idx)
             prot = universe.atoms[prot_indices]
             lig_A = universe.atoms[ligand_A_indices]
             lig_B = universe.atoms[ligand_B_indices]
+            t1 = time.perf_counter()
             apply_complex_alignment_transformations(universe, protein=prot, ligands=[lig_A, lig_B])
+            t2 = time.perf_counter()
 
             if prot:
                 prot_rmsd2d = Protein2DRMSD(prot).run(step=skip)
                 per_state_data["protein_2D_RMSD"].append(prot_rmsd2d.results.rmsd2d)
+            t3 = time.perf_counter()
 
             for label, lig, rdmol in [
                 ("ligand_A", lig_A, rdmol_A),
                 ("ligand_B", lig_B, rdmol_B),
             ]:
+                t4 = time.perf_counter()
                 lig_rmsd = SymmetryCorrectedLigandRMSD(lig, rdmol=rdmol).run(step=skip)
                 per_state_data[f"{label}_RMSD"].append(lig_rmsd.results.rmsd)
+                t5 = time.perf_counter()
 
                 lig_drift = LigandCOMDrift(lig).run(step=skip)
                 per_state_data[f"{label}_COM_drift"].append(lig_drift.results.com_drift)
+                logger.info(
+                    f"[timing] complex state {state_idx} {label}: "
+                    f"RMSD {t5 - t4:.2f} s, COM drift {time.perf_counter() - t5:.2f} s"
+                )
 
+            logger.info(
+                f"[timing] complex state {state_idx}: universe {t1 - t0:.2f} s, "
+                f"alignment {t2 - t1:.2f} s, protein 2D RMSD {t3 - t2:.2f} s"
+            )
             if time_ps is None:
                 time_ps = np.arange(len(universe.trajectory))[::skip] * universe.trajectory.dt
         return per_state_data, time_ps

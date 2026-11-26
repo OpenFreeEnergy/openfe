@@ -17,6 +17,7 @@ TODO
 import abc
 import logging
 import pathlib
+import time
 from typing import Any, Literal, Optional
 
 import gufe
@@ -1487,6 +1488,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         dry : bool
           Whether or not we are running a dry run.
         """
+        t0 = time.perf_counter()
         reporter = multistate.MultiStateReporter(
             storage=trajectory,
             # Note: openmmtools only wants the name of the checkpoint
@@ -1494,19 +1496,26 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             checkpoint_storage=checkpoint.name,
             open_mode="r",
         )
+        t1 = time.perf_counter()
+        logger.info(f"[timing] energy analysis: opened reporter in {t1 - t0:.2f} s")
 
         analyzer = multistate_analysis.MultistateEquilFEAnalysis(
             reporter=reporter,
             sampling_method=sampler_method,
             result_units=offunit.kilocalorie_per_mole,
         )
+        t2 = time.perf_counter()
+        logger.info(f"[timing] energy analysis: MBAR/equilibration analysis in {t2 - t1:.2f} s")
 
         # Only create plots when not doing a dry run
         if not dry:
             analyzer.plot(filepath=output_directory, filename_prefix="")
+            logger.info(f"[timing] energy analysis: plotting in {time.perf_counter() - t2:.2f} s")
 
+        t3 = time.perf_counter()
         analyzer.close()
         reporter.close()
+        logger.info(f"[timing] energy analysis: closing in {time.perf_counter() - t3:.2f} s")
         return analyzer.unit_results_dict
 
     @staticmethod
@@ -1614,6 +1623,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             logger.warning(errmsg)
             return {"structural_analysis_error": errmsg}
 
+        t_start = time.perf_counter()
         try:
             with nc.Dataset(trj_file) as ds:
                 n_frames = len(range(0, ds.dimensions["iteration"].size, ds.PositionInterval))
@@ -1622,6 +1632,11 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                     # find skip that would give ~500 frames of output
                     # max against 1 to avoid skip=0 case
                     skip = max(n_frames // 500, 1)
+
+                logger.info(
+                    f"[timing] structural analysis: {ds.dimensions['state'].size} states, "
+                    f"{n_frames} frames, skip={skip}"
+                )
 
                 data, time_ps = self._run_trajectory_analysis(
                     ds=ds,
@@ -1641,6 +1656,9 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         except Exception as e:
             return {"structural_analysis_error": str(e)}
 
+        t_plot = time.perf_counter()
+        logger.info(f"[timing] structural analysis: trajectory analysis in {t_plot - t_start:.2f} s")
+
         # Generate relevant plots if not a dry run
         if not dry:
             if values := data.get("protein_2D_RMSD"):
@@ -1659,9 +1677,13 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
                     fig.savefig(output_directory / f"{label}_COM_drift.png")
                     plt.close(fig)
 
+        t_npz = time.perf_counter()
+        logger.info(f"[timing] structural analysis: plotting in {t_npz - t_plot:.2f} s")
+
         # Write out an NPZ with all the relevant analysis data
         npz_file = output_directory / "structural_analysis.npz"
         np.savez_compressed(npz_file, **npz_data)  # type: ignore[arg-type]
+        logger.info(f"[timing] structural analysis: saving npz in {time.perf_counter() - t_npz:.2f} s")
 
         return {"structural_analysis": npz_file}
 
@@ -1729,6 +1751,7 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
         if self.verbose:
             self.logger.info("Analyzing energies")
 
+        t_run = time.perf_counter()
         energy_analysis = self._analyze_multistate_energies(
             trajectory=trajectory,
             checkpoint=checkpoint,
@@ -1736,6 +1759,8 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             output_directory=self.shared_basepath,
             dry=dry,
         )
+        t_energy = time.perf_counter()
+        self.logger.info(f"[timing] energy analysis total: {t_energy - t_run:.2f} s")
 
         if self.verbose:
             self.logger.info("Analyzing structural outputs")
@@ -1752,6 +1777,11 @@ class BaseSepTopAnalysisUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             protein_selection=analysis_settings.protein_selection,
             skip=analysis_settings.skip,
             dry=dry,
+        )
+        t_end = time.perf_counter()
+        self.logger.info(
+            f"[timing] structural analysis total: {t_end - t_energy:.2f} s "
+            f"(analysis unit total: {t_end - t_run:.2f} s)"
         )
 
         return energy_analysis | structural_analysis
