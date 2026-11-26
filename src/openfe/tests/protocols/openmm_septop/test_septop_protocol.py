@@ -40,6 +40,7 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventRunUnit,
     SepTopSolventSetupUnit,
 )
+from openfe.protocols.openmm_utils import charge_generation
 from openfe.protocols.openmm_utils.serialization import deserialize
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.geometry.utils import get_aromatic_rings
@@ -761,6 +762,7 @@ def test_dry_run_benzene_toluene_noncubic(
     )
 
 
+@pytest.mark.slow
 def test_dry_run_solv_user_charges_benzene_toluene(
     benzene_modifications_uncharged,
     T4_protein_component,
@@ -867,6 +869,68 @@ def test_dry_run_solv_user_charges_benzene_toluene(
         offsets = nonbond[0].getParticleParameterOffset(i)
         c = ensure_quantity(offsets[2], "openff")
         assert pytest.approx(c) == toluene_charge[inx]
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("unit_type", [SepTopSolventSetupUnit, SepTopComplexSetupUnit])
+def test_dry_run_protocol_charges_benzene_toluene(
+    unit_type,
+    benzene_modifications_uncharged,
+    T4_protein_component,
+    protocol_dry_settings,
+    tmp_path,
+):
+    """
+    Ligands without pre-assigned charges must carry the Protocol's charges in
+    both legs and both slots.
+    """
+    s = protocol_dry_settings
+    s.forcefield_settings.small_molecule_forcefield = "openff-2.3.0"
+    s.partial_charge_settings.partial_charge_method = "am1bcc"
+    s.partial_charge_settings.off_toolkit_backend = "ambertools"
+
+    benzene = benzene_modifications_uncharged["benzene"]
+    toluene = benzene_modifications_uncharged["toluene"]
+    stateA, stateB = (
+        openfe.ChemicalSystem(
+            {
+                "ligand": ligand,
+                "protein": T4_protein_component,
+                "solvent": openfe.SolventComponent(),
+            }
+        )
+        for ligand in (benzene, toluene)
+    )
+    dag = SepTopProtocol(settings=s).create(stateA=stateA, stateB=stateB, mapping=None)
+    setup_unit = [u for u in dag.protocol_units if isinstance(u, unit_type)][0]
+
+    results = setup_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)
+    system_nbf = [f for f in results["system_AB"].getForces() if isinstance(f, NonbondedForce)][0]
+
+    for ligand, indices in (
+        (benzene, results["ligand_A_indices"]),
+        (toluene, results["ligand_B_indices"]),
+    ):
+        offmol = ligand.to_openff()
+        assert offmol.partial_charges is None
+        charge_generation.assign_offmol_partial_charges(
+            offmol=offmol,
+            overwrite=False,
+            method=s.partial_charge_settings.partial_charge_method,
+            toolkit_backend=s.partial_charge_settings.off_toolkit_backend,
+            generate_n_conformers=s.partial_charge_settings.number_of_conformers,
+            nagl_model=s.partial_charge_settings.nagl_model,
+        )
+        system_charges = [
+            system_nbf.getParticleParameters(i)[0].value_in_unit(openmm.unit.elementary_charge)
+            for i in indices
+        ]
+        assert_allclose(
+            system_charges,
+            offmol.partial_charges.m_as(offunit.elementary_charge),
+            atol=1e-6,
+            err_msg=f"{unit_type.__name__}: {ligand.name}",
+        )
 
 
 def test_high_timestep(
