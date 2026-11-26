@@ -1080,14 +1080,10 @@ class PlainMDEquilibrationUnit(PlainMDUnitMixin, BaseEquilibrationUnit):
         The production unit manages its own checkpoint separately.
         """
         if state_kwargs:
-            raise TypeError(
-                f"Unexpected equilibration arguments: {', '.join(state_kwargs)}"
-            )
+            raise TypeError(f"Unexpected equilibration arguments: {', '.join(state_kwargs)}")
 
         if equil_steps_nvt is None or equil_steps_npt is None:
-            raise TypeError(
-                "equil_steps_nvt and equil_steps_npt must be provided"
-            )
+            raise TypeError("equil_steps_nvt and equil_steps_npt must be provided")
         self._prepare(verbose, scratch_dir, output_dir)
 
         protocol_settings: PlainMDProtocolSettings = self._inputs["protocol"].settings
