@@ -60,7 +60,6 @@ from openfe.protocols.openmm_utils import (
 from openfe.protocols.openmm_utils.base_equilibration import (
     BaseEquilibrationUnit,
     EquilibrationEntry,
-    EquilibrationInputs,
 )
 from openfe.protocols.openmm_utils.offmolecule_utils import (
     _get_offmol_metadata,
@@ -1022,12 +1021,15 @@ class PlainMDEquilibrationUnit(PlainMDUnitMixin, BaseEquilibrationUnit):
 
         # Setup already validated the step counts; do not calculate them again.
         outputs = self.run(
-            equilibration_inputs=EquilibrationInputs(
-                states=[None],
-                systems=system,
-                positions=positions,
-                topologies=topology,
-            ),
+            equilibration_inputs=[
+                EquilibrationEntry(
+                    index=0,
+                    state=None,
+                    system=system,
+                    positions=positions,
+                    topology=topology,
+                ),
+            ],
             equil_steps_nvt=setup["equil_steps_nvt"] or 0,
             equil_steps_npt=setup["equil_steps_npt"],
             scratch_basepath=ctx.scratch,

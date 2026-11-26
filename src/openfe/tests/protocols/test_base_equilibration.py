@@ -7,7 +7,7 @@ import pytest
 
 from openfe.protocols.openmm_utils.base_equilibration import (
     BaseEquilibrationUnit,
-    EquilibrationInputs,
+    EquilibrationEntry,
 )
 
 
@@ -18,7 +18,6 @@ class RecordingUnit:
     harness tests the base runner's in-memory inputs independently.
     """
 
-    _normalise_inputs = BaseEquilibrationUnit._normalise_inputs
     _output_dir = BaseEquilibrationUnit._output_dir
     run = BaseEquilibrationUnit.run
 
@@ -50,15 +49,17 @@ class RecordingUnit:
         return {"index": 999, "state_path": output_dir / "equilibrated_state.xml"}
 
 
-def _inputs(n=1, **overrides):
-    values = dict(
-        states=list(range(n)),
-        systems=object(),
-        positions=object(),
-        topologies=object(),
-    )
-    values.update(overrides)
-    return EquilibrationInputs(**values)
+def _inputs(n=1):
+    return [
+        EquilibrationEntry(
+            index=i,
+            state=i,
+            system=object(),
+            positions=object(),
+            topology=object(),
+        )
+        for i in range(n)
+    ]
 
 
 def test_one_state_preserves_plainmd_root_directories(tmp_path):
@@ -78,77 +79,110 @@ def test_one_state_preserves_plainmd_root_directories(tmp_path):
     assert unit.calls[0]["verbose"] is False
     assert (tmp_path / "scratch").is_dir()
     assert (tmp_path / "shared").is_dir()
-    assert result["equilibrated_states"][0]["index"] == 0  # authoritative
+    assert result["equilibrated_states"] == [
+        {
+            "index": 0,
+            "state_path": tmp_path / "shared" / "equilibrated_state.xml",
+        }
+    ]
 
 
-def test_multiple_states_use_separate_paths_and_broadcast_scalars(tmp_path):
-    system, positions, topology = object(), object(), object()
+def test_multiple_states_have_separate_directories(tmp_path):
     unit = RecordingUnit()
+    inputs = _inputs(n=3)
+
     result = unit.run(
-        equilibration_inputs=_inputs(
-            2,
-            systems=system,
-            positions=positions,
-            topologies=topology,
-        ),
-        equil_steps_nvt=3,
-        equil_steps_npt=5,
-        shared_basepath=tmp_path / "shared",
+        equilibration_inputs=inputs,
+        equil_steps_nvt=2,
+        equil_steps_npt=4,
+        dry=True,
+        verbose=False,
         scratch_basepath=tmp_path / "scratch",
+        shared_basepath=tmp_path / "shared",
     )
-    assert [x["index"] for x in result["equilibrated_states"]] == [0, 1]
-    for i, call in enumerate(unit.calls):
-        assert call["state_input"].system is system
-        assert call["state_input"].positions is positions
-        assert call["state_input"].topology is topology
-        assert call["output_dir"] == tmp_path / "shared" / f"state_{i:03d}"
-        assert call["scratch_dir"] == tmp_path / "scratch" / f"state_{i:03d}"
-        assert call["nvt"] == 3 and call["npt"] == 5
-        assert call["output_dir"].is_dir() and call["scratch_dir"].is_dir()
 
+    assert len(unit.calls) == 3
+    assert len(result["equilibrated_states"]) == 3
 
-def test_per_state_sequence_inputs_are_aligned():
-    systems, positions, topologies = (
-        [object(), object()],
-        [object(), object()],
-        [object(), object()],
-    )
-    entries = BaseEquilibrationUnit._normalise_inputs(
-        _inputs(2, systems=systems, positions=positions, topologies=topologies)
-    )
-    for i, entry in enumerate(entries):
-        assert entry.index == i
-        assert entry.system is systems[i]
-        assert entry.positions is positions[i]
-        assert entry.topology is topologies[i]
+    output_dirs = set()
+    scratch_dirs = set()
 
+    for entry, call, output in zip(
+        inputs,
+        unit.calls,
+        result["equilibrated_states"],
+    ):
+        assert call["state_input"] is entry
+        assert call["nvt"] == 2
+        assert call["npt"] == 4
 
-@pytest.mark.parametrize("field", ["systems", "positions", "topologies"])
-@pytest.mark.parametrize("n_values", [0, 1, 3])
-def test_sequence_length_must_match_states(field, n_values):
-    with pytest.raises(ValueError, match=rf"{field} must contain 2 entries"):
-        BaseEquilibrationUnit._normalise_inputs(
-            _inputs(2, **{field: [object() for _ in range(n_values)]})
+        assert call["output_dir"].is_dir()
+        assert call["scratch_dir"].is_dir()
+
+        assert call["output_dir"].parent == tmp_path / "shared"
+        assert call["scratch_dir"].parent == tmp_path / "scratch"
+
+        assert output["index"] == entry.index
+        assert output["state_path"] == (
+            call["output_dir"] / "equilibrated_state.xml"
         )
 
+        output_dirs.add(call["output_dir"])
+        scratch_dirs.add(call["scratch_dir"])
 
-@pytest.mark.parametrize("states", [[], (), "one", None])
-def test_states_must_be_nonempty_list_or_tuple(states):
-    with pytest.raises(ValueError, match="non-empty list or tuple"):
-        BaseEquilibrationUnit._normalise_inputs(_inputs(states=states))
+    assert len(output_dirs) == 3
+    assert len(scratch_dirs) == 3
 
 
-def test_normalization_requires_equilibration_inputs():
-    with pytest.raises(TypeError, match="EquilibrationInputs"):
-        BaseEquilibrationUnit._normalise_inputs({"states": [None]})
+def test_empty_inputs_are_rejected(tmp_path):
+    unit = RecordingUnit()
+
+    with pytest.raises(
+        ValueError,
+        match="At least one equilibration entry is required",
+    ):
+        unit.run(
+            equilibration_inputs=[],
+            equil_steps_nvt=2,
+            equil_steps_npt=4,
+            scratch_basepath=tmp_path / "scratch",
+            shared_basepath=tmp_path / "shared",
+        )
+
+    assert not unit.calls
+    assert not (tmp_path / "scratch").exists()
+    assert not (tmp_path / "shared").exists()
+
+
+def test_duplicate_indices_are_rejected(tmp_path):
+    unit = RecordingUnit()
+    entry = _inputs()[0]
+
+    with pytest.raises(
+        ValueError,
+        match="Equilibration entry indices must be unique",
+    ):
+        unit.run(
+            equilibration_inputs=[entry, entry],
+            equil_steps_nvt=2,
+            equil_steps_npt=4,
+            scratch_basepath=tmp_path / "scratch",
+            shared_basepath=tmp_path / "shared",
+        )
+
+    assert not unit.calls
+    assert not (tmp_path / "scratch").exists()
+    assert not (tmp_path / "shared").exists()
 
 
 def test_unknown_protocol_specific_keyword_is_rejected(tmp_path):
     unit = RecordingUnit()
+
     with pytest.raises(TypeError, match="equil_step_nvt"):
         unit.run(
             equilibration_inputs=_inputs(),
             equil_step_nvt=2,  # typo
             equil_steps_npt=4,
-            shared_basepath=tmp_path,
+            scratch_basepath=tmp_path / "scratch",
+            shared_basepath=tmp_path / "shared",
         )
