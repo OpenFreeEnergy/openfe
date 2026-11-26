@@ -204,7 +204,7 @@ class TestPlainMDResume:
             output_settings=vacuum_protocol_settings.output_settings,
             shared_path=prod_path,
         )
-
+        caplog.clear()
         caplog.set_level(logging.INFO)
         sim_results = simulation_unit.run(
             system=serialization.deserialize(setup_results["system"]),
