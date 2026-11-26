@@ -152,18 +152,19 @@ jobs:
       - name: Setup Apptainer
         uses: eWaterCycle/setup-apptainer@4bb22c52d4f63406c49e94c804632975787312b3  # v2.0.0
         with:
-          apptainer-version: 1.3.4
+          apptainer-version: 1.3.6
 
       - name: Build Apptainer Image
         run: singularity build openfe_${{ steps.latest-version.outputs.VERSION }}.sif docker-daemon:${{ steps.fqirp.outputs.FQIRP }}
 
-      - name: Test & Push Apptainer Image
+      - name: Test Apptainer Image
         run: |
           mkdir test_apptainer
           cd test_apptainer
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif openfe --help
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif openfe --version
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfe openfecli -v -n auto
+      - name: Push Apptainer Image
           echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
           singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}-apptainer
           singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-apptainer
