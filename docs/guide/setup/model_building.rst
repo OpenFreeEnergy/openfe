@@ -6,7 +6,7 @@ Model building: force fields and partial charges
 Prepared input structures describe the system and its initial conditions. A compatible force field is then required
 to create a simulation ready model describing the interactions that govern the system's dynamics.
 The force field and the partial charges are configured through the protocol settings and are applied to the
-components in each :class:`.ChemicalSystem` during the protocol setup unit.
+:class:`.Component`s in each :class:`.ChemicalSystem` during the protocol setup unit.
 
 Here we detail model building for the **OpenMM** based protocols. For how to prepare the
 structures, see :ref:`userguide_preparing_inputs`; for the general workflow
