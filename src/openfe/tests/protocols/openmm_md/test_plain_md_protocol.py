@@ -23,6 +23,7 @@ from openfe.protocols import openmm_md
 from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol,
     PlainMDProtocolResult,
+    PlainMDEquilibrationUnit,
     PlainMDSetupUnit,
     PlainMDSimulationUnit,
 )
@@ -33,7 +34,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_OPENEYE,
 )
 from openfe.tests.conftest import HAS_ESPALOMA
-
+from openfe.protocols.openmm_utils.base_equilibration import EquilibrationInputs
 
 @pytest.fixture()
 def vac_settings():
@@ -44,22 +45,30 @@ def vac_settings():
 
 
 @pytest.mark.parametrize(
-    "inputs, expected",
+    "current_step_count, expected",
     [
-        # inputs are current step count, nvt steps, npt steps and prod steps
-        # outputs are steps to run for nvt, npt, prod and if the production phase has started
-        pytest.param([50, 100, 100, 100], [50, 100, 100, False], id="nvt resuming"),
-        pytest.param([101, 100, 100, 100], [0, 99, 100, False], id="npt resuming"),
-        pytest.param([220, 100, 100, 100], [0, 0, 80, True], id="prod resuming"),
-        pytest.param([200, 100, 100, 100], [0, 0, 100, False], id="prod resuming not started"),
+        (200, 100),  # production has not started
+        (220, 80),   # 20 production steps completed
+        (300, 0),    # production is complete
     ],
 )
-def test_get_remaining_steps(inputs, expected):
-    nvt, npt, prod, is_prod = PlainMDSimulationUnit._get_remaining_steps(*inputs)
-    assert nvt == expected[0]
-    assert npt == expected[1]
-    assert prod == expected[2]
-    assert is_prod == expected[3]
+def test_get_remaining_production_steps(current_step_count, expected):
+    remaining = PlainMDSimulationUnit._get_remaining_production_steps(
+        current_step_count=current_step_count,
+        equilibration_end_step=200,
+        prod_steps=100,
+    )
+    assert remaining == expected
+
+
+@pytest.mark.parametrize("current_step_count", [199, 301])
+def test_get_remaining_production_steps_outside_interval(current_step_count):
+    with pytest.raises(ValueError, match="outside the production interval"):
+        PlainMDSimulationUnit._get_remaining_production_steps(
+            current_step_count=current_step_count,
+            equilibration_end_step=200,
+            prod_steps=100,
+        )
 
 
 def test_create_default_settings():
@@ -114,7 +123,7 @@ def test_create_independent_repeat_ids(benzene_system):
     )
 
     repeat_ids = set()
-    u: PlainMDSetupUnit | PlainMDSimulationUnit
+    u: PlainMDSetupUnit | PlainMDEquilibrationUnit | PlainMDSimulationUnit
     for u in dag1.protocol_units:
         repeat_ids.add(u.inputs["repeat_id"])
     for u in dag2.protocol_units:
@@ -151,6 +160,22 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
     )
 
 
+def test_three_unit_dag(benzene_vacuum_system, vac_settings):
+    protocol = PlainMDProtocol(settings=vac_settings)
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=benzene_vacuum_system,
+        mapping=None,
+    )
+    setup, equil, production = list(dag.protocol_units)
+    assert isinstance(setup, PlainMDSetupUnit)
+    assert isinstance(equil, PlainMDEquilibrationUnit)
+    assert isinstance(production, PlainMDSimulationUnit)
+    assert equil.inputs["setup_results"] == setup
+    assert production.inputs["setup_results"] == setup
+    assert production.inputs["equilibration_results"] == equil
+
+
 def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, caplog):
     vac_settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
     vac_settings.simulation_settings.equilibration_length = 1 * unit.picosecond
@@ -166,7 +191,12 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
         stateB=benzene_vacuum_system,
         mapping=None,
     )
-    setup_unit = list(dag.protocol_units)[0]
+    setup_unit, equil_unit, prod_unit = list(dag.protocol_units)
+    setup_path = tmp_path / "setup"
+    equil_path = tmp_path / "equilibration"
+    prod_path = tmp_path / "production"
+    for path in (setup_path, equil_path, prod_path):
+        path.mkdir()
 
     caplog.set_level(logging.INFO)
     setup_results = setup_unit.run(
@@ -175,26 +205,40 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
 
     messages = [r.message for r in caplog.records]
     assert "Creating system" in messages
-    # now run the production unit after extracting outputs from the setup unit
+
+    # Equilibration owns minimization, NVT and NPT.
     system = serialization.deserialize(setup_results["system"])
     positions = np.load(setup_results["positions"]) * omm_unit.nanometers
-    topology = openmm.app.PDBFile(str(setup_results["system_pdb"])).getTopology()
-    equil_steps_nvt = setup_results["equil_steps_nvt"]
-    equil_steps_npt = setup_results["equil_steps_npt"]
-    prod_steps = setup_results["prod_steps"]
-    prod_unit = list(dag.protocol_units)[1]
-    prod_unit.run(
-        system=system,
-        positions=positions,
-        topology=topology,
-        equil_steps_nvt=equil_steps_nvt,
-        equil_steps_npt=equil_steps_npt,
-        prod_steps=prod_steps,
-        dry=False,
+    topology = openmm.app.PDBFile(
+        str(setup_results["system_pdb"])).getTopology()
+    equil_results = equil_unit.run(
+        equilibration_inputs=EquilibrationInputs(
+            states=[None], systems=system, positions=positions,
+            topologies=topology,
+        ),
+        equil_steps_nvt=setup_results["equil_steps_nvt"] or 0,
+        equil_steps_npt=setup_results["equil_steps_npt"],
         verbose=True,
-        scratch_basepath=tmp_path,
-        shared_basepath=tmp_path,
+        scratch_basepath=equil_path, shared_basepath=equil_path,
     )
+    equilibrated = equil_results["equilibrated_states"][0]
+    assert equilibrated["equilibrated_state"].exists()
+    assert equilibrated["equilibration_end_step"] == 500
+
+    # Production builds a fresh Context from the original setup System.
+    prod_results = prod_unit.run(
+        system=serialization.deserialize(setup_results["system"]),
+        topology=topology,
+        equilibrated_state=equilibrated["equilibrated_state"],
+        equilibration_end_step=equilibrated["equilibration_end_step"],
+        prod_steps=setup_results["prod_steps"],
+        reinitialize_velocities_for_production=equilibrated[
+            "reinitialize_velocities_for_production"
+        ],
+        verbose=True,
+        scratch_basepath=prod_path, shared_basepath=prod_path,
+    )
+    assert prod_results["nc"].exists()
     messages = [r.message for r in caplog.records]
     assert "Minimizing systems" in messages
     assert "Running NVT equilibration for 250 steps" in messages
@@ -610,8 +654,21 @@ def test_unit_tagging(benzene_system, tmp_path):
 
 
 def test_gather(solvent_protocol_dag, tmp_path):
-    # check .gather behaves as expected
+    # Mock dynamics in both units; exercise the three-unit GUFE DAG.
     with mock.patch(
+        "openfe.protocols.openmm_md.plain_md_methods.PlainMDEquilibrationUnit.run",
+        return_value={
+            "equilibrated_states": [{
+                "index": 0,
+                "equilibrated_state": tmp_path / "equilibrated_state.xml",
+                "equilibration_end_step": 0,
+                "reinitialize_velocities_for_production": True,
+                "minimized_pdb": None,
+                "nvt_equil_pdb": None,
+                "npt_equil_pdb": None,
+            }],
+        },
+    ), mock.patch(
         "openfe.protocols.openmm_md.plain_md_methods.PlainMDSimulationUnit.run",
         return_value={
             "nc": "simulation.xtc",
