@@ -84,12 +84,8 @@ class BaseEquilibrationUnit(gufe.ProtocolUnit, ABC):
         if len(indices) != len(set(indices)):
             raise ValueError("Equilibration input indices must be unique")
 
-        scratch_basepath = (
-            Path(".") if scratch_basepath is None else Path(scratch_basepath)
-        )
-        shared_basepath = (
-            Path(".") if shared_basepath is None else Path(shared_basepath)
-        )
+        scratch_basepath = Path(".") if scratch_basepath is None else Path(scratch_basepath)
+        shared_basepath = Path(".") if shared_basepath is None else Path(shared_basepath)
 
         outputs = []
 
@@ -120,4 +116,3 @@ class BaseEquilibrationUnit(gufe.ProtocolUnit, ABC):
             outputs.append({**result, "index": state_input.index})
 
         return {"equilibrated_states": outputs}
-

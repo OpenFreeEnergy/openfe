@@ -123,9 +123,7 @@ def test_multiple_states_have_separate_directories(tmp_path):
         assert call["scratch_dir"].parent == tmp_path / "scratch"
 
         assert output["index"] == entry.index
-        assert output["state_path"] == (
-            call["output_dir"] / "equilibrated_state.xml"
-        )
+        assert output["state_path"] == (call["output_dir"] / "equilibrated_state.xml")
 
         output_dirs.add(call["output_dir"])
         scratch_dirs.add(call["scratch_dir"])
