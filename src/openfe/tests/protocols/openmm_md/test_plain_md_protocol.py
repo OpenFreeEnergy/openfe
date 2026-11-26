@@ -21,20 +21,21 @@ from openmmtools.states import ThermodynamicState
 import openfe
 from openfe.protocols import openmm_md
 from openfe.protocols.openmm_md.plain_md_methods import (
+    PlainMDEquilibrationUnit,
     PlainMDProtocol,
     PlainMDProtocolResult,
-    PlainMDEquilibrationUnit,
     PlainMDSetupUnit,
     PlainMDSimulationUnit,
 )
 from openfe.protocols.openmm_utils import serialization
+from openfe.protocols.openmm_utils.base_equilibration import EquilibrationInputs
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
     HAS_OPENEYE,
 )
 from openfe.tests.conftest import HAS_ESPALOMA
-from openfe.protocols.openmm_utils.base_equilibration import EquilibrationInputs
+
 
 @pytest.fixture()
 def vac_settings():
@@ -48,8 +49,8 @@ def vac_settings():
     "current_step_count, expected",
     [
         (200, 100),  # production has not started
-        (220, 80),   # 20 production steps completed
-        (300, 0),    # production is complete
+        (220, 80),  # 20 production steps completed
+        (300, 0),  # production is complete
     ],
 )
 def test_get_remaining_production_steps(current_step_count, expected):
@@ -209,17 +210,19 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
     # Equilibration owns minimization, NVT and NPT.
     system = serialization.deserialize(setup_results["system"])
     positions = np.load(setup_results["positions"]) * omm_unit.nanometers
-    topology = openmm.app.PDBFile(
-        str(setup_results["system_pdb"])).getTopology()
+    topology = openmm.app.PDBFile(str(setup_results["system_pdb"])).getTopology()
     equil_results = equil_unit.run(
         equilibration_inputs=EquilibrationInputs(
-            states=[None], systems=system, positions=positions,
+            states=[None],
+            systems=system,
+            positions=positions,
             topologies=topology,
         ),
         equil_steps_nvt=setup_results["equil_steps_nvt"] or 0,
         equil_steps_npt=setup_results["equil_steps_npt"],
         verbose=True,
-        scratch_basepath=equil_path, shared_basepath=equil_path,
+        scratch_basepath=equil_path,
+        shared_basepath=equil_path,
     )
     equilibrated = equil_results["equilibrated_states"][0]
     assert equilibrated["equilibrated_state"].exists()
@@ -236,7 +239,8 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
             "reinitialize_velocities_for_production"
         ],
         verbose=True,
-        scratch_basepath=prod_path, shared_basepath=prod_path,
+        scratch_basepath=prod_path,
+        shared_basepath=prod_path,
     )
     assert prod_results["nc"].exists()
     messages = [r.message for r in caplog.records]
@@ -655,25 +659,30 @@ def test_unit_tagging(benzene_system, tmp_path):
 
 def test_gather(solvent_protocol_dag, tmp_path):
     # Mock dynamics in both units; exercise the three-unit GUFE DAG.
-    with mock.patch(
-        "openfe.protocols.openmm_md.plain_md_methods.PlainMDEquilibrationUnit.run",
-        return_value={
-            "equilibrated_states": [{
-                "index": 0,
-                "equilibrated_state": tmp_path / "equilibrated_state.xml",
-                "equilibration_end_step": 0,
-                "reinitialize_velocities_for_production": True,
-                "minimized_pdb": None,
-                "nvt_equil_pdb": None,
-                "npt_equil_pdb": None,
-            }],
-        },
-    ), mock.patch(
-        "openfe.protocols.openmm_md.plain_md_methods.PlainMDSimulationUnit.run",
-        return_value={
-            "nc": "simulation.xtc",
-            "last_checkpoint": "checkpoint.chk",
-        },
+    with (
+        mock.patch(
+            "openfe.protocols.openmm_md.plain_md_methods.PlainMDEquilibrationUnit.run",
+            return_value={
+                "equilibrated_states": [
+                    {
+                        "index": 0,
+                        "equilibrated_state": tmp_path / "equilibrated_state.xml",
+                        "equilibration_end_step": 0,
+                        "reinitialize_velocities_for_production": True,
+                        "minimized_pdb": None,
+                        "nvt_equil_pdb": None,
+                        "npt_equil_pdb": None,
+                    }
+                ],
+            },
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_md.plain_md_methods.PlainMDSimulationUnit.run",
+            return_value={
+                "nc": "simulation.xtc",
+                "last_checkpoint": "checkpoint.chk",
+            },
+        ),
     ):
         dagres = gufe.protocols.execute_DAG(
             solvent_protocol_dag,

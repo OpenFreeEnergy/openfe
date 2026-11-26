@@ -15,9 +15,9 @@ from openff.units import unit
 import openfe
 from openfe.data._registry import POOCH_CACHE
 from openfe.protocols.openmm_md.plain_md_methods import (
+    PlainMDEquilibrationUnit,
     PlainMDProtocol,
     PlainMDSetupUnit,
-    PlainMDEquilibrationUnit,
     PlainMDSimulationUnit,
 )
 from openfe.protocols.openmm_utils import serialization
@@ -105,11 +105,14 @@ def test_check_restart(vacuum_protocol_settings, plain_md_checkpoint_path):
     ],
 )
 def test_remaining_equilibration_steps(step, remaining):
-    assert PlainMDEquilibrationUnit._get_remaining_equilibration_steps(
-        current_step_count=step,
-        equil_steps_nvt=250,
-        equil_steps_npt=250,
-    ) == remaining
+    assert (
+        PlainMDEquilibrationUnit._get_remaining_equilibration_steps(
+            current_step_count=step,
+            equil_steps_nvt=250,
+            equil_steps_npt=250,
+        )
+        == remaining
+    )
 
 
 @pytest.mark.parametrize("step", [-1, 501, 625])
@@ -179,7 +182,9 @@ class TestPlainMDResume:
         # Create a genuine production checkpoint at 2.5 ps (625 steps):
         # the equilibrated XML State contributes the first 500 steps, then
         # we simulate 125 of the 250 production steps.
-        checkpoint = prod_path / vacuum_protocol_settings.output_settings.checkpoint_storage_filename
+        checkpoint = (
+            prod_path / vacuum_protocol_settings.output_settings.checkpoint_storage_filename
+        )
         partial = openmm.app.Simulation(
             setup_results["debug"]["topology"],
             serialization.deserialize(setup_results["system"]),
@@ -242,8 +247,11 @@ class TestPlainMDResume:
     reason="Internet unavailable and test data is not cached locally",
 )
 def test_resume_equilibration_from_npt_checkpoint(
-    vacuum_protocol_settings, benzene_vacuum_system,
-    plain_md_checkpoint_path, tmp_path, caplog,
+    vacuum_protocol_settings,
+    benzene_vacuum_system,
+    plain_md_checkpoint_path,
+    tmp_path,
+    caplog,
 ):
     """The legacy 1.5-ps checkpoint resumes NPT and ends at 2 ps.
 
@@ -304,7 +312,5 @@ def test_resume_equilibration_from_npt_checkpoint(
     )
     final.loadState(str(state["equilibrated_state"]))
     assert final.context.getStepCount() == 500
-    assert final.context.getTime().value_in_unit(
-        openmm_unit.picoseconds
-    ) == pytest.approx(2)
+    assert final.context.getTime().value_in_unit(openmm_unit.picoseconds) == pytest.approx(2)
     del final

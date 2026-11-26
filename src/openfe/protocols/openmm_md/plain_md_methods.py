@@ -58,7 +58,9 @@ from openfe.protocols.openmm_utils import (
     system_validation,
 )
 from openfe.protocols.openmm_utils.base_equilibration import (
-    BaseEquilibrationUnit, EquilibrationEntry, EquilibrationInputs,
+    BaseEquilibrationUnit,
+    EquilibrationEntry,
+    EquilibrationInputs,
 )
 from openfe.protocols.openmm_utils.offmolecule_utils import (
     _get_offmol_metadata,
@@ -356,9 +358,9 @@ class PlainMDUnitMixin:
         """
         try:
             if (
-                    (gufe.__version__ != setup_outputs["gufe_version"])
-                    or (openfe.__version__ != setup_outputs["openfe_version"])
-                    or (openmm.__version__ != setup_outputs["openmm_version"])
+                (gufe.__version__ != setup_outputs["gufe_version"])
+                or (openfe.__version__ != setup_outputs["openfe_version"])
+                or (openmm.__version__ != setup_outputs["openmm_version"])
             ):
                 errmsg = "Python environment has changed, cannot continue Protocol execution."
                 raise ProtocolUnitExecutionError(errmsg)
@@ -407,8 +409,7 @@ class PlainMDUnitMixin:
         # only set the velocities to temperature if we are not restarting this section
         if reinitialize_velocities:
             # set the velocities to temperature
-            simulation.context.setVelocitiesToTemperature(
-                to_openmm(temperature))
+            simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
 
         # Setup the barostat
         for x in simulation.context.getSystem().getForces():
@@ -432,10 +433,10 @@ class PlainMDUnitMixin:
 
     @staticmethod
     def _get_remaining_steps(
-            current_step_count: int,
-            equil_steps_nvt: int,
-            equil_steps_npt: int,
-            prod_steps: int,
+        current_step_count: int,
+        equil_steps_nvt: int,
+        equil_steps_npt: int,
+        prod_steps: int,
     ) -> tuple[int, int, int, bool]:
         """
         Work out the remaining steps for each phase of the simulation based on the current step count,
@@ -482,9 +483,7 @@ class PlainMDUnitMixin:
         integrator_settings = protocol_settings.integrator_settings
         engine_settings = protocol_settings.engine_settings
 
-        restrict_cpu = (
-                forcefield_settings.nonbonded_method.lower() == "nocutoff"
-        )
+        restrict_cpu = forcefield_settings.nonbonded_method.lower() == "nocutoff"
         platform = omm_compute.get_openmm_platform(
             platform_name=engine_settings.compute_platform,
             gpu_device_index=engine_settings.gpu_device_index,
@@ -525,19 +524,19 @@ class PlainMDUnitMixin:
 
     @staticmethod
     def _run_MD(
-            simulation: openmm.app.Simulation,
-            positions: omm_unit.Quantity,
-            simulation_settings: MDSimulationSettings,
-            output_settings: MDOutputSettings,
-            temperature: KelvinQuantity,
-            barostat_frequency: Quantity,
-            timestep: FemtosecondQuantity,
-            equil_steps_nvt: int | None,
-            equil_steps_npt: int,
-            prod_steps: int,
-            verbose: bool = True,
-            shared_basepath: pathlib.Path | None = None,
-            restart: bool = False,
+        simulation: openmm.app.Simulation,
+        positions: omm_unit.Quantity,
+        simulation_settings: MDSimulationSettings,
+        output_settings: MDOutputSettings,
+        temperature: KelvinQuantity,
+        barostat_frequency: Quantity,
+        timestep: FemtosecondQuantity,
+        equil_steps_nvt: int | None,
+        equil_steps_npt: int,
+        prod_steps: int,
+        verbose: bool = True,
+        shared_basepath: pathlib.Path | None = None,
+        restart: bool = False,
     ) -> None:
         """
         Energy minimization, Equilibration and Production MD to be reused
@@ -602,8 +601,7 @@ class PlainMDUnitMixin:
         if restart:
             if verbose:
                 logger.info("Restarting simulation from checkpoint state")
-            simulation.loadState(
-                str(shared_basepath / output_settings.checkpoint_storage_filename))
+            simulation.loadState(str(shared_basepath / output_settings.checkpoint_storage_filename))
 
             # workout the number of steps to run in each phase based on the current simulation step count
             current_step_count = simulation.context.getStepCount()
@@ -624,8 +622,7 @@ class PlainMDUnitMixin:
             if verbose:
                 logger.info("Minimizing systems")
 
-            simulation.minimizeEnergy(
-                maxIterations=simulation_settings.minimization_steps)
+            simulation.minimizeEnergy(maxIterations=simulation_settings.minimization_steps)
 
             if output_settings.minimized_structure:
                 PlainMDUnitMixin._save_pdb_subset(  # was PlainMDSimulationUnit
@@ -638,8 +635,7 @@ class PlainMDUnitMixin:
         if output_settings.checkpoint_storage_filename:
             simulation.reporters.append(
                 openmm.app.CheckpointReporter(
-                    file=str(
-                        shared_basepath / output_settings.checkpoint_storage_filename),
+                    file=str(shared_basepath / output_settings.checkpoint_storage_filename),
                     reportInterval=checkpoint_interval,
                     writeState=True,
                     # writes portable XML via simulation.saveState()
@@ -650,8 +646,7 @@ class PlainMDUnitMixin:
         # NVT equilibration
         if equil_steps_nvt > 0:
             if verbose:
-                logger.info(
-                    f"Running NVT equilibration for {equil_steps_nvt} steps")
+                logger.info(f"Running NVT equilibration for {equil_steps_nvt} steps")
             # setup the output path if we have one for the nvt equilibration
             if output_settings.equil_nvt_structure is not None:
                 output_path = shared_basepath / output_settings.equil_nvt_structure
@@ -674,8 +669,7 @@ class PlainMDUnitMixin:
         # NPT equilibration
         if equil_steps_npt > 0:
             if verbose:
-                logger.info(
-                    f"Running NPT equilibration for {equil_steps_npt} steps")
+                logger.info(f"Running NPT equilibration for {equil_steps_npt} steps")
             # setup the output path if we have one for the npt equilibration
             if output_settings.equil_npt_structure is not None:
                 output_path = shared_basepath / output_settings.equil_npt_structure
@@ -709,13 +703,11 @@ class PlainMDUnitMixin:
 
         if output_settings.production_trajectory_filename:
             # Get the sub selection of the system to save coords for
-            selection_indices = mdtraj.Topology.from_openmm(
-                simulation.topology).select(
+            selection_indices = mdtraj.Topology.from_openmm(simulation.topology).select(
                 output_settings.output_indices
             )
             xtc_reporter = XTCReporter(
-                file=str(
-                    shared_basepath / output_settings.production_trajectory_filename),
+                file=str(shared_basepath / output_settings.production_trajectory_filename),
                 reportInterval=write_interval,
                 atomSubset=selection_indices,
                 # append to the trajectory if restarting and we have run the production stage before
@@ -1049,7 +1041,7 @@ class PlainMDEquilibrationUnit(PlainMDUnitMixin, BaseEquilibrationUnit):
 
     @staticmethod
     def _get_remaining_equilibration_steps(
-            *, current_step_count: int, equil_steps_nvt: int, equil_steps_npt: int
+        *, current_step_count: int, equil_steps_nvt: int, equil_steps_npt: int
     ) -> tuple[int, int]:
         """Return NVT and NPT steps left from an equilibration checkpoint.
 
@@ -1114,8 +1106,7 @@ class PlainMDEquilibrationUnit(PlainMDUnitMixin, BaseEquilibrationUnit):
                 simulation.context.setPositions(state_input.positions)
                 if verbose:
                     logger.info("Minimizing systems")
-                simulation.minimizeEnergy(
-                    maxIterations=sim_settings.minimization_steps)
+                simulation.minimizeEnergy(maxIterations=sim_settings.minimization_steps)
                 if output_settings.minimized_structure:
                     self._save_pdb_subset(
                         simulation,
@@ -1146,12 +1137,12 @@ class PlainMDEquilibrationUnit(PlainMDUnitMixin, BaseEquilibrationUnit):
 
             nvt_path = (
                 output_dir / output_settings.equil_nvt_structure
-                if output_settings.equil_nvt_structure else None
+                if output_settings.equil_nvt_structure
+                else None
             )
             if nvt_remaining > 0:
                 if verbose:
-                    logger.info(
-                        f"Running NVT equilibration for {nvt_remaining} steps")
+                    logger.info(f"Running NVT equilibration for {nvt_remaining} steps")
                 self._run_dynamics(
                     simulation=simulation,
                     steps=nvt_remaining,
@@ -1166,12 +1157,12 @@ class PlainMDEquilibrationUnit(PlainMDUnitMixin, BaseEquilibrationUnit):
 
             npt_path = (
                 output_dir / output_settings.equil_npt_structure
-                if output_settings.equil_npt_structure else None
+                if output_settings.equil_npt_structure
+                else None
             )
             if npt_remaining > 0:
                 if verbose:
-                    logger.info(
-                        f"Running NPT equilibration for {npt_remaining} steps")
+                    logger.info(f"Running NPT equilibration for {npt_remaining} steps")
                 self._run_dynamics(
                     simulation=simulation,
                     steps=npt_remaining,
@@ -1182,9 +1173,7 @@ class PlainMDEquilibrationUnit(PlainMDUnitMixin, BaseEquilibrationUnit):
                     output_path=npt_path,
                     # Within NPT, preserve saved velocities. At the NVT/NPT
                     # boundary, initialize a new NPT velocity distribution.
-                    reinitialize_velocities=(
-                            not restart or current_step_count <= equil_steps_nvt
-                    ),
+                    reinitialize_velocities=(not restart or current_step_count <= equil_steps_nvt),
                 )
 
             state_path = output_dir / "equilibrated_state.xml"
@@ -1195,14 +1184,16 @@ class PlainMDEquilibrationUnit(PlainMDUnitMixin, BaseEquilibrationUnit):
 
             minimized_path = (
                 output_dir / output_settings.minimized_structure
-                if output_settings.minimized_structure else None
+                if output_settings.minimized_structure
+                else None
             )
             return {
                 "equilibrated_state": state_path,
                 "equilibration_end_step": simulation.context.getStepCount(),
                 "reinitialize_velocities_for_production": equil_steps_npt == 0,
                 "minimized_pdb": (
-                    minimized_path if minimized_path is not None and minimized_path.is_file()
+                    minimized_path
+                    if minimized_path is not None and minimized_path.is_file()
                     else None
                 ),
                 "nvt_equil_pdb": nvt_path if nvt_path is not None and nvt_path.is_file() else None,
@@ -1249,8 +1240,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
     @staticmethod
     def _get_remaining_production_steps(
-            *, current_step_count: int, equilibration_end_step: int,
-            prod_steps: int
+        *, current_step_count: int, equilibration_end_step: int, prod_steps: int
     ) -> int:
         """Steps left after loading either the equilibration State or a checkpoint.
 
@@ -1370,10 +1360,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 mc_steps=1,
             )
             checkpoint_name = output_settings.checkpoint_storage_filename
-            checkpoint_path = (
-                self.shared_basepath / checkpoint_name
-                if checkpoint_name else None
-            )
+            checkpoint_path = self.shared_basepath / checkpoint_name if checkpoint_name else None
 
             self._add_checkpoint_reporter(
                 simulation=simulation,
@@ -1382,11 +1369,12 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             )
 
             if output_settings.production_trajectory_filename:
-                selection_indices = mdtraj.Topology.from_openmm(
-                    simulation.topology).select(
+                selection_indices = mdtraj.Topology.from_openmm(simulation.topology).select(
                     output_settings.output_indices
                 )
-                trajectory_path = self.shared_basepath / output_settings.production_trajectory_filename
+                trajectory_path = (
+                    self.shared_basepath / output_settings.production_trajectory_filename
+                )
                 simulation.reporters.append(
                     XTCReporter(
                         file=str(trajectory_path),
@@ -1421,8 +1409,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 )
 
             if verbose:
-                logger.info(
-                    f"Running production phase for {remaining_steps} steps")
+                logger.info(f"Running production phase for {remaining_steps} steps")
             if remaining_steps:
                 self._run_dynamics(
                     simulation=simulation,
@@ -1436,7 +1423,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                     # handoff inherits NPT velocities, but if NPT was skipped
                     # PlainMD traditionally initializes production velocities.
                     reinitialize_velocities=(
-                            not restart and reinitialize_velocities_for_production
+                        not restart and reinitialize_velocities_for_production
                     ),
                 )
         finally:
@@ -1444,16 +1431,16 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
                 del integrator, simulation
 
         checkpoint_name = output_settings.checkpoint_storage_filename
-        checkpoint_path = (
-            self.shared_basepath / checkpoint_name if checkpoint_name else None
-        )
+        checkpoint_path = self.shared_basepath / checkpoint_name if checkpoint_name else None
         return {
             "nc": (
                 self.shared_basepath / output_settings.production_trajectory_filename
-                if output_settings.production_trajectory_filename else None
+                if output_settings.production_trajectory_filename
+                else None
             ),
             "last_checkpoint": (
-                checkpoint_path if checkpoint_path is not None and checkpoint_path.is_file()
+                checkpoint_path
+                if checkpoint_path is not None and checkpoint_path.is_file()
                 else None
             ),
         }
@@ -1472,8 +1459,7 @@ class PlainMDSimulationUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
 
         equilibrated_states = equilibration_results.outputs["equilibrated_states"]
         if len(equilibrated_states) != 1 or equilibrated_states[0]["index"] != 0:
-            raise ValueError(
-                "PlainMD production expects one equilibrated state (index 0)")
+            raise ValueError("PlainMD production expects one equilibrated state (index 0)")
         equilibrated = equilibrated_states[0]
 
         # Deserialize a fresh, unmodified setup System: the equilibration unit
