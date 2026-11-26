@@ -178,11 +178,10 @@ We strongly recommend giving each ligand a unique name (the SDF title line
 or the ``name`` argument), as names are used to label transformations and
 results.
 
-Missing partial charges are assigned during protocol setup. They can also
-be assigned in advance for better reproducibility and to avoid repeated calculations.
-See :ref:`model building and partial charges <userguide_model_building>` for
-the defaults and options. For guides, see; Assigning partial charges :doc:`with the Python API </how_to_guides/user_charges>` or
+We reommend assigning parital charges to ligands and other small molecules in advance. This keeps charges consistent across transformations and avoids redundant charging calculations. For guides, see; assigning partial charges :doc:`with the Python API </how_to_guides/user_charges>` or
 :doc:`with the CLI </how_to_guides/charge_molecules_cli>`.
+
+Missing or all zero charges will cause them to be assigned during protocol setup. See :ref:`model building and partial charges <userguide_model_building>` for the default method and configurable options.
 
 .. rubric:: Binding poses
 
