@@ -14,7 +14,8 @@ from typing import Any
 
 import gufe
 import openmm
-from openmm import app, unit as omm_unit
+from openmm import app
+from openmm import unit as omm_unit
 
 
 @dataclass(frozen=True)
@@ -36,11 +37,7 @@ class EquilibrationInputs:
 
     states: list[Any] | tuple[Any, ...]
     systems: openmm.System | list[openmm.System] | tuple[openmm.System, ...]
-    positions: (
-        omm_unit.Quantity
-        | list[omm_unit.Quantity]
-        | tuple[omm_unit.Quantity, ...]
-    )
+    positions: omm_unit.Quantity | list[omm_unit.Quantity] | tuple[omm_unit.Quantity, ...]
     topologies: app.Topology | list[app.Topology] | tuple[app.Topology, ...]
 
 
@@ -73,16 +70,12 @@ class BaseEquilibrationUnit(gufe.ProtocolUnit, ABC):
         """Broadcast a scalar or require exactly one list/tuple value per state."""
         if isinstance(value, (list, tuple)):
             if len(value) != n_states:
-                raise ValueError(
-                    f"{name} must contain {n_states} entries, received {len(value)}"
-                )
+                raise ValueError(f"{name} must contain {n_states} entries, received {len(value)}")
             return tuple(value)
         return (value,) * n_states
 
     @classmethod
-    def _normalise_inputs(
-        cls, inputs: EquilibrationInputs
-    ) -> tuple[EquilibrationEntry, ...]:
+    def _normalise_inputs(cls, inputs: EquilibrationInputs) -> tuple[EquilibrationEntry, ...]:
         """Create aligned entries without copying or mutating input objects."""
         if not isinstance(inputs, EquilibrationInputs):
             raise TypeError("equilibration_inputs must be EquilibrationInputs")

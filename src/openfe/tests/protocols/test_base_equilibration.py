@@ -26,18 +26,27 @@ class RecordingUnit:
         self.calls = []
 
     def _equilibrate_state(
-        self, *, state_input, output_dir, scratch_dir, dry, verbose,
-        equil_steps_nvt, equil_steps_npt,
+        self,
+        *,
+        state_input,
+        output_dir,
+        scratch_dir,
+        dry,
+        verbose,
+        equil_steps_nvt,
+        equil_steps_npt,
     ):
-        self.calls.append({
-            "state_input": state_input,
-            "output_dir": output_dir,
-            "scratch_dir": scratch_dir,
-            "dry": dry,
-            "verbose": verbose,
-            "nvt": equil_steps_nvt,
-            "npt": equil_steps_npt,
-        })
+        self.calls.append(
+            {
+                "state_input": state_input,
+                "output_dir": output_dir,
+                "scratch_dir": scratch_dir,
+                "dry": dry,
+                "verbose": verbose,
+                "nvt": equil_steps_nvt,
+                "npt": equil_steps_npt,
+            }
+        )
         return {"index": 999, "state_path": output_dir / "equilibrated_state.xml"}
 
 
@@ -77,7 +86,10 @@ def test_multiple_states_use_separate_paths_and_broadcast_scalars(tmp_path):
     unit = RecordingUnit()
     result = unit.run(
         equilibration_inputs=_inputs(
-            2, systems=system, positions=positions, topologies=topology,
+            2,
+            systems=system,
+            positions=positions,
+            topologies=topology,
         ),
         equil_steps_nvt=3,
         equil_steps_npt=5,
@@ -96,7 +108,11 @@ def test_multiple_states_use_separate_paths_and_broadcast_scalars(tmp_path):
 
 
 def test_per_state_sequence_inputs_are_aligned():
-    systems, positions, topologies = [object(), object()], [object(), object()], [object(), object()]
+    systems, positions, topologies = (
+        [object(), object()],
+        [object(), object()],
+        [object(), object()],
+    )
     entries = BaseEquilibrationUnit._normalise_inputs(
         _inputs(2, systems=systems, positions=positions, topologies=topologies)
     )
