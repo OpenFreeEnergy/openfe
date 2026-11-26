@@ -28,7 +28,7 @@ from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDSimulationUnit,
 )
 from openfe.protocols.openmm_utils import serialization
-from openfe.protocols.openmm_utils.base_equilibration import EquilibrationInputs
+from openfe.protocols.openmm_utils.base_equilibration import EquilibrationInput
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_ESPALOMA_CHARGE,
     HAS_NAGL,
@@ -177,7 +177,7 @@ def test_three_unit_dag(benzene_vacuum_system, vac_settings):
     assert production.inputs["equilibration_results"] == equil
 
 
-def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, caplog):
+def test_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, caplog):
     vac_settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
     vac_settings.simulation_settings.equilibration_length = 1 * unit.picosecond
     vac_settings.simulation_settings.production_length = 1 * unit.picosecond
@@ -201,7 +201,7 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
 
     caplog.set_level(logging.INFO)
     setup_results = setup_unit.run(
-        dry=False, verbose=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
+        dry=False, verbose=True, scratch_basepath=setup_path, shared_basepath=setup_path
     )
 
     messages = [r.message for r in caplog.records]
@@ -211,13 +211,17 @@ def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmp_path, ca
     system = serialization.deserialize(setup_results["system"])
     positions = np.load(setup_results["positions"]) * omm_unit.nanometers
     topology = openmm.app.PDBFile(str(setup_results["system_pdb"])).getTopology()
+
     equil_results = equil_unit.run(
-        equilibration_inputs=EquilibrationInputs(
-            states=[None],
-            systems=system,
-            positions=positions,
-            topologies=topology,
-        ),
+        equilibration_inputs=[
+            EquilibrationInput(
+                index=0,
+                state=None,
+                system=system,
+                positions=positions,
+                topology=topology,
+            ),
+        ],
         equil_steps_nvt=setup_results["equil_steps_nvt"] or 0,
         equil_steps_npt=setup_results["equil_steps_npt"],
         verbose=True,
@@ -258,7 +262,7 @@ def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmp_pa
     )
     assert protocol.settings.output_settings.forcefield_cache is None
 
-    # create DAG from protocol and take first (and only) work unit from within
+    # create DAG from protocol and take setup unit from within
     dag = protocol.create(
         stateA=benzene_vacuum_system,
         stateB=benzene_vacuum_system,
@@ -275,7 +279,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmp_path):
         settings=vac_settings,
     )
 
-    # create DAG from protocol and take first (and only) work unit from within
+    # create DAG from protocol and take setup unit from within
     dag = protocol.create(
         stateA=benzene_vacuum_system,
         stateB=benzene_vacuum_system,
@@ -303,7 +307,7 @@ def test_dry_run_espaloma_vacuum_user_charges(
     expected_charges = [-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
     benzene_openff.partial_charges = expected_charges * unit.elementary_charge
     benzene_system = ChemicalSystem({"ligand": SmallMoleculeComponent.from_openff(benzene_openff)})
-    # create DAG from protocol and take first (and only) work unit from within
+    # create DAG from protocol and take setup unit from within
     dag = protocol.create(
         stateA=benzene_system,
         stateB=benzene_system,
@@ -387,7 +391,7 @@ def test_dry_many_molecules_solvent(benzene_many_solv_system, tmp_path):
 
     protocol = PlainMDProtocol(settings=settings)
 
-    # create DAG from protocol and take first (and only) work unit from within
+    # create DAG from protocol and take setup unit from within
     dag = protocol.create(
         stateA=benzene_many_solv_system,
         stateB=benzene_many_solv_system,

@@ -19,8 +19,8 @@ from openmm import unit as omm_unit
 
 
 @dataclass(frozen=True)
-class EquilibrationEntry:
-    """Inputs for exactly one thermodynamic state, used only during execution."""
+class EquilibrationInput:
+    """Inputs required to equilibrate a single thermodynamic state."""
 
     index: int
     state: Any  # None for PlainMD; future protocols may provide alchemical states.
@@ -44,7 +44,7 @@ class BaseEquilibrationUnit(gufe.ProtocolUnit, ABC):
     def _equilibrate_state(
         self,
         *,
-        state_input: EquilibrationEntry,
+        state_input: EquilibrationInput,
         output_dir: Path,
         scratch_dir: Path,
         dry: bool,
@@ -59,7 +59,7 @@ class BaseEquilibrationUnit(gufe.ProtocolUnit, ABC):
         """
 
     def _output_dir(
-        self, *, state_input: EquilibrationEntry, n_entries: int, basepath: Path
+        self, *, state_input: EquilibrationInput, n_entries: int, basepath: Path
     ) -> Path:
         """Use legacy root for PlainMD; isolate files for multiple states."""
         return basepath if n_entries == 1 else basepath / f"state_{state_input.index:03d}"
@@ -67,7 +67,7 @@ class BaseEquilibrationUnit(gufe.ProtocolUnit, ABC):
     def run(
         self,
         *,
-        equilibration_inputs: list[EquilibrationEntry],
+        equilibration_inputs: list[EquilibrationInput],
         dry: bool = False,
         verbose: bool = True,
         scratch_basepath: Path | None = None,
@@ -77,12 +77,12 @@ class BaseEquilibrationUnit(gufe.ProtocolUnit, ABC):
         """Equilibrate each supplied thermodynamic state."""
 
         if not equilibration_inputs:
-            raise ValueError("At least one equilibration entry is required")
+            raise ValueError("At least one equilibration input is required")
 
-        indices = [entry.index for entry in equilibration_inputs]
+        indices = [input.index for input in equilibration_inputs]
 
         if len(indices) != len(set(indices)):
-            raise ValueError("Equilibration entry indices must be unique")
+            raise ValueError("Equilibration input indices must be unique")
 
         scratch_basepath = (
             Path(".") if scratch_basepath is None else Path(scratch_basepath)

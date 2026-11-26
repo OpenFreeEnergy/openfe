@@ -21,7 +21,7 @@ from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDSimulationUnit,
 )
 from openfe.protocols.openmm_utils import serialization
-from openfe.protocols.openmm_utils.base_equilibration import EquilibrationInputs
+from openfe.protocols.openmm_utils.base_equilibration import EquilibrationInput
 
 from ...conftest import HAS_INTERNET
 
@@ -166,12 +166,15 @@ class TestPlainMDResume:
             dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path
         )
         equil_results = equil_unit.run(
-            equilibration_inputs=EquilibrationInputs(
-                states=[None],
-                systems=serialization.deserialize(setup_results["system"]),
-                positions=setup_results["debug"]["positions"],
-                topologies=setup_results["debug"]["topology"],
-            ),
+            equilibration_inputs=[
+                EquilibrationInput(
+                    index=0,
+                    state=None,
+                    system=serialization.deserialize(setup_results["system"]),
+                    positions=setup_results["debug"]["positions"],
+                    topology=setup_results["debug"]["topology"],
+                ),
+            ],
             equil_steps_nvt=setup_results["equil_steps_nvt"] or 0,
             equil_steps_npt=setup_results["equil_steps_npt"],
             scratch_basepath=equil_path,
@@ -280,17 +283,21 @@ def test_resume_equilibration_from_npt_checkpoint(
 
     caplog.set_level(logging.INFO)
     result = equil_unit.run(
-        equilibration_inputs=EquilibrationInputs(
-            states=[None],
-            systems=serialization.deserialize(setup["system"]),
-            positions=setup["debug"]["positions"],
-            topologies=setup["debug"]["topology"],
-        ),
+        equilibration_inputs=[
+            EquilibrationInput(
+                index=0,
+                state=None,
+                system=serialization.deserialize(setup["system"]),
+                positions=setup["debug"]["positions"],
+                topology=setup["debug"]["topology"],
+            ),
+        ],
         equil_steps_nvt=setup["equil_steps_nvt"] or 0,
         equil_steps_npt=setup["equil_steps_npt"],
         shared_basepath=equil_dir,
         scratch_basepath=equil_dir,
     )
+
     state = result["equilibrated_states"][0]
 
     assert "Restarting simulation from checkpoint state" in caplog.text
