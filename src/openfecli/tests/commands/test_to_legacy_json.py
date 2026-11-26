@@ -28,7 +28,7 @@ def test_to_legacy_json_empty(tmp_path):
         out_dir = tmp_path / "my_results"
 
         result = runner.invoke(to_legacy_json, [str(warehouse_path), "-o", str(out_dir)])
-        assert "Loading results" in result.stdout
+        assert "Loading Warehouse" in result.stdout
         assert "No results found" in result.stderr
         assert not out_dir.is_dir()
 

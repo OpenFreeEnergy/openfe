@@ -465,7 +465,6 @@ class WarehouseBaseClass:
 
         for dag in tqdm.tqdm(
             dags_with_results,
-            # leave=False,
             desc="Creating ProtocolDAGResults",
             disable=not progress,
         ):

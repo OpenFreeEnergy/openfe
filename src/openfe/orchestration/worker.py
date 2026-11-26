@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from dataclasses import dataclass
 from pathlib import Path
 
 from exorcist.taskdb import TaskStatusDB
@@ -16,9 +15,8 @@ from gufe.tokenization import GufeKey
 from ..storage.warehouse import FileSystemWarehouse
 
 
-@dataclass
 class Worker:
-    """Execute protocol units from a task database.
+    """Execution class for running protocol units from a TaskDB and Warehouse
 
     .. warning:: Task-based execution is an experimental feature and subject to change in future releases of openfe
 
@@ -31,11 +29,22 @@ class Worker:
 
     """
 
-    warehouse: FileSystemWarehouse
-    task_db_path: Path
-
     _RESULT_INDEX_PREFIX = "protocol_unit_results"
     _TASK_WORKDIR_PREFIX = "task_workdirs"
+
+    def __init__(self, warehouse: FileSystemWarehouse, task_db_path: Path):
+        if not isinstance(warehouse, FileSystemWarehouse):
+            raise TypeError("'warehouse' must be a FileSystemWarehouse.")
+        self._warehouse = warehouse
+        self._task_db_path = Path(task_db_path)
+
+    @property
+    def warehouse(self) -> FileSystemWarehouse:
+        return self._warehouse
+
+    @property
+    def task_db_path(self) -> Path:
+        return self._task_db_path
 
     @staticmethod
     def _collect_protocol_unit_keys(value: object) -> set[GufeKey]:
@@ -62,16 +71,20 @@ class Worker:
         return f"{cls._RESULT_INDEX_PREFIX}/{source_key}"
 
     @classmethod
-    def _task_workdir_name(cls, taskid: str) -> str:
+    def _taskid_dir_name(cls, taskid: str) -> str:
         return taskid.replace(":", "__")
 
-    def _task_workspace_paths(
-        self, taskid: str, scratch_root: Path, shared_root: Path
-    ) -> tuple[Path, Path]:
-        workdir_name = self._task_workdir_name(taskid)
-        task_scratch = scratch_root / self._TASK_WORKDIR_PREFIX / workdir_name
-        task_shared = shared_root / self._TASK_WORKDIR_PREFIX / workdir_name
-        return task_scratch, task_shared
+    def _create_workdir_prefix(self, root: Path) -> Path:
+        """Create and return the top-level dir for task workdirs to be stored in."""
+        workdir = root / self._TASK_WORKDIR_PREFIX
+        workdir.mkdir(parents=False, exist_ok=True)
+        return workdir
+
+    def _create_task_subdir(self, workdir: Path, taskid: str) -> Path:
+        """Create and return the taskid subdir within workdir"""
+        taskid_dir = workdir / self._taskid_dir_name(taskid)
+        taskid_dir.mkdir(parents=False, exist_ok=True)
+        return taskid_dir
 
     def _store_result_index(self, result: ProtocolUnitResult) -> None:
         shared_store: ExternalStorage = self.warehouse.stores["shared"]
@@ -211,26 +224,33 @@ class Worker:
 
         """
 
-        # TODO: split per-execution work into a helper function and add an "n" option here?
-        scratch = Path(scratch)
-        # 1. Get task/unit
+        # 1. Define shared and scratch locations
+        scratch_root = Path(scratch)
+        # we can create scratch, shouldn't make arbitrary dir paths above it
+        scratch_root.mkdir(parents=False, exist_ok=True)
+        shared_root = self.warehouse.stores["shared"].root_dir
+
+        # before checking out tasks, create dirs for taskid-workdirs to be stored in
+        scratch_workdir = self._create_workdir_prefix(scratch_root)
+        shared_workdir = self._create_workdir_prefix(shared_root)
+
+        # 2. Get task/unit
         task = self._checkout_task()
         if task is None:
             return None
         db, taskid, unit = task
-        # 2. Construct the context
+
+        # 3. Construct the context
         # NOTE: On changes to context (gufe PR #753), this can easily be replaced with external storage objects
         # However, to satisfy the current work, we will use this implementation where we
         # force the use of a FileSystemWarehouse and in turn can assert that an object is FileStorage.
-        shared_store = self.warehouse.stores["shared"]
-        if not isinstance(shared_store, FileStorage):
-            raise TypeError("Expected a FileStorage backend for the shared store")
-        shared_root_dir = shared_store.root_dir
-        task_scratch, task_shared = self._task_workspace_paths(taskid, scratch, shared_root_dir)
-        task_scratch.mkdir(parents=True, exist_ok=True)
-        task_shared.mkdir(parents=True, exist_ok=True)
-        ctx = Context(task_scratch, shared=task_shared)
-        # 3. Execute unit
+
+        task_scratch = self._create_task_subdir(scratch_workdir, taskid)
+        task_shared = self._create_task_subdir(shared_workdir, taskid)
+
+        ctx = Context(scratch=task_scratch, shared=task_shared)
+
+        # 4. Execute unit
         try:
             # TODO: this var naming is confusing
             results: dict[GufeKey, ProtocolUnitResult] = self._build_input_result_mapping(unit)
@@ -241,7 +261,8 @@ class Worker:
             raise
 
         db.mark_task_completed(taskid, success=result.ok())
-        # 4. output result to warehouse
+
+        # 5. output result to warehouse
         # TODO: we may need to end up handling namespacing on the warehouse side for tokenizables
         self.warehouse.store_results_tokenizable(result)
         self._store_result_index(result)

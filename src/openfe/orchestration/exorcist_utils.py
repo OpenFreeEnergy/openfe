@@ -131,6 +131,7 @@ def setup_task_campaign(
     return db, warehouse
 
 
+# TODO: rename to `get_status_df`?
 def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """Create a pandas Dataframe from task_db.
 
@@ -157,6 +158,51 @@ def get_task_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     return task_table
 
 
+def get_status_summary_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
+    """Return a pandas Dataframe with a summary of the task statuses.
+
+    Parameters
+    ----------
+    task_db : exorcist.TaskStatusDB
+         A task status database.
+
+    Returns
+    -------
+    pd.DataFrame
+        A pandas DataFrame of all possible statuses and the number of tasks with each status.
+
+    Examples
+    --------
+    >>> summary_df = get_status_summary_df(task_db)
+    >>> summary_df
+                status  n_tasks
+    0           BLOCKED          1
+    1         AVAILABLE          2
+    2       IN_PROGRESS          0
+    3         COMPLETED          0
+    4  TOO_MANY_RETRIES          0
+    5             ERROR          0
+
+    """
+    import sqlalchemy as sqla
+
+    status_col = task_db.tasks_table.c.status
+    stmt_count_statuses = sqla.select(
+        status_col,
+        sqla.func.count().label("n_tasks"),
+    ).group_by(status_col)
+
+    with task_db.engine.connect() as conn:
+        raw_counts = dict(conn.execute(stmt_count_statuses).all())
+
+    return pd.DataFrame(
+        {
+            "status": [s.name for s in exorcist.TaskStatus],
+            "n_tasks": [raw_counts.get(s.value, 0) for s in exorcist.TaskStatus],
+        }
+    )
+
+
 def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     """Create a pandas Dataframe from task_db.
 
@@ -165,7 +211,7 @@ def get_dependency_df(task_db: exorcist.TaskStatusDB) -> pd.DataFrame:
     Parameters
     ----------
     task_db : exorcist.TaskStatusDB
-        A task database.
+        A task status database.
 
     Returns
     -------
