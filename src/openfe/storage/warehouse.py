@@ -236,7 +236,8 @@ class WarehouseBaseClass:
 
         """
         # TODO: resolve type checking
-        return any(key in store for store in self.stores.values())  # type: ignore
+        # use `exists` (a direct lookup); `in` falls back to iterating the whole store
+        return any(store.exists(key) for store in self.stores.values())
 
     def _get_store_for_key(self, key: GufeKey) -> ExternalStorage:
         """Function to find the store in which a gufe key is stored in.
@@ -261,7 +262,8 @@ class WarehouseBaseClass:
         # TODO: resolve mypy Literal/str conflict here
         # https://mypy.readthedocs.io/en/stable/literal_types.html
         for name in self.stores:
-            if key in self.stores[name]:  # type: ignore
+            # FileStorage has no `__contains__` method, so we use `exists` to check for existence
+            if self.stores[name].exists(key):
                 return self.stores[name]  # type: ignore
         raise ValueError(f"GufeKey {key} is not stored")
 
@@ -303,13 +305,19 @@ class WarehouseBaseClass:
                     target.store_bytes(gufe_key, data)
 
     # TODO: we should also be able to load from JSON, without knowing the gufe key in advance.
-    def _load_gufe_tokenizable(self, gufe_key: GufeKey) -> GufeTokenizable:
+    def _load_gufe_tokenizable(
+        self,
+        gufe_key: GufeKey,
+        registry: dict[GufeKey, GufeTokenizable] | None = None,
+    ) -> GufeTokenizable:
         """Load a deduplicated object from a GufeKey.
 
         Parameters
         ----------
         gufe_key : GufeKey
             The key of the object to load.
+        registry : dict[GufeKey, GufeTokenizable], optional
+            Cache of already-built objects. Objects in the cache will be returned.
 
         Returns
         -------
@@ -323,7 +331,8 @@ class WarehouseBaseClass:
 
         """
 
-        registry: dict[GufeKey, GufeTokenizable] = {}
+        if registry is None:
+            registry = {}
 
         def recursive_build_object_cache(key: GufeKey) -> GufeTokenizable:
             """DFS to rebuild object hierarchy.
@@ -339,6 +348,9 @@ class WarehouseBaseClass:
                 The reconstructed object.
 
             """
+            # quick return if the object is already in the registry
+            if key in registry:
+                return registry[key]
 
             # This implementation is a bit fragile, because ensuring that we
             # don't duplicate objects in memory depends on the fact that
@@ -410,8 +422,10 @@ class WarehouseBaseClass:
 
         """
 
+        # build a shared registry to only build unique objects once
+        registry: dict[GufeKey, GufeTokenizable] = {}
         for fname in self.stores["results"]:
-            obj = self.load_results_tokenizable(fname)
+            obj = self._load_gufe_tokenizable(fname, registry=registry)
             if isinstance(obj, ProtocolUnitResult):
                 yield obj
             else:
