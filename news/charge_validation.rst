@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* All protocols will raise a ``ProtocolValidationError`` error if a non-deterministic partial charge generation method is used at run time, please provide molecules with pre-calculated charges to use ``am1bcc`` or use a deterministic method such as library charges or AshGC (`PR #2132 <https://github.com/OpenFreeEnergy/openfe/pull/2132>`_).
+* All protocols will raise a ``ProtocolValidationError`` error if a non-deterministic partial charge generation method (AM1-BCC or AM1-BCC-ELF10) is used at run time, please provide molecules with pre-calculated charges to use ``am1bcc`` or use a deterministic method such as library charges or AshGC (`PR #2132 <https://github.com/OpenFreeEnergy/openfe/pull/2132>`_).
 
 **Deprecated:**
 
