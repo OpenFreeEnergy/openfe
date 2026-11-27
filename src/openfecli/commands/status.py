@@ -60,44 +60,18 @@ def status_main(
 
     from exorcist import TaskStatusDB
 
-    from openfe.orchestration.exorcist_utils import get_task_df
+    from openfe.orchestration.exorcist_utils import get_status_summary_df, get_task_df
 
-    # # TODO: rewrite this using just sql and rich table?
     task_db = TaskStatusDB.from_filename(task_db_path)
-    task_df = get_task_df(task_db)
 
     if summary:
-        val_counts = task_df.status.value_counts()
-        rich_print_summary(val_counts)
+        val_counts = get_status_summary_df(task_db)
+        rich_print_to_stdout(val_counts)
     else:
+        task_df = get_task_df(task_db)
+        # only report to the seconds
         task_df["last_modified"] = task_df["last_modified"].dt.floor("s")
         rich_print_to_stdout(task_df)
-
-
-def rich_print_summary(task_counts: dict):
-    """Print number of tasks with each status type.
-
-    Parameters
-    ----------
-    task_counts : dict[TaskStatus, int]
-        dict containing the counts of each task status type.
-
-    """
-
-    from exorcist import TaskStatus
-    from rich.console import Console
-    from rich.table import Table
-
-    # TODO: expose this to the python API
-    table = Table()
-    table.add_column("status", justify="left", no_wrap=True)
-    table.add_column("n_tasks", justify="right", no_wrap=True)
-
-    for status_type in TaskStatus:
-        status_name = status_type.name
-        table.add_row(str(status_name), str(task_counts.get(status_name, 0)))
-    console = Console()
-    console.print(table)
 
 
 @click.command("status", short_help="Output the status of the task database as a table.")

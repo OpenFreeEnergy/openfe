@@ -11,10 +11,14 @@ from gufe.tokenization import GufeKey
 
 from openfe.orchestration import (
     get_dependency_df,
+    get_status_summary_df,
     get_task_df,
     setup_task_campaign,
+    update_max_tries,
 )
-from openfe.orchestration.exorcist_utils import _alchemical_network_to_task_graph, update_max_tries
+from openfe.orchestration.exorcist_utils import (
+    _alchemical_network_to_task_graph,
+)
 from openfe.storage.warehouse import WarehouseBaseClass
 
 
@@ -304,7 +308,7 @@ def task_row(taskid, status, last_modified, tries, max_tries, task_type=""):
 
 
 @pytest.fixture
-def fresh_db():
+def fresh_db() -> TaskStatusDB:
     # create an empty database
     echo = False  # switch this for debugging
     engine = sqla.create_engine("sqlite://", echo=echo)
@@ -352,3 +356,41 @@ def test_update_max_tries(fresh_db):
 def test_update_max_tries_invalid_val(fresh_db, bad_value):
     with pytest.raises(ValueError, match="must be a positive integer"):
         update_max_tries(task_db=fresh_db, max_tries=bad_value)
+
+
+@pytest.mark.parametrize(
+    "statuses,expected",
+    [
+        (
+            [TaskStatus.AVAILABLE.value],
+            [0, 1, 0, 0, 0, 0],
+        ),
+        (
+            [TaskStatus.TOO_MANY_RETRIES.value] * 4 + [TaskStatus.IN_PROGRESS.value],
+            [0, 0, 1, 0, 4, 0],
+        ),
+        (
+            [x.value for x in TaskStatus] * 2,
+            [2, 2, 2, 2, 2, 2],
+        ),
+    ],
+)
+def test_get_status_summary_df(fresh_db, statuses, expected):
+    def create_task_db(db):
+        metadata = db.metadata
+        engine = db.engine
+        tasks = [{"taskid": f"foo_{n}", "status": s} for n, s in enumerate(statuses)]
+
+        ins_tasks = sqla.insert(metadata.tables["tasks"]).values(tasks)
+        with engine.begin() as conn:
+            conn.execute(ins_tasks)
+
+        return db
+
+    input_task_db = create_task_db(fresh_db)
+    summary_df = get_status_summary_df(input_task_db)
+    expected = {
+        "status": ["BLOCKED", "AVAILABLE", "IN_PROGRESS", "COMPLETED", "TOO_MANY_RETRIES", "ERROR"],
+        "n_tasks": expected,
+    }
+    pd.testing.assert_frame_equal(summary_df, pd.DataFrame(expected))
