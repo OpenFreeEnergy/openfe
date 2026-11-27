@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import re
 import sys
 from math import sqrt
 from unittest import mock
@@ -8,6 +9,7 @@ import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
+from gufe.protocols import ProtocolValidationError
 from numpy.testing import assert_allclose
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
@@ -622,13 +624,6 @@ def test_dry_run_solv_user_charges_benzene(
 @pytest.mark.parametrize(
     "method, backend, ref_key",
     [
-        ("am1bcc", "ambertools", "ambertools"),
-        pytest.param(
-            "am1bcc",
-            "openeye",
-            "openeye",
-            marks=pytest.mark.skipif(not HAS_OPENEYE, reason="needs oechem"),
-        ),
         pytest.param(
             "nagl",
             "rdkit",
@@ -651,7 +646,7 @@ def test_dry_run_charge_backends(
 ):
     """
     Check that partial charge generation with different backends
-    works as expected.
+    works as expected with deterministic methods only.
     """
     protocol_dry_settings.partial_charge_settings.partial_charge_method = method
     protocol_dry_settings.partial_charge_settings.off_toolkit_backend = backend
@@ -689,6 +684,32 @@ def test_dry_run_charge_backends(
         charges * offunit.elementary_charge,
         rtol=1e-4,
     )
+
+
+@pytest.mark.parametrize("method, backend", [("am1bcc", "ambertools"), ("am1bcc", "openeye")])
+def test_dry_run_missing_charges(method, backend, CN_molecule, protocol_dry_settings):
+    """
+    Make sure an error is raised if a nondeterministic charge method would be used at run time
+    """
+    protocol_dry_settings.partial_charge_settings.partial_charge_method = method
+    protocol_dry_settings.partial_charge_settings.off_toolkit_backend = backend
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
+
+    # Create ChemicalSystems
+    stateA = ChemicalSystem(
+        {"benzene": CN_molecule, "solvent": SolventComponent()}, name="CN no charges"
+    )
+
+    stateB = ChemicalSystem({"solvent": SolventComponent()})
+
+    with pytest.raises(
+        ProtocolValidationError,
+        match=re.escape(
+            "System: 'CN no charges' contains SmallMoleculeComponents which may have non-deterministic charges generated at runtime."
+        ),
+    ):
+        _ = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 
 
 @pytest.fixture

@@ -209,6 +209,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
     def _assign_partial_charges(
         charge_settings: OpenFFPartialChargeSettings,
         small_mols: dict[SmallMoleculeComponent, OFFMolecule],
+        small_molecule_forcefield: str | None = None,
     ) -> None:
         """
         Assign partial charges to the OpenFF Molecules associated with all
@@ -221,7 +222,15 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         small_mols : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
           Dictionary of OpenFF Molecules to add, keyed by
           their associated SmallMoleculeComponent.
+        small_molecule_forcefield : str | None
+            The small molecule force field used to apply the partial charges if the method is ``forcefield``.
         """
+        # only pass through the force field if the method is forcefield, otherwise it will raise an error
+        if charge_settings.partial_charge_method == "forcefield" and small_molecule_forcefield is not None:  # fmt: skip
+            force_fields = [small_molecule_forcefield]
+        else:
+            force_fields = None
+
         for smc, mol in small_mols.items():
             charge_generation.assign_offmol_partial_charges(
                 offmol=mol,
@@ -230,6 +239,7 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
                 toolkit_backend=charge_settings.off_toolkit_backend,
                 generate_n_conformers=charge_settings.number_of_conformers,
                 nagl_model=charge_settings.nagl_model,
+                forcefields=force_fields,
             )
 
     @staticmethod
@@ -762,7 +772,11 @@ class HybridTopologySetupUnit(gufe.ProtocolUnit, HybridTopologyUnitMixin):
         alchem_resnames = [assigned[alchem_comps["stateA"][0]]]
 
         # Assign partial charges now to avoid any discrepancies later
-        self._assign_partial_charges(settings["charge_settings"], small_mols)
+        self._assign_partial_charges(
+            settings["charge_settings"],
+            small_mols,
+            settings["forcefield_settings"].small_molecule_forcefield,
+        )
 
         (
             stateA_system,

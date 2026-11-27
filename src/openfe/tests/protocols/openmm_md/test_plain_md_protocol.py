@@ -3,6 +3,7 @@
 import json
 import logging
 import pathlib
+import re
 import sys
 from unittest import mock
 
@@ -11,6 +12,7 @@ import numpy as np
 import openmm
 import pytest
 from gufe import ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent
+from gufe.protocols.errors import ProtocolValidationError
 from numpy.testing import assert_allclose
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
@@ -277,13 +279,6 @@ def test_dry_run_espaloma_vacuum_user_charges(
 @pytest.mark.parametrize(
     "method, backend, ref_key",
     [
-        ("am1bcc", "ambertools", "ambertools"),
-        pytest.param(
-            "am1bcc",
-            "openeye",
-            "openeye",
-            marks=pytest.mark.skipif(not HAS_OPENEYE, reason="needs oechem"),
-        ),
         pytest.param(
             "nagl",
             "rdkit",
@@ -330,6 +325,30 @@ def test_dry_run_charge_backends(
     assert_allclose(am1bcc_ref_charges[ref_key], charges, rtol=1e-4)
 
 
+@pytest.mark.parametrize("method, backend", [("am1bcc", "ambertools"), ("am1bcc", "openeye")])
+def test_dry_run_missing_charges(
+    method,
+    backend,
+    CN_molecule,
+    vac_settings,
+):
+    # an error should be raised if a nondeterministic charge method would be used at run time
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+
+    protocol = PlainMDProtocol(settings=vac_settings)
+
+    csystem = openfe.ChemicalSystem({"ligand": CN_molecule}, name="CN no charges")
+
+    with pytest.raises(
+        ProtocolValidationError,
+        match=re.escape(
+            "System: 'CN no charges' contains SmallMoleculeComponents which may have non-deterministic charges generated at runtime."
+        ),
+    ):
+        _ = protocol.create(stateA=csystem, stateB=csystem, mapping=None)
+
+
 def test_dry_many_molecules_solvent(benzene_many_solv_system, tmp_path):
     """
     A basic test flushing "will it work if you pass multiple molecules"
@@ -348,72 +367,6 @@ def test_dry_many_molecules_solvent(benzene_many_solv_system, tmp_path):
     dag_unit = list(dag.protocol_units)[0]
 
     dag_unit.run(dry=True, scratch_basepath=tmp_path, shared_basepath=tmp_path)["debug"]["system"]
-
-
-BENZ = """\
-benzene
-  PyMOL2.5          3D                             0
-
- 12 12  0  0  0  0  0  0  0  0999 V2000
-    1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7022    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.7023    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.5079   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-    1.2540    2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.2540    2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -2.5079   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.2540   -2.1719    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-    1.2540   -2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-  1  2  2  0  0  0  0
-  1  6  1  0  0  0  0
-  1  7  1  0  0  0  0
-  2  3  1  0  0  0  0
-  2  8  1  0  0  0  0
-  3  4  2  0  0  0  0
-  3  9  1  0  0  0  0
-  4  5  1  0  0  0  0
-  4 10  1  0  0  0  0
-  5  6  2  0  0  0  0
-  5 11  1  0  0  0  0
-  6 12  1  0  0  0  0
-M  END
-$$$$
-"""
-
-
-PYRIDINE = """\
-pyridine
-  PyMOL2.5          3D                             0
-
- 11 11  0  0  0  0  0  0  0  0999 V2000
-    1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.7023    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.4940   -0.0325    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-    1.2473   -2.1604    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.2473   -2.1604    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -2.4945   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.2753    2.1437    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7525    1.3034    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-  1  5  1  0  0  0  0
-  1  6  1  0  0  0  0
-  1 11  2  0  0  0  0
-  2  3  2  0  0  0  0
-  2 10  1  0  0  0  0
-  3  4  1  0  0  0  0
-  3  9  1  0  0  0  0
-  4  5  2  0  0  0  0
-  4  8  1  0  0  0  0
-  5  7  1  0  0  0  0
-  2 11  1  0  0  0  0
-M  END
-$$$$
-"""
 
 
 def test_dry_run_ligand_tip4p(benzene_system, tmp_path):

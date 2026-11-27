@@ -3,6 +3,7 @@
 import copy
 import json
 import logging
+import re
 import sys
 import xml.etree.ElementTree as ET
 from importlib import resources
@@ -16,11 +17,12 @@ import mdtraj as mdt
 import numpy as np
 import openmm
 import pytest
+from gufe import LigandAtomMapping
 from gufe.protocols import ProtocolValidationError
 from kartograf import KartografAtomMapper
 from kartograf.atom_aligner import align_mol_shape
 from numpy.testing import assert_allclose
-from openff.toolkit import Molecule
+from openff.toolkit import ForceField, Molecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import (
@@ -411,7 +413,7 @@ def test_dry_many_molecules_solvent(
 
 BENZ = """\
 benzene
-  PyMOL2.5          3D                             0
+     RDKit          3D
 
  12 12  0  0  0  0  0  0  0  0999 V2000
     1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
@@ -426,26 +428,32 @@ benzene
    -2.5079   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
    -1.2540   -2.1719    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
     1.2540   -2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
-  1  2  2  0  0  0  0
-  1  6  1  0  0  0  0
-  1  7  1  0  0  0  0
-  2  3  1  0  0  0  0
-  2  8  1  0  0  0  0
-  3  4  2  0  0  0  0
-  3  9  1  0  0  0  0
-  4  5  1  0  0  0  0
-  4 10  1  0  0  0  0
-  5  6  2  0  0  0  0
-  5 11  1  0  0  0  0
-  6 12  1  0  0  0  0
+  1  2  2  0
+  1  6  1  0
+  1  7  1  0
+  2  3  1  0
+  2  8  1  0
+  3  4  2  0
+  3  9  1  0
+  4  5  1  0
+  4 10  1  0
+  5  6  2  0
+  5 11  1  0
+  6 12  1  0
 M  END
+
+>  <ofe-name>
+benzene
+
+>  <atom.dprop.PartialCharge>
+-0.13016000265876451 -0.13009999568263689 -0.13009999568263689 -0.13009999568263689 -0.13009999568263689 -0.13009999568263689 0.13010999684532484 0.13010999684532484 0.13010999684532484 0.13010999684532484 0.13010999684532484 0.13010999684532484
+
 $$$$
 """
 
-
 PYRIDINE = """\
 pyridine
-  PyMOL2.5          3D                             0
+     RDKit          3D
 
  11 11  0  0  0  0  0  0  0  0999 V2000
     1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
@@ -459,25 +467,30 @@ pyridine
    -2.4945   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
    -1.2753    2.1437    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
     0.7525    1.3034    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-  1  5  1  0  0  0  0
-  1  6  1  0  0  0  0
-  1 11  2  0  0  0  0
-  2  3  2  0  0  0  0
-  2 10  1  0  0  0  0
-  3  4  1  0  0  0  0
-  3  9  1  0  0  0  0
-  4  5  2  0  0  0  0
-  4  8  1  0  0  0  0
-  5  7  1  0  0  0  0
-  2 11  1  0  0  0  0
+  1  5  2  0
+  1  6  1  0
+  1 11  1  0
+  2  3  1  0
+  2 10  1  0
+  3  4  2  0
+  3  9  1  0
+  4  5  1  0
+  4  8  1  0
+  5  7  1  0
+  2 11  2  0
 M  END
+
+>  <atom.dprop.PartialCharge>
+0.39228000661188905 0.39228000661188905 -0.24653000215237791 -0.093170007860118698 -0.24653000215237791 0.021279994229024105 0.14280999621207063 0.1373999955301935 0.14280999621207063
+0.021279994229024105 -0.66390997747128655
+
 $$$$
 """
 
 
 def test_setup_core_element_change(vac_settings, tmp_path):
-    benz = openfe.SmallMoleculeComponent(Chem.MolFromMolBlock(BENZ, removeHs=False))
-    pyr = openfe.SmallMoleculeComponent(Chem.MolFromMolBlock(PYRIDINE, removeHs=False))
+    benz = openfe.SmallMoleculeComponent.from_sdf_string(BENZ)
+    pyr = openfe.SmallMoleculeComponent.from_sdf_string(PYRIDINE)
 
     mapping = openfe.LigandAtomMapping(
         benz, pyr, {0: 0, 1: 10, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 9, 9: 8, 10: 7, 11: 6}
@@ -735,13 +748,6 @@ def test_setup_ligand_system_cutoff(
 @pytest.mark.parametrize(
     "method, backend, ref_key",
     [
-        ("am1bcc", "ambertools", "ambertools"),
-        pytest.param(
-            "am1bcc",
-            "openeye",
-            "openeye",
-            marks=pytest.mark.skipif(not HAS_OPENEYE, reason="needs oechem"),
-        ),
         pytest.param(
             "nagl",
             "rdkit",
@@ -757,18 +763,20 @@ def test_setup_ligand_system_cutoff(
             "espaloma",
             marks=pytest.mark.skipif(not HAS_ESPALOMA_CHARGE, reason="needs espaloma charge"),
         ),
+        pytest.param(
+            "forcefield",
+            "rdkit",
+            "library_charges",
+        ),
     ],
 )
 def test_setup_charge_backends(
     CN_molecule, tmp_path, method, backend, ref_key, vac_settings, am1bcc_ref_charges
 ):
+    # check that partial charges are assigned correctly for deterministic methods (nagl, espaloma)
     vac_settings.partial_charge_settings.partial_charge_method = method
     vac_settings.partial_charge_settings.off_toolkit_backend = backend
     vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
-
-    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-        settings=vac_settings,
-    )
 
     # make stateB molecule
     offmolB = Molecule.from_smiles("CCN")
@@ -777,6 +785,44 @@ def test_setup_charge_backends(
     a_molB = align_mol_shape(molB, ref_mol=CN_molecule)
     mapper = KartografAtomMapper(atom_map_hydrogens=True)
     mapping = next(mapper.suggest_mappings(CN_molecule, a_molB))
+
+    # if we have library charges we need to add them to the force field
+    if method == "forcefield":
+        # pick a force field with am1-bcc handler by default which should fail validation
+        ff = ForceField("openff-2.2.1.offxml")
+        lib_handler = ff.get_parameter_handler("LibraryCharges")
+        # CN from our ref charges
+        lib_handler.add_parameter(
+            parameter=lib_handler._INFOTYPE(
+                smirks="[H:3][C:1]([H:4])([H:5])[N:2]([H:6])[H:7]",
+                charge=am1bcc_ref_charges[ref_key],
+            )
+        )
+        # CCN charges generated with NAGL and * -1
+        lib_handler.add_parameter(
+            parameter=lib_handler._INFOTYPE(
+                smirks=offmolB.to_smiles(mapped=True),
+                charge=[
+                    0.13743,
+                    -0.1492,
+                    0.90714997,
+                    -0.03589999,
+                    -0.03589999,
+                    -0.03589999,
+                    -0.05014999,
+                    -0.05014999,
+                    -0.34369,
+                    -0.34369,
+                ]
+                * unit.elementary_charge,
+            )
+        )
+        # set the small molecule force field to use this one
+        vac_settings.forcefield_settings.small_molecule_forcefield = ff.to_string()
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
 
     systemA = openfe.ChemicalSystem({"l": CN_molecule})
     systemB = openfe.ChemicalSystem({"l": a_molB})
@@ -819,6 +865,41 @@ def test_setup_charge_backends(
             old_i = htf._hybrid_to_old_map[i]
             ref = am1bcc_ref_charges[ref_key][i]
             np.testing.assert_allclose(c, ref, rtol=1e-4)
+
+
+@pytest.mark.parametrize("method, backend", [("am1bcc", "ambertools"), ("am1bcc", "openeye")])
+def test_dry_run_missing_charges(
+    method,
+    backend,
+    CN_molecule,
+    vac_settings,
+):
+    # make sure an error is raised if a nondeterministic charge method would be used at run time
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    # make stateB molecule
+    offmolB = Molecule.from_smiles("CCN")
+    offmolB.generate_conformers()
+    molB = openfe.SmallMoleculeComponent.from_openff(offmolB, name="CCN")
+    mapping = LigandAtomMapping(
+        componentA=CN_molecule, componentB=molB, componentA_to_componentB={0: 1}
+    )
+    systemA = openfe.ChemicalSystem({"l": CN_molecule}, name="CN no charges")
+    systemB = openfe.ChemicalSystem({"l": molB})
+
+    with pytest.raises(
+        ProtocolValidationError,
+        match=re.escape(
+            # this is the CN failing as it has no name
+            "System: 'CN no charges' contains SmallMoleculeComponents which may have non-deterministic charges generated at runtime."
+        ),
+    ):
+        _ = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
 
 
 def test_setup_same_mol_different_charges(benzene_modifications_uncharged, vac_settings, tmp_path):
@@ -1715,7 +1796,6 @@ def tyk2_reference_xml():
     return ET.fromstring(xmldata)
 
 
-@pytest.mark.slow
 class TestTyk2XmlRegression:
     """Generates Hybrid system XML and performs regression test"""
 
