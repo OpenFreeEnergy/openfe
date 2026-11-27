@@ -316,7 +316,7 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
       are supported. A maximum of one conformer is allowed.
 
     ``forcefield``:
-        Assign partial charges using a force field's defined charge model, this is useful to get the correct
+        Assign partial charges using a SMIRNOFF force field's defined charge model, this is useful to get the correct
         NAGL(AshGC) model for a specific force field or to use LibraryCharges.
 
     """

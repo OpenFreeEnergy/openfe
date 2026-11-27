@@ -205,9 +205,10 @@ class PlainMDProtocol(gufe.Protocol):
         system_validation.validate_chemical_system(stateA)
 
         # Validate small molecule charges
-        small_ff = self.settings.forcefield_settings.small_molecule_forcefield
         system_validation.validate_nondeterministic_charges(
-            stateA, small_ff, self._settings.partial_charge_settings
+            stateA,
+            self.settings.forcefield_settings.small_molecule_forcefield,
+            self.settings.partial_charge_settings,
         )
 
         # Validate solvent component if present
@@ -366,14 +367,8 @@ class PlainMDSetupUnit(PlainMDUnitMixin, gufe.ProtocolUnit):
             The small molecule force field used to apply the partial charges if the method is ``forcefield``.
         """
         # only pass through the force field if the method is forcefield, otherwise it will raise an error
-        if charge_settings.partial_charge_method == "forcefield":
-            force_fields = (
-                [
-                    small_molecule_forcefield,
-                ]
-                if small_molecule_forcefield is not None
-                else None
-            )
+        if charge_settings.partial_charge_method == "forcefield" and small_molecule_forcefield is not None:
+            force_fields = [small_molecule_forcefield]
         else:
             force_fields = None
 
