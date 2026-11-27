@@ -1808,3 +1808,17 @@ class TestChargeValidation:
                 small_molecule_forcefield="openff-2.2.0.offxml",
                 charge_settings=omm_settings.OpenFFPartialChargeSettings(),
             )
+
+    def test_openff_missing_forcefield(self, benzene_no_charge_system):
+        # make sure an error is raised if the force field can not be loaded, e.g. if the user passes a non-existent force field
+        with pytest.raises(
+            ProtocolValidationError,
+            match=re.escape(
+                "Could not load force field my_very_fancy_forcefield or my_very_fancy_forcefield.offxml"
+            ),
+        ):
+            system_validation.validate_nondeterministic_charges(
+                benzene_no_charge_system,
+                small_molecule_forcefield="my_very_fancy_forcefield",
+                charge_settings=omm_settings.OpenFFPartialChargeSettings(),
+            )

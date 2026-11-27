@@ -472,7 +472,7 @@ def validate_nondeterministic_charges(
     if errors:
         errmsg = (
             f"System: '{system.name}' contains SmallMoleculeComponents which may have non-deterministic charges generated at runtime. "
-            f"Please provide a molecule with pre-computed charges or use library charges instead. "
+            f"Please provide pre-computed or library charges, or use a deterministic method ('nagl' or 'espaloma'). "
             f"The following Components are affected: {', '.join([str(smc) for smc in errors])}"
         )
         raise ProtocolValidationError(errmsg)

@@ -200,7 +200,6 @@ def atom_mapping_basic_test_files():
     ]:
         with resources.as_file(resources.files("openfe.tests.data.lomap_basic")) as d:
             fn = str(d / (f + ".sdf"))
-            # go via openff to make sure the partial charges are pulled
             files[f] = SmallMoleculeComponent.from_sdf_file(fn)
 
     return files
@@ -440,7 +439,8 @@ def am1bcc_ref_charges():
             0.063076, 0.379931, 0.379931
         ] * offunit.elementary_charge,
         "library_charges": [
-            # -1 * the ambertools charges should not be possible by anyother method
+            # make a unique set of charges for testing that are not similar to any of the above
+            # currently -1 * ambertools charges above
             -0.146957, 0.918943, -0.025557, -0.025557,
             -0.025557, -0.347657, -0.347657
         ] * offunit.elementary_charge
