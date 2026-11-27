@@ -477,13 +477,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit, SepTopUnitMixin):
             The small molecule force field used to apply the partial charges if the method is ``forcefield``.
         """
         # only pass through the force field if the method is forcefield, otherwise it will raise an error
-        if (
-            partial_charge_settings.partial_charge_method == "forcefield"
-            and small_molecule_forcefield is not None
-        ):
-            force_fields = [
-                small_molecule_forcefield,
-            ]
+        if partial_charge_settings.partial_charge_method == "forcefield" and small_molecule_forcefield is not None:  # fmt: skip
+            force_fields = [small_molecule_forcefield]
         else:
             force_fields = None
 
